@@ -25,9 +25,6 @@ padding: 0;
   --player-compact-font: 22px;
   --exp-label-font: 16px;
   --exp-text-font: 15px;
-  --side-ui-size: 48px;
-  --side-ui-gap: 8px;
-  --side-ui-bottom-clearance: 72px;
 }
 
 body {
@@ -75,13 +72,9 @@ padding: 8px 0;
         position: relative;
     }
 
-    #hud.canvas-hud-only {
-        display: none;
-    }
-
     #playerHudCompact {
         width: 100%;
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: flex-start;
         min-height: 28px;
@@ -152,7 +145,7 @@ padding: 8px 0;
 /* 상단 EXP 행 */
     #expRow {
         width: 100%;
-        display: none;
+        display: flex;
         align-items: stretch;
         gap: 0;
         margin: 2px 0 0;
@@ -202,7 +195,7 @@ padding: 8px 0;
         height: 100%;
         background: linear-gradient(90deg, rgba(27,216,88,1.00) 0%, rgba(27,216,88,1.00) 50%, rgba(27,216,88,1.00) 100%);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.34), 0 0 12px rgba(94,255,186,0.16);
-        transition: width 2.0s linear;
+        transition: width 0.9s linear;
     }
     /* EXP 텍스트 (바 우측 정렬) */
     
@@ -254,11 +247,11 @@ padding: 8px 0;
 .laser-skill{
     position: absolute;
     right: 10px;
-    bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom));
-    width: var(--side-ui-size);
-    height: var(--side-ui-size);
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    width: 82px;
+    height: 82px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 900;
     line-height: 1.15;
     white-space: pre-line;
@@ -285,9 +278,9 @@ padding: 8px 0;
 .blizzard-skill{
   position: absolute;
   right: 10px;
-  bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom) + (var(--side-ui-size) + var(--side-ui-gap)) * 1);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
+  bottom: calc(55px + env(safe-area-inset-bottom)); /* 레이저보다 위로 */
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 900;
@@ -311,9 +304,9 @@ padding: 8px 0;
 .meteor-skill{
   position: absolute;
   right: 10px;
-  bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom) + (var(--side-ui-size) + var(--side-ui-gap)) * 2);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
+  bottom: calc(120px + env(safe-area-inset-bottom)); /* 눈보라보다 위 */
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 900;
@@ -405,9 +398,9 @@ padding: 8px 0;
 .lightning-skill{
   position:absolute;
   right: 10px;
-  bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom) + (var(--side-ui-size) + var(--side-ui-gap)) * 3);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
+  bottom: calc(185px + env(safe-area-inset-bottom)); /* 메테오보다 위 */
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   z-index: 60;
   border: 2px solid rgba(255,255,120,0.95);
@@ -427,9 +420,9 @@ padding: 8px 0;
 .quake-skill{
   position:absolute;
   right: 10px;
-  bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom) + (var(--side-ui-size) + var(--side-ui-gap)) * 4);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
+  bottom: calc(250px + env(safe-area-inset-bottom)); /* 번개보다 위 */
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   z-index: 60;
   border: 2px solid rgba(255,120,120,0.95);
@@ -450,9 +443,9 @@ padding: 8px 0;
 .bubble-skill{
   position:absolute;
   right: 10px;
-  bottom: calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom) + (var(--side-ui-size) + var(--side-ui-gap)) * 5);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
+  bottom: calc(360px + env(safe-area-inset-bottom)); /* 지진보다 위 */
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   z-index: 60;
   border: 2px solid rgba(160,240,255,0.95);
@@ -472,29 +465,29 @@ padding: 8px 0;
 #consumableQuickBar{
   position:absolute;
   left:10px;
-  bottom:calc(var(--side-ui-bottom-clearance) + env(safe-area-inset-bottom));
+  bottom:calc(10px + env(safe-area-inset-bottom));
   display:flex;
   flex-direction:column;
-  gap:var(--side-ui-gap);
+  gap:8px;
   z-index:61;
 }
 .consumable-quick-btn{
-  width:var(--side-ui-size);
-  min-height:var(--side-ui-size);
-  border-radius:14px;
+  width:58px;
+  min-height:46px;
+  border-radius:16px;
   border:2px solid rgba(124,231,255,0.92);
   background:linear-gradient(to bottom, rgba(22,40,58,0.96), rgba(5,12,18,0.96));
   color:#fff;
   box-shadow:0 10px 26px rgba(0,0,0,0.45);
   font-weight:900;
-  font-size:10px;
+  font-size:11px;
   line-height:1.1;
-  padding:4px 3px;
+  padding:6px 4px;
   touch-action:manipulation;
 }
 .consumable-quick-btn:active{ transform: translateY(1px) scale(0.985); }
 .consumable-quick-btn[disabled]{ opacity:0.42; filter:grayscale(0.25); }
-.consumable-quick-btn .qk-top{ display:block; font-size:14px; margin-bottom:2px; }
+.consumable-quick-btn .qk-top{ display:block; font-size:16px; margin-bottom:2px; }
 .consumable-quick-btn .qk-count{ display:block; font-size:10px; color:#bfe9ff; margin-top:2px; }
 
 body.title-mode #consumableQuickBar,
@@ -505,7 +498,7 @@ body.dead-mode #consumableQuickBar{
 
 @media (min-width: 700px){
   #consumableQuickBar{ left:12px; }
-  .consumable-quick-btn{ width:var(--side-ui-size); min-height:var(--side-ui-size); }
+  .consumable-quick-btn{ width:64px; min-height:48px; }
 }
 
     .ui-btn {
@@ -677,18 +670,21 @@ body.tutorial-mode #pauseBtn{
   padding: 0 9px;
 }
 #gameContainer.compact-ui #consumableQuickBar{
-  gap: var(--side-ui-gap);
+  gap: 6px;
 }
 #gameContainer.compact-ui .consumable-quick-btn{
-  width: 44px;
-  min-height: 44px;
-  font-size: 9px;
-  padding: 4px 3px;
+  width: 52px;
+  min-height: 42px;
+  font-size: 10px;
+  padding: 5px 3px;
 }
 #gameContainer.compact-ui .consumable-quick-btn .qk-top{
-  font-size: 13px;
+  font-size: 14px;
 }
-#gameContainer.compact-ui .laser-skill,
+#gameContainer.compact-ui .laser-skill{
+  width: 70px;
+  height: 70px;
+}
 #gameContainer.compact-ui .bubble-skill,
 #gameContainer.compact-ui .blizzard-skill,
 #gameContainer.compact-ui .meteor-skill,
@@ -715,14 +711,17 @@ body.tutorial-mode #pauseBtn{
   padding: 0 7px;
 }
 #gameContainer.ultra-compact-ui .consumable-quick-btn{
-  width: 40px;
-  min-height: 40px;
-  font-size: 8px;
+  width: 48px;
+  min-height: 38px;
+  font-size: 9px;
 }
 #gameContainer.ultra-compact-ui .consumable-quick-btn .qk-top{
   font-size: 13px;
 }
-#gameContainer.ultra-compact-ui .laser-skill,
+#gameContainer.ultra-compact-ui .laser-skill{
+  width: 64px;
+  height: 64px;
+}
 #gameContainer.ultra-compact-ui .bubble-skill,
 #gameContainer.ultra-compact-ui .blizzard-skill,
 #gameContainer.ultra-compact-ui .meteor-skill,
@@ -889,12 +888,11 @@ body.tutorial-mode #pauseBtn{
         #expText { font-size: 12px; right: auto; padding: 0 6px; }
     }
 #laserSkillBtn {
-  font-size: 12px;
-  padding: 0;
-  min-width: var(--side-ui-size);
-  width: var(--side-ui-size);
-  height: var(--side-ui-size);
-  border-radius: 999px;
+  font-size: 12px;      /* 글자 크기 */
+  padding: 8px 10px;    /* 버튼 크기 */
+  min-width: 75px;      /* 버튼 최소 폭 */
+  height: 40px;         /* 높이 고정 */
+  border-radius: 30px;  /* 둥글기 */
 }
 
 /* ===============================
@@ -1735,315 +1733,7 @@ const hotTimeEl = document.getElementById('hotTimeText');
 const goldEl = document.getElementById('goldText');
 const hpEl = document.getElementById('hpText');
 let __lastExpBarPercent = 0;
-let canvasExpHudRect = null;
-let canvasTopHudRects = { settings: null };
-let canvasExpAnimFrom = 0;
-let canvasExpAnimTo = 0;
-let canvasExpAnimElapsed = 2000;
-let canvasDisplayedExpPercent = 0;
-const CANVAS_EXP_ANIM_MS = 1300;
 
-function drawCanvasTopHud() {
-  const uiScale = Math.max(0.58, Math.min(1, Number(document.documentElement.style.getPropertyValue('--canvas-scale')) || 1));
-  const sidePad = Math.max(10, Math.round(width * 0.025));
-  const topPad = Math.max(10, Math.round(10 * uiScale));
-  const panelH = Math.max(58, Math.min(92, Math.round(74 * uiScale)));
-  const settingsW = Math.max(34, Math.round(36 * uiScale));
-  const settingsH = Math.max(28, Math.round(30 * uiScale));
-  const settingsGap = Math.max(8, Math.round(8 * uiScale));
-  const panelW = Math.max(220, width - sidePad * 2 - settingsW - settingsGap);
-  const panelX = sidePad;
-  const panelY = topPad;
-  const settingsX = panelX + panelW + settingsGap;
-  const settingsY = panelY;
-
-  if (state === 'title') {
-    canvasTopHudRects = {
-      settings: { x: settingsX, y: settingsY, w: settingsW, h: settingsH }
-    };
-    return;
-  }
-  const leftX = panelX + Math.max(10, Math.round(12 * uiScale));
-  const rightX = panelX + panelW - Math.max(10, Math.round(12 * uiScale));
-  const line1Y = panelY + Math.max(16, Math.round(18 * uiScale));
-  const line2Y = panelY + Math.max(34, Math.round(38 * uiScale));
-  const line3Y = panelY + Math.max(52, Math.round(58 * uiScale));
-
-  const showScoreUI = (gameMode === 'infinite' || gameMode === 'itempark' || gameMode === 'minigame');
-  let scoreText = '';
-  let highScoreText = '';
-  if (gameMode === 'infinite') {
-    scoreText = `사냥 ${formatNumber(score)}`;
-    highScoreText = `거리 ${formatNumber(getInfiniteDistanceScore())}`;
-  } else if (gameMode === 'itempark') {
-    scoreText = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
-    highScoreText = `EXP ${formatNumber(itemParkState.expGained || 0)}`;
-  } else if (gameMode === 'minigame') {
-    scoreText = `점수 ${formatNumber(miniGameState.score || 0)}`;
-    highScoreText = `콤보 x${formatNumber(miniGameState.combo || 0)}`;
-  } else {
-    scoreText = `점수 ${formatNumber(score)}`;
-    highScoreText = `최고 ${formatNumber(saveData.highScore || 0)}`;
-  }
-
-  let stageText = '';
-  if (gameMode === 'dungeon') {
-    stageText = (state === 'playing') ? `던전 ${dungeonState.tier}단계 · ${formatMMSS(dungeonState.timeLeft)}` : `던전 ${dungeonState.tier}단계`;
-  } else if (gameMode === 'itempark') {
-    const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
-    stageText = `아이템 파크 · 남은 ${left}회`;
-  } else if (gameMode === 'minigame') {
-    const left = Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0));
-    stageText = `미니게임 · ${getMiniGameTypeLabel(miniGameState.type)} · ${left}회`;
-  } else if (gameMode === 'stage') {
-    const t = getStageKillTarget(stage);
-    const k = Math.max(0, Math.floor(stageRunKillCount || 0));
-    const b = (isBossStage(stage) ? Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0))) : 0);
-    stageText = isBossStage(stage)
-      ? `스테이지 ${stage} · 몬스터 ${k}/${t} · 보스 ${b}/1`
-      : `스테이지 ${stage} · 몬스터 ${k}/${t}`;
-  } else {
-    stageText = (gameMode === 'infinite' ? '무한 · ' : '') + `스테이지 ${stage}`;
-  }
-
-  let hotText = '일반 EXP';
-  let hotColor = '#aaaaaa';
-  if (gameMode === 'dungeon') {
-    hotText = '던전 EXP';
-    hotColor = '#44ffb8';
-  } else if (gameMode === 'itempark') {
-    hotText = `아이템 파크 · ${formatMMSS(itemParkState.timeLeft || 0)}`;
-    hotColor = '#7ce7ff';
-  } else if (gameMode === 'minigame') {
-    hotText = `미니게임 · ${formatMMSS(miniGameState.timeLeft || 0)} · ${formatNumber(miniGameState.combo || 0)}콤보`;
-    hotColor = '#ffcc66';
-  } else {
-    const m = getHotMultiplier();
-    if (m === 3) {
-      hotText = '핫타임 EXP 3배';
-      hotColor = '#ffd700';
-    } else if (m === 2) {
-      hotText = '핫타임 EXP 2배';
-      hotColor = '#ff8844';
-    }
-    if (gameMode === 'infinite') {
-      const parts = [];
-      if (isInfiniteItemEffectActive('magnet')) parts.push(`🧲${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleShot')) parts.push(`✌️${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-      if (isInfiniteItemEffectActive('dash')) parts.push(`💨${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleScore')) parts.push(`💯${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
-      if (parts.length) {
-        hotText += ' · ' + parts.join(' · ');
-        hotColor = '#7ce7ff';
-      }
-    }
-  }
-
-  ctx.save();
-  ctx.textBaseline = 'middle';
-
-  ctx.fillStyle = 'rgba(0,0,0,0.34)';
-  roundRectPath(ctx, panelX, panelY + Math.max(2, Math.round(2 * uiScale)), panelW, panelH, Math.max(10, Math.round(14 * uiScale)));
-  ctx.fill();
-
-  const bgGrad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-  bgGrad.addColorStop(0, 'rgba(14,20,34,0.84)');
-  bgGrad.addColorStop(1, 'rgba(8,10,20,0.68)');
-  ctx.fillStyle = bgGrad;
-  roundRectPath(ctx, panelX, panelY, panelW, panelH, Math.max(10, Math.round(14 * uiScale)));
-  ctx.fill();
-  ctx.lineWidth = Math.max(1.2, Math.round(1.6 * uiScale));
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  roundRectPath(ctx, panelX, panelY, panelW, panelH, Math.max(10, Math.round(14 * uiScale)));
-  ctx.stroke();
-
-  const leftMainFont = fontStr(Math.max(12, Math.min(20, Math.round(16 * uiScale))), 'bold');
-  const leftSubFont = fontStr(Math.max(10, Math.min(16, Math.round(12 * uiScale))), 'bold');
-  const rightMainFont = fontStr(Math.max(12, Math.min(19, Math.round(15 * uiScale))), 'bold');
-  const bottomFont = fontStr(Math.max(10, Math.min(15, Math.round(12 * uiScale))), 'bold');
-
-  ctx.textAlign = 'left';
-  ctx.font = leftMainFont;
-  ctx.lineWidth = Math.max(2, Math.round(3 * uiScale));
-  ctx.strokeStyle = 'rgba(0,0,0,0.74)';
-  ctx.fillStyle = '#ffffff';
-  if (showScoreUI) {
-    ctx.strokeText(scoreText, leftX, line1Y);
-    ctx.fillText(scoreText, leftX, line1Y);
-    ctx.font = leftSubFont;
-    ctx.fillStyle = '#ffeeaa';
-    ctx.strokeText(highScoreText, leftX, line2Y);
-    ctx.fillText(highScoreText, leftX, line2Y);
-  }
-
-  ctx.font = bottomFont;
-  ctx.fillStyle = hotColor;
-  ctx.strokeText(hotText, leftX, line3Y);
-  ctx.fillText(hotText, leftX, line3Y);
-
-  ctx.textAlign = 'right';
-  ctx.font = rightMainFont;
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(stageText, rightX, line1Y);
-  ctx.fillText(stageText, rightX, line1Y);
-
-  ctx.font = leftSubFont;
-  ctx.fillStyle = '#ffd86b';
-  const goldText = `골드 ${formatNumber(gold)}`;
-  ctx.strokeText(goldText, rightX, line2Y);
-  ctx.fillText(goldText, rightX, line2Y);
-
-  ctx.restore();
-
-  canvasTopHudRects = {
-    settings: { x: settingsX, y: settingsY, w: settingsW, h: settingsH }
-  };
-}
-
-
-function roundRectPath(ctx, x, y, w, h, r) {
-  const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
-
-function updateCanvasExpAnimation(dt = 16) {
-  const prog = getLevelProgress(exp, level);
-  const targetPercent = Math.max(0, Math.min(100, Number(prog.percent || 0)));
-
-  if (!Number.isFinite(canvasDisplayedExpPercent)) canvasDisplayedExpPercent = targetPercent;
-  if (!Number.isFinite(canvasExpAnimTo)) canvasExpAnimTo = targetPercent;
-
-  if (Math.abs(targetPercent - canvasExpAnimTo) > 0.001) {
-    canvasExpAnimFrom = canvasDisplayedExpPercent;
-    canvasExpAnimTo = targetPercent;
-    canvasExpAnimElapsed = 0;
-  }
-
-  if (canvasExpAnimElapsed < CANVAS_EXP_ANIM_MS) {
-    canvasExpAnimElapsed = Math.min(CANVAS_EXP_ANIM_MS, canvasExpAnimElapsed + Math.max(0, Number(dt) || 0));
-    const t = CANVAS_EXP_ANIM_MS <= 0 ? 1 : (canvasExpAnimElapsed / CANVAS_EXP_ANIM_MS);
-    canvasDisplayedExpPercent = canvasExpAnimFrom + (canvasExpAnimTo - canvasExpAnimFrom) * t;
-  } else {
-    canvasDisplayedExpPercent = canvasExpAnimTo;
-  }
-}
-
-function drawCanvasBottomExpHud() {
-  const prog = getLevelProgress(exp, level);
-  const targetPercent = Math.max(0, Math.min(100, Number(prog.percent || 0)));
-  const percent = Math.max(0, Math.min(100, Number(canvasDisplayedExpPercent)));
-  const uiScale = Math.max(0.58, Math.min(1, Number(document.documentElement.style.getPropertyValue('--canvas-scale')) || 1));
-  const sidePad = Math.max(12, Math.round(width * 0.04));
-  const bottomPad = Math.max(10, Math.round(10 * uiScale));
-  const barH = Math.max(18, Math.min(28, Math.round(24 * uiScale)));
-  const barW = Math.max(180, width - sidePad * 2);
-  const barX = Math.round((width - barW) / 2);
-  const barY = Math.round(height - bottomPad - barH);
-  const infoY = Math.round(barY - Math.max(18, Math.round(22 * uiScale)));
-  const labelW = Math.max(50, Math.min(68, Math.round(58 * uiScale)));
-  const labelGap = Math.max(2, Math.round(2 * uiScale));
-  const innerPad = Math.max(2, Math.round(2 * uiScale));
-  const fillStartX = barX + labelW + labelGap;
-  const fillAvailW = Math.max(0, barW - labelW - labelGap);
-  const fillW = fillAvailW <= 0 || percent <= 0 ? 0 : Math.min(fillAvailW, Math.round((fillAvailW * percent) / 100));
-
-  const nn = (saveData.nickname || 'PLAYER').trim() || 'PLAYER';
-  const petEqCount = state === 'title' ? 0 : getEquippedPetList().length;
-  const infoText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
-  const expText = `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${targetPercent.toFixed(level >= 200 ? 3 : 2)}%]`;
-
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  ctx.font = fontStr(Math.max(12, Math.min(20, Math.round(18 * uiScale))), 'bold');
-  ctx.lineWidth = Math.max(3, Math.round(4 * uiScale));
-  ctx.strokeStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(infoText, width / 2, infoY);
-  ctx.fillText(infoText, width / 2, infoY);
-
-  const shadowY = barY + Math.max(2, Math.round(2 * uiScale));
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.fillRect(barX, shadowY, barW, barH);
-
-  const glassGrad = ctx.createLinearGradient(0, barY, 0, barY + barH);
-  glassGrad.addColorStop(0, 'rgba(255,255,255,0.26)');
-  glassGrad.addColorStop(0.16, 'rgba(190,220,255,0.14)');
-  glassGrad.addColorStop(0.48, 'rgba(120,150,190,0.08)');
-  glassGrad.addColorStop(1, 'rgba(255,255,255,0.18)');
-  ctx.fillStyle = glassGrad;
-  ctx.fillRect(barX, barY, barW, barH);
-
-  ctx.fillStyle = 'rgba(255,255,255,0.16)';
-  ctx.fillRect(barX + innerPad, barY + innerPad, barW - innerPad * 2, Math.max(2, Math.round(barH * 0.28)));
-
-  if (fillW > 0) {
-    const fillGrad = ctx.createLinearGradient(fillStartX, 0, fillStartX + fillAvailW, 0);
-    fillGrad.addColorStop(0, 'rgba(49,224,109,0.98)');
-    fillGrad.addColorStop(0.45, 'rgba(47,210,95,0.98)');
-    fillGrad.addColorStop(1, 'rgba(104,255,156,0.98)');
-    ctx.fillStyle = fillGrad;
-    ctx.fillRect(fillStartX, barY, fillW, barH);
-    ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.fillRect(fillStartX, barY + innerPad, fillW, Math.max(2, Math.round(barH * 0.28)));
-  }
-
-  const labelGrad = ctx.createLinearGradient(0, barY, 0, barY + barH);
-  labelGrad.addColorStop(0, 'rgba(21,128,61,0.98)');
-  labelGrad.addColorStop(1, 'rgba(11,93,42,0.98)');
-  ctx.fillStyle = labelGrad;
-  ctx.fillRect(barX, barY, labelW, barH);
-
-  ctx.lineWidth = Math.max(1.4, Math.round(2 * uiScale));
-  ctx.strokeStyle = 'rgba(0,0,0,0.88)';
-  ctx.strokeRect(barX, barY, barW, barH);
-  ctx.strokeRect(barX, barY, labelW, barH);
-
-  ctx.beginPath();
-  ctx.moveTo(fillStartX + 0.5, barY + 1);
-  ctx.lineTo(fillStartX + 0.5, barY + barH - 1);
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.font = fontStr(Math.max(10, Math.min(16, Math.round(13 * uiScale))), 'bold');
-  ctx.lineWidth = Math.max(2, Math.round(3 * uiScale));
-  ctx.strokeStyle = 'rgba(0,0,0,0.82)';
-  ctx.fillStyle = '#eaffea';
-  ctx.strokeText('EXP', barX + labelW / 2, barY + barH / 2);
-  ctx.fillText('EXP', barX + labelW / 2, barY + barH / 2);
-
-  const textCenterX = fillStartX + fillAvailW / 2;
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(expText, textCenterX, barY + barH / 2);
-  ctx.fillText(expText, textCenterX, barY + barH / 2);
-  ctx.restore();
-
-  canvasExpHudRect = { x: barX, y: barY, w: barW, h: barH };
-}
-
-function handleCanvasBottomHudTap(pos) {
-  if (!pos || !canvasExpHudRect) return false;
-  const hit = pos.x >= canvasExpHudRect.x && pos.x <= canvasExpHudRect.x + canvasExpHudRect.w && pos.y >= canvasExpHudRect.y && pos.y <= canvasExpHudRect.y + canvasExpHudRect.h;
-  if (!hit) return false;
-  if (state === 'title') return false;
-  try { openExpTableModal(); } catch (e) {}
-  return true;
-}
-
-
-function syncCanvasOnlyHudVisibility() {
-  const hud = document.getElementById('hud');
-  if (!hud) return;
-  hud.classList.add('canvas-hud-only');
-}
 
 function applyResponsiveUiDensity() {
   const container = document.getElementById('gameContainer');
@@ -2052,8 +1742,6 @@ function applyResponsiveUiDensity() {
   const vh = Math.max(480, window.innerHeight || 0);
   const compact = vw <= 430 || vh <= 760;
   const ultraCompact = vw <= 390 || vh <= 700;
-
-  syncCanvasOnlyHudVisibility();
 
   container.classList.toggle('compact-ui', compact);
   container.classList.toggle('ultra-compact-ui', ultraCompact);
@@ -5048,26 +4736,20 @@ function saveGameDataDebounced() {
 // - 스테이지/펫/점수/레벨/경험치/퀘스트 등 saveData 전체 저장
 // ===============================
 function buildBackupPayload() {
+  // 현재 런의 exp/level, 설정값 등을 saveData에 반영 후 저장
   try { saveGameData(); } catch (e) {}
 
-  let dataObj = {};
-  const activeKey = getCurrentSaveStorageKey();
-
+let dataObj = {};
   try {
-    let raw = localStorage.getItem(activeKey);
-    if (!raw && activeKey !== LOCAL_STORAGE_KEY) {
-      raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    }
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) dataObj = JSON.parse(raw);
-  } catch (e) {
-    dataObj = {};
-  }
+  } catch (e) { dataObj = {}; }
 
   return {
     __slimeShooterBackup: 1,
-    storageKey: activeKey,
-    characterId: currentCharacterId || null,
-    nickname: (saveData.nickname || 'PLAYER').trim() || 'PLAYER',
+    storageKey: getCurrentSaveStorageKey(),
+    characterId: currentCharacterId,
+    nickname: saveData.nickname || 'PLAYER',
     savedAt: Date.now(),
     data: dataObj
   };
@@ -5124,6 +4806,7 @@ function doBackup() {
 }
 
 function applyRestoreObject(obj) {
+  // obj는 saveData 전체거나, {data: saveData} 래퍼일 수 있음
   let data = obj;
 
   if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.data && typeof obj.data === 'object') {
@@ -5132,37 +4815,33 @@ function applyRestoreObject(obj) {
 
   if (!data || typeof data !== 'object') throw new Error('invalid');
 
+  // 최소 검증(완전한 스키마 강제는 안 함: 버전 호환 위해)
+  // exp/level이 숫자가 아니면 0/1로 보정
   if (typeof data.exp !== 'number' || !isFinite(data.exp)) data.exp = 0;
   if (typeof data.level !== 'number' || !isFinite(data.level)) data.level = 1;
-  if (typeof data.nickname !== 'string') data.nickname = 'PLAYER';
 
-  const targetKey = getCurrentSaveStorageKey();
-  localStorage.setItem(targetKey, JSON.stringify(data));
-
-  saveData = { ...saveData, ...data };
-  saveData.quests = { ...(saveData.quests || {}), ...(data.quests || {}) };
-
-  exp = Number(saveData.exp || 0) || 0;
-  level = getLevelFromExp(exp);
-  gold = Number(saveData.gold || 0) || 0;
-  bgmEnabled = !!saveData.bgmEnabled;
-  sfxEnabled = !!saveData.sfxEnabled;
-
-  try { updateCharacterMetaSnapshot(); } catch (e) {}
-  try { updateSettingsUI(); } catch (e) {}
-  try { applyFont(saveData.fontKey); } catch (e) {}
+  localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
 }
 
 function doRestoreFromText(jsonText, metaLabel) {
+  // metaLabel: '파일' | '코드' 등 표시용
   const obj = JSON.parse(jsonText);
-  try {
-    applyRestoreObject(obj);
-    alert('복원 완료! 바로 적용할게요.');
-    location.reload();
-  } catch (e) {
-    console.error(e);
-    alert('복원 적용 중 오류가 발생했어요. 백업 데이터가 현재 버전과 호환되는지 확인해주세요.');
-  }
+
+  // ✅ 미리보기 띄우고, 확인 시에만 실제 적용
+  showRestorePreview(obj, {
+    source: metaLabel || '복원 데이터',
+    size: (jsonText && jsonText.length) ? jsonText.length : null
+  }, () => {
+    try {
+      applyRestoreObject(obj);
+
+      // 바로 반영하려면 새로고침이 가장 안전
+      alert('복원 완료! 새로고침 후 적용됩니다.');
+      location.reload();
+    } catch (e) {
+      alert('복원 적용 중 오류가 발생했어요. 백업 데이터가 현재 버전과 호환되는지 확인해주세요.');
+    }
+  });
 }
 
 
@@ -5517,7 +5196,7 @@ function anyBlockingModalOpen() {
 
 // UI 레이아웃(매 프레임 계산)
 function getCanvasSettingsLayout() {
-  const icon = canvasTopHudRects && canvasTopHudRects.settings ? { ...canvasTopHudRects.settings } : { x: width - 44, y: 10, w: 34, h: 30 };
+  const icon = { x: width - 44, y: 10, w: 34, h: 30 };
   const panel = { x: 60, y: 70, w: 360, h: 500 };
   const rowH = 40;
   const pad = 16;
@@ -5561,7 +5240,9 @@ function syncTitleButtonsForCanvasSettings() {
 }
 
 function handleCanvasSettingsInput(pos) {
-  // 모달 겹침 방지
+  // ✅ [v.57.1] 캔버스 설정(⚙) 기능 비활성화
+  return false;
+// 모달 겹침 방지
   if (anyBlockingModalOpen()) return false;
 
   const { icon, rows } = getCanvasSettingsLayout();
@@ -7907,7 +7588,7 @@ questList.appendChild(div);
 function syncPauseButtonPosition() {
   if (!pauseBtn || !canvas) return;
   const canvasTop = Number(canvas.offsetTop || 0);
-  pauseBtn.style.top = `${canvasTop + 168}px`;
+  pauseBtn.style.top = `${canvasTop + 8}px`;
   pauseBtn.style.right = '8px';
 }
 
@@ -8675,7 +8356,6 @@ const t = e.changedTouches[0];
 
   if (handleCanvasSettingsInput(pos)) return;
   if (handleMiniGameTapAt(pos.x, pos.y)) return;
-  if (handleCanvasBottomHudTap(pos)) return;
 
   // 일시정지 중에는 입력 무시
   if (isPaused) return;
@@ -8763,7 +8443,6 @@ canvas.addEventListener('mousedown', (e) => {
   const pos = getCanvasPos(e.clientX, e.clientY);
   if (handleCanvasSettingsInput(pos)) return;
   if (handleMiniGameTapAt(pos.x, pos.y)) return;
-  if (handleCanvasBottomHudTap(pos)) return;
 });
 
 function getCanvasPos(clientX, clientY) {
@@ -15077,10 +14756,6 @@ function drawTitleScreen() {
     ctx.font = fontStr(compactTitle ? 14 : 16);
     ctx.fillText(`(누적 EXP: ${formatNumber(saveData.exp)})`, width/2, levelBaseY + (compactTitle ? 24 : 28));
 
-    ctx.fillStyle = '#dff7ff';
-    ctx.font = fontStr(compactTitle ? 13 : 15, 'bold');
-    ctx.fillText(`닉네임: ${(saveData.nickname || 'PLAYER').trim() || 'PLAYER'}`, width/2, levelBaseY + (compactTitle ? 48 : 54));
-
 if (MAX_LEVEL === 250 && saveData.level >= 250) {
         ctx.save();
         ctx.textAlign = 'center';
@@ -15226,7 +14901,6 @@ requestAnimationFrame(gameLoop);
   if (!lastTime) lastTime = timestamp;
   const dt = timestamp - lastTime;
   lastTime = timestamp;
-  updateCanvasExpAnimation(dt);
 
   // 배경은 항상
   drawBackground();
@@ -15235,12 +14909,10 @@ requestAnimationFrame(gameLoop);
     // 타이틀 화면
     drawTitleSlimes(dt, timestamp);
     drawTitleScreen();
-    drawCanvasTopHud();
-    drawCanvasBottomExpHud();
-    drawCanvasSettingsUI();
     // ✅ 튜토리얼(최초 1회)
     if (!tutorialActive) maybeShowFirstTutorial();
     drawTutorialOverlay();
+    /* canvas settings disabled */
   } else {
     if (isPaused) {
       lastTime = timestamp;
@@ -15297,9 +14969,8 @@ requestAnimationFrame(gameLoop);
     drawTutorialOverlay();
 
     drawInfiniteBossCountdown();
-    drawCanvasTopHud();
-    drawCanvasBottomExpHud();
-    drawCanvasSettingsUI();
+
+    /* canvas settings disabled */
 
     if (stageCleared && state === 'playing' && !(stageClearSeq && stageClearSeq.active)) drawStageClearOverlay();
     if (isPaused) {
