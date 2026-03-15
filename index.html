@@ -18,6 +18,13 @@ padding: 0;
   /* 기본(아이폰 포함) 시스템 폰트 */
   --game-font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --canvas-scale: 1;
+  --hud-font-scale: 1;
+  --settings-btn-font: 11px;
+  --settings-btn-pad-y: 4px;
+  --settings-btn-pad-x: 8px;
+  --player-compact-font: 22px;
+  --exp-label-font: 16px;
+  --exp-text-font: 15px;
 }
 
 body {
@@ -58,7 +65,7 @@ padding: 8px 0;
         background: rgba(0, 0, 0, 0.7);
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        font-size: 16px;
+        font-size: calc(16px * var(--hud-font-scale));
         display: flex;
         flex-direction: column; /* 세로 정렬로 변경 */
         gap: 6px;
@@ -78,7 +85,7 @@ padding: 8px 0;
     #playerCompactText {
         display: inline-block;
         max-width: 100%;
-        font-size: 22px;
+        font-size: var(--player-compact-font);
         font-weight: 900;
         color: #ffffff;
         letter-spacing: -0.4px;
@@ -154,7 +161,7 @@ padding: 8px 0;
         color: #f5fffb;
         border: 1px solid rgba(255,255,255,0.52);
         border-right: none;
-        font-size: 16px;
+        font-size: var(--exp-label-font);
         font-weight: 900;
         letter-spacing: -0.5px;
         line-height: 1;
@@ -202,7 +209,7 @@ padding: 8px 0;
     max-width: none;
     padding: 0 8px;
     box-sizing: border-box;
-    font-size: 15px;
+    font-size: var(--exp-text-font);
     font-weight: 900;
     color: #f7fffb;
 
@@ -641,6 +648,137 @@ body.dead-mode #pauseBtn,
 body.tutorial-mode #pauseBtn{
     display:none !important;
 }
+
+#gameContainer.compact-ui #hud{
+  padding: 6px 8px;
+  gap: 4px;
+}
+#gameContainer.compact-ui #hudTop{
+  margin-top: 4px;
+}
+#gameContainer.compact-ui #playerCompactText{
+  letter-spacing: -0.5px;
+}
+#gameContainer.compact-ui #settingsBar{
+  gap: 3px;
+}
+#gameContainer.compact-ui #settingsBar #fontSelect{
+  max-width: 98px;
+}
+#gameContainer.compact-ui #expLabel{
+  min-width: 50px;
+  padding: 0 9px;
+}
+#gameContainer.compact-ui #consumableQuickBar{
+  gap: 6px;
+}
+#gameContainer.compact-ui .consumable-quick-btn{
+  width: 52px;
+  min-height: 42px;
+  font-size: 10px;
+  padding: 5px 3px;
+}
+#gameContainer.compact-ui .consumable-quick-btn .qk-top{
+  font-size: 14px;
+}
+#gameContainer.compact-ui .laser-skill{
+  width: 70px;
+  height: 70px;
+}
+#gameContainer.compact-ui .bubble-skill,
+#gameContainer.compact-ui .blizzard-skill,
+#gameContainer.compact-ui .meteor-skill,
+#gameContainer.compact-ui .lightning-skill,
+#gameContainer.compact-ui .quake-skill{
+  width: 44px;
+  height: 44px;
+}
+#gameContainer.ultra-compact-ui #hud{
+  padding: 5px 7px;
+  gap: 3px;
+}
+#gameContainer.ultra-compact-ui #settingsBar{
+  gap: 2px;
+}
+#gameContainer.ultra-compact-ui #settingsBar #fontSelect{
+  max-width: 88px;
+}
+#gameContainer.ultra-compact-ui .ui-btn{
+  border-radius: 3px;
+}
+#gameContainer.ultra-compact-ui #expLabel{
+  min-width: 44px;
+  padding: 0 7px;
+}
+#gameContainer.ultra-compact-ui .consumable-quick-btn{
+  width: 48px;
+  min-height: 38px;
+  font-size: 9px;
+}
+#gameContainer.ultra-compact-ui .consumable-quick-btn .qk-top{
+  font-size: 13px;
+}
+#gameContainer.ultra-compact-ui .laser-skill{
+  width: 64px;
+  height: 64px;
+}
+#gameContainer.ultra-compact-ui .bubble-skill,
+#gameContainer.ultra-compact-ui .blizzard-skill,
+#gameContainer.ultra-compact-ui .meteor-skill,
+#gameContainer.ultra-compact-ui .lightning-skill,
+#gameContainer.ultra-compact-ui .quake-skill{
+  width: 40px;
+  height: 40px;
+}
+#confirmOverlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 180;
+  background: rgba(0,0,0,0.66);
+  pointer-events:auto;
+}
+#confirmOverlay .overlay-content{
+  width:min(84vw, 340px);
+  background: rgba(8,12,22,0.94);
+  border:2px solid rgba(255,138,138,0.72);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+}
+#confirmTitle{
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffd2d2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+#confirmMessage{
+  font-size: 14px;
+  color: #eef4ff;
+  line-height: 1.6;
+  text-align: center;
+}
+#confirmButtons{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+#confirmYesBtn,
+#confirmNoBtn{
+  width:100%;
+  max-width:240px;
+}
+#confirmYesBtn{
+  border-color:#ff8a8a;
+  color:#ffe8e8;
+  background: linear-gradient(to bottom, #5a2020, #2a0c0c);
+}
+#confirmNoBtn{
+  border-color:#7cff7c;
+  color:#dcffdc;
+}
+
 
 .hidden { display: none !important; }
 
@@ -1119,6 +1257,18 @@ body.tutorial-mode .quake-skill{
   </div>
 </div>
 
+<div id="confirmOverlay" class="overlay-screen hidden">
+  <div class="overlay-content">
+    <div id="confirmTitle">확인</div>
+    <div id="confirmMessage">정말 진행할까요?</div>
+    <div id="confirmButtons">
+      <button id="confirmYesBtn" class="ui-btn big-btn" type="button">예</button>
+      <button id="confirmNoBtn" class="ui-btn" type="button">아니오</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ✅ [v.89] 튜토리얼 오버레이 -->
 <div id="tutorialOverlay" class="hidden">
   <div id="tutorialBox">
@@ -1584,48 +1734,84 @@ const goldEl = document.getElementById('goldText');
 const hpEl = document.getElementById('hpText');
 let __lastExpBarPercent = 0;
 
+
+function applyResponsiveUiDensity() {
+  const container = document.getElementById('gameContainer');
+  if (!container) return;
+  const vw = Math.max(320, window.innerWidth || 0);
+  const vh = Math.max(480, window.innerHeight || 0);
+  const compact = vw <= 430 || vh <= 760;
+  const ultraCompact = vw <= 390 || vh <= 700;
+
+  container.classList.toggle('compact-ui', compact);
+  container.classList.toggle('ultra-compact-ui', ultraCompact);
+
+  document.documentElement.style.setProperty('--hud-font-scale', ultraCompact ? '0.84' : compact ? '0.90' : '1');
+  document.documentElement.style.setProperty('--settings-btn-font', ultraCompact ? '9px' : compact ? '10px' : '11px');
+  document.documentElement.style.setProperty('--settings-btn-pad-y', ultraCompact ? '3px' : '4px');
+  document.documentElement.style.setProperty('--settings-btn-pad-x', ultraCompact ? '6px' : compact ? '7px' : '8px');
+  document.documentElement.style.setProperty('--player-compact-font', ultraCompact ? '16px' : compact ? '18px' : '22px');
+  document.documentElement.style.setProperty('--exp-label-font', ultraCompact ? '13px' : compact ? '14px' : '16px');
+  document.documentElement.style.setProperty('--exp-text-font', ultraCompact ? '11px' : compact ? '12px' : '15px');
+}
+
+
 function fitCanvasToViewport() {
+  applyResponsiveUiDensity();
+
   const hud = document.getElementById('hud');
   const container = document.getElementById('gameContainer');
   const target = applyCanvasPreset();
 
-  // 여유(테두리/마진 감안)
-  const padding = 16;
+  const safeTop = 8;
+  const safeBottom = 10;
+  const sidePadding = 14;
 
-  // 사용 가능한 화면 크기
   const vw = Math.max(320, window.innerWidth);
   const vh = Math.max(480, window.innerHeight);
 
   const hudH = hud ? hud.getBoundingClientRect().height : 0;
-
-  // 캔버스 목표 비율(모바일 480x640 / 데스크톱 960x640)
   const aspect = target.width / target.height;
 
-  // 1) 가로 기준 최대 폭
-  let w = Math.min(target.width, vw - padding);
+  let w = Math.min(target.width, vw - sidePadding);
   let h = w / aspect;
 
-  // 2) HUD 때문에 세로가 부족하면 세로 기준으로 재계산
-  const availableH = vh - hudH - padding - 16;
+  const availableH = Math.max(220, vh - hudH - safeTop - safeBottom - 10);
   if (h > availableH) {
-    h = Math.max(240, availableH);
+    h = availableH;
     w = h * aspect;
   }
 
-  // CSS 표시 크기 조절
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
+  const minWidth = Math.min(vw - 8, 240);
+  if (w < minWidth) {
+    w = minWidth;
+    h = w / aspect;
+  }
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspect;
+  }
 
-  const uiScale = Math.max(0.72, Math.min(1, Math.min(w / target.width, h / target.height)));
+  canvas.style.width = `${Math.floor(w)}px`;
+  canvas.style.height = `${Math.floor(h)}px`;
 
-  // HUD/컨테이너도 같은 폭으로
-  if (hud) hud.style.maxWidth = `${w}px`;
+  const uiScale = Math.max(0.58, Math.min(1, Math.min(w / target.width, h / target.height)));
+
+  if (hud) {
+    hud.style.width = `${Math.floor(w)}px`;
+    hud.style.maxWidth = `${Math.floor(w)}px`;
+  }
   if (container) {
-    container.style.width = `${w}px`;
+    container.style.width = `${Math.floor(w)}px`;
+    container.style.maxWidth = `${Math.floor(w)}px`;
     container.style.setProperty('--canvas-scale', String(uiScale));
     container.dataset.canvasMode = target.mode;
   }
   document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
+
+  requestAnimationFrame(() => {
+    syncPauseButtonPosition();
+  });
 }
 
 function fitTextElementToWidth(el, maxPx, minPx = 10) {
@@ -1771,6 +1957,11 @@ const pauseBtn = document.getElementById('pauseBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseToTitleBtn = document.getElementById('pauseToTitleBtn');
+const confirmOverlay = document.getElementById('confirmOverlay');
+const confirmTitleEl = document.getElementById('confirmTitle');
+const confirmMessageEl = document.getElementById('confirmMessage');
+const confirmYesBtn = document.getElementById('confirmYesBtn');
+const confirmNoBtn = document.getElementById('confirmNoBtn');
 
 // Modals
 const questModal = document.getElementById('questModal');
@@ -7447,11 +7638,28 @@ function togglePause() {
   else pauseGame();
 }
 
-function exitGameFromTitle() {
+let pendingConfirmAction = null;
+
+function hideConfirmDialog() {
+  pendingConfirmAction = null;
+  if (confirmOverlay) confirmOverlay.classList.add('hidden');
+}
+
+function showConfirmDialog(message, onYes, title = '확인') {
+  pendingConfirmAction = typeof onYes === 'function' ? onYes : null;
+  if (confirmTitleEl) confirmTitleEl.textContent = title;
+  if (confirmMessageEl) confirmMessageEl.innerHTML = String(message || '').replace(/\n/g, '<br>');
+  if (confirmOverlay) confirmOverlay.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    try { confirmYesBtn && confirmYesBtn.focus(); } catch(e) {}
+  });
+}
+
+function closeGameWindow() {
   try {
     if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.close === 'function') {
       window.Telegram.WebApp.close();
-      return;
+      return true;
     }
   } catch(e) {}
   try {
@@ -7461,10 +7669,18 @@ function exitGameFromTitle() {
   try {
     if (history.length > 1) {
       history.back();
-      return;
+      return true;
     }
   } catch(e) {}
-  alert('이 환경에서는 창을 자동으로 닫지 못했습니다. 아이폰에서는 탭 닫기 또는 앱 나가기를 해주세요.');
+  return false;
+}
+
+function exitGameFromTitle() {
+  showConfirmDialog('게임을 종료하시겠습니까?', () => {
+    hideConfirmDialog();
+    if (closeGameWindow()) return;
+    alert('게임을 종료합니다. 만약 게임이 종료되지 않을 경우 탭 닫기 또는 앱 나가기를 해주시기 바랍니다.');
+  }, '게임 종료');
 }
 
 // ===== 모드 선택 =====
@@ -7485,7 +7701,36 @@ pauseBtn && pauseBtn.addEventListener('click', togglePause);
 window.addEventListener('resize', syncPauseButtonPosition);
 window.addEventListener('orientationchange', syncPauseButtonPosition);
 resumeBtn && resumeBtn.addEventListener('click', resumeGame);
-pauseToTitleBtn && pauseToTitleBtn.addEventListener('click', () => { resumeGame(); goToTitle(); });
+pauseToTitleBtn && pauseToTitleBtn.addEventListener('click', () => {
+  showConfirmDialog('게임을 종료하고 타이틀 화면으로 이동할까요?', () => {
+    hideConfirmDialog();
+    resumeGame();
+    goToTitle();
+  }, '타이틀 이동');
+});
+confirmYesBtn && confirmYesBtn.addEventListener('click', () => {
+  const action = pendingConfirmAction;
+  pendingConfirmAction = null;
+  if (confirmOverlay) confirmOverlay.classList.add('hidden');
+  if (typeof action === 'function') action();
+});
+confirmNoBtn && confirmNoBtn.addEventListener('click', hideConfirmDialog);
+confirmOverlay && confirmOverlay.addEventListener('click', (e) => {
+  if (e.target === confirmOverlay) hideConfirmDialog();
+});
+window.addEventListener('keydown', (e) => {
+  if (!confirmOverlay || confirmOverlay.classList.contains('hidden')) return;
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    hideConfirmDialog();
+  } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+    e.preventDefault();
+    const action = pendingConfirmAction;
+    pendingConfirmAction = null;
+    confirmOverlay.classList.add('hidden');
+    if (typeof action === 'function') action();
+  }
+});
 
 function openModeSelect() {
   // 타이틀에서 바로 모드 선택창
