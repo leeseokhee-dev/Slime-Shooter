@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.141.4)</title>
+<title>Slime Shooter - Ultimate Evolution (v.143.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400);700&family=Gowun+Dodum&display=swap" rel="stylesheet">
@@ -3585,17 +3585,17 @@ function breatheValue(t, speed = 2.2, amp = 0.04) {
 function formatNumber(n) { return n.toLocaleString('ko-KR'); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-const ELEMENT_ORDER = ['fire', 'ice', 'lightning', 'nature'];
+const ELEMENT_ORDER = ['fire', 'ice', 'sand', 'nature'];
 const ELEMENT_META = {
   fire:      { key:'fire',      name:'불',     icon:'🔥', color:'#ff8a65' },
   ice:       { key:'ice',       name:'얼음',   icon:'❄️', color:'#8fe3ff' },
-  lightning: { key:'lightning', name:'번개',   icon:'⚡', color:'#ffd54f' },
+  sand:      { key:'sand',      name:'모래',   icon:'🏜️', color:'#d8b56a' },
   nature:    { key:'nature',    name:'자연',   icon:'🌿', color:'#81c784' }
 };
 const ELEMENT_STRONG_AGAINST = {
   fire: 'nature',
-  nature: 'lightning',
-  lightning: 'ice',
+  nature: 'sand',
+  sand: 'ice',
   ice: 'fire'
 };
 
@@ -3604,7 +3604,7 @@ function sanitizeElementKey(raw) {
   if (ELEMENT_META[s]) return s;
   if (s === '불' || s === 'fire') return 'fire';
   if (s === '얼음' || s === 'ice') return 'ice';
-  if (s === '번개' || s === 'lightning' || s === 'electric') return 'lightning';
+  if (s === '모래' || s === 'sand' || s === 'desert' || s === 'dust' || s === '번개' || s === 'lightning' || s === 'electric') return 'sand';
   if (s === '자연' || s === 'nature' || s === 'grass') return 'nature';
   return 'fire';
 }
@@ -3628,9 +3628,24 @@ function getElementMultiplierText(mult) {
   if (mult <= 0.85) return 'RESIST';
   return '';
 }
+function getStageThemeElementKey(stg) {
+  const s = Math.max(1, Math.floor(Number(stg) || 1));
+  if (s <= 20) return 'nature';      // 초원
+  if (s <= 40) return 'sand';        // 사막
+  if (s <= 60) return 'ice';         // 빙하
+  if (s <= 80) return 'fire';        // 화산
+  return 'nature';                   // 우주
+}
 function getStageElementKey(stg, seed = 0) {
-  const idx = ((Math.floor((Math.max(1, stg) - 1) / 5) + seed) % ELEMENT_ORDER.length + ELEMENT_ORDER.length) % ELEMENT_ORDER.length;
-  return ELEMENT_ORDER[idx];
+  return getStageThemeElementKey(stg);
+}
+function getElementDarkColor(key) {
+  const k = sanitizeElementKey(key);
+  if (k === 'fire') return '#8a2b18';
+  if (k === 'ice') return '#1e88a8';
+  if (k === 'sand') return '#8d6b2f';
+  if (k === 'nature') return '#2f7a38';
+  return '#444444';
 }
 function drawElementBadge(x, y, elementKey, scale = 1) {
   const meta = getElementMeta(elementKey);
@@ -3706,7 +3721,7 @@ function getBulletPalette(elementKey, isEnemy = false) {
       ? { outer: '#7fe8ff', core: '#dffbff', glow: '#78dfff', highlight: '#ffffff' }
       : { outer: '#6fdcff', core: '#d8fbff', glow: '#8cecff', highlight: '#ffffff' };
   }
-  if (key === 'lightning') {
+  if (key === 'sand') {
     return isEnemy
       ? { outer: '#ffd83d', core: '#fff3a3', glow: '#ffd83d', highlight: '#ffffff' }
       : { outer: '#ffe15c', core: '#fff6b8', glow: '#ffd83d', highlight: '#ffffff' };
@@ -3792,7 +3807,7 @@ function spawnElementalHitEffect(x, y, elementKey, power = 1) {
     let color = meta.color;
     if (elementKey === 'fire' && i % 3 === 0) color = '#ffd3a8';
     else if (elementKey === 'ice' && i % 2 === 0) color = '#eaffff';
-    else if (elementKey === 'lightning' && i % 2 === 0) color = '#fff2ad';
+    else if (elementKey === 'sand' && i % 2 === 0) color = '#f7e2a8';
     else if (elementKey === 'nature' && i % 2 === 0) color = '#d8ffd8';
     particles.push({
       x, y,
@@ -3809,8 +3824,8 @@ function spawnElementalHitEffect(x, y, elementKey, power = 1) {
       for (let i = 0; i < 2; i++) particles.push({ x, y, vx: randRange(-1.2,1.2), vy: randRange(-2.4,-0.6), life: 200 + Math.random()*140, maxLife: 280, color: '#ffb36b', size: 3 + Math.random()*2 });
     } else if (elementKey === 'ice') {
       for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.2,1.2), w: 4 + Math.random()*3, h: 2 + Math.random()*2, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.25, life: 240 + Math.random()*140, maxLife: 360, color: '#bff7ff' });
-    } else if (elementKey === 'lightning') {
-      for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.5,1.5), w: 7 + Math.random()*4, h: 1.8, rot: (Math.random()*0.8 - 0.4), spin: (Math.random()-0.5)*0.18, life: 120 + Math.random()*90, maxLife: 210, color: '#ffe266' });
+    } else if (elementKey === 'sand') {
+      for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.5,1.5), w: 5 + Math.random()*4, h: 5 + Math.random()*3, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.12, life: 150 + Math.random()*120, maxLife: 240, color: '#dcb76c' });
     } else if (elementKey === 'nature') {
       for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.2,1.2), vy: randRange(-1.4,1.0), w: 4 + Math.random()*3, h: 7 + Math.random()*3, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.22, life: 220 + Math.random()*160, maxLife: 340, color: '#8fdc7f' });
     }
@@ -5088,8 +5103,8 @@ function promptElementKey(defaultKey = 'fire') {
   const cur = getElementMeta(defaultKey);
   const raw = prompt(
 `속성을 입력하세요.
-불 / 얼음 / 번개 / 자연
-영문(fire / ice / lightning / nature)도 가능합니다.`, cur.name);
+불 / 얼음 / 모래 / 자연
+영문(fire / ice / sand / nature)도 가능합니다.`, cur.name);
   if (raw === null) return null;
   return sanitizeElementKey(raw || defaultKey);
 }
@@ -12383,7 +12398,7 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
                             vx: Math.cos(ang) * speed,
                             vy: Math.sin(ang) * speed,
                             radius: 4,
-                            color: SLIME_COLORS[e.type].dark,
+                            color: getElementDarkColor(e.element || getStageElementKey(stage)),
                             element: sanitizeElementKey(e.element || getStageElementKey(stage)),
                             element: sanitizeElementKey(e.element || getStageElementKey(stage))
                         });
@@ -12395,7 +12410,7 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
                         vx: Math.cos(baseAngle) * (speed * 1.05),
                         vy: Math.sin(baseAngle) * (speed * 1.05),
                         radius: 4,
-                        color: SLIME_COLORS[e.type].dark,
+                        color: getElementDarkColor(e.element || getStageElementKey(stage)),
                         element: sanitizeElementKey(e.element || getStageElementKey(stage))
                     });
                 } else {
@@ -13207,6 +13222,7 @@ const LOW = isLowPower();
 }
 
 function drawTitleSlimes(dt, timestamp) {
+  return;
   const delta = dt ? dt / 16.67 : 1;
   const t = timestamp || Date.now();
 
@@ -13773,8 +13789,8 @@ ctx.restore();
 
 function drawEnemyShape(e) {
     const { type, x, y, size, hitTimer, hp, maxHp, isElite } = e;
-    const colorSet = SLIME_COLORS[type] || SLIME_COLORS['circle'];
     const elementMeta = getElementMeta(e.element || getStageElementKey(stage));
+    const elementDarkColor = getElementDarkColor(e.element || getStageElementKey(stage));
 
     drawElementAura(x, y, size * (isElite ? 1.15 : 0.95), e.element || getStageElementKey(stage), isElite ? 0.34 : 0.22);
     drawElementOrbitMotes(x, y, size * (isElite ? 1.18 : 1.02), e.element || getStageElementKey(stage), (x + y) * 0.01, isElite ? 4 : 3, isElite ? 1.1 : 0.95);
@@ -13804,9 +13820,9 @@ ctx.scale(1 / b, b);
     if (!bodyStyle) {
         const grad = ctx.createRadialGradient(-size*0.3, -size*0.3, size*0.2, 0, 0, size);
         grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.22, getElementMeta(e.element || getStageElementKey(stage)).color);
-        grad.addColorStop(0.45, colorSet.body);
-        grad.addColorStop(1, colorSet.dark);
+        grad.addColorStop(0.24, elementMeta.color);
+        grad.addColorStop(0.70, elementMeta.color);
+        grad.addColorStop(1, elementDarkColor);
         bodyStyle = grad;
     }
 
@@ -13943,22 +13959,15 @@ ctx.scale(1 / b, b);
         bossColorStop1 = bossElementMeta.color;
         if (boss.element === 'fire') bossColorStop2 = '#8a2b18';
         else if (boss.element === 'ice') bossColorStop2 = '#1e88a8';
-        else if (boss.element === 'lightning') bossColorStop2 = '#9a7a10';
+        else if (boss.element === 'sand') bossColorStop2 = '#8d6b2f';
         else if (boss.element === 'nature') bossColorStop2 = '#2f7a38';
     }
 
     // 그라데이션 본체
     const grad = ctx.createRadialGradient(-r*0.3, -r*0.4, r*0.2, 0, 0, r);
-    if (evoStage === 6) {
-        // 최종 보스: 검은 핵에 붉은 에너지가 감도는 느낌
-        grad.addColorStop(0, '#ff0000'); 
-        grad.addColorStop(0.4, '#330000'); 
-        grad.addColorStop(1, '#000000');
-    } else {
-        grad.addColorStop(0, '#ffffff'); 
-        grad.addColorStop(0.3, bossColorStop1); 
-        grad.addColorStop(1, bossColorStop2);
-    }
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.3, bossColorStop1);
+    grad.addColorStop(1, bossColorStop2);
 
     // 날개/장식 그리기 (뒤쪽)
     ctx.fillStyle = (evoStage === 4) ? '#220000' : (evoStage === 5 ? '#ccffff' : '#110000');
@@ -13998,8 +14007,8 @@ ctx.scale(1 / b, b);
     ctx.fill();
     
     // 테두리
-    ctx.lineWidth = 3; 
-    ctx.strokeStyle = evoStage === 6 ? '#ff0000' : 'rgba(255,255,255,0.5)'; 
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = bossElementMeta.color;
     ctx.stroke();
 
     // 장식 (왕관/헤일로)
@@ -14031,9 +14040,7 @@ ctx.scale(1 / b, b);
     
     // 눈동자
     let pupilColor = '#000000';
-    if (evoStage === 4) pupilColor = '#440044';
-    else if (evoStage === 5) pupilColor = '#00ffff';
-    else if (evoStage === 6) pupilColor = '#ff0000'; // 붉은 눈
+    if (boss.element) pupilColor = getElementDarkColor(boss.element);
 
     ctx.fillStyle = pupilColor;
     // 최종 보스는 세로 동공 (뱀눈)
@@ -15369,6 +15376,157 @@ drawEnemyShape = function(e) {
   } finally {
     stage = realStage;
   }
+};
+
+
+
+// ===== [v.142] 스테이지/타이틀 이미지 배경 + 자동 스크롤 =====
+const STAGE_BG_IMAGES = {
+  title: new Image(),
+  grassland: new Image(),
+  desert: new Image(),
+  glacier: new Image(),
+  volcano: new Image(),
+  space: new Image()
+};
+STAGE_BG_IMAGES.title.src = 'title.png';
+STAGE_BG_IMAGES.grassland.src = 'grassland.png';
+STAGE_BG_IMAGES.desert.src = 'desert.png';
+STAGE_BG_IMAGES.glacier.src = 'glacier.png';
+STAGE_BG_IMAGES.volcano.src = 'volcano.png';
+STAGE_BG_IMAGES.space.src = 'space.png';
+
+let stageBgScrollY = 0;
+let stageBgLastTick = 0;
+
+function getStageBackgroundImageByStage(stageNum) {
+  const s = Math.max(1, Number(stageNum) || 1);
+  if (s <= 20) return STAGE_BG_IMAGES.grassland;
+  if (s <= 40) return STAGE_BG_IMAGES.desert;
+  if (s <= 60) return STAGE_BG_IMAGES.glacier;
+  if (s <= 80) return STAGE_BG_IMAGES.volcano;
+  return STAGE_BG_IMAGES.space;
+}
+
+function getDungeonBackgroundImageByTier(tier) {
+  const t = Math.max(1, Math.min(5, Number(tier) || 1));
+  if (t === 1) return STAGE_BG_IMAGES.grassland;
+  if (t === 2) return STAGE_BG_IMAGES.desert;
+  if (t === 3) return STAGE_BG_IMAGES.glacier;
+  if (t === 4) return STAGE_BG_IMAGES.volcano;
+  return STAGE_BG_IMAGES.space;
+}
+
+function getCurrentBackgroundImage() {
+  if (state === 'title') return STAGE_BG_IMAGES.title;
+  if (gameMode === 'dungeon') return getDungeonBackgroundImageByTier(dungeonState?.tier || 1);
+  return getStageBackgroundImageByStage(stage);
+}
+
+function getBackgroundScrollSpeedPxPerSec() {
+  if (state === 'title') return 0;
+  if (gameMode === 'infinite') {
+    const speed = Number(infiniteDistanceSpeed || infiniteDistanceCurrentSpeed || getInfiniteDisplaySpeed?.() || 0);
+    return Math.max(20, speed * 1.35);
+  }
+  if (gameMode === 'dungeon') {
+    const tier = Math.max(1, Math.min(5, Number(dungeonState?.tier || 1)));
+    return 18 + (tier - 1) * 12;
+  }
+  return 16;
+}
+
+function drawCoverScrollingBackgroundImage(img, scrollY = 0) {
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+
+  const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+  const drawW = img.naturalWidth * scale;
+  const drawH = img.naturalHeight * scale;
+  const dx = (width - drawW) * 0.5;
+
+  if (!(drawH > 0)) return false;
+
+  const loopY = ((scrollY % drawH) + drawH) % drawH;
+  const startY = -loopY;
+
+  for (let y = startY; y < height; y += drawH) {
+    ctx.drawImage(img, dx, y, drawW, drawH);
+  }
+  if (startY > 0) {
+    ctx.drawImage(img, dx, startY - drawH, drawW, drawH);
+  }
+  return true;
+}
+
+const __origDrawBackgroundV142 = drawBackground;
+drawBackground = function() {
+  const now = performance.now();
+  if (!stageBgLastTick) stageBgLastTick = now;
+  const dtSec = Math.max(0, Math.min(0.05, (now - stageBgLastTick) / 1000));
+  stageBgLastTick = now;
+
+  const scrollSpeed = getBackgroundScrollSpeedPxPerSec();
+  if (state === 'playing' && scrollSpeed > 0) {
+    stageBgScrollY -= scrollSpeed * dtSec;
+  }
+
+  const bgImg = getCurrentBackgroundImage();
+  const drew = drawCoverScrollingBackgroundImage(bgImg, stageBgScrollY);
+  if (!drew) {
+    __origDrawBackgroundV142();
+    return;
+  }
+
+  if (state === 'title') {
+    ctx.save();
+    const topGrad = ctx.createLinearGradient(0, 0, 0, height * 0.65);
+    topGrad.addColorStop(0, 'rgba(0,0,0,0.14)');
+    topGrad.addColorStop(1, 'rgba(0,0,0,0.00)');
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    const bottomGrad = ctx.createLinearGradient(0, height * 0.35, 0, height);
+    bottomGrad.addColorStop(0, 'rgba(0,0,0,0.00)');
+    bottomGrad.addColorStop(1, 'rgba(0,0,0,0.36)');
+    ctx.fillStyle = bottomGrad;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+    return;
+  }
+
+  ctx.save();
+  const overlay = ctx.createLinearGradient(0, 0, 0, height);
+  overlay.addColorStop(0, 'rgba(0,0,0,0.08)');
+  overlay.addColorStop(0.55, 'rgba(255,255,255,0.02)');
+  overlay.addColorStop(1, 'rgba(0,0,0,0.14)');
+  ctx.fillStyle = overlay;
+  ctx.fillRect(0, 0, width, height);
+
+  if (gameMode === 'infinite') {
+    const flow = (((-stageBgScrollY) * 0.45) % (height + 160));
+    ctx.globalAlpha = 0.16;
+    for (let i = 0; i < 12; i++) {
+      const x = ((i + 1) * width) / 13;
+      const y = ((flow * (0.7 + i * 0.04)) % (height + 160)) - 160;
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(x - 1.5, y, 3, 140);
+    }
+  }
+
+  if (gameMode === 'volcano' || (gameMode !== 'dungeon' && stage >= 61 && stage <= 80)) {
+    ctx.globalAlpha = 0.05;
+    ctx.fillStyle = '#ff7a00';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  if ((gameMode === 'dungeon' && Number(dungeonState?.tier || 1) >= 5) || stage >= 81) {
+    const vignette = ctx.createRadialGradient(width/2, height/2, 100, width/2, height/2, Math.max(width, height) * 0.8);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, width, height);
+  }
+  ctx.restore();
 };
 
 loadGameData();
