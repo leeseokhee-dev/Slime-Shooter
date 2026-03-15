@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.142.0)</title>
+<title>Slime Shooter - Ultimate Evolution (v.142.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400);700&family=Gowun+Dodum&display=swap" rel="stylesheet">
@@ -1186,6 +1186,23 @@ body.tutorial-mode .quake-skill{
     </div>
 </div>
 
+<!-- 첫 시작 닉네임 입력 모달 -->
+<div id="initialNicknameModal" class="modal hidden" style="z-index:205; border-color:#ffd700;">
+    <div class="modal-header" style="color:#ffd700;">처음 시작하기</div>
+    <div class="modal-body" style="text-align:center; gap:12px;">
+        <div style="font-size:13px; color:#cfd6ff; line-height:1.6;">
+            처음 플레이를 환영합니다!<br>
+            게임에 사용할 닉네임을 먼저 입력해주세요.
+        </div>
+        <input id="initialNicknameInput" type="text" maxlength="12" placeholder="닉네임 입력"
+               style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background:rgba(255,255,255,0.08); color:#fff; font-size:16px; outline:none;">
+        <div style="font-size:12px; color:#9fb5ff; line-height:1.5;">
+            최대 12자까지 입력할 수 있어요.
+        </div>
+        <button id="initialNicknameConfirmBtn" class="ui-btn big-btn" style="width:100%;">확인</button>
+    </div>
+</div>
+
 <!-- 게임 오버 모달 -->
 <div id="gameOverUI" class="modal hidden" style="z-index: 155; border-color:#ff6b6b; max-width: 420px;">
     <div id="gameOverTitle" class="modal-header" style="color:#ff9b9b; text-shadow: 0 0 10px rgba(255,90,90,0.35);">GAME OVER</div>
@@ -1783,6 +1800,9 @@ const characterListEl = document.getElementById('characterList');
 const createCharacterBtn = document.getElementById('createCharacterBtn');
 const renameCurrentCharacterBtn = document.getElementById('renameCurrentCharacterBtn');
 const closeCharacterBtn = document.getElementById('closeCharacterBtn');
+const initialNicknameModal = document.getElementById('initialNicknameModal');
+const initialNicknameInput = document.getElementById('initialNicknameInput');
+const initialNicknameConfirmBtn = document.getElementById('initialNicknameConfirmBtn');
 const shopListEl = document.getElementById('shopList');
 const shopGoldTextEl = document.getElementById('shopGoldText');
 const closeShopBtn = document.getElementById('closeShopBtn');
@@ -2101,6 +2121,7 @@ siren: () => {
 const LOCAL_STORAGE_KEY = 'slimeShooterEvolution_KR_V4';
 const CHARACTER_INDEX_KEY = 'slimeShooterEvolution_KR_V4__chars';
 const CHARACTER_CURRENT_KEY = 'slimeShooterEvolution_KR_V4__currentChar';
+const INITIAL_NICKNAME_DONE_KEY = 'slimeShooterEvolution_KR_V4__initialNicknameDone';
 let currentCharacterId = null;
 
 function deepClone(obj) {
@@ -2140,27 +2161,32 @@ function ensureCharacterSystem() {
   if (!Array.isArray(list) || list.length === 0) {
     let migrated = null;
     try {
-      const raw = localStorage.getItem(getCurrentSaveStorageKey());
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) migrated = JSON.parse(raw);
     } catch (e) {}
+    const isFreshInstall = !migrated;
     const id = `char_${Date.now()}`;
-    const name = (migrated && migrated.nickname) ? String(migrated.nickname).trim() : 'PLAYER';
+    const baseData = migrated ? deepClone(migrated) : createCharacterData('', { forceBlankNickname: true });
+    const name = (baseData && baseData.nickname) ? String(baseData.nickname).trim() : '';
     const saveKey = getCharacterStorageKey(id);
     try {
-      localStorage.setItem(saveKey, JSON.stringify(migrated || saveData));
+      localStorage.setItem(saveKey, JSON.stringify(baseData));
     } catch (e) {}
     list = [{
       id,
       nickname: name || 'PLAYER',
-      level: Number((migrated && migrated.level) || 1) || 1,
-      highScore: Number((migrated && migrated.highScore) || 0) || 0,
-      element: sanitizeElementKey((migrated && migrated.playerElement) || 'fire'),
+      level: Number((baseData && baseData.level) || 1) || 1,
+      highScore: Number((baseData && baseData.highScore) || 0) || 0,
+      element: sanitizeElementKey((baseData && baseData.playerElement) || 'fire'),
       createdAt: Date.now(),
       updatedAt: Date.now()
     }];
     setCharacterIndex(list);
     cur = id;
     localStorage.setItem(CHARACTER_CURRENT_KEY, id);
+    if (isFreshInstall) {
+      try { localStorage.removeItem(INITIAL_NICKNAME_DONE_KEY); } catch (e) {}
+    }
   }
   if (!cur || !list.some(v => v && v.id === cur)) {
     cur = list[0].id;
@@ -4393,7 +4419,9 @@ if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
 if (typeof saveData.quests.score.tier !== 'number' || saveData.quests.score.tier < 1) saveData.quests.score.tier = 1;
 if (typeof saveData.quests.score.canClaim !== 'boolean') saveData.quests.score.canClaim = false;
-if (typeof saveData.nickname !== 'string' || !saveData.nickname.trim()) saveData.nickname = 'PLAYER';
+if (typeof saveData.nickname !== 'string') saveData.nickname = '';
+const __hasInitialNicknameDone = !!localStorage.getItem(INITIAL_NICKNAME_DONE_KEY);
+if (!saveData.nickname.trim() && __hasInitialNicknameDone) saveData.nickname = 'PLAYER';
 saveData.playerElement = sanitizeElementKey(saveData.playerElement || 'fire');
 if (typeof saveData.nicknameLastChangedAt !== 'number') {
   saveData.nicknameLastChangedAt = 0;
@@ -5143,9 +5171,10 @@ function sanitizeNickname(raw) {
 
 
 
-function createCharacterData(name) {
+function createCharacterData(name, options = {}) {
   const data = deepClone(BASE_SAVE_DATA);
-  data.nickname = sanitizeNickname(name || 'PLAYER');
+  const forceBlank = !!options.forceBlankNickname;
+  data.nickname = forceBlank ? '' : sanitizeNickname(name || 'PLAYER');
   data.nicknameLastChangedAt = 0;
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
   data.fontKey = saveData.fontKey || 'system';
@@ -5312,6 +5341,77 @@ function deleteCharacterById(id) {
   renderCharacterList();
 }
 
+function isInitialNicknameRequired() {
+  try {
+    if (localStorage.getItem(INITIAL_NICKNAME_DONE_KEY)) return false;
+  } catch (e) {}
+  const list = getCharacterIndex();
+  const curMeta = list.find(v => v && v.id === currentCharacterId);
+  const cleanNick = String(saveData.nickname || '').trim();
+  const isFreshProfile = Number(saveData.level || 1) <= 1
+    && Number(saveData.exp || 0) <= 0
+    && Number(saveData.highScore || 0) <= 0
+    && Number(saveData.totalMonsterKills || 0) <= 0
+    && Number(saveData.totalBossKills || 0) <= 0;
+  return !!(currentCharacterId && list.length === 1 && curMeta && !cleanNick && isFreshProfile);
+}
+
+function openInitialNicknameModal() {
+  if (!initialNicknameModal || !initialNicknameInput) return;
+  initialNicknameModal.classList.remove('hidden');
+  setTimeout(() => {
+    try {
+      initialNicknameInput.focus();
+      initialNicknameInput.select();
+    } catch (e) {}
+  }, 30);
+}
+
+function closeInitialNicknameModal() {
+  if (!initialNicknameModal) return;
+  initialNicknameModal.classList.add('hidden');
+}
+
+function confirmInitialNickname() {
+  if (!initialNicknameInput) return false;
+  const raw = initialNicknameInput.value;
+  if (!String(raw || '').trim()) {
+    alert('닉네임을 입력해주세요!');
+    try { initialNicknameInput.focus(); } catch (e) {}
+    return false;
+  }
+  const newNick = sanitizeNickname(raw);
+  const now = Date.now();
+  saveData.nickname = newNick;
+  saveData.nicknameLastChangedAt = now;
+  try { localStorage.setItem(INITIAL_NICKNAME_DONE_KEY, '1'); } catch (e) {}
+
+  const list = getCharacterIndex();
+  const target = list.find(v => v && v.id === currentCharacterId);
+  if (target) {
+    target.nickname = newNick;
+    target.level = Number(saveData.level || 1) || 1;
+    target.highScore = Number(saveData.highScore || 0) || 0;
+    target.element = sanitizeElementKey(saveData.playerElement || target.element || 'fire');
+    target.updatedAt = now;
+    setCharacterIndex(list);
+  }
+
+  try {
+    const saveKey = getCurrentSaveStorageKey();
+    const rawSaved = localStorage.getItem(saveKey);
+    const data = rawSaved ? JSON.parse(rawSaved) : createCharacterData(newNick);
+    data.nickname = newNick;
+    data.nicknameLastChangedAt = now;
+    localStorage.setItem(saveKey, JSON.stringify(data));
+  } catch (e) {}
+
+  saveGameData();
+  updateHUD();
+  closeInitialNicknameModal();
+  return true;
+}
+
 function openNicknamePrompt() {
   const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24시간
   const now = Date.now();
@@ -5350,6 +5450,13 @@ nickBtn && nickBtn.addEventListener('click', () => {
   openCharacterModal();
 });
 createCharacterBtn && createCharacterBtn.addEventListener('click', createCharacterSlot);
+initialNicknameConfirmBtn && initialNicknameConfirmBtn.addEventListener('click', confirmInitialNickname);
+initialNicknameInput && initialNicknameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    confirmInitialNickname();
+  }
+});
 renameCurrentCharacterBtn && renameCurrentCharacterBtn.addEventListener('click', () => { openNicknamePrompt(); renderCharacterList(); });
 closeCharacterBtn && closeCharacterBtn.addEventListener('click', closeCharacterModal);
 characterListEl && characterListEl.addEventListener('click', (e) => {
@@ -7362,6 +7469,10 @@ function exitGameFromTitle() {
 
 // ===== 모드 선택 =====
 startBtn.addEventListener('click', () => {
+if (isInitialNicknameRequired()) {
+  openInitialNicknameModal();
+  return;
+}
 initAudio();
 openModeSelect();
 // ✅ 인트로 튜토리얼: [게임 시작] 클릭 후 → 모드 선택 안내
@@ -15415,6 +15526,7 @@ drawEnemyShape = function(e) {
 
 loadGameData();
 updateHUD();
+if (isInitialNicknameRequired()) openInitialNicknameModal();
 fitCanvasToViewport();
 
 // [추가] 게임 로드 즉시 타이틀 음악 재생 시도
