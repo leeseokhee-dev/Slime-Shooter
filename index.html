@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.143.0)</title>
+<title>Slime Shooter - Ultimate Evolution (v.142.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400);700&family=Gowun+Dodum&display=swap" rel="stylesheet">
@@ -2598,6 +2598,45 @@ const MAX_STAGE_CAP = 200;
 
 const ENEMY_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'club', 'heart', 'spade', 'hexagon', 'ghost'];
 
+const bgImages = {
+  title: new Image(),
+  grassland: new Image(),
+  desert: new Image(),
+  glacier: new Image(),
+  volcano: new Image(),
+  space: new Image()
+};
+
+bgImages.title.src = 'title.png';
+bgImages.grassland.src = 'grassland.png';
+bgImages.desert.src = 'desert.png';
+bgImages.glacier.src = 'glacier.png';
+bgImages.volcano.src = 'volcano.png';
+bgImages.space.src = 'space.png';
+
+function getStageBackgroundImage(stg, currentState = state) {
+  if (currentState === 'title') return bgImages.title;
+  const s = Math.max(1, Math.floor(stg || 1));
+  if (s <= 20) return bgImages.grassland;
+  if (s <= 40) return bgImages.desert;
+  if (s <= 60) return bgImages.glacier;
+  if (s <= 80) return bgImages.volcano;
+  return bgImages.space;
+}
+
+function drawCoverImage(img, dx, dy, dw, dh) {
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const scale = Math.max(dw / iw, dh / ih);
+  const sw = iw * scale;
+  const sh = ih * scale;
+  const ox = dx + (dw - sw) * 0.5;
+  const oy = dy + (dh - sh) * 0.5;
+  ctx.drawImage(img, ox, oy, sw, sh);
+  return true;
+}
+
 const SLIME_COLORS = {
 circle: { body: '#ff4d4d', dark: '#cc0000' },
 triangle: { body: '#ffaa00', dark: '#cc8800' },
@@ -3585,17 +3624,18 @@ function breatheValue(t, speed = 2.2, amp = 0.04) {
 function formatNumber(n) { return n.toLocaleString('ko-KR'); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-const ELEMENT_ORDER = ['fire', 'ice', 'sand', 'nature'];
+const ELEMENT_ORDER = ['fire', 'ice', 'lightning', 'nature'];
 const ELEMENT_META = {
-  fire:      { key:'fire',      name:'불',     icon:'🔥', color:'#ff8a65' },
-  ice:       { key:'ice',       name:'얼음',   icon:'❄️', color:'#8fe3ff' },
-  sand:      { key:'sand',      name:'모래',   icon:'🏜️', color:'#d8b56a' },
-  nature:    { key:'nature',    name:'자연',   icon:'🌿', color:'#81c784' }
+  fire:      { key:'fire',      name:'불',     icon:'🔥', color:'#ff5a5a' },
+  ice:       { key:'ice',       name:'얼음',   icon:'❄️', color:'#5ab8ff' },
+  lightning: { key:'lightning', name:'번개',   icon:'⚡', color:'#ffd84d' },
+  nature:    { key:'nature',    name:'자연',   icon:'🌿', color:'#53d769' },
+  space:     { key:'space',     name:'우주',   icon:'🌌', color:'#c28bff' }
 };
 const ELEMENT_STRONG_AGAINST = {
   fire: 'nature',
-  nature: 'sand',
-  sand: 'ice',
+  nature: 'lightning',
+  lightning: 'ice',
   ice: 'fire'
 };
 
@@ -3604,10 +3644,27 @@ function sanitizeElementKey(raw) {
   if (ELEMENT_META[s]) return s;
   if (s === '불' || s === 'fire') return 'fire';
   if (s === '얼음' || s === 'ice') return 'ice';
-  if (s === '모래' || s === 'sand' || s === 'desert' || s === 'dust' || s === '번개' || s === 'lightning' || s === 'electric') return 'sand';
+  if (s === '번개' || s === 'lightning' || s === 'electric') return 'lightning';
   if (s === '자연' || s === 'nature' || s === 'grass') return 'nature';
+  if (s === '우주' || s === 'space' || s === 'cosmic') return 'space';
   return 'fire';
 }
+
+function getVisualElementKey(elementKey, stg = stage) {
+  const s = Math.max(1, Math.floor(stg || 1));
+  if (s >= 81) return 'space';
+  return sanitizeElementKey(elementKey || getStageElementKey(s));
+}
+
+function getVisualElementPalette(elementKey, stg = stage) {
+  const key = getVisualElementKey(elementKey, stg);
+  if (key === 'fire') return { key, core:'#ff6868', mid:'#ff3b30', edge:'#8f1010', glow:'rgba(255,88,88,0.42)', outline:'#fff2d8' };
+  if (key === 'ice') return { key, core:'#bcecff', mid:'#4aa8ff', edge:'#0e4fa8', glow:'rgba(90,184,255,0.40)', outline:'#eff9ff' };
+  if (key === 'lightning') return { key, core:'#fff1a8', mid:'#ffd400', edge:'#9a7700', glow:'rgba(255,216,77,0.42)', outline:'#fffbe6' };
+  if (key === 'nature') return { key, core:'#c4ffd0', mid:'#43c85d', edge:'#16682b', glow:'rgba(83,215,105,0.38)', outline:'#f2fff2' };
+  return { key:'space', core:'#ffe8ff', mid:'#8e5bff', edge:'#162a78', glow:'rgba(194,139,255,0.44)', outline:'#ffffff', accent:'#57d5ff' };
+}
+
 function getElementMeta(key) {
   return ELEMENT_META[sanitizeElementKey(key)] || ELEMENT_META.fire;
 }
@@ -3628,24 +3685,9 @@ function getElementMultiplierText(mult) {
   if (mult <= 0.85) return 'RESIST';
   return '';
 }
-function getStageThemeElementKey(stg) {
-  const s = Math.max(1, Math.floor(Number(stg) || 1));
-  if (s <= 20) return 'nature';      // 초원
-  if (s <= 40) return 'sand';        // 사막
-  if (s <= 60) return 'ice';         // 빙하
-  if (s <= 80) return 'fire';        // 화산
-  return 'nature';                   // 우주
-}
 function getStageElementKey(stg, seed = 0) {
-  return getStageThemeElementKey(stg);
-}
-function getElementDarkColor(key) {
-  const k = sanitizeElementKey(key);
-  if (k === 'fire') return '#8a2b18';
-  if (k === 'ice') return '#1e88a8';
-  if (k === 'sand') return '#8d6b2f';
-  if (k === 'nature') return '#2f7a38';
-  return '#444444';
+  const idx = ((Math.floor((Math.max(1, stg) - 1) / 5) + seed) % ELEMENT_ORDER.length + ELEMENT_ORDER.length) % ELEMENT_ORDER.length;
+  return ELEMENT_ORDER[idx];
 }
 function drawElementBadge(x, y, elementKey, scale = 1) {
   const meta = getElementMeta(elementKey);
@@ -3710,25 +3752,30 @@ function drawElementOrbitMotes(x, y, radius, elementKey, tSeed = 0, count = 3, s
 
 
 function getBulletPalette(elementKey, isEnemy = false) {
-  const key = sanitizeElementKey(elementKey || 'fire');
+  const key = getVisualElementKey(elementKey, stage);
   if (key === 'fire') {
     return isEnemy
-      ? { outer: '#ff5a1f', core: '#ffb347', glow: '#ff5a1f', highlight: '#fff5dc' }
-      : { outer: '#ff8a4d', core: '#ffd166', glow: '#ff7a18', highlight: '#fff5dc' };
+      ? { outer: '#40100d', core: '#ff5d4a', glow: '#ff6b57', highlight: '#fff1e8' }
+      : { outer: '#4a180f', core: '#ff864f', glow: '#ff8c42', highlight: '#fff6dd' };
   }
   if (key === 'ice') {
     return isEnemy
-      ? { outer: '#7fe8ff', core: '#dffbff', glow: '#78dfff', highlight: '#ffffff' }
-      : { outer: '#6fdcff', core: '#d8fbff', glow: '#8cecff', highlight: '#ffffff' };
+      ? { outer: '#0d2740', core: '#5cc3ff', glow: '#88ddff', highlight: '#ffffff' }
+      : { outer: '#0f2f4b', core: '#7fe1ff', glow: '#9fe8ff', highlight: '#ffffff' };
   }
-  if (key === 'sand') {
+  if (key === 'lightning') {
     return isEnemy
-      ? { outer: '#ffd83d', core: '#fff3a3', glow: '#ffd83d', highlight: '#ffffff' }
-      : { outer: '#ffe15c', core: '#fff6b8', glow: '#ffd83d', highlight: '#ffffff' };
+      ? { outer: '#4a3700', core: '#ffd83d', glow: '#ffe15c', highlight: '#fffdf0' }
+      : { outer: '#5a4200', core: '#ffe15c', glow: '#ffe978', highlight: '#fffef7' };
+  }
+  if (key === 'nature') {
+    return isEnemy
+      ? { outer: '#0f2e16', core: '#56da6d', glow: '#78ec8b', highlight: '#f8fff1' }
+      : { outer: '#12361b', core: '#6ff088', glow: '#8ef5a3', highlight: '#f8fff1' };
   }
   return isEnemy
-    ? { outer: '#5fd36e', core: '#c2f3b8', glow: '#5fd36e', highlight: '#f8fff1' }
-    : { outer: '#68e07f', core: '#d8f8cc', glow: '#66d27c', highlight: '#f8fff1' };
+    ? { outer: '#120f2f', core: '#b876ff', glow: '#69dcff', highlight: '#ffffff' }
+    : { outer: '#1a133f', core: '#d39dff', glow: '#6ee5ff', highlight: '#ffffff' };
 }
 
 function applyBossBulletStatus(bullet, px, py) {
@@ -3807,7 +3854,7 @@ function spawnElementalHitEffect(x, y, elementKey, power = 1) {
     let color = meta.color;
     if (elementKey === 'fire' && i % 3 === 0) color = '#ffd3a8';
     else if (elementKey === 'ice' && i % 2 === 0) color = '#eaffff';
-    else if (elementKey === 'sand' && i % 2 === 0) color = '#f7e2a8';
+    else if (elementKey === 'lightning' && i % 2 === 0) color = '#fff2ad';
     else if (elementKey === 'nature' && i % 2 === 0) color = '#d8ffd8';
     particles.push({
       x, y,
@@ -3824,8 +3871,8 @@ function spawnElementalHitEffect(x, y, elementKey, power = 1) {
       for (let i = 0; i < 2; i++) particles.push({ x, y, vx: randRange(-1.2,1.2), vy: randRange(-2.4,-0.6), life: 200 + Math.random()*140, maxLife: 280, color: '#ffb36b', size: 3 + Math.random()*2 });
     } else if (elementKey === 'ice') {
       for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.2,1.2), w: 4 + Math.random()*3, h: 2 + Math.random()*2, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.25, life: 240 + Math.random()*140, maxLife: 360, color: '#bff7ff' });
-    } else if (elementKey === 'sand') {
-      for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.5,1.5), w: 5 + Math.random()*4, h: 5 + Math.random()*3, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.12, life: 150 + Math.random()*120, maxLife: 240, color: '#dcb76c' });
+    } else if (elementKey === 'lightning') {
+      for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.5,1.5), vy: randRange(-1.5,1.5), w: 7 + Math.random()*4, h: 1.8, rot: (Math.random()*0.8 - 0.4), spin: (Math.random()-0.5)*0.18, life: 120 + Math.random()*90, maxLife: 210, color: '#ffe266' });
     } else if (elementKey === 'nature') {
       for (let i = 0; i < 2; i++) particles.push({ type:'rect', x, y, vx: randRange(-1.2,1.2), vy: randRange(-1.4,1.0), w: 4 + Math.random()*3, h: 7 + Math.random()*3, rot: Math.random()*Math.PI, spin: (Math.random()-0.5)*0.22, life: 220 + Math.random()*160, maxLife: 340, color: '#8fdc7f' });
     }
@@ -5103,8 +5150,8 @@ function promptElementKey(defaultKey = 'fire') {
   const cur = getElementMeta(defaultKey);
   const raw = prompt(
 `속성을 입력하세요.
-불 / 얼음 / 모래 / 자연
-영문(fire / ice / sand / nature)도 가능합니다.`, cur.name);
+불 / 얼음 / 번개 / 자연
+영문(fire / ice / lightning / nature)도 가능합니다.`, cur.name);
   if (raw === null) return null;
   return sanitizeElementKey(raw || defaultKey);
 }
@@ -8579,6 +8626,8 @@ function drawSinglePet(slot) {
 
   ctx.save();
   ctx.translate(x, y + Math.sin((t / 260) + bobSeed) * 1.4);
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = 'rgba(255,255,255,0.28)';
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = PET_STAR_COLORS[petData.star] || '#ffffff';
   ctx.beginPath(); ctx.ellipse(0, 0, s * 1.35, s * 0.98, 0, 0, Math.PI * 2); ctx.fill();
@@ -8617,8 +8666,8 @@ function drawSinglePet(slot) {
     ctx.beginPath(); ctx.ellipse(s*0.82, -s*0.05, s*0.42, s*0.20, 0.5, 0, Math.PI*2); ctx.fill();
   }
 
-  ctx.lineWidth = Math.max(1.2, s * 0.10);
-  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = Math.max(2.0, s * 0.16);
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)';
   ctx.stroke();
 
   const eyeX = s*0.30, eyeY = -s*0.08, eyeR = s*0.22;
@@ -12398,7 +12447,7 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
                             vx: Math.cos(ang) * speed,
                             vy: Math.sin(ang) * speed,
                             radius: 4,
-                            color: getElementDarkColor(e.element || getStageElementKey(stage)),
+                            color: SLIME_COLORS[e.type].dark,
                             element: sanitizeElementKey(e.element || getStageElementKey(stage)),
                             element: sanitizeElementKey(e.element || getStageElementKey(stage))
                         });
@@ -12410,7 +12459,7 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
                         vx: Math.cos(baseAngle) * (speed * 1.05),
                         vy: Math.sin(baseAngle) * (speed * 1.05),
                         radius: 4,
-                        color: getElementDarkColor(e.element || getStageElementKey(stage)),
+                        color: SLIME_COLORS[e.type].dark,
                         element: sanitizeElementKey(e.element || getStageElementKey(stage))
                     });
                 } else {
@@ -13152,77 +13201,45 @@ if (hotTimeEl) {
 
 // ===== 그리기 =====
 function drawBackground() {
-const LOW = isLowPower();
-  // 타이틀/게임오버에서는 stage를 1처럼 보이게(원하시면 타이틀 전용 테마도 가능)
-  const themeStage = (state === 'playing') ? stage : 1;
-  const t = getBgThemeByStage(themeStage);
+  const img = getStageBackgroundImage(stage, state);
+  const drew = drawCoverImage(img, 0, 0, width, height);
 
-  // 1) 그라데이션 배경
-  const grad = ctx.createRadialGradient(width/2, 0, 0, width/2, height/2, height);
-  grad.addColorStop(0, t.c0);
-  grad.addColorStop(0.45, t.c1);
-  grad.addColorStop(1, t.c2);
-  ctx.fillStyle = grad;
+  if (!drew) {
+    const fallback = ctx.createLinearGradient(0, 0, 0, height);
+    if (state === 'title') {
+      fallback.addColorStop(0, '#7ed4ff');
+      fallback.addColorStop(1, '#1b2b4f');
+    } else if (stage <= 20) {
+      fallback.addColorStop(0, '#9be15d');
+      fallback.addColorStop(1, '#294a1f');
+    } else if (stage <= 40) {
+      fallback.addColorStop(0, '#f6d37f');
+      fallback.addColorStop(1, '#8a5b26');
+    } else if (stage <= 60) {
+      fallback.addColorStop(0, '#d9f8ff');
+      fallback.addColorStop(1, '#2e6ca8');
+    } else if (stage <= 80) {
+      fallback.addColorStop(0, '#ff9b54');
+      fallback.addColorStop(1, '#3f1108');
+    } else {
+      fallback.addColorStop(0, '#1d2158');
+      fallback.addColorStop(1, '#04010f');
+    }
+    ctx.fillStyle = fallback;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  ctx.save();
+  const overlay = ctx.createLinearGradient(0, 0, 0, height);
+  overlay.addColorStop(0, 'rgba(0,0,0,0.06)');
+  overlay.addColorStop(0.5, 'rgba(0,0,0,0.10)');
+  overlay.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = overlay;
   ctx.fillRect(0, 0, width, height);
-
-  // 2) 먼지/네뷸라(은은하게)
-  ctx.save();
-  const dustCount = LOW ? Math.floor(DUSTFIELD.length * 0.45) : DUSTFIELD.length;
-  ctx.globalAlpha = t.dustA * (LOW ? 0.6 : 1);
-
-  for (let i = 0; i < dustCount; i++) {
-    const d = DUSTFIELD[i];
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-  }
   ctx.restore();
-
-  // 3) 별(스테이지가 높을수록 더 많고 더 또렷)
-  const now = Date.now();
-  ctx.save();
-  ctx.fillStyle = 'white';
-
-  // ✅ 저사양: 별 개수 줄이기
-  const starCount = Math.min(LOW ? Math.floor(t.stars * 0.55) : t.stars, STARFIELD.length);
-
-  for (let i = 0; i < starCount; i++) {
-    const s = STARFIELD[i];
-
-    // ✅ 저사양: sin 기반 twinkle 계산 제거(고정 밝기)
-    const twinkle = LOW ? 0.85 : (0.6 + 0.4 * Math.sin(s.tw + now * s.sp));
-    ctx.globalAlpha = (t.starA * (LOW ? 0.85 : 1)) * twinkle;
-
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // 4) 후반부(101+) “위협감” 비네팅(가장자리 어둡게)
-  if (themeStage >= 101) {
-    ctx.save();
-    const v = ctx.createRadialGradient(width/2, height/2, 80, width/2, height/2, Math.max(width, height)*0.75);
-    v.addColorStop(0, 'rgba(0,0,0,0)');
-    v.addColorStop(1, 'rgba(0,0,0,0.45)');
-    ctx.fillStyle = v;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-  }
-
-  // 5) 최후반(151+) 붉은 기운 살짝(우주 슬라임 느낌)
-  if (themeStage >= 151) {
-    ctx.save();
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = 'rgba(255,0,0,1)';
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-  }
 }
 
 function drawTitleSlimes(dt, timestamp) {
-  return;
   const delta = dt ? dt / 16.67 : 1;
   const t = timestamp || Date.now();
 
@@ -13788,24 +13805,23 @@ ctx.restore();
 
 
 function drawEnemyShape(e) {
-    const { type, x, y, size, hitTimer, hp, maxHp, isElite } = e;
-    const elementMeta = getElementMeta(e.element || getStageElementKey(stage));
-    const elementDarkColor = getElementDarkColor(e.element || getStageElementKey(stage));
+    const { x, y, size, hitTimer, hp, maxHp, isElite } = e;
+    const visualPalette = getVisualElementPalette(e.element || getStageElementKey(stage), stage);
+    const elementMeta = getElementMeta(getVisualElementKey(e.element || getStageElementKey(stage), stage));
 
-    drawElementAura(x, y, size * (isElite ? 1.15 : 0.95), e.element || getStageElementKey(stage), isElite ? 0.34 : 0.22);
-    drawElementOrbitMotes(x, y, size * (isElite ? 1.18 : 1.02), e.element || getStageElementKey(stage), (x + y) * 0.01, isElite ? 4 : 3, isElite ? 1.1 : 0.95);
+    drawElementAura(x, y, size * (isElite ? 1.16 : 0.98), elementMeta.key, isElite ? 0.36 : 0.26);
+    drawElementOrbitMotes(x, y, size * (isElite ? 1.18 : 1.02), elementMeta.key, (x + y) * 0.01, isElite ? 4 : 3, isElite ? 1.1 : 0.95);
 
     ctx.save();
     ctx.translate(x, y);
     const t = Date.now();
-const b = breatheValue(t + (x*7 + y*11), 2.0, 0.035); // 몬스터마다 약간씩 다르게
-ctx.scale(1 / b, b);
+    const b = breatheValue(t + (x * 7 + y * 11), 2.0, 0.035);
+    ctx.scale(1 / b, b);
 
-    // [추가] 정예 몬스터: 바닥 오라
     if (isElite) {
         ctx.beginPath();
-        ctx.arc(0, 0, size * 1.4, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(Date.now() / 100) * 0.1})`;
+        ctx.arc(0, 0, size * 1.45, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.28 + Math.sin(Date.now() / 100) * 0.08})`;
         ctx.fill();
     }
 
@@ -13818,22 +13834,29 @@ ctx.scale(1 / b, b);
 
     let bodyStyle = (hitTimer > 0) ? '#ffffff' : null;
     if (!bodyStyle) {
-        const grad = ctx.createRadialGradient(-size*0.3, -size*0.3, size*0.2, 0, 0, size);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.24, elementMeta.color);
-        grad.addColorStop(0.70, elementMeta.color);
-        grad.addColorStop(1, elementDarkColor);
+        const grad = ctx.createRadialGradient(-size * 0.32, -size * 0.34, size * 0.16, 0, 0, size * 1.15);
+        grad.addColorStop(0, visualPalette.outline || '#ffffff');
+        if (visualPalette.key === 'space') {
+            grad.addColorStop(0.18, visualPalette.accent || '#57d5ff');
+            grad.addColorStop(0.42, visualPalette.mid);
+            grad.addColorStop(0.72, '#ff67c8');
+            grad.addColorStop(1, visualPalette.edge);
+        } else {
+            grad.addColorStop(0.22, visualPalette.core);
+            grad.addColorStop(0.56, visualPalette.mid);
+            grad.addColorStop(1, visualPalette.edge);
+        }
         bodyStyle = grad;
     }
 
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = 'rgba(20,22,28,0.82)';
     ctx.beginPath();
     if (evo === 1) { ctx.ellipse(-size*0.7, -size*0.3, size*0.3, size*0.2, -0.3, 0, Math.PI*2); ctx.ellipse(size*0.7, -size*0.3, size*0.3, size*0.2, 0.3, 0, Math.PI*2); }
     else if (evo === 2) { ctx.moveTo(-size*0.5, -size*0.2); ctx.quadraticCurveTo(-size*1.3, -size*0.6, -size*0.8, size*0.2); ctx.moveTo(size*0.5, -size*0.2); ctx.quadraticCurveTo(size*1.3, -size*0.6, size*0.8, size*0.2); }
     else if (evo === 3) { ctx.moveTo(-size*0.5, -size*0.4); ctx.lineTo(-size*1.5, -size*0.8); ctx.lineTo(-size*0.6, 0); ctx.moveTo(size*0.5, -size*0.4); ctx.lineTo(size*1.5, -size*0.8); ctx.lineTo(size*0.6, 0); }
     else if (evo === 4) { ctx.moveTo(-size*0.5, -size*0.5); ctx.bezierCurveTo(-size*1.5, -size*1.5, -size*1.5, 0, -size*0.8, size*0.5); ctx.moveTo(size*0.5, -size*0.5); ctx.bezierCurveTo(size*1.5, -size*1.5, size*1.5, 0, size*0.8, size*0.5); }
-    else if (evo >= 5) { 
-        ctx.moveTo(-size*0.4, -size*0.3); ctx.lineTo(-size*1.6, -size*1.0); ctx.lineTo(-size*1.0, 0); ctx.lineTo(-size*1.4, size*0.6); 
+    else if (evo >= 5) {
+        ctx.moveTo(-size*0.4, -size*0.3); ctx.lineTo(-size*1.6, -size*1.0); ctx.lineTo(-size*1.0, 0); ctx.lineTo(-size*1.4, size*0.6);
         ctx.moveTo(size*0.4, -size*0.3); ctx.lineTo(size*1.6, -size*1.0); ctx.lineTo(size*1.0, 0); ctx.lineTo(size*1.4, size*0.6);
         if (evo === 6) {
             ctx.moveTo(0, -size*0.55); ctx.lineTo(0, -size*1.75);
@@ -13853,14 +13876,8 @@ ctx.scale(1 / b, b);
     }
     ctx.fill();
 
-    // [추가] 테두리 (정예는 굵은 금색)
-    if (isElite) {
-        ctx.lineWidth = 3; ctx.strokeStyle = '#ffd700'; 
-    } else if (evo === 6) {
-        ctx.lineWidth = 2.6; ctx.strokeStyle = hitTimer > 0 ? '#fff1ff' : '#f4ddff';
-    } else {
-        ctx.lineWidth = 1.5; ctx.strokeStyle = hitTimer > 0 ? '#ffcccc' : '#222';
-    }
+    ctx.lineWidth = isElite ? 3.2 : (evo === 6 ? 2.8 : 1.8);
+    ctx.strokeStyle = isElite ? '#ffd700' : (hitTimer > 0 ? '#ffffff' : (visualPalette.outline || '#f6f6f6'));
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
@@ -13870,14 +13887,13 @@ ctx.scale(1 / b, b);
     else if (evo >= 5) { eyeR = size * 0.2; eyeY = -size * 0.15; }
 
     ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#081018';
     if (evo === 6) {
         ctx.beginPath(); ctx.ellipse(-size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.ellipse(size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.fill();
     } else {
         ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.fill();
     }
-    
-    // [추가] 정예 왕관 아이콘
+
     if (isElite) {
         ctx.save();
         ctx.fillStyle = '#ffcc00'; ctx.strokeStyle = '#aa7700'; ctx.lineWidth = 1;
@@ -13890,24 +13906,23 @@ ctx.scale(1 / b, b);
 
     ctx.restore();
 
-    drawElementBadge(x, y - size - 22, e.element || getStageElementKey(stage), 0.72);
+    drawElementBadge(x, y - size - 22, elementMeta.key, 0.72);
     ctx.save();
     ctx.font = fontStr(9, 'bold');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = elementMeta.color;
-    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-    ctx.lineWidth = 1.3;
+    ctx.fillStyle = visualPalette.outline || elementMeta.color;
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineWidth = 2;
     ctx.strokeText(elementMeta.name, x, y - size - 37);
     ctx.fillText(elementMeta.name, x, y - size - 37);
     ctx.restore();
 
-    // HP Bar
     const barWidth = size * 1.6; const bx = x - barWidth / 2; const by = y - size - 12;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx, by, barWidth, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(bx, by, barWidth, 4);
     const ratio = Math.max(0, hp / maxHp);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx + 1, by + 1, barWidth - 2, 2);
-    ctx.fillStyle = isElite ? '#ffaa00' : elementMeta.color;
+    ctx.fillStyle = 'rgba(255,255,255,0.20)'; ctx.fillRect(bx + 1, by + 1, barWidth - 2, 2);
+    ctx.fillStyle = isElite ? '#ffaa00' : visualPalette.mid;
     ctx.fillRect(bx + 1, by + 1, (barWidth - 2) * ratio, 2);
 }
 
@@ -13959,15 +13974,22 @@ ctx.scale(1 / b, b);
         bossColorStop1 = bossElementMeta.color;
         if (boss.element === 'fire') bossColorStop2 = '#8a2b18';
         else if (boss.element === 'ice') bossColorStop2 = '#1e88a8';
-        else if (boss.element === 'sand') bossColorStop2 = '#8d6b2f';
+        else if (boss.element === 'lightning') bossColorStop2 = '#9a7a10';
         else if (boss.element === 'nature') bossColorStop2 = '#2f7a38';
     }
 
     // 그라데이션 본체
     const grad = ctx.createRadialGradient(-r*0.3, -r*0.4, r*0.2, 0, 0, r);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.3, bossColorStop1);
-    grad.addColorStop(1, bossColorStop2);
+    if (evoStage === 6) {
+        // 최종 보스: 검은 핵에 붉은 에너지가 감도는 느낌
+        grad.addColorStop(0, '#ff0000'); 
+        grad.addColorStop(0.4, '#330000'); 
+        grad.addColorStop(1, '#000000');
+    } else {
+        grad.addColorStop(0, '#ffffff'); 
+        grad.addColorStop(0.3, bossColorStop1); 
+        grad.addColorStop(1, bossColorStop2);
+    }
 
     // 날개/장식 그리기 (뒤쪽)
     ctx.fillStyle = (evoStage === 4) ? '#220000' : (evoStage === 5 ? '#ccffff' : '#110000');
@@ -14007,8 +14029,8 @@ ctx.scale(1 / b, b);
     ctx.fill();
     
     // 테두리
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = bossElementMeta.color;
+    ctx.lineWidth = 3; 
+    ctx.strokeStyle = evoStage === 6 ? '#ff0000' : 'rgba(255,255,255,0.5)'; 
     ctx.stroke();
 
     // 장식 (왕관/헤일로)
@@ -14040,7 +14062,9 @@ ctx.scale(1 / b, b);
     
     // 눈동자
     let pupilColor = '#000000';
-    if (boss.element) pupilColor = getElementDarkColor(boss.element);
+    if (evoStage === 4) pupilColor = '#440044';
+    else if (evoStage === 5) pupilColor = '#00ffff';
+    else if (evoStage === 6) pupilColor = '#ff0000'; // 붉은 눈
 
     ctx.fillStyle = pupilColor;
     // 최종 보스는 세로 동공 (뱀눈)
@@ -14115,20 +14139,44 @@ function drawBullets() {
   });
 }
 function drawPetBullets() {
-  ctx.fillStyle = '#9cffb0';
   petBullets.forEach(b => {
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#3cff79';
+    ctx.fillStyle = '#102013';
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2);
+    ctx.arc(b.x, b.y, b.radius + 1.7, 0, Math.PI*2);
     ctx.fill();
+    ctx.fillStyle = '#9cffb0';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius + 0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#f6fff4';
+    ctx.beginPath();
+    ctx.arc(b.x - b.radius * 0.24, b.y - b.radius * 0.24, Math.max(1.2, b.radius * 0.34), 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
   });
 }
 // ✅ [추가] 펫2 탄환 그리기
 function drawPet2Bullets() {
-  ctx.fillStyle = '#9cffb0';
   pet2Bullets.forEach(b => {
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#3cff79';
+    ctx.fillStyle = '#102013';
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2);
+    ctx.arc(b.x, b.y, b.radius + 1.7, 0, Math.PI*2);
     ctx.fill();
+    ctx.fillStyle = '#9cffb0';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius + 0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#f6fff4';
+    ctx.beginPath();
+    ctx.arc(b.x - b.radius * 0.24, b.y - b.radius * 0.24, Math.max(1.2, b.radius * 0.34), 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
   });
 }
 function drawPetSkillEffects() {
@@ -14300,6 +14348,12 @@ function drawParticles() {
 function drawTitleScreen() {
     ctx.save();
     ctx.textAlign = 'center';
+
+    const titleShade = ctx.createLinearGradient(0, height * 0.12, 0, height * 0.72);
+    titleShade.addColorStop(0, 'rgba(0,0,0,0.10)');
+    titleShade.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = titleShade;
+    ctx.fillRect(0, height * 0.10, width, height * 0.62);
 
     const compactTitle = height < 700;
     const titleBaseY = compactTitle
@@ -15208,36 +15262,7 @@ damagePlayer = function(amount, px, py, hitInfo = null) {
 
 const __origDrawBackground = drawBackground;
 drawBackground = function() {
-  __origDrawBackground();
-
-  if (gameMode !== 'infinite' || state !== 'playing') return;
-
-  const scroll = ((infiniteDistance * 1.2) % height);
-  ctx.save();
-
-  // 은은한 세로 흐름
-  const laneGrad = ctx.createLinearGradient(0, 0, 0, height);
-  laneGrad.addColorStop(0, 'rgba(255,255,255,0.00)');
-  laneGrad.addColorStop(0.5, 'rgba(255,255,255,0.035)');
-  laneGrad.addColorStop(1, 'rgba(255,255,255,0.00)');
-  ctx.fillStyle = laneGrad;
-
-  for (let i = 0; i < 9; i++) {
-    const x = ((i + 1) * width) / 10;
-    const y = ((scroll * (0.55 + i * 0.05)) % (height + 180)) - 180;
-    ctx.fillRect(x - 2, y, 4, 180);
-  }
-
-  // 별/광선이 아래로 흐르는 느낌
-  ctx.globalAlpha = 0.18;
-  for (let i = 0; i < 22; i++) {
-    const x = (i * 173) % width;
-    const y = ((scroll * (0.9 + (i % 5) * 0.12)) + i * 41) % (height + 80) - 80;
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillRect(x, y, 2, 18 + (i % 4) * 6);
-  }
-
-  ctx.restore();
+  return __origDrawBackground();
 };
 
 const __origUpdateHUD = updateHUD;
@@ -15376,157 +15401,6 @@ drawEnemyShape = function(e) {
   } finally {
     stage = realStage;
   }
-};
-
-
-
-// ===== [v.142] 스테이지/타이틀 이미지 배경 + 자동 스크롤 =====
-const STAGE_BG_IMAGES = {
-  title: new Image(),
-  grassland: new Image(),
-  desert: new Image(),
-  glacier: new Image(),
-  volcano: new Image(),
-  space: new Image()
-};
-STAGE_BG_IMAGES.title.src = 'title.png';
-STAGE_BG_IMAGES.grassland.src = 'grassland.png';
-STAGE_BG_IMAGES.desert.src = 'desert.png';
-STAGE_BG_IMAGES.glacier.src = 'glacier.png';
-STAGE_BG_IMAGES.volcano.src = 'volcano.png';
-STAGE_BG_IMAGES.space.src = 'space.png';
-
-let stageBgScrollY = 0;
-let stageBgLastTick = 0;
-
-function getStageBackgroundImageByStage(stageNum) {
-  const s = Math.max(1, Number(stageNum) || 1);
-  if (s <= 20) return STAGE_BG_IMAGES.grassland;
-  if (s <= 40) return STAGE_BG_IMAGES.desert;
-  if (s <= 60) return STAGE_BG_IMAGES.glacier;
-  if (s <= 80) return STAGE_BG_IMAGES.volcano;
-  return STAGE_BG_IMAGES.space;
-}
-
-function getDungeonBackgroundImageByTier(tier) {
-  const t = Math.max(1, Math.min(5, Number(tier) || 1));
-  if (t === 1) return STAGE_BG_IMAGES.grassland;
-  if (t === 2) return STAGE_BG_IMAGES.desert;
-  if (t === 3) return STAGE_BG_IMAGES.glacier;
-  if (t === 4) return STAGE_BG_IMAGES.volcano;
-  return STAGE_BG_IMAGES.space;
-}
-
-function getCurrentBackgroundImage() {
-  if (state === 'title') return STAGE_BG_IMAGES.title;
-  if (gameMode === 'dungeon') return getDungeonBackgroundImageByTier(dungeonState?.tier || 1);
-  return getStageBackgroundImageByStage(stage);
-}
-
-function getBackgroundScrollSpeedPxPerSec() {
-  if (state === 'title') return 0;
-  if (gameMode === 'infinite') {
-    const speed = Number(infiniteDistanceSpeed || infiniteDistanceCurrentSpeed || getInfiniteDisplaySpeed?.() || 0);
-    return Math.max(20, speed * 1.35);
-  }
-  if (gameMode === 'dungeon') {
-    const tier = Math.max(1, Math.min(5, Number(dungeonState?.tier || 1)));
-    return 18 + (tier - 1) * 12;
-  }
-  return 16;
-}
-
-function drawCoverScrollingBackgroundImage(img, scrollY = 0) {
-  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
-
-  const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
-  const drawW = img.naturalWidth * scale;
-  const drawH = img.naturalHeight * scale;
-  const dx = (width - drawW) * 0.5;
-
-  if (!(drawH > 0)) return false;
-
-  const loopY = ((scrollY % drawH) + drawH) % drawH;
-  const startY = -loopY;
-
-  for (let y = startY; y < height; y += drawH) {
-    ctx.drawImage(img, dx, y, drawW, drawH);
-  }
-  if (startY > 0) {
-    ctx.drawImage(img, dx, startY - drawH, drawW, drawH);
-  }
-  return true;
-}
-
-const __origDrawBackgroundV142 = drawBackground;
-drawBackground = function() {
-  const now = performance.now();
-  if (!stageBgLastTick) stageBgLastTick = now;
-  const dtSec = Math.max(0, Math.min(0.05, (now - stageBgLastTick) / 1000));
-  stageBgLastTick = now;
-
-  const scrollSpeed = getBackgroundScrollSpeedPxPerSec();
-  if (state === 'playing' && scrollSpeed > 0) {
-    stageBgScrollY -= scrollSpeed * dtSec;
-  }
-
-  const bgImg = getCurrentBackgroundImage();
-  const drew = drawCoverScrollingBackgroundImage(bgImg, stageBgScrollY);
-  if (!drew) {
-    __origDrawBackgroundV142();
-    return;
-  }
-
-  if (state === 'title') {
-    ctx.save();
-    const topGrad = ctx.createLinearGradient(0, 0, 0, height * 0.65);
-    topGrad.addColorStop(0, 'rgba(0,0,0,0.14)');
-    topGrad.addColorStop(1, 'rgba(0,0,0,0.00)');
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, width, height);
-
-    const bottomGrad = ctx.createLinearGradient(0, height * 0.35, 0, height);
-    bottomGrad.addColorStop(0, 'rgba(0,0,0,0.00)');
-    bottomGrad.addColorStop(1, 'rgba(0,0,0,0.36)');
-    ctx.fillStyle = bottomGrad;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-    return;
-  }
-
-  ctx.save();
-  const overlay = ctx.createLinearGradient(0, 0, 0, height);
-  overlay.addColorStop(0, 'rgba(0,0,0,0.08)');
-  overlay.addColorStop(0.55, 'rgba(255,255,255,0.02)');
-  overlay.addColorStop(1, 'rgba(0,0,0,0.14)');
-  ctx.fillStyle = overlay;
-  ctx.fillRect(0, 0, width, height);
-
-  if (gameMode === 'infinite') {
-    const flow = (((-stageBgScrollY) * 0.45) % (height + 160));
-    ctx.globalAlpha = 0.16;
-    for (let i = 0; i < 12; i++) {
-      const x = ((i + 1) * width) / 13;
-      const y = ((flow * (0.7 + i * 0.04)) % (height + 160)) - 160;
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillRect(x - 1.5, y, 3, 140);
-    }
-  }
-
-  if (gameMode === 'volcano' || (gameMode !== 'dungeon' && stage >= 61 && stage <= 80)) {
-    ctx.globalAlpha = 0.05;
-    ctx.fillStyle = '#ff7a00';
-    ctx.fillRect(0, 0, width, height);
-  }
-
-  if ((gameMode === 'dungeon' && Number(dungeonState?.tier || 1) >= 5) || stage >= 81) {
-    const vignette = ctx.createRadialGradient(width/2, height/2, 100, width/2, height/2, Math.max(width, height) * 0.8);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.32)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, width, height);
-  }
-  ctx.restore();
 };
 
 loadGameData();
