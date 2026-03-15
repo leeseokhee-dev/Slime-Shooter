@@ -3652,8 +3652,10 @@ function sanitizeElementKey(raw) {
 
 function getVisualElementKey(elementKey, stg = stage) {
   const s = Math.max(1, Math.floor(stg || 1));
-  if (s >= 81) return 'space';
-  return sanitizeElementKey(elementKey || getStageElementKey(s));
+  const direct = sanitizeElementKey(elementKey);
+  if (direct && direct !== 'fire') return direct;
+  if (String(elementKey || '').trim().toLowerCase() === 'fire') return 'fire';
+  return sanitizeElementKey(getStageElementKey(s));
 }
 
 function getVisualElementPalette(elementKey, stg = stage) {
@@ -3686,8 +3688,16 @@ function getElementMultiplierText(mult) {
   return '';
 }
 function getStageElementKey(stg, seed = 0) {
-  const idx = ((Math.floor((Math.max(1, stg) - 1) / 5) + seed) % ELEMENT_ORDER.length + ELEMENT_ORDER.length) % ELEMENT_ORDER.length;
-  return ELEMENT_ORDER[idx];
+  const s = Math.max(1, Math.floor(Number(stg) || 1));
+
+  if (s <= 20) return 'nature';
+  if (s <= 40) return 'lightning';
+  if (s <= 60) return 'ice';
+  if (s <= 80) return 'fire';
+
+  const mix = ['nature', 'lightning', 'ice', 'fire'];
+  const normalizedSeed = Math.abs(Math.floor(Number(seed) || 0));
+  return mix[normalizedSeed % mix.length];
 }
 function drawElementBadge(x, y, elementKey, scale = 1) {
   const meta = getElementMeta(elementKey);
