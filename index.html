@@ -6,7 +6,7 @@
 <title>Slime Shooter - Ultimate Evolution (v.142.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400);700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&family=Gowun+Dodum&family=Jua&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 /* ===== 기본 레이아웃 / 배경 ===== */
 * {
@@ -15,8 +15,10 @@ margin: 0;
 padding: 0;
 }
 :root {
-  /* 기본(아이폰 포함) 시스템 폰트 */
-  --game-font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --game-font: "Gowun Dodum", "Jua", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+  --title-font: "Jua", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
+  --cute-font: "Gowun Dodum", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
+  --number-font: "Nunito", "Jua", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
   --canvas-scale: 1;
   --hud-font-scale: 1;
   --settings-btn-font: 11px;
@@ -40,6 +42,9 @@ overflow: hidden;
 touch-action: none;
 user-select: none;
 -webkit-user-select: none;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+text-rendering: optimizeLegibility;
 padding-top: env(safe-area-inset-top);
 padding-bottom: env(safe-area-inset-bottom);
 }
@@ -528,6 +533,48 @@ body.dead-mode #consumableQuickBar{
         border-radius: 8px;
     }
     .big-btn:active { background: #331100; }
+
+#playerCompactText,
+#expLabel,
+.modal-header,
+.big-btn,
+#confirmTitle,
+#gameOverTitle,
+#petFxTitle,
+#gachaFxTitle {
+  font-family: var(--title-font);
+}
+
+#scoreText,
+#highScoreText,
+#stageText,
+#levelText,
+#goldText,
+#hotTimeText,
+#expText,
+.ui-btn,
+.close-btn,
+.quest-info,
+.stage-btn,
+.gameover-btn,
+#confirmMessage,
+#profileBody,
+#inventoryBody,
+#petDexBody,
+#shopGoldText {
+  font-family: var(--cute-font);
+}
+
+#scoreText,
+#highScoreText,
+#stageText,
+#levelText,
+#goldText,
+#shopGoldText,
+#expText {
+  letter-spacing: -0.2px;
+}
+
 
     /* ===== 오버레이 UI (타이틀, 게임오버, 스테이지선택) ===== */
     .overlay-screen {
@@ -1190,11 +1237,13 @@ body.tutorial-mode .quake-skill{
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
+            <option value="cute">귀여운 기본</option>
+            <option value="gowun">고운돋움</option>
+            <option value="jua">주아</option>
+            <option value="dongle">동글</option>
             <option value="system">기본</option>
             <option value="applekorean">애플고딕</option>
             <option value="noto">노토</option>
-            <option value="jua">주아</option>
-            <option value="gowun">고운돋움</option>
             <option value="mono">모노</option>
         </select>
         <button id="nickBtn" class="ui-btn">캐릭터</button>
@@ -2092,31 +2141,33 @@ let bgmEnabled = true;
 let sfxEnabled = true;
 
 // ===== 서체(폰트) 프리셋 =====
-// - system: 기기 기본(아이폰 포함)
-// - 아래 3개(noto/jua/gowun)는 Google Fonts 로드(오프라인이면 자동 fallback)
 const FONT_PRESETS = {
+  cute: '"Gowun Dodum", "Jua", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
   system: '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   applekorean: '"Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
   noto: '"Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
-  jua: '"Jua", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
-  gowun: '"Gowun Dodum", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
+  jua: '"Jua", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  gowun: '"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  dongle: '"Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 };
 
 function applyFont(key) {
-  const k = FONT_PRESETS[key] ? key : 'system';
+  const k = FONT_PRESETS[key] ? key : 'cute';
   saveData.fontKey = k;
   document.documentElement.style.setProperty('--game-font', FONT_PRESETS[k]);
-
-  // Canvas에서 "sans-serif" 쓰는 곳이 많아서, 여기서 기본 폰트 패밀리만 들고 쓰게 도우미 제공
-  // (아래 fontStr()로 치환한 부분은 바로 반영됨)
 }
 
 function getUIFontFamily() {
-  return FONT_PRESETS[saveData.fontKey] || FONT_PRESETS.system;
+  return FONT_PRESETS[saveData.fontKey] || FONT_PRESETS.cute;
 }
-function fontStr(px, weight = 'normal') {
-  return `${weight} ${px}px ${getUIFontFamily()}`;
+
+function getTitleFontFamily() {
+  return '"Jua", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+}
+
+function fontStr(px, weight = 'normal', family = null) {
+  return `${weight} ${px}px ${family || getUIFontFamily()}`;
 }
 
 
@@ -5098,7 +5149,7 @@ function updateSettingsUI() {
       homingBtn.style.color = on ? "#44ffb8" : "#fff";
     }
   }
-  if (fontSelect) fontSelect.value = (saveData.fontKey || 'system');
+  if (fontSelect) fontSelect.value = (saveData.fontKey || 'cute');
 }
 
 
@@ -5106,17 +5157,19 @@ function updateSettingsUI() {
 let canvasSettingsOpen = false;
 
 const FONT_LABELS = {
+  cute: '귀여운 기본',
+  gowun: '고운돋움',
+  jua: '주아',
+  dongle: '동글',
   system: '기본',
   applekorean: '애플고딕',
   noto: '노토',
-  jua: '주아',
-  gowun: '고운돋움',
   mono: '모노'
 };
 const FONT_KEYS = Object.keys(FONT_LABELS);
 
 function cycleFont() {
-  const cur = (saveData.fontKey || 'system');
+  const cur = (saveData.fontKey || 'cute');
   const idx = Math.max(0, FONT_KEYS.indexOf(cur));
   const next = FONT_KEYS[(idx + 1) % FONT_KEYS.length];
   applyFont(next);
