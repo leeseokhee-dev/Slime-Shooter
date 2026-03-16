@@ -3,22 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.142.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.142.4)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&family=Gowun+Dodum&family=Jua&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ===== 기본 레이아웃 / 배경 ===== */
 * {
 box-sizing: border-box;
 margin: 0;
 padding: 0;
+font-family: var(--game-font);
 }
 :root {
-  --game-font: "Gowun Dodum", "Jua", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
-  --title-font: "Jua", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
-  --cute-font: "Gowun Dodum", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
-  --number-font: "Nunito", "Jua", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, sans-serif;
+  /* 기본(아이폰 포함) 시스템 폰트 */
+  --game-font: "Jua", "Nunito", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --canvas-scale: 1;
   --hud-font-scale: 1;
   --settings-btn-font: 11px;
@@ -42,9 +41,6 @@ overflow: hidden;
 touch-action: none;
 user-select: none;
 -webkit-user-select: none;
--webkit-font-smoothing: antialiased;
--moz-osx-font-smoothing: grayscale;
-text-rendering: optimizeLegibility;
 padding-top: env(safe-area-inset-top);
 padding-bottom: env(safe-area-inset-bottom);
 }
@@ -88,6 +84,7 @@ padding: 8px 0;
         margin-bottom: 2px;
     }
     #playerCompactText {
+        font-family: "Jua", var(--game-font);
         display: inline-block;
         max-width: 100%;
         font-size: var(--player-compact-font);
@@ -112,6 +109,7 @@ padding: 8px 0;
     .hud-column { display: flex; flex-direction: column; gap: 2px; }
     .text-right { align-items: flex-end; text-align: right; }
     
+    #scoreText, #highScoreText, #stageText, #levelText, #expLabel, #expText, .ui-btn, .modal, .close-btn, .gameover-btn, .claim-btn, .stage-btn { font-family: var(--game-font); }
     #scoreText { font-weight: bold; color: #fff; }
     #highScoreText { color: #ffeeaa; font-size: 12px; }
     #stageText { color: #fff; font-weight: bold; }
@@ -533,52 +531,6 @@ body.dead-mode #consumableQuickBar{
         border-radius: 8px;
     }
     .big-btn:active { background: #331100; }
-
-#playerCompactText,
-#expLabel,
-.modal-header,
-.big-btn,
-#confirmTitle,
-#gameOverTitle,
-#petFxTitle,
-#gachaFxTitle {
-  font-family: var(--title-font);
-}
-
-#scoreText,
-#highScoreText,
-#stageText,
-#levelText,
-#goldText,
-#hotTimeText,
-.ui-btn,
-.close-btn,
-.quest-info,
-.stage-btn,
-.gameover-btn,
-#confirmMessage,
-#profileBody,
-#inventoryBody,
-#petDexBody,
-#shopGoldText {
-  font-family: var(--cute-font);
-}
-
-#expText {
-  font-family: var(--number-font);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
-#scoreText,
-#highScoreText,
-#stageText,
-#levelText,
-#goldText,
-#shopGoldText {
-  letter-spacing: -0.2px;
-}
-
 
     /* ===== 오버레이 UI (타이틀, 게임오버, 스테이지선택) ===== */
     .overlay-screen {
@@ -1241,13 +1193,12 @@ body.tutorial-mode .quake-skill{
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
-            <option value="cute">귀여운 기본</option>
-            <option value="gowun">고운돋움</option>
-            <option value="jua">주아</option>
-            <option value="dongle">동글</option>
-            <option value="system">기본</option>
+            <option value="cute">추천 둥글</option>
+            <option value="system">기본 시스템</option>
             <option value="applekorean">애플고딕</option>
             <option value="noto">노토</option>
+            <option value="jua">주아</option>
+            <option value="gowun">고운돋움</option>
             <option value="mono">모노</option>
         </select>
         <button id="nickBtn" class="ui-btn">캐릭터</button>
@@ -2145,35 +2096,32 @@ let bgmEnabled = true;
 let sfxEnabled = true;
 
 // ===== 서체(폰트) 프리셋 =====
+// - system: 기기 기본(아이폰 포함)
+// - 아래 3개(noto/jua/gowun)는 Google Fonts 로드(오프라인이면 자동 fallback)
 const FONT_PRESETS = {
-  cute: '"Gowun Dodum", "Jua", "Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  cute: '"Jua", "Nunito", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
   system: '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   applekorean: '"Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
   noto: '"Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
-  jua: '"Jua", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
-  gowun: '"Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
-  dongle: '"Dongle", "Apple SD Gothic Neo", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif',
+  jua: '"Jua", "Nunito", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
+  gowun: '"Gowun Dodum", "Nunito", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 };
 
 function applyFont(key) {
   const k = FONT_PRESETS[key] ? key : 'cute';
-  const stack = FONT_PRESETS[k];
   saveData.fontKey = k;
-  document.documentElement.style.setProperty('--game-font', stack);
-  document.documentElement.style.setProperty('--number-font', stack);
+  document.documentElement.style.setProperty('--game-font', FONT_PRESETS[k]);
+
+  // Canvas에서 "sans-serif" 쓰는 곳이 많아서, 여기서 기본 폰트 패밀리만 들고 쓰게 도우미 제공
+  // (아래 fontStr()로 치환한 부분은 바로 반영됨)
 }
 
 function getUIFontFamily() {
-  return FONT_PRESETS[saveData.fontKey] || FONT_PRESETS.cute;
+  return FONT_PRESETS[saveData.fontKey] || FONT_PRESETS.system;
 }
-
-function getTitleFontFamily() {
-  return '"Jua", "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
-}
-
-function fontStr(px, weight = 'normal', family = null) {
-  return `${weight} ${px}px ${family || getUIFontFamily()}`;
+function fontStr(px, weight = 'normal') {
+  return `${weight} ${px}px ${getUIFontFamily()}`;
 }
 
 
@@ -3161,7 +3109,7 @@ bgmEnabled: true,
 sfxEnabled: true,
 lowPower: false,
 homingEnabled: true,
-fontKey: 'system',
+fontKey: 'cute',
 maxUnlockedStage: 1,
  
 
@@ -4661,7 +4609,7 @@ ensurePetDexState();
 if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
-if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
+if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'cute';
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
@@ -5163,13 +5111,12 @@ function updateSettingsUI() {
 let canvasSettingsOpen = false;
 
 const FONT_LABELS = {
-  cute: '귀여운 기본',
-  gowun: '고운돋움',
-  jua: '주아',
-  dongle: '동글',
-  system: '기본',
+  cute: '추천 둥글',
+  system: '기본 시스템',
   applekorean: '애플고딕',
   noto: '노토',
+  jua: '주아',
+  gowun: '고운돋움',
   mono: '모노'
 };
 const FONT_KEYS = Object.keys(FONT_LABELS);
@@ -5269,7 +5216,7 @@ function getCanvasSettingsLayout() {
     { key:'sfx',   label: () => `SFX: ${sfxEnabled ? 'ON' : 'OFF'}`, action: toggleSfxFromCanvas },
     { key:'lp',    label: () => `저사양: ${saveData.lowPower ? 'ON' : 'OFF'}`, action: toggleLowPowerFromCanvas },
     { key:'hm',    label: () => (level < 61 ? `유도탄: LV.61 필요` : `유도탄: ${(saveData.homingEnabled !== false) ? 'ON' : 'OFF'}`), action: toggleHomingSetting },
-    { key:'font',  label: () => `서체: ${FONT_LABELS[saveData.fontKey || 'system'] || '기본'} (탭)`, action: cycleFont },
+    { key:'font',  label: () => `서체: ${FONT_LABELS[saveData.fontKey || 'cute'] || '추천 둥글'} (탭)`, action: cycleFont },
     { key:'nick',  label: () => `캐릭터 관리`, action: openCharacterModal },
     { key:'profile', label: () => `프로필 보기`, action: () => { openProfile(); } },
     { key:'shop',  label: () => `상점`, action: () => { openShop(); } },
@@ -5427,7 +5374,7 @@ function createCharacterData(name, options = {}) {
   data.nickname = forceBlank ? '' : sanitizeNickname(name || 'PLAYER');
   data.nicknameLastChangedAt = 0;
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
-  data.fontKey = saveData.fontKey || 'system';
+  data.fontKey = saveData.fontKey || 'cute';
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
