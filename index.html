@@ -551,7 +551,6 @@ body.dead-mode #consumableQuickBar{
 #levelText,
 #goldText,
 #hotTimeText,
-#expText,
 .ui-btn,
 .close-btn,
 .quest-info,
@@ -565,13 +564,18 @@ body.dead-mode #consumableQuickBar{
   font-family: var(--cute-font);
 }
 
+#expText {
+  font-family: var(--number-font);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 #scoreText,
 #highScoreText,
 #stageText,
 #levelText,
 #goldText,
-#shopGoldText,
-#expText {
+#shopGoldText {
   letter-spacing: -0.2px;
 }
 
@@ -2154,8 +2158,10 @@ const FONT_PRESETS = {
 
 function applyFont(key) {
   const k = FONT_PRESETS[key] ? key : 'cute';
+  const stack = FONT_PRESETS[k];
   saveData.fontKey = k;
-  document.documentElement.style.setProperty('--game-font', FONT_PRESETS[k]);
+  document.documentElement.style.setProperty('--game-font', stack);
+  document.documentElement.style.setProperty('--number-font', stack);
 }
 
 function getUIFontFamily() {
