@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.142.4)</title>
+<title>Slime Shooter - Ultimate Evolution (v.143.1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -11063,12 +11063,7 @@ function getBossEvoStageByLevel(bossLevel) {
 
 function getBossDisplayLevelByStage(stageValue) {
     const s = Math.max(1, Math.floor(Number(stageValue) || 1));
-    if (s >= 110) return 200;
-    if (s >= 51) return 100;
-    if (s >= 31) return 50;
-    if (s >= 21) return 30;
-    if (s >= 11) return 20;
-    return 10;
+    return Math.floor(s / 5) * 5;
 }
 
 function getInfiniteBossDisplayLevel() {
