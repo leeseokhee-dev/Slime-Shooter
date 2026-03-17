@@ -3473,7 +3473,17 @@ let petSkillProjectiles = [];
 let petSkillBursts = [];
 let petSkillStreams = [];
 let petSkillCooldowns = { left: 0, right: 0 };
-const PET_ACTIVE_SKILL_COOLDOWN = 6000;
+
+function getPetActiveSkillCooldownByStar(star) {
+  switch (Math.max(1, Math.min(5, Number(star) || 1))) {
+    case 1: return 6000;
+    case 2: return 4000;
+    case 3: return 3000;
+    case 4: return 2000;
+    case 5: return 1000;
+    default: return 6000;
+  }
+}
 
 // ===============================
 // ✅ [v.87] 튜토리얼/안내 대사(최초 1회)
@@ -9794,9 +9804,10 @@ function tryUsePetActiveSkill(slot, currentTime) {
   const equipped = getEquippedPet(slot);
   if (!equipped || equipped.type === 'slime') return false;
   const lastTime = Number(petSkillCooldowns[slot] || 0);
+  const cooldown = getPetActiveSkillCooldownByStar(equipped.star);
 
-  // ✅ 첫 발동은 즉시, 이후부터 6초 쿨타임
-  if (lastTime > 0 && (currentTime - lastTime) < PET_ACTIVE_SKILL_COOLDOWN) return false;
+  // ✅ 첫 발동은 즉시, 이후부터 등급별 쿨타임 적용
+  if (lastTime > 0 && (currentTime - lastTime) < cooldown) return false;
 
   petSkillCooldowns[slot] = currentTime;
   castPetActiveSkill(slot, equipped);
@@ -9865,7 +9876,7 @@ function castPetActiveSkill(slot, petData) {
   }
   else if (petData.type === 'angel') {
     const star = Math.max(1, Math.min(5, Number(petData.star) || 1));
-    const heal = Math.max(6, Math.round(playerMaxHp * (0.03 + star * 0.01)));
+    const heal = Math.max(1, Math.round(playerMaxHp * 0.01));
     const beforeHp = playerHp;
     playerHp = Math.min(playerMaxHp, playerHp + heal);
     const actual = Math.max(0, playerHp - beforeHp);
