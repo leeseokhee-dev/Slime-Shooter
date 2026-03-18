@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.143.1)</title>
+<title>Slime Shooter - Ultimate Evolution (v.143.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2996,6 +2996,7 @@ const MAX_EXP_CAP = EXP_TABLE[MAX_LEVEL].totalMin;
 // ===== 상태 변수 =====
 let state = 'title';
 let isPaused = false;
+let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
@@ -7649,6 +7650,26 @@ function resumeGame() {
   setPauseUI();
 }
 
+
+function pauseGameForBackground() {
+  if (state !== 'playing' || isPaused) return;
+  autoBackgroundPaused = true;
+  pauseGame();
+}
+
+function handleBackgroundVisibilityLoss() {
+  if (document.hidden) {
+    pauseGameForBackground();
+  }
+  lastTime = 0;
+  lastRenderTs = 0;
+}
+
+function handleBackgroundVisibilityGain() {
+  lastTime = 0;
+  lastRenderTs = 0;
+}
+
 function togglePause() {
   if (state !== 'playing' && !isPaused) return;
   if (tutorialActive && !isPaused) return;
@@ -7725,6 +7746,16 @@ if (titleExitBtn) titleExitBtn.addEventListener('click', exitGameFromTitle);
 pauseBtn && pauseBtn.addEventListener('click', togglePause);
 window.addEventListener('resize', syncPauseButtonPosition);
 window.addEventListener('orientationchange', syncPauseButtonPosition);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) handleBackgroundVisibilityLoss();
+  else handleBackgroundVisibilityGain();
+});
+window.addEventListener('pagehide', handleBackgroundVisibilityLoss);
+window.addEventListener('pageshow', handleBackgroundVisibilityGain);
+window.addEventListener('blur', () => {
+  if (document.hidden) handleBackgroundVisibilityLoss();
+});
+window.addEventListener('focus', handleBackgroundVisibilityGain);
 resumeBtn && resumeBtn.addEventListener('click', resumeGame);
 pauseToTitleBtn && pauseToTitleBtn.addEventListener('click', () => {
   showConfirmDialog('게임을 종료하고 타이틀 화면으로 이동할까요?', () => {
@@ -14920,7 +14951,8 @@ requestAnimationFrame(gameLoop);
   lastRenderTs = timestamp;
 
   if (!lastTime) lastTime = timestamp;
-  const dt = timestamp - lastTime;
+  const rawDt = timestamp - lastTime;
+  const dt = Math.max(0, Math.min(rawDt, 100));
   lastTime = timestamp;
 
   // 배경은 항상
