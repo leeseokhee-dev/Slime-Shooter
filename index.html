@@ -3474,6 +3474,7 @@ let petSkillProjectiles = [];
 let petSkillBursts = [];
 let petSkillStreams = [];
 let petSkillCooldowns = { left: 0, right: 0 };
+let petProductionTimers = { left: 0, right: 0 };
 
 function getPetActiveSkillCooldownByStar(star) {
   switch (Math.max(1, Math.min(5, Number(star) || 1))) {
@@ -6536,7 +6537,7 @@ function openProfile(isRefresh = false) {
           오른쪽: <span style="color:${rightPet ? (PET_STAR_COLORS[rightPet.star] || '#fff') : '#aaa'};">${rightPet ? `${getPetDef(rightPet.type).icon} ${getPetDisplayName(rightPet)}` : '없음'}</span>
         </div>
         <div style="margin-top:6px; font-size:12px; color:#cfd6ff; line-height:1.55;">
-          EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
+          EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
         </div>
       </div>
 
@@ -6680,7 +6681,7 @@ function renderShop() {
   petHead.innerHTML = `<div style="font-weight:900; font-size:14px;">🥚 펫 알</div>
   <div style="font-size:12px; color:#cfd6ff; margin-top:2px; line-height:1.55;">
     가격: <b style="color:#ffd700;">${formatNumber(PET_EGG_COST)}G</b> · 현재 최대 ${getMaxPetStarByLevel(level)}성까지 등장<br>
-    장착 보너스: EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
+    장착 보너스: EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
   </div>`;
   petWrap.appendChild(petHead);
 
@@ -8546,10 +8547,12 @@ const PET_STAR_COLORS = {
   5: '#ff9ecf'
 };
 const PET_DEFS = {
-  slime:  { id:'slime',  name:'슬라임 펫', icon:'🟢', color:'#69f59a', accent:'#c9ffe2', ability:'exp'    },
-  fairy:  { id:'fairy',  name:'요정 펫',   icon:'🧚', color:'#7cd3ff', accent:'#e5fbff', ability:'gold'   },
-  dragon: { id:'dragon', name:'드래곤 펫', icon:'🐉', color:'#ff8a7a', accent:'#ffd6bf', ability:'attack' },
-  angel:  { id:'angel',  name:'천사 펫',   icon:'😇', color:'#fff1a8', accent:'#ffffff', ability:'hp'     }
+  slime:    { id:'slime',    name:'슬라임 펫',   icon:'🟢', color:'#69f59a', accent:'#c9ffe2', ability:'exp'      },
+  fairy:    { id:'fairy',    name:'요정 펫',     icon:'🧚', color:'#7cd3ff', accent:'#e5fbff', ability:'gold'     },
+  dragon:   { id:'dragon',   name:'드래곤 펫',   icon:'🐉', color:'#ff8a7a', accent:'#ffd6bf', ability:'attack'   },
+  angel:    { id:'angel',    name:'천사 펫',     icon:'😇', color:'#fff1a8', accent:'#ffffff', ability:'hp'       },
+  scorer:   { id:'scorer',   name:'점수형 펫',   icon:'🏆', color:'#ffcc55', accent:'#fff1bf', ability:'score'    },
+  producer: { id:'producer', name:'생산형 펫',   icon:'📦', color:'#b48bff', accent:'#efe1ff', ability:'producer' }
 };
 
 const PET_ACTIVE_SKILL_LABELS = {
@@ -8656,7 +8659,7 @@ function rollPetType() {
 }
 
 function getPetBonusTotalsForSingle(pet) {
-  const totals = { exp:0, gold:0, attack:0, hp:0 };
+  const totals = { exp:0, gold:0, attack:0, hp:0, score:0 };
   if (!pet) return totals;
   const star = Math.max(1, Math.min(5, Number(pet.star) || 1));
   const def = getPetDef(pet.type);
@@ -8664,14 +8667,15 @@ function getPetBonusTotalsForSingle(pet) {
   else if (def.ability === 'gold') totals.gold = [0,0.04,0.07,0.10,0.14,0.20][star] || 0;
   else if (def.ability === 'attack') totals.attack = [0,0.05,0.08,0.12,0.16,0.22][star] || 0;
   else if (def.ability === 'hp') totals.hp = [0,8,14,22,32,45][star] || 0;
+  else if (def.ability === 'score') totals.score = [0,0.05,0.10,0.20,0.30,0.50][star] || 0;
   return totals;
 }
 
 function getPetBonusTotals() {
-  const totals = { exp:0, gold:0, attack:0, hp:0 };
+  const totals = { exp:0, gold:0, attack:0, hp:0, score:0 };
   for (const pet of getEquippedPetList()) {
     const s = getPetBonusTotalsForSingle(pet);
-    totals.exp += s.exp; totals.gold += s.gold; totals.attack += s.attack; totals.hp += s.hp;
+    totals.exp += s.exp; totals.gold += s.gold; totals.attack += s.attack; totals.hp += s.hp; totals.score += s.score;
   }
   return totals;
 }
@@ -8768,10 +8772,13 @@ function closePetDexModalFn() {
 
 function getPetAbilityText(pet) {
   const single = getPetBonusTotalsForSingle(pet);
+  const star = Math.max(1, Math.min(5, Number(pet && pet.star) || 1));
   if (single.exp) return `능력: 경험치 +${Math.round(single.exp * 100)}%`;
   if (single.gold) return `능력: 골드 +${Math.round(single.gold * 100)}%`;
   if (single.attack) return `능력: 공격력 +${Math.round(single.attack * 100)}%`;
   if (single.hp) return `능력: HP +${formatNumber(single.hp)}`;
+  if (single.score) return `능력: 점수 +${Math.round(single.score * 100)}%`;
+  if (getPetDef(pet && pet.type).ability === 'producer') return `능력: ${[0,6,5,4,3,2][star]}초마다 골드·보석·EXP 구슬 생산`;
   return '능력 없음';
 }
 
@@ -8901,6 +8908,9 @@ function getPetAttackMultiplier() {
 }
 function getPetGoldMultiplier() {
   return 1 + (getPetBonusTotals().gold || 0);
+}
+function getPetScoreMultiplier() {
+  return 1 + (getPetBonusTotals().score || 0);
 }
 function getPetExpMultiplier() {
   return 1 + (getPetBonusTotals().exp || 0);
@@ -9140,6 +9150,7 @@ function getMonsterScorePopupAmount(amount) {
   if (gameMode === 'infinite' && isInfiniteItemEffectActive('doubleScore')) {
     amount *= 2;
   }
+  amount = Math.max(0, Math.floor(amount * getPetScoreMultiplier()));
   return amount;
 }
 
@@ -9148,6 +9159,7 @@ function addScore(amount, source = 'monster') {
   if (gameMode === 'infinite' && source === 'monster' && isInfiniteItemEffectActive('doubleScore')) {
     amount *= 2;
   }
+  amount = Math.max(0, Math.floor(amount * getPetScoreMultiplier()));
   const prevScore = score;
   score += amount;
 
@@ -9755,7 +9767,7 @@ function shootPetBullet(currentTime) {
   pet.x = clamp(player.x + PET_OFFSET_X, 20, width - 20);
   pet.y = clamp(player.y + PET_OFFSET_Y, 40, height - 40);
 
-  if (equipped.type !== 'slime') {
+  if (isPetActiveSkillType(equipped.type)) {
     tryUsePetActiveSkill('right', currentTime);
     return;
   }
@@ -9789,7 +9801,7 @@ function shootPet2Bullet(currentTime) {
   pet2.x = clamp(player.x + PET2_OFFSET_X, 20, width - 20);
   pet2.y = clamp(player.y + PET2_OFFSET_Y, 40, height - 40);
 
-  if (equipped.type !== 'slime') {
+  if (isPetActiveSkillType(equipped.type)) {
     tryUsePetActiveSkill('left', currentTime);
     return;
   }
@@ -9809,6 +9821,59 @@ function shootPet2Bullet(currentTime) {
     for (let i = 0; i < shots; i++) {
       const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
       pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color });
+    }
+  }
+}
+
+function isPetActiveSkillType(type) {
+  return type === 'fairy' || type === 'dragon' || type === 'angel';
+}
+
+function getProducerIntervalByStar(star = 1) {
+  return ([0,6000,5000,4000,3000,2000][Math.max(1, Math.min(5, Number(star) || 1))] || 6000);
+}
+
+function producePetReward(slot, petData) {
+  if (!petData || getPetDef(petData.type).ability !== 'producer' || !player || !player.alive || isPlayerDying) return;
+  const anchor = getPetAnchorBySlot(slot);
+  const roll = Math.random();
+
+  if (roll < 0.45) {
+    const goldGain = Math.max(10, Math.floor((12 + petData.star * 8 + level * 0.22) * getPetGoldMultiplier()));
+    gold += goldGain;
+    stageRunGoldEarned = (stageRunGoldEarned || 0) + goldGain;
+    saveData.goldEarned = (saveData.goldEarned || 0) + goldGain;
+    spawnDamageText(anchor.x, anchor.y - anchor.size - 16, `📦 골드+${formatNumber(goldGain)}`, '#ffd700');
+  } else if (roll < 0.75) {
+    const gemType = roll < 0.58 ? 'ruby' : (roll < 0.67 ? 'sapphire' : 'diamond');
+    const amount = gemType === 'ruby' ? 10 : (gemType === 'sapphire' ? 30 : 50);
+    gold += amount;
+    stageRunGoldEarned = (stageRunGoldEarned || 0) + amount;
+    saveData.goldEarned = (saveData.goldEarned || 0) + amount;
+    const gemLabel = gemType === 'ruby' ? '루비' : (gemType === 'sapphire' ? '사파이어' : '다이아');
+    const gemColor = gemType === 'ruby' ? '#ff73b8' : (gemType === 'sapphire' ? '#5dff96' : '#59a8ff');
+    spawnDamageText(anchor.x, anchor.y - anchor.size - 16, `💎 ${gemLabel}+${formatNumber(amount)}`, gemColor);
+  } else {
+    const baseExp = Math.max(6, Math.floor(8 + petData.star * 5 + level * 0.12));
+    const gradeKey = petData.star >= 5 ? 'high' : (petData.star >= 3 ? 'mid' : 'low');
+    spawnExpItem(anchor.x + (Math.random() - 0.5) * 20, anchor.y - anchor.size * 0.4, baseExp, gradeKey, false);
+    spawnDamageText(anchor.x, anchor.y - anchor.size - 16, '🟣 EXP 구슬 생성!', '#7ce7ff');
+  }
+
+  if (SFX && SFX.expPickup) SFX.expPickup();
+  saveGameDataDebounced();
+}
+
+function updatePetProduction(dt) {
+  if (!player || !player.alive || isPlayerDying) return;
+  for (const slot of ['left', 'right']) {
+    const petData = getEquippedPet(slot);
+    if (!petData || getPetDef(petData.type).ability !== 'producer') continue;
+    petProductionTimers[slot] = (Number(petProductionTimers[slot]) || 0) + dt;
+    const interval = getProducerIntervalByStar(petData.star);
+    while (petProductionTimers[slot] >= interval) {
+      petProductionTimers[slot] -= interval;
+      producePetReward(slot, petData);
     }
   }
 }
@@ -12041,6 +12106,7 @@ petSkillProjectiles = [];
 petSkillBursts = [];
 petSkillStreams = [];
 petSkillCooldowns = { left: 0, right: 0 };
+petProductionTimers = { left: 0, right: 0 };
 
 // ✅ 펫은 보유(petStage>=1)일 때만 생성
 ensurePetSystemState();
@@ -12525,6 +12591,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
   updateInfiniteItemEffects(dt);
   updateHyperFlightPostInvuln(dt);
   updateFieldItems(dt);
+  updatePetProduction(dt);
   updateGoldDrops(dt);
 
   // ✅ 플레이어는 계속 움직이게
@@ -12641,6 +12708,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     updateParticles(dt);
     updateDamageTexts(dt);
     updateGoldDrops(dt);
+    updatePetProduction(dt);
 
     checkCollisions();
     tryPickupExpItems();
