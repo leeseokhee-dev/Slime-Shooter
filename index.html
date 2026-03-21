@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.143.9)</title>
+<title>Slime Shooter - Ultimate Evolution (v.144.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6744,12 +6744,27 @@ function renderShop() {
 
   const petBonus = getPetBonusTotals();
   const petHead = document.createElement('div');
+  const currentMaxPetStar = getMaxPetStarByLevel(level);
   petHead.innerHTML = `<div style="font-weight:900; font-size:14px;">🥚 펫 알</div>
   <div style="font-size:12px; color:#cfd6ff; margin-top:2px; line-height:1.55;">
-    가격: <b style="color:#ffd700;">${formatNumber(PET_EGG_COST)}G</b> · 현재 최대 ${getMaxPetStarByLevel(level)}성까지 등장<br>
+    가격: <b style="color:#ffd700;">${formatNumber(PET_EGG_COST)}G</b> · 현재 최대 ${currentMaxPetStar}성까지 등장 · 등장 확률 공개<br>
+    해금 구간: ${getPetUnlockGuideText()}<br>
     장착 보너스: EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
   </div>`;
   petWrap.appendChild(petHead);
+
+  const petRateWrap = document.createElement('div');
+  petRateWrap.style.padding = '8px 10px';
+  petRateWrap.style.border = '1px solid rgba(255,255,255,0.10)';
+  petRateWrap.style.borderRadius = '10px';
+  petRateWrap.style.background = 'rgba(0,0,0,0.18)';
+  petRateWrap.style.fontSize = '12px';
+  petRateWrap.style.lineHeight = '1.55';
+  const petRateLines = getPetStarRateTable(currentMaxPetStar)
+    .map(it => `<span style="color:${PET_STAR_COLORS[it.star] || '#fff'}; font-weight:800;">${it.star}성 ${formatPercentForShop(it.p)}</span>`)
+    .join(' · ');
+  petRateWrap.innerHTML = `<div style="font-weight:800; color:#7ce7ff; margin-bottom:4px;">현재 레벨 기준 등장 확률</div><div>${petRateLines}</div>`;
+  petWrap.appendChild(petRateWrap);
 
   const petBtnRow = document.createElement('div');
   petBtnRow.style.display = 'flex';
@@ -8719,6 +8734,28 @@ function rollPetStar(maxStar = getMaxPetStarByLevel(level)) {
   const pool = PET_STAR_PROB.filter(it => it.star <= maxStar).map(it => ({ star: it.star, p: it.p }));
   const picked = rollWeighted(pool);
   return Math.max(1, Math.min(maxStar, Number(picked.star) || 1));
+}
+
+function getPetStarRateTable(maxStar = getMaxPetStarByLevel(level)) {
+  const pool = PET_STAR_PROB
+    .filter(it => Number(it.star) <= Number(maxStar))
+    .map(it => ({ star: Number(it.star), p: Number(it.p) || 0 }));
+  const total = pool.reduce((sum, it) => sum + it.p, 0);
+  return pool.map(it => ({
+    star: it.star,
+    p: total > 0 ? (it.p / total) * 100 : 0
+  }));
+}
+
+function formatPercentForShop(value) {
+  const n = Number(value) || 0;
+  if (n >= 10) return `${n.toFixed(1)}%`;
+  if (n >= 1) return `${n.toFixed(2)}%`;
+  return `${n.toFixed(3)}%`;
+}
+
+function getPetUnlockGuideText() {
+  return '1성: LV.1+ · 2성: LV.31+ · 3성: LV.61+ · 4성: LV.101+ · 5성: LV.200+';
 }
 
 function rollPetType() {
