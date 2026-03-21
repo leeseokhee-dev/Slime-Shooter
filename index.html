@@ -9175,47 +9175,41 @@ function getEnemyKillScore(enemy) {
   };
 }
 
-function getMonsterScorePopupAmount(amount) {
-  amount = Math.max(0, Math.floor(Number(amount) || 0));
-  if (gameMode === 'infinite' && isInfiniteItemEffectActive('doubleScore')) {
-    amount *= 2;
+function resolveScoreAmount(amount, source = 'monster', options = {}) {
+  let resolved = Math.max(0, Math.floor(Number(amount) || 0));
+  if (gameMode === 'infinite' && source === 'monster' && isInfiniteItemEffectActive('doubleScore')) {
+    resolved *= 2;
   }
-  amount = Math.max(0, Math.floor(amount * getPetScoreMultiplier()));
-  return amount;
+
+  const petMult = Math.max(1, Number(getPetScoreMultiplier()) || 1);
+  const petRate = Math.max(0, petMult - 1);
+  if (petRate > 0) {
+    if (typeof options.petEligibleAmount === 'number') {
+      let petEligible = Math.max(0, Math.floor(Number(options.petEligibleAmount) || 0));
+      if (gameMode === 'infinite' && source === 'monster' && isInfiniteItemEffectActive('doubleScore') && options.doubleScoreEligible !== false) {
+        petEligible *= 2;
+      }
+      resolved += Math.max(0, Math.floor(petEligible * petRate));
+    } else {
+      resolved = Math.max(0, Math.floor(resolved * petMult));
+    }
+  }
+
+  return Math.max(0, Math.floor(resolved));
 }
 
-function getBossScorePopupText(amount) {
+function getMonsterScorePopupAmount(amount, source = 'monster', options = {}) {
+  return resolveScoreAmount(amount, source, options);
+}
+
+function getBossScorePopupText(amount, options = {}) {
   const baseAmount = Math.max(0, Math.floor(Number(amount) || 0));
-  const finalAmount = getMonsterScorePopupAmount(baseAmount);
-  const equippedBonus = Math.max(0, finalAmount - baseAmount);
-  if (equippedBonus > 0) {
-    return `+${formatNumber(finalAmount)}점 (착용 +${formatNumber(equippedBonus)})`;
-  }
+  const finalAmount = getMonsterScorePopupAmount(baseAmount, 'boss', options);
   return `+${formatNumber(finalAmount)}점`;
 }
 
-function getBossPetScoreBonus(baseAmount) {
-  const base = Math.max(0, Math.floor(Number(baseAmount) || 0));
-  return Math.max(0, Math.floor(base * Math.max(0, getPetScoreMultiplier() - 1)));
-}
-
-function getInfiniteBossScoreBreakdownText(baseScore, bonusScore) {
-  const base = Math.max(0, Math.floor(Number(baseScore) || 0));
-  const bonus = Math.max(0, Math.floor(Number(bonusScore) || 0));
-  const petBonus = getBossPetScoreBonus(base);
-  const total = base + bonus + petBonus;
-  if (petBonus > 0) {
-    return `기본 점수 ${formatNumber(base)} + 추가 보너스(${Math.round((bonus / Math.max(1, base)) * 100)}%) ${formatNumber(bonus)} + 점수펫 (${Math.round(Math.max(0, getPetScoreMultiplier() - 1) * 100)}%) ${formatNumber(petBonus)} = 총 ${formatNumber(total)}점`;
-  }
-  return `기본 점수 ${formatNumber(base)} + 추가 보너스(${Math.round((bonus / Math.max(1, base)) * 100)}%) ${formatNumber(bonus)} = 총 ${formatNumber(total)}점`;
-}
-
-function addScore(amount, source = 'monster') {
-  amount = Math.max(0, Math.floor(Number(amount) || 0));
-  if (gameMode === 'infinite' && source === 'monster' && isInfiniteItemEffectActive('doubleScore')) {
-    amount *= 2;
-  }
-  amount = Math.max(0, Math.floor(amount * getPetScoreMultiplier()));
+function addScore(amount, source = 'monster', options = {}) {
+  amount = resolveScoreAmount(amount, source, options);
   const prevScore = score;
   score += amount;
 
@@ -9237,30 +9231,6 @@ function addScore(amount, source = 'monster') {
   const baseExp = Math.floor(score / expUnit) - Math.floor(prevScore / expUnit);
 
   // 🔥 핫타임 배수(평일 2배 / 토·일 3배)
-  const gainedExp = baseExp * getHotMultiplier();
-
-  if (gainedExp > 0) {
-    addExp(gainedExp);
-    if (gameMode === 'stage') {
-      if (source === 'boss') stageRunExpBoss += gainedExp;
-      else stageRunExpMonsters += gainedExp;
-    }
-  }
-}
-
-function addScoreExact(amount, source = 'monster') {
-  amount = Math.max(0, Math.floor(Number(amount) || 0));
-  const prevScore = score;
-  score += amount;
-
-  if (gameMode === 'infinite') {
-    saveData.totalScore = (saveData.totalScore || 0) + amount;
-    saveGameDataDebounced();
-    updateBestRunScoreStats();
-  }
-
-  const expUnit = (gameMode === 'infinite') ? 10 : 100;
-  const baseExp = Math.floor(score / expUnit) - Math.floor(prevScore / expUnit);
   const gainedExp = baseExp * getHotMultiplier();
 
   if (gainedExp > 0) {
@@ -10075,7 +10045,7 @@ function castPetActiveSkill(slot, petData) {
   else if (petData.type === 'laserpet') {
     const star = Math.max(1, Math.min(5, Number(petData.star) || 1));
     const mult = ([0, 0.40, 0.80, 1.20, 1.60, 2.00][star] || 0.40);
-    const damage = Math.max(1, Math.floor(getPlayerAttackPower() * mult));
+    const totalDamage = Math.max(1, Math.floor(getPlayerAttackPower() * mult));
     let target = null;
     let bestD2 = Infinity;
 
@@ -10095,6 +10065,7 @@ function castPetActiveSkill(slot, petData) {
       const dy = boss.y - anchor.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < bestD2) {
+        bestD2 = d2;
         target = { kind: 'boss', ref: boss, x: boss.x, y: boss.y, size: Math.max(boss.width || 40, boss.height || 40) * 0.45 };
       }
     }
@@ -10105,18 +10076,21 @@ function castPetActiveSkill(slot, petData) {
     petSkillStreams.push({
       kind: 'laserpet',
       slot,
+      petUid: petData.uid || 0,
       color,
       accent: def.accent || '#ffd8f5',
+      star,
+      totalDamage,
+      tickInterval: 250,
+      tickTimer: 0,
       x1: anchor.x,
       y1: anchor.y - anchor.size * 0.82,
       x2: tx,
       y2: ty,
-      targetKind: target ? target.kind : null,
-      targetRef: target ? target.ref : null,
-      targetOffsetX: target ? 0 : (tx - anchor.x),
-      targetOffsetY: target ? 0 : (ty - (anchor.y - anchor.size * 0.82)),
       life: 1500,
-      maxLife: 1500
+      maxLife: 1500,
+      targetKind: target ? target.kind : null,
+      targetRef: target ? target.ref : null
     });
 
     petSkillBursts.push({
@@ -10124,8 +10098,6 @@ function castPetActiveSkill(slot, petData) {
       slot,
       x: tx,
       y: ty,
-      targetKind: target ? target.kind : null,
-      targetRef: target ? target.ref : null,
       radius: 0,
       maxRadius: 28 + star * 6,
       damage: 0,
@@ -10135,25 +10107,6 @@ function castPetActiveSkill(slot, petData) {
       hitSet: null,
       clearBullets: false
     });
-
-    if (target && target.kind === 'enemy' && target.ref && target.ref.hp > 0) {
-      const _dmg = calcLevelScaledDamage(damage, target.ref);
-      target.ref.hp -= _dmg;
-      target.ref.hitTimer = 100;
-      spawnDamageText(target.ref.x, target.ref.y - target.ref.size * 0.72, _dmg, color);
-      spawnElementalHitEffect(target.ref.x, target.ref.y, target.ref.element, target.ref.isElite ? 1.15 : 1);
-      if (target.ref.hp <= 0) {
-        handleEnemyKilledBySkill(target.ref);
-        target.ref.hp = 0;
-      }
-    } else if (target && target.kind === 'boss' && target.ref) {
-      const _bdmg = calcLevelScaledDamage(damage, target.ref);
-      target.ref.hp -= _bdmg;
-      spawnDamageText(target.ref.x, target.ref.y - (target.ref.height || 80) * 0.2, _bdmg, color);
-      if (target.ref.hp <= 0) {
-        handleBossKilledBySkill();
-      }
-    }
   }
 }
 
@@ -10201,27 +10154,68 @@ function updatePetSkillProjectiles(dt) {
 }
 
 
+function distancePointToSegmentSquared(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq <= 0.0001) {
+    const ox = px - x1;
+    const oy = py - y1;
+    return ox * ox + oy * oy;
+  }
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = x1 + dx * t;
+  const cy = y1 + dy * t;
+  const ox = px - cx;
+  const oy = py - cy;
+  return ox * ox + oy * oy;
+}
+
+function applyLaserPetBeamTick(stream) {
+  if (!stream || !player || !player.alive) return;
+
+  const baseTickDamage = Math.max(1, Math.round((Number(stream.totalDamage) || 1) / Math.max(1, Math.round((stream.maxLife || 1500) / Math.max(1, stream.tickInterval || 250)))));
+  const hitRadius = 18;
+
+  for (const e of enemies) {
+    if (!e || e.hp <= 0) continue;
+    const rr = Math.max(hitRadius, (e.size || 18) * 0.72);
+    const d2 = distancePointToSegmentSquared(e.x, e.y, stream.x1, stream.y1, stream.x2, stream.y2);
+    if (d2 <= rr * rr) {
+      const dmg = calcLevelScaledDamage(baseTickDamage, e);
+      e.hp -= dmg;
+      e.hitTimer = 100;
+      spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#ff6ad5');
+      spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
+      if (e.hp <= 0) {
+        handleEnemyKilledBySkill(e);
+        e.hp = 0;
+      }
+    }
+  }
+
+  if (boss && !isBossInvincible() && !boss._deadHandled) {
+    const rr = Math.max(hitRadius + 8, Math.max(boss.width || 40, boss.height || 40) * 0.42);
+    const d2 = distancePointToSegmentSquared(boss.x, boss.y, stream.x1, stream.y1, stream.x2, stream.y2);
+    if (d2 <= rr * rr) {
+      const bdmg = calcLevelScaledDamage(baseTickDamage, boss);
+      boss.hp -= bdmg;
+      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, stream.color || '#ff6ad5');
+      if (boss.hp <= 0) {
+        handleBossKilledBySkill();
+      }
+    }
+  }
+}
+
 function updatePetSkillStreams(dt) {
   const delta = dt / 16.67;
   for (const s of petSkillStreams) {
     s.life -= dt;
     s.emitTick = (s.emitTick || 0) - dt;
     const anchor = getPetAnchorBySlot(s.slot);
-    if (s.kind === 'laserpet' && anchor && player && player.alive) {
-      s.x1 = anchor.x;
-      s.y1 = anchor.y - anchor.size * 0.82;
-      const target = s.targetRef;
-      if (s.targetKind === 'enemy' && target && target.hp > 0) {
-        s.x2 = target.x;
-        s.y2 = target.y;
-      } else if (s.targetKind === 'boss' && target && boss === target && target.hp > 0 && !isBossInvincible()) {
-        s.x2 = target.x;
-        s.y2 = target.y;
-      } else {
-        s.x2 = s.x1 + (s.targetOffsetX || 0);
-        s.y2 = s.y1 + (s.targetOffsetY || -260);
-      }
-    }
+
     if (s.kind === 'dragon' && anchor && player && player.alive) {
       while (s.emitTick <= 0 && s.life > 0) {
         s.emitTick += s.emitInterval || 70;
@@ -10244,6 +10238,53 @@ function updatePetSkillStreams(dt) {
           tail: []
         });
       }
+    } else if (s.kind === 'laserpet' && anchor && player && player.alive) {
+      s.x1 = anchor.x;
+      s.y1 = anchor.y - anchor.size * 0.82;
+
+      let target = null;
+      if (s.targetKind === 'boss' && boss && s.targetRef === boss && boss.hp > 0 && !isBossInvincible() && !boss._deadHandled) {
+        target = { kind: 'boss', ref: boss, x: boss.x, y: boss.y };
+      } else if (s.targetKind === 'enemy' && s.targetRef && s.targetRef.hp > 0) {
+        target = { kind: 'enemy', ref: s.targetRef, x: s.targetRef.x, y: s.targetRef.y };
+      } else {
+        let bestD2 = Infinity;
+        for (const e of enemies) {
+          if (!e || e.hp <= 0) continue;
+          const dx = e.x - s.x1;
+          const dy = e.y - s.y1;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestD2) {
+            bestD2 = d2;
+            target = { kind: 'enemy', ref: e, x: e.x, y: e.y };
+          }
+        }
+        if (boss && !isBossInvincible() && !boss._deadHandled) {
+          const dx = boss.x - s.x1;
+          const dy = boss.y - s.y1;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestD2) {
+            target = { kind: 'boss', ref: boss, x: boss.x, y: boss.y };
+          }
+        }
+        s.targetKind = target ? target.kind : null;
+        s.targetRef = target ? target.ref : null;
+      }
+
+      s.x2 = target ? target.x : s.x1;
+      s.y2 = target ? target.y : Math.max(30, s.y1 - 260);
+
+      s.tickTimer = (s.tickTimer || 0) - dt;
+      while (s.tickTimer <= 0 && s.life > 0) {
+        s.tickTimer += s.tickInterval || 250;
+        applyLaserPetBeamTick(s);
+      }
+
+      const impact = petSkillBursts.find(b => b && b.kind === 'laserpetImpact' && b.slot === s.slot && b.life > 0);
+      if (impact) {
+        impact.x = s.x2;
+        impact.y = s.y2;
+      }
     }
   }
   petSkillStreams = petSkillStreams.filter(s => s.life > 0);
@@ -10252,16 +10293,6 @@ function updatePetSkillStreams(dt) {
 function updatePetSkillBursts(dt) {
   for (const b of petSkillBursts) {
     b.life -= dt;
-    if (b.kind === 'laserpetImpact') {
-      const target = b.targetRef;
-      if (b.targetKind === 'enemy' && target && target.hp > 0) {
-        b.x = target.x;
-        b.y = target.y;
-      } else if (b.targetKind === 'boss' && target && boss === target && target.hp > 0 && !isBossInvincible()) {
-        b.x = target.x;
-        b.y = target.y;
-      }
-    }
     const progress = 1 - Math.max(0, b.life) / (b.maxLife || 480);
     b.radius = (b.maxRadius || 120) * Math.min(1, progress);
     if (b.clearBullets && enemyBullets && enemyBullets.length) {
@@ -15806,8 +15837,8 @@ getWavesPerStage = function(stageNum) {
 };
 
 const __origAddScore = addScore;
-addScore = function(amount, source = 'monster') {
-  return __origAddScore(amount, source);
+addScore = function(amount, source = 'monster', options = {}) {
+  return __origAddScore(amount, source, options);
 };
 
 const __origStartGame = startGame;
@@ -15918,11 +15949,11 @@ handleBossKilledBySkill = function() {
   const rank = getInfiniteBossRank(infiniteBossHits);
   const rate = getInfiniteBossBonusRate(rank);
   const bonusScore = Math.floor(baseScore * rate);
-  const petBonusScore = getBossPetScoreBonus(baseScore);
-  const totalScore = baseScore + bonusScore + petBonusScore;
+  const totalScore = baseScore + bonusScore;
+  const petBonus = Math.max(0, resolveScoreAmount(totalScore, 'boss', { petEligibleAmount: baseScore }) - totalScore);
 
-  addScoreExact(totalScore, 'boss');
-  spawnDamageText(bx, by - 34, getInfiniteBossScoreBreakdownText(baseScore, bonusScore), '#7dff9b', true);
+  addScore(totalScore, 'boss', { petEligibleAmount: baseScore });
+  spawnDamageText(bx, by - 34, getBossScorePopupText(totalScore, { petEligibleAmount: baseScore }), '#7dff9b', true);
   infiniteBossTimer = 0; // 보스 처치 후 다음 보스는 20초 뒤부터 등장
   if (infiniteFirstBossKillDistance == null) infiniteFirstBossKillDistance = Math.max(0, Number(infiniteDistance || 0));
   infiniteDistanceBonus += bonusScore;
@@ -15938,7 +15969,9 @@ handleBossKilledBySkill = function() {
     await showInfiniteBossNotice('보스를 처치하였습니다!', 1000);
     await showInfiniteBossNotice(
       `랭크: <span style="color:#ffd700;">${rank}</span><br>` +
-      `${getInfiniteBossScoreBreakdownText(baseScore, bonusScore).replace(' = 총 ', '<br>총합: ')}`,
+      `기본 점수: ${formatNumber(baseScore)} + 추가 보너스 ${formatNumber(bonusScore)}(${Math.round(rate * 100)}%)` +
+      (petBonus > 0 ? `<br>점수펫 보너스: ${formatNumber(petBonus)}` : ``) +
+      `<br>총합: ${formatNumber(totalScore + petBonus)}`,
       2000
     );
     infiniteBossBonusShowing = false;
