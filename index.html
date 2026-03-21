@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.143.4)</title>
+<title>Slime Shooter - Ultimate Evolution (v.143.9)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6429,6 +6429,37 @@ function renderInventoryContent() {
       ${ownedPets.length ? ownedPets.map(pet => renderPetCard(pet, leftPet && leftPet.uid === pet.uid ? 'left' : rightPet && rightPet.uid === pet.uid ? 'right' : null)).join('') : '<div style="padding:12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.20); color:#aab;">아직 보유한 펫이 없습니다. 상점에서 펫 알을 구매해보세요.</div>'}
     </div>
 
+    <div style="padding:10px 12px; border:1px solid rgba(255,215,120,0.20); border-radius:12px; background:rgba(255,215,120,0.07); margin-bottom:10px;">
+      <div style="font-weight:900; font-size:14px; color:#ffe6a0;">🧬 펫 합성소</div>
+      <div style="margin-top:6px; font-size:12px; color:#fff3cf; line-height:1.6;">
+        같은 등급의 펫 3마리를 합성하면 <b>100% 확률</b>로 다음 등급 펫 1마리를 획득합니다.<br>
+        결과 펫은 7종 중 1종 랜덤이며, 5성 펫은 더 이상 합성할 수 없습니다.<br>
+        <span style="color:#ffd7d7;">LV.200 미만은 4성 → 5성 합성 비용이 ${formatNumber(PET_FUSION_PRE200_FIVE_STAR_COST)}G입니다.</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+        ${[1,2,3,4].map(star => {
+          const count = getOwnedPetCountByStar(star);
+          const cost = getPetFusionCost(star, level);
+          const enoughPets = count >= 3;
+          const enoughGold = Math.floor(gold || 0) >= cost;
+          const nextStar = star + 1;
+          const preview = enoughPets ? getPetFusionPreviewText(star) : `${star}성 펫 ${formatNumber(count)} / 3`;
+          return `
+            <div style="padding:10px; border:1px solid rgba(255,255,255,0.10); border-radius:10px; background:rgba(0,0,0,0.18);">
+              <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                <div>
+                  <div style="font-weight:900; color:${PET_STAR_COLORS[star] || '#fff'};">${star}성 3마리 → ${nextStar}성 1마리</div>
+                  <div style="margin-top:4px; font-size:12px; color:#cfd6ff;">보유 ${formatNumber(count)}마리 · 비용 ${formatNumber(cost)}G</div>
+                  <div style="margin-top:4px; font-size:11px; color:${enoughPets ? '#ffeec7' : '#aab6ff'}; line-height:1.5;">재료: ${preview}</div>
+                </div>
+                <button class="ui-btn" data-fuse-star="${star}" style="min-width:88px; ${(!enoughPets || !enoughGold) ? 'opacity:0.45;' : 'border-color:#ffd700; color:#ffe08a;'}" ${(!enoughPets || !enoughGold) ? 'disabled' : ''}>합성</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
     <div style="display:flex; flex-direction:column; gap:8px;">
       ${Object.entries(catalog).map(([key, item]) => {
         const count = Math.floor(inv[key] || 0);
@@ -6465,6 +6496,37 @@ function renderInventoryContent() {
   if (openPetDexFromInventoryBtn) {
     openPetDexFromInventoryBtn.addEventListener('click', () => openPetDexModal());
   }
+
+  inventoryBodyEl.querySelectorAll('[data-fuse-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Math.max(1, Math.min(4, Math.floor(Number(btn.getAttribute('data-fuse-star') || 1))));
+      const cost = getPetFusionCost(star, level);
+      const materials = getFusionCandidatesByStar(star).slice(0, 3);
+      if (materials.length < 3) {
+        try { showToast(`${star}성 펫이 3마리 이상 필요합니다.`, '#ffb0b0'); } catch(e) {}
+        return;
+      }
+      const preview = materials.map(p => `${getPetDef(p.type).icon} ${getPetDisplayName(p)}`).join('\n');
+      const ok = confirm(
+        `${star}성 펫 3마리를 합성하시겠습니까?\n\n` +
+        `${preview}\n\n` +
+        `비용: ${formatNumber(cost)}G\n` +
+        `결과: ${star + 1}성 펫 1마리 (7종 중 랜덤)`
+      );
+      if (!ok) return;
+      const r = fusePetsByStar(star);
+      if (r.ok) {
+        try { showToast(r.msg, PET_STAR_COLORS[r.pet.star] || '#7ce7ff', 1800); } catch(e) {}
+      } else {
+        try { showToast(r.msg, '#ffb0b0', 1600); } catch(e) { alert(r.msg); }
+      }
+      renderInventoryContent();
+      if (!profileModal.classList.contains('hidden')) openProfile(true);
+      renderShop();
+      updateConsumableQuickBar();
+      updateHUD();
+    });
+  });
 
   inventoryBodyEl.querySelectorAll('[data-use-item]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -8702,7 +8764,7 @@ function ensurePetDexState() {
 function syncPetDexOwnedCounts() {
   const dex = saveData.petDex || ensurePetDexState();
   for (const key of Object.keys(PET_DEFS)) dex[key].ownedCount = 0;
-  const owned = (saveData.petSystem && Array.isArray(saveData.petSystem.owned)) ? saveData.petSystem.owned : [];
+  const owned = (saveData.pets && Array.isArray(saveData.pets.owned)) ? saveData.pets.owned : [];
   for (const pet of owned) {
     const type = PET_DEFS[pet && pet.type] ? pet.type : 'slime';
     dex[type].ownedCount += 1;
@@ -8794,6 +8856,8 @@ function getPetAbilityText(pet) {
 }
 
 const PET_SELL_PRICE_BY_STAR = { 1:1000, 2:1600, 3:2400, 4:3200, 5:4000 };
+const PET_FUSION_COSTS = { 1:1000, 2:5000, 3:10000, 4:50000 };
+const PET_FUSION_PRE200_FIVE_STAR_COST = 200000;
 let petFxTimerA = null;
 let petFxTimerB = null;
 
@@ -8912,6 +8976,120 @@ function sellPetByUid(uid) {
   updateHUD();
   playPetSellAnimation(pet, price);
   return { ok:true, pet, gold:price, msg:`${getPetDisplayName(pet)} 판매 완료! (+${formatNumber(price)}G)` };
+}
+
+
+function getPetFusionCost(fromStar, playerLevel = level) {
+  const star = Math.max(1, Math.min(5, Math.floor(Number(fromStar) || 1)));
+  if (star >= 5) return null;
+  if (star === 4) return (Math.floor(Number(playerLevel) || 1) < 200) ? PET_FUSION_PRE200_FIVE_STAR_COST : (PET_FUSION_COSTS[4] || 50000);
+  return PET_FUSION_COSTS[star] || null;
+}
+
+function getOwnedPetCountByStar(star) {
+  const targetStar = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  return getOwnedPets().filter(p => Math.max(1, Math.min(5, Math.floor(Number(p.star) || 1))) === targetStar).length;
+}
+
+function getFusionCandidatesByStar(star) {
+  const targetStar = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const petsState = ensurePetSystemState();
+  const equippedIds = new Set([petsState.equipped.left, petsState.equipped.right].filter(Boolean));
+  const matched = petsState.owned.filter(p => Math.max(1, Math.min(5, Math.floor(Number(p.star) || 1))) === targetStar);
+  matched.sort((a, b) => {
+    const ae = equippedIds.has(a.uid) ? 1 : 0;
+    const be = equippedIds.has(b.uid) ? 1 : 0;
+    if (ae !== be) return ae - be;
+    return (Number(a.uid) || 0) - (Number(b.uid) || 0);
+  });
+  return matched;
+}
+
+function getPetFusionPreviewText(fromStar) {
+  const candidates = getFusionCandidatesByStar(fromStar).slice(0, 3);
+  if (!candidates.length) return '합성 재료가 없습니다.';
+  return candidates.map(p => `${getPetDef(p.type).icon} ${getPetDisplayName(p)}`).join(', ');
+}
+
+function playPetFusionAnimation(pet, fromStar) {
+  if (!petFxOverlay || !petFxMainEl) return;
+  clearPetFxTimers();
+  const def = getPetDef(pet.type);
+  const color = PET_STAR_COLORS[pet.star] || def.color || '#ffffff';
+  petFxOverlay.style.display = 'flex';
+  petFxCard && petFxCard.classList.add('show');
+  petFxTitleEl.textContent = '펫 합성';
+  petFxMainEl.textContent = '✨';
+  petFxMainEl.className = 'hatch-egg';
+  petFxGlowEl.style.background = `radial-gradient(circle, ${color}66 0%, ${color}22 42%, rgba(255,255,255,0.00) 72%)`;
+  petFxRarityEl.textContent = `${fromStar}성 3마리 융합 중...`;
+  petFxRarityEl.style.color = color;
+  petFxNameEl.textContent = '빛이 모이고 있습니다...';
+  petFxHintEl.textContent = `${pet.star}성 펫이 곧 등장합니다.`;
+  petFxTimerA = setTimeout(() => {
+    petFxMainEl.textContent = def.icon || '🐾';
+    petFxMainEl.className = 'hatch-born';
+    petFxRarityEl.textContent = `${getPetStarText(pet.star)} ${pet.star}성 합성 성공`;
+    petFxNameEl.textContent = `${def.name} 탄생!`;
+    petFxHintEl.textContent = '합성으로 얻은 펫은 인벤토리에서 바로 확인할 수 있습니다.';
+    burstPetFx(color, 14);
+    try { SFX.levelUp && SFX.levelUp(); } catch(e) {}
+  }, 680);
+  petFxTimerB = setTimeout(closePetFxOverlay, 2300);
+}
+
+function fusePetsByStar(fromStar) {
+  const sourceStar = Math.max(1, Math.min(5, Math.floor(Number(fromStar) || 1)));
+  if (sourceStar >= 5) return { ok:false, msg:'5성 펫은 더 이상 합성할 수 없습니다.' };
+
+  const petsState = ensurePetSystemState();
+  const candidates = getFusionCandidatesByStar(sourceStar);
+  if (candidates.length < 3) return { ok:false, msg:`${sourceStar}성 펫이 3마리 이상 필요합니다.` };
+
+  const cost = getPetFusionCost(sourceStar, level);
+  if (!Number.isFinite(cost) || cost <= 0) return { ok:false, msg:'합성 비용 정보를 불러오지 못했습니다.' };
+  if (Math.floor(gold || 0) < cost) return { ok:false, msg:`골드가 부족합니다. (${formatNumber(cost)}G 필요)` };
+
+  const materials = candidates.slice(0, 3);
+  const materialIds = new Set(materials.map(p => p.uid));
+  if (petsState.equipped.left && materialIds.has(petsState.equipped.left)) petsState.equipped.left = null;
+  if (petsState.equipped.right && materialIds.has(petsState.equipped.right)) petsState.equipped.right = null;
+  petsState.owned = petsState.owned.filter(p => !materialIds.has(p.uid));
+
+  gold -= cost;
+  saveData.goldSpent = (saveData.goldSpent || 0) + cost;
+  addGoldSpentStat(cost);
+
+  const newPet = {
+    uid: petsState.nextId++,
+    type: rollPetType(),
+    star: Math.min(5, sourceStar + 1),
+    source: 'fusion'
+  };
+  petsState.owned.push(newPet);
+  registerPetDexEntry(newPet);
+
+  if (!petsState.equipped.left) petsState.equipped.left = newPet.uid;
+  else if (!petsState.equipped.right && petsState.equipped.left !== newPet.uid) petsState.equipped.right = newPet.uid;
+
+  syncPetDexOwnedCounts();
+  syncPlayerHealthToLevel({ keepRatio: true });
+  saveGameDataDebounced();
+  updateHUD();
+
+  try {
+    playPetFusionAnimation(newPet, sourceStar);
+    if (player) spawnExplosion(player.x, player.y - 10, getPetDef(newPet.type).color || '#ffffff', 14);
+    spawnDamageText((player && player.x) || width * 0.5, (player && player.y - 30) || height * 0.5, `${newPet.star}성 ${getPetDef(newPet.type).name} 합성!`, PET_STAR_COLORS[newPet.star] || '#ffffff');
+  } catch(e) {}
+
+  return {
+    ok:true,
+    pet:newPet,
+    cost,
+    materials,
+    msg:`${sourceStar}성 합성 성공! ${newPet.star}성 ${getPetDef(newPet.type).name}을(를) 획득했습니다.`
+  };
 }
 
 function getPetAttackMultiplier() {
