@@ -9158,10 +9158,10 @@ function getCloseKillScoreInfo(enemy) {
   const dist = Math.hypot((enemy.x || 0) - (player.x || 0), (enemy.y || 0) - (player.y || 0));
   const nearBase = Math.max(24, (player.size || 20) * 0.9 + (enemy.size || 20) * 0.7);
 
-  if (dist <= nearBase + 4) return { multiplier: 5, label: '초근접 5배!' };
-  if (dist <= nearBase + 26) return { multiplier: 4, label: '근접 4배!' };
-  if (dist <= nearBase + 54) return { multiplier: 3, label: '가까움 3배!' };
-  if (dist <= nearBase + 92) return { multiplier: 2, label: '준근접 2배!' };
+  if (dist <= nearBase + 10) return { multiplier: 5, label: 'X5' };
+  if (dist <= nearBase + 40) return { multiplier: 4, label: 'X4' };
+  if (dist <= nearBase + 70) return { multiplier: 3, label: 'X3' };
+  if (dist <= nearBase + 100) return { multiplier: 2, label: 'X2' };
   return { multiplier: 1, label: '' };
 }
 
