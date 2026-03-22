@@ -1494,6 +1494,9 @@ body.tutorial-mode .quake-skill{
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
         </button>
+        <button id="modeMissionBtn" class="ui-btn big-btn" style="width:100%; border-color:#ff8fd6; color:#ffe6f7; background:linear-gradient(to bottom, #5a1f46, #220914);">
+            🧭 미션 모드 (LV.11+)
+        </button>
                 
         <button id="modeItemParkBtn" class="ui-btn big-btn" style="width:100%; border-color:#7ce7ff; color:#e8fbff; background:linear-gradient(to bottom, #0f3e52, #071824);">
             🫧 아이템 파크 (1분 · 하루 10회)
@@ -1507,6 +1510,7 @@ body.tutorial-mode .quake-skill{
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
+            미션 모드: 점수·처치 목표 달성형 진행<br>
             아이템 파크: 하늘에서 아이템 수집<br>
             미니게임: 줍기형 2종 + 터치형 3종
         </div>
@@ -2032,6 +2036,7 @@ const closeDungeonBtn = document.getElementById('closeDungeonBtn');
 const modeModal = document.getElementById('modeModal');
 const modeStageBtn = document.getElementById('modeStageBtn');
 const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
+const modeMissionBtn = document.getElementById('modeMissionBtn');
 const modeDungeonBtn = document.getElementById('modeDungeonBtn');
 const modeItemParkBtn = document.getElementById('modeItemParkBtn');
 const modeMiniGameBtn = document.getElementById('modeMiniGameBtn');
@@ -2051,12 +2056,19 @@ const stageClearTimeEl = document.getElementById('stageClearTimeText');
 const stageClearRankEl = document.getElementById('stageClearRankText');
 
 nextStageBtn.addEventListener('click', () => {
-    // 스테이지 모드에서만 사용
-    if (gameMode !== 'stage') { stageClearModal.classList.add('hidden'); return; }
+    if (gameMode !== 'stage' && gameMode !== 'mission') { stageClearModal.classList.add('hidden'); return; }
 
     stageClearModal.classList.add('hidden');
     stage++;
     if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
+
+    if (gameMode === 'mission') {
+      missionState.currentStage = stage;
+      runStartStage = 1;
+      startGame(stage);
+      return;
+    }
+
     lastSelectedStage = stage;
     runStartStage = stage;
     startStage();
@@ -2075,6 +2087,8 @@ const bgmTracks = {
   title:    new Audio('bg_title.mp3'),
   game:     new Audio('bg_game.mp3'),
   boss:     new Audio('bg_boss.mp3'),
+  mission:  new Audio('bg_mission.mp3'),  // ✅ 미션 모드 전용
+  bonus:    new Audio('bg_bonus.mp3'),    // ✅ 미션 보너스 스테이지 전용
   infinite: new Audio('bg_infinite.mp3'), // ✅ 무한 모드 전용
   dungeon:  new Audio('bg_dungeon.mp3'),  // ✅ 던전 모드 전용
   itempark: new Audio('bg_itempark.mp3'), // ✅ 아이템 파크 전용
@@ -2186,8 +2200,8 @@ function getSeasonKeyNow(date = new Date()) {
 }
 
 function resolveBgmName(requested) {
-  // 보스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame') return requested;
+  // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
@@ -2196,6 +2210,7 @@ function resolveBgmName(requested) {
 }
 
 function getModeBgmName() {
+  if (gameMode === 'mission') return isMissionBonusStage(stage) ? 'bonus' : 'mission';
   if (gameMode === 'infinite') return 'infinite';
   if (gameMode === 'dungeon') return 'dungeon';
   if (gameMode === 'itempark') return 'itempark';
@@ -3000,7 +3015,7 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'infinite' | 'itempark' | 'minigame' | 'dungeon'
+let gameMode = 'stage';      // 'stage' | 'mission' | 'infinite' | 'itempark' | 'minigame' | 'dungeon'
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
 
@@ -3044,12 +3059,189 @@ let miniGameState = {
   expReward: 0
 };
 
+const MISSION_BONUS_STAGE_DURATION_MS = 20 * 1000;
+let missionState = {
+  currentStage: 1,
+  stageScoreStart: 0,
+  stageExpStart: 0,
+  bonusActive: false,
+  bonusTimeLeft: MISSION_BONUS_STAGE_DURATION_MS,
+  bonusSpawnAcc: 0,
+  bonusSpawnBatchAcc: 0,
+  clearRewardGranted: false,
+  clearResultCache: null,
+  objectiveStage: 1,
+  objectiveType: 'score',
+  objectiveTarget: 0,
+  objectiveLabel: '',
+  skillUses: 0,
+  bonusCollectedExp: 0,
+  spawnAcc: 0
+};
+
 function getMiniGameDef(type) {
   return MINI_GAME_DEFS[type] || MINI_GAME_DEFS.collector;
 }
 
 function getMiniGameTypeLabel(type) {
   return getMiniGameDef(type).title;
+}
+
+function isMissionBonusStage(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return (stg % 5) === 0;
+}
+
+function isMissionBossStage(stg) {
+  return getMissionType(stg) === 'boss';
+}
+
+function getMissionKillTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (isMissionBonusStage(stg)) return 0;
+  if (stg <= 10) return 3 + stg;
+  return 8 + Math.floor(stg * 2.5);
+}
+
+function getMissionScoreTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (isMissionBonusStage(stg)) return 0;
+  if (stg <= 10) return 500 * stg;
+  return 1500 + stg * 1200 + Math.floor(stg / 5) * 500;
+}
+
+function getMissionBonusBaseExp(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return 18 + stg * 8;
+}
+
+function getMissionBonusSpawnBatch(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return Math.min(8, 2 + Math.floor((stg - 1) / 5));
+}
+
+function getMissionBonusGradeKey(stg) {
+  if (stg >= 25) return Math.random() < 0.4 ? 'high' : 'mid';
+  if (stg >= 10) return Math.random() < 0.2 ? 'high' : 'mid';
+  return Math.random() < 0.15 ? 'mid' : 'low';
+}
+
+function getMissionIndex(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return stg - Math.floor(stg / 5);
+}
+
+function getMissionType(stg) {
+  if (isMissionBonusStage(stg)) return 'bonus';
+  if (Number(missionState.objectiveStage || 0) === Math.max(1, Math.floor(Number(stg) || 1)) && missionState.objectiveType) {
+    return missionState.objectiveType;
+  }
+  return 'score';
+}
+
+function getRandomMissionType(stg) {
+  const types = ['score', 'kill', 'boss', 'gold', 'skill', 'survival'];
+  return types[Math.floor(Math.random() * types.length)] || 'score';
+}
+
+function isMissionGoldObjectiveActive() {
+  return gameMode === 'mission' && !isMissionBonusStage(stage) && missionState.objectiveType === 'gold';
+}
+
+function getMissionBossTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 10) return 1;
+  return 1 + Math.floor((stg - 1) / 6);
+}
+
+function getMissionGoldTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 10) return 15 + stg * 10;
+  return 60 + stg * 35 + Math.floor(stg / 5) * 40;
+}
+
+function getMissionSkillUseTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 10) return 1 + Math.floor((stg - 1) / 3);
+  return 3 + Math.floor((stg - 1) / 4);
+}
+
+function getMissionSurvivalTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 10) return 3 + stg;
+  return 8 + Math.floor(stg * 1.5);
+}
+
+function getMissionObjective(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (isMissionBonusStage(stg)) {
+    return { type: 'bonus', target: 0, label: '20초 동안 EXP 아이템 수집' };
+  }
+  if (Number(missionState.objectiveStage || 0) === stg && missionState.objectiveLabel) {
+    return {
+      type: String(missionState.objectiveType || 'score'),
+      target: Math.max(0, Math.floor(Number(missionState.objectiveTarget) || 0)),
+      label: String(missionState.objectiveLabel || '')
+    };
+  }
+  const type = 'score';
+  const target = getMissionScoreTarget(stg);
+  return { type, target, label: `목표 점수 ${formatNumber(target)}점 달성` };
+}
+
+function initMissionObjective(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  let obj = null;
+  if (isMissionBonusStage(stg)) {
+    obj = { type: 'bonus', target: 0, label: '20초 동안 EXP 아이템 수집' };
+  } else {
+    const type = getRandomMissionType(stg);
+    if (type === 'score') {
+      const target = getMissionScoreTarget(stg);
+      obj = { type, target, label: `목표 점수 ${formatNumber(target)}점 달성` };
+    } else if (type === 'kill') {
+      const target = getMissionKillTarget(stg);
+      obj = { type, target, label: `몬스터 ${formatNumber(target)}마리 처치` };
+    } else if (type === 'boss') {
+      const target = getMissionBossTarget(stg);
+      obj = { type, target, label: `보스 ${formatNumber(target)}마리 처치` };
+    } else if (type === 'gold') {
+      const target = getMissionGoldTarget(stg);
+      obj = { type, target, label: `골드 ${formatNumber(target)} 획득` };
+    } else if (type === 'skill') {
+      const target = getMissionSkillUseTarget(stg);
+      obj = { type, target, label: `스킬 ${formatNumber(target)}회 사용` };
+    } else {
+      const target = getMissionSurvivalTarget(stg);
+      obj = { type: 'survival', target, label: `무피격 ${formatNumber(target)}초 버티기` };
+    }
+  }
+  missionState.objectiveStage = stg;
+  missionState.objectiveType = obj.type;
+  missionState.objectiveTarget = Math.max(0, Math.floor(Number(obj.target) || 0));
+  missionState.objectiveLabel = String(obj.label || '');
+  missionState.skillUses = 0;
+  missionState.bonusCollectedExp = 0;
+  return obj;
+}
+
+function getMissionObjectiveProgress(stg) {
+  const obj = getMissionObjective(stg);
+  const gainedScore = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
+  if (obj.type === 'score') return gainedScore;
+  if (obj.type === 'kill') return Math.max(0, Math.floor(stageRunKillCount || 0));
+  if (obj.type === 'boss') return Math.max(0, Math.floor(stageBossKillCount || 0));
+  if (obj.type === 'gold') return Math.max(0, Math.floor(stageRunGoldEarned || 0));
+  if (obj.type === 'skill') return Math.max(0, Math.floor(missionState.skillUses || 0));
+  if (obj.type === 'survival') return Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
+  if (obj.type === 'bonus') return Math.max(0, Math.floor(missionState.bonusCollectedExp || 0));
+  return 0;
+}
+
+function getMissionProgressText(stg) {
+  const obj = getMissionObjective(stg);
+  if (obj.type === 'bonus') return `EXP 수집 ${formatNumber(Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)))}`;
+  return `${obj.label} · ${formatNumber(getMissionObjectiveProgress(stg))} / ${formatNumber(obj.target)}`;
 }
 
 function isTouchMiniGameType(type) {
@@ -3205,7 +3397,11 @@ let stageTransitionTimer = 0;
 let infiniteWaveSpawnAcc = 0; // 무한 모드 전용: 1.5초마다 새 줄 강제 생성
 
 // ✅ [v.79] 스테이지 클리어 연출: 3초(보너스 EXP + 랭크) → 결과 모달
-let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D' };
+let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D', formulaText: '', formulaText2: '' };
+let missionAutoAdvanceTimer = null;
+function clearMissionAutoAdvanceTimer() {
+  if (missionAutoAdvanceTimer) { clearTimeout(missionAutoAdvanceTimer); missionAutoAdvanceTimer = null; }
+}
 
 // ✅ [v.106] 플레이어 상태이상(보스 속성탄 전용)
 let playerStatus = {
@@ -3290,6 +3486,12 @@ function damagePlayer(amount, px, py, hitInfo = null) {
 
   try { applyBossBulletStatus(hitInfo, px || player.x, py || player.y); } catch(e){}
 
+  if (gameMode === 'mission' && getMissionType(stage) === 'survival') {
+    playerHp = 0;
+    triggerDeath();
+    return;
+  }
+
   if (playerHp <= 0) triggerDeath();
 }
 
@@ -3313,6 +3515,7 @@ if (stg <= 40) return 40;
 }
 
 function checkStageKillClearNow() {
+  if (gameMode === 'mission') return checkMissionStageClearNow();
   if (gameMode !== 'stage') return false;
   if (stageCleared) return false;
 
@@ -3368,6 +3571,28 @@ function checkStageKillClearNow() {
   }
   saveGameDataDebounced();
 
+  return true;
+}
+
+function checkMissionStageClearNow() {
+  if (gameMode !== 'mission') return false;
+  if (stageCleared || isMissionBonusStage(stage)) return false;
+
+  const obj = getMissionObjective(stage);
+  const progress = getMissionObjectiveProgress(stage);
+
+  if (obj.type === 'survival' && (stageRunHits || 0) > 0) return false;
+  if (obj.type === 'boss' && boss) return false;
+  if (progress < obj.target) return false;
+
+  stageCleared = true;
+  stageTransitionTimer = 800;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  bossSpawned = false;
+  spawnExplosion(width/2, height/3, 'rgba(255, 170, 230, 1)', 25);
+  if (SFX && SFX.stageClear) SFX.stageClear();
   return true;
 }
 
@@ -4053,7 +4278,7 @@ function updatePlayerStatusEffects(dt) {
     playerStatus.freezeMs = Math.max(0, playerStatus.freezeMs - dt);
   }
 
-  if (gameMode !== 'stage') {
+  if (gameMode !== 'stage' && gameMode !== 'mission') {
     playerStatus.burnMs = 0;
     playerStatus.burnTickMs = 5000;
     return;
@@ -4432,6 +4657,7 @@ function calcBaseExpFromScore(score) {
 
 function spawnExpItem(x, y, baseExp, gradeKey = 'low', force = false) {
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
+  if (gameMode === 'mission' && !missionState.bonusActive) return;
   if (baseExp <= 0) return;
 
   // 저사양에서 폭주 방지
@@ -4455,6 +4681,7 @@ function spawnExpItem(x, y, baseExp, gradeKey = 'low', force = false) {
 
 function spawnExpItemFromEnemy(enemy) {
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
+  if (gameMode === 'mission' && !missionState.bonusActive) return;
   if (!enemy) return;
   if (Math.random() >= EXP_ITEM_DROP_CHANCE) return;
 
@@ -4466,6 +4693,7 @@ function spawnExpItemFromEnemy(enemy) {
 
 function spawnExpItemFromBoss(force = false) {
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
+  if (gameMode === 'mission' && !missionState.bonusActive) return;
   // ✅ 요청: 보스 처치 시 10% 확률로 EXP 구슬 드랍
   if (!force && Math.random() >= BOSS_EXP_ITEM_DROP_CHANCE) return;
 
@@ -4570,6 +4798,7 @@ function drawExpItems() {
 function tryPickupExpItems() {
   if (!player || !player.alive || isPlayerDying) return;
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
+  if (gameMode === 'mission' && !missionState.bonusActive) return;
 
   for (let i = expItems.length - 1; i >= 0; i--) {
     const it = expItems[i];
@@ -4581,10 +4810,18 @@ function tryPickupExpItems() {
       // ✅ 핫타임 적용은 여기서!
       const gained = Math.floor(it.baseExp * (it.gradeMult || 1) * getHotMultiplier());
       if (gained > 0) {
-        addExp(gained);
-        // ✅ 스테이지 EXP 상세 집계(구슬 EXP)
-        if (gameMode === 'stage') {
-          stageRunExpOrbs += gained;
+        if (gameMode === 'mission') {
+          if (missionState.bonusActive) {
+            missionState.bonusCollectedExp = Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)) + gained;
+            addExp(gained);
+            stageRunExpOrbs += gained;
+          }
+        } else {
+          addExp(gained);
+          // ✅ 스테이지 EXP 상세 집계(구슬 EXP)
+          if (gameMode === 'stage' || gameMode === 'mission') {
+            stageRunExpOrbs += gained;
+          }
         }
       }
       if (saveData.quests && saveData.quests.expOrb) {
@@ -5162,7 +5399,7 @@ function toggleBgmFromCanvas() {
   } else {
     if (state === 'title') playBgmTrack('title');
     else if (state === 'playing') {
-      if (boss) playBgmTrack('boss');
+      if (boss && gameMode !== 'mission') playBgmTrack('boss');
       else playBgmTrack(getModeBgmName());
     }
   }
@@ -5706,14 +5943,14 @@ characterListEl && characterListEl.addEventListener('click', (e) => {
             // ✅ 시즌 BGM 적용 위해 현재 상황 트랙으로 다시 선택
             if (state === 'title') playBgmTrack('title');
             else if (state === 'playing') {
-                if (boss) playBgmTrack('boss');
+                if (boss && gameMode !== 'mission') playBgmTrack('boss');
                 else playBgmTrack(getModeBgmName());
             }
         }
         else {
             if (state === 'title') playBgmTrack('title');
             else if (state === 'playing') {
-                if (boss) playBgmTrack('boss');
+                if (boss && gameMode !== 'mission') playBgmTrack('boss');
                 else playBgmTrack(getModeBgmName());
             }
         }
@@ -6022,7 +6259,7 @@ function registerEnemyKill(isBoss = false) {
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
 
-  if (gameMode === 'stage') {
+  if (gameMode === 'stage' || gameMode === 'mission') {
     checkStageKillClearNow();
   }
 
@@ -7274,6 +7511,9 @@ function addSkillQuestCount(type, amount = 1) {
   if (!saveData.quests.skills[type] || typeof saveData.quests.skills[type] !== 'object') saveData.quests.skills[type] = { count: 0, target: 10, tier: 1 };
   const q = saveData.quests.skills[type];
   q.count = Math.max(0, Math.floor(Number(q.count) || 0) + Math.max(0, Math.floor(Number(amount) || 0)));
+  if (gameMode === 'mission') {
+    missionState.skillUses = Math.max(0, Math.floor(Number(missionState.skillUses) || 0) + Math.max(0, Math.floor(Number(amount) || 0)));
+  }
   q.target = Math.max(10, Math.floor(Number(q.target) || 10));
   q.tier = Math.max(1, Math.floor(Number(q.tier) || Math.max(1, q.target / 10)));
   saveGameDataDebounced();
@@ -7899,6 +8139,16 @@ if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
   startInfiniteMode();
 });
 
+if (modeMissionBtn) modeMissionBtn.addEventListener('click', () => {
+  if (level < 11) {
+    alert(`미션 모드는 LV.11부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  gameMode = 'mission';
+  modeModal.classList.add('hidden');
+  startMissionMode();
+});
+
 function renderMiniGameSelect() {
   if (!miniGameSelectList) return;
   const used = Math.max(0, Number(saveData?.miniGame?.used || 0));
@@ -7994,6 +8244,16 @@ function startInfiniteMode() {
   runStartStage = 1;
   playBgmTrack('infinite')
   startGame(runStartStage || 1);
+}
+
+function startMissionMode() {
+  missionState.currentStage = 1;
+  missionState.bonusActive = false;
+  missionState.bonusTimeLeft = MISSION_BONUS_STAGE_DURATION_MS;
+  missionState.bonusSpawnAcc = 0;
+  missionState.bonusSpawnBatchAcc = 0;
+  runStartStage = 1;
+  startGame(1);
 }
 
 function startItemParkMode() {
@@ -9441,6 +9701,10 @@ function addScore(amount, source = 'monster', options = {}) {
     updateBestRunScoreStats();
   }
 
+  if (gameMode === 'mission') {
+    return;
+  }
+
   // 무한 모드: 10점당 1EXP / 나머지 모드: 기존 100점당 1EXP 유지
   const expUnit = (gameMode === 'infinite') ? 10 : 100;
   const baseExp = Math.floor(score / expUnit) - Math.floor(prevScore / expUnit);
@@ -9450,7 +9714,7 @@ function addScore(amount, source = 'monster', options = {}) {
 
   if (gainedExp > 0) {
     addExp(gainedExp);
-    if (gameMode === 'stage') {
+    if (gameMode === 'stage' || gameMode === 'mission') {
       if (source === 'boss') stageRunExpBoss += gainedExp;
       else stageRunExpMonsters += gainedExp;
     }
@@ -9506,9 +9770,9 @@ function spawnFieldItem(type, x, y) {
     type,
     x, y,
     radius: 16,
-    vx: (Math.random() - 0.5) * 1.8,
-    vy: 2.4 + Math.random() * 1.2,
-    gravity: 0.08 + Math.random() * 0.02,
+    vx: (Math.random() - 0.5) * 2.2,
+    vy: -(2.6 + Math.random() * 1.1),
+    gravity: 0.16 + Math.random() * 0.03,
     bob: Math.random() * Math.PI * 2,
     life: 9000
   });
@@ -9643,7 +9907,7 @@ function drawFieldItems() {
 }
 
 function spawnGoldDrop(x, y, amount) {
-  if (gameMode !== 'infinite') return;
+  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
   if (!amount || amount <= 0) return;
   // 저사양 폭주 방지
   if (isLowPower() && goldDrops.length > 40) return;
@@ -9668,15 +9932,16 @@ function spawnGoldDrop(x, y, amount) {
     x, y,
     type: dropType,
     r: (dropType === 'gold') ? 11 : 12,
-    vy: 2.4 + Math.random() * 1.1,
-    gravity: 0.08 + Math.random() * 0.02,
+    vx: (Math.random() - 0.5) * 1.8,
+    vy: -(2.8 + Math.random() * 1.0),
+    gravity: 0.17 + Math.random() * 0.03,
     life: 9000,
     amount: finalAmount
   });
 }
 
 function updateGoldDrops(dt) {
-  if (gameMode !== 'infinite') { goldDrops.length = 0; return; }
+  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) { goldDrops.length = 0; return; }
   const delta = dt / 16.67;
   const magnetActive = isInfiniteItemEffectActive('magnet');
   for (let i = goldDrops.length - 1; i >= 0; i--) {
@@ -9693,11 +9958,13 @@ function updateGoldDrops(dt) {
         it.x += (dx / dist) * pull * delta;
         it.y += (dy / dist) * pull * delta;
       } else {
-        it.vy += (it.gravity || 0.08) * delta;
+        it.vy += (it.gravity || 0.17) * delta;
+        it.x += (it.vx || 0) * delta;
         it.y += it.vy * delta;
       }
     } else {
-      it.vy += (it.gravity || 0.08) * delta;
+      it.vy += (it.gravity || 0.17) * delta;
+      it.x += (it.vx || 0) * delta;
       it.y += it.vy * delta;
     }
     it.life -= dt;
@@ -9706,7 +9973,7 @@ function updateGoldDrops(dt) {
 }
 
 function drawGoldDrops() {
-  if (gameMode !== 'infinite') return;
+  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
   const blocked = (typeof anyBlockingModalOpen === 'function') ? anyBlockingModalOpen() : false;
   for (const it of goldDrops) {
     ctx.save();
@@ -9791,7 +10058,7 @@ function drawGoldDrops() {
 }
 
 function tryPickupGoldDrops() {
-  if (gameMode !== 'infinite') return;
+  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
   if (!player || !player.alive || isPlayerDying) return;
 
   for (let i = goldDrops.length - 1; i >= 0; i--) {
@@ -10744,11 +11011,11 @@ function handleEnemyKilledBySkill(e) {
     if (killScoreInfo.multiplier > 1) {
       spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
     }
-    // ✅ [v.79] 무한 모드에서만 골드 드랍(수동 줍기)
-    if (gameMode === 'infinite') {
+    // 골드 미션이면 미션 모드에서도 골드 드랍 허용
     spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
-    trySpawnInfiniteDropItem(e.x, e.y);
-  }
+    if (gameMode === 'infinite') {
+      trySpawnInfiniteDropItem(e.x, e.y);
+    }
     spawnExpItemFromEnemy(e);
   }
 
@@ -10811,8 +11078,10 @@ function handleBossKilledBySkill() {
     spawnDamageText(bx, by - 34, getBossScorePopupText(bossBonusScore), '#7dff9b', true);
   }
 
-  // 기존 보스 EXP 구슬은 확률 드랍이었는데, 보스 처치 보상은 항상 주도록 강제
-  spawnExpItemFromBoss(Math.random() < 0.10); // 10% 확률
+  // 미션 모드에서는 처치 즉시 EXP를 주지 않습니다.
+  if (gameMode !== 'mission') {
+    spawnExpItemFromBoss(Math.random() < 0.10);
+  } // 10% 확률
 
 
   spawnExplosion(bx, by, '#b84bff', 30);
@@ -10821,10 +11090,14 @@ function handleBossKilledBySkill() {
   // 퀘스트/통계
   registerEnemyKill(true);
 
-  // ✅ 스테이지 모드 보스 목표 카운트 반영 + 즉시 클리어 체크
+  // ✅ 스테이지/미션 보스 카운트 반영
   if (gameMode === 'stage' && isBossStage(stage)) {
     stageBossKillCount = 1;
     checkStageKillClearNow();
+  } else if (gameMode === 'mission' && isMissionBossStage(stage)) {
+    stageBossKillCount = Math.max(0, Math.floor(stageBossKillCount || 0)) + 1;
+    bossSpawned = false;
+    checkMissionStageClearNow();
   }
 
   boss = null;
@@ -11686,7 +11959,7 @@ enemies.length = 0; enemyBullets.length = 0; boss = null;
 lasers = [];
 
 // ✅ [v.41] 스테이지 시작 시 체력/기록 리셋(스테이지 모드만)
-if (gameMode === 'stage') {
+if (gameMode === 'stage' || gameMode === 'mission') {
   syncPlayerHealthToLevel({ refill: true });
   stageRunHits = 0;
   stageRunExpMonsters = 0;
@@ -11700,11 +11973,28 @@ if (gameMode === 'stage') {
   stageClearSeq.timer = 0;
   stageClearSeq.bonusExp = 0;
   stageClearSeq.rank = 'D';
+  stageClearSeq.formulaText = '';
+  stageClearSeq.formulaText2 = '';
   playerInvulnTimer = 0;
   hyperFlightPostInvulnTimer = 0;
   wasHyperFlightActive = false;
   stageRunStartTime = performance.now();
   stageRunStartExp = exp;
+  if (gameMode === 'mission') {
+    missionState.currentStage = Math.max(1, Math.floor(stage || missionState.currentStage || 1));
+    missionState.stageScoreStart = Math.max(0, Math.floor(score || 0));
+    missionState.stageExpStart = Math.max(0, Math.floor(exp || 0));
+    missionState.bonusActive = false;
+    missionState.bonusTimeLeft = MISSION_BONUS_STAGE_DURATION_MS;
+    missionState.bonusSpawnAcc = 0;
+    missionState.bonusSpawnBatchAcc = 0;
+    missionState.spawnAcc = 0;
+    missionState.clearRewardGranted = false;
+    missionState.clearResultCache = null;
+    goldDrops.length = 0;
+    goldDrops.length = 0;
+    initMissionObjective(stage);
+  }
   // ✅ [v.42+] 스테이지 EXP 상세 집계
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
@@ -11725,7 +12015,7 @@ function spawnNextWave() {
 
     const baseWaves = getWavesPerStage(stage);
     // ✅ [v.79] 스테이지 모드: 목표 처치 수 달성까지 계속 스폰(웨이브 제한 제거)
-    const wavesPerStage = (gameMode === 'stage')
+    const wavesPerStage = (gameMode === 'stage' || gameMode === 'mission')
       ? 999999
       : ((gameMode === 'infinite') ? Math.max(1, Math.floor(baseWaves * 0.6)) : baseWaves);
     if (waveIndex >= wavesPerStage) return;
@@ -11761,7 +12051,7 @@ function spawnNextWave() {
     if (gameMode === 'infinite') {
       enemyCount = Math.max(6, Math.floor(enemyCount * 0.75));
       enemyCount = Math.min(enemyCount, 45);
-    } else if (gameMode === 'stage') {
+    } else if (gameMode === 'stage' || gameMode === 'mission') {
       enemyCount = Math.min(enemyCount, STAGE_ENEMY_CAP);
     }
 // [업데이트] 속도 로직(조정):
@@ -11779,11 +12069,14 @@ if (stage <= 100) {
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
 
+    // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
+    if (gameMode === 'mission') enemyCount = 1;
+
     // ✅ [v.117 패치] 1웨이브 최대 5마리 제한
     enemyCount = Math.min(enemyCount, 5);
 
     // ✅ [v.101 패치] 화면 내 몬스터 과밀 방지(렉/폭우 방지)
-    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 55 : 70;
+    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage' || gameMode === 'mission') ? 55 : 70;
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
@@ -12012,7 +12305,21 @@ function getEnemyAttackStyle(stageNum, waveIdx, i){
 function spawnBossIfReady() {
   // ✅ [v.61] 보스는 5스테이지마다 1회 (던전 모드는 보스 없음)
   if (gameMode === 'dungeon') return;
-  if (!isBossStage(stage)) return;
+  const shouldSpawnBoss = (gameMode === 'mission') ? isMissionBossStage(stage) : isBossStage(stage);
+  if (!shouldSpawnBoss) return;
+
+  if (gameMode === 'mission') {
+    const bossTargetReached = (missionState.objectiveType === 'boss')
+      && (Math.max(0, Math.floor(stageBossKillCount || 0)) >= Math.max(0, Math.floor(missionState.objectiveTarget || 0)));
+    if (bossTargetReached || stageCleared) return;
+    if (!bossSpawned && !boss && waveIndex >= getWavesPerStage(stage)) {
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      bossSpawned = true;
+      startBossIntro();
+    }
+    return;
+  }
 
   if (!bossSpawned && waveIndex >= getWavesPerStage(stage) && enemies.length === 0) {
     bossSpawned = true;
@@ -12530,6 +12837,7 @@ function drawMiniTargets() {
 }
 
 function startGame(startStageNum = 1) {
+clearMissionAutoAdvanceTimer();
 initAudio();
 score = 0; bullets = []; bubbles = []; enemies = []; enemyBullets = []; particles = []; boss = null; lasers = []; expItems = []; goldDrops = []; fieldItems = []; parkItems = []; miniTargets = [];
 resetInfiniteItemEffects();
@@ -12554,6 +12862,9 @@ lastPet2ShotTime = 0;
 pet2 = getEquippedPet('left') ? createPet({ slot:'left' }) : null;
 
 stage = startStageNum;
+if (gameMode === 'mission') {
+  missionState.currentStage = Math.max(1, Math.floor(startStageNum || missionState.currentStage || 1));
+}
 waveIndex = 0; bossSpawned = false; stageCleared = false;
 currentBossLevel = 1; lastBossBonus = 0;
 player = createPlayer(); lastShotTime = 0;
@@ -12607,12 +12918,14 @@ setPauseUI();
 if (gameMode === 'dungeon') startDungeon();
 else if (gameMode === 'itempark') initItemParkRun();
 else if (gameMode === 'minigame') initMiniGameRun();
+else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
 updateHUD();
 }
 
 function goToTitle() {
+clearMissionAutoAdvanceTimer();
 closeMiniGameSelect();
 isPaused = false;
 state = 'title';
@@ -12620,6 +12933,7 @@ state = 'title';
 titleUI.classList.remove('hidden');
 gameOverUI.classList.add('hidden');
 playBgmTrack('title'); // ★ bg_title.mp3 재생
+missionState.bonusActive = false;
 // 초기화
 bullets = [];
 
@@ -12636,6 +12950,9 @@ restartBtn.addEventListener('click', () => {
   if (gameMode === 'stage') {
     // ✅ 스테이지 모드: 선택했던 스테이지로 재도전
     startGame(lastSelectedStage || runStartStage || stage || 1);
+  } else if (gameMode === 'mission') {
+    missionState.currentStage = 1;
+    startGame(1);
   } else if (gameMode === 'infinite') {
     // ✅ 무한 모드: 1스테이지부터
     startGame(1);
@@ -12643,6 +12960,11 @@ restartBtn.addEventListener('click', () => {
     // ✅ 던전: 타이틀로 (재입장은 던전 선택에서 1회 차감)
     goToTitle();
     openDungeonSelect();
+  } else if (gameMode === 'mission') {
+    if (scoreEl) scoreEl.textContent = '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))));
+    if (highScoreEl) highScoreEl.textContent = isMissionBonusStage(stage)
+      ? `보너스 남은 시간: ${formatMMSS(missionState.bonusTimeLeft || 0)}`
+      : getMissionProgressText(stage);
   } else if (gameMode === 'itempark') {
     ensureItemParkDailyReset();
     if (Number(saveData?.itemPark?.used || 0) >= ITEM_PARK_MAX_DAILY_RUNS) {
@@ -12807,6 +13129,177 @@ function finalizeStageClearStats() {
 }
 
 
+function initMissionBonusStage() {
+  waveIndex = 0;
+  bossSpawned = false;
+  stageCleared = false;
+  stageTransitionTimer = 0;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  lasers = [];
+  syncPlayerHealthToLevel({ refill: true });
+  stageRunHits = 0;
+  stageRunExpMonsters = 0;
+  stageRunExpBoss = 0;
+  stageRunExpOrbs = 0;
+  stageRunGoldEarned = 0;
+  stageRunKillCount = 0;
+  stageBossTriggered = false;
+  stageBossKillCount = 0;
+  playerInvulnTimer = 0;
+  hyperFlightPostInvulnTimer = 0;
+  wasHyperFlightActive = false;
+  stageRunStartTime = performance.now();
+  stageRunStartExp = exp;
+  missionState.currentStage = Math.max(1, Math.floor(stage || missionState.currentStage || 1));
+  missionState.stageScoreStart = Math.max(0, Math.floor(score || 0));
+  missionState.stageExpStart = Math.max(0, Math.floor(exp || 0));
+  missionState.bonusActive = true;
+  missionState.bonusTimeLeft = MISSION_BONUS_STAGE_DURATION_MS;
+  missionState.bonusSpawnAcc = 0;
+  missionState.bonusSpawnBatchAcc = 0;
+  missionState.clearRewardGranted = false;
+  missionState.clearResultCache = null;
+  initMissionObjective(stage);
+}
+
+function updateMissionBonusStage(dt, currentTime) {
+  if (!missionState.bonusActive) return;
+
+  missionState.bonusTimeLeft = Math.max(0, missionState.bonusTimeLeft - dt);
+  missionState.bonusSpawnAcc += dt;
+
+  const interval = Math.max(70, 260 - Math.floor(stage * 4));
+  while (missionState.bonusSpawnAcc >= interval) {
+    missionState.bonusSpawnAcc -= interval;
+    const batch = getMissionBonusSpawnBatch(stage);
+    for (let i = 0; i < batch; i++) {
+      const x = randRange(24, width - 24);
+      const y = -randRange(20, 120);
+      const spread = 0.8 + Math.min(4.0, stage * 0.08);
+      spawnExpItem(x, y, getMissionBonusBaseExp(stage), getMissionBonusGradeKey(stage), true);
+      const last = expItems[expItems.length - 1];
+      if (last) {
+        last.vy += Math.random() * spread;
+        last.life = 5000 + Math.floor(Math.random() * 1800);
+      }
+    }
+  }
+
+  sessionSurvivalTime += dt;
+  saveData.quests.survival.current += (dt / 1000);
+  addQuestStat('survivalSec', (dt / 1000));
+
+  if (playerInvulnTimer > 0) playerInvulnTimer = Math.max(0, playerInvulnTimer - dt);
+  if (levelUpTimer > 0) levelUpTimer -= dt;
+  if (player) player.speed = BASE_PLAYER_SPEED + (level - 1) * 0.15;
+
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  updateExpItems(dt);
+  updateGoldDrops(dt);
+  updatePlayerStatusEffects(dt);
+  handlePlayerMovement(dt);
+  shootBullet(currentTime);
+  shootPetBullet(currentTime);
+  shootPet2Bullet(currentTime);
+  updateLasers(dt);
+  updateLaserSkillUI();
+  updateBubble(dt);
+  updateBubbleSkillUI();
+  updateBubbles(dt);
+  updateLightning(dt);
+  updateLightningSkillUI();
+  updateBlizzard(dt);
+  updateBlizzardSkillUI();
+  updateMeteors(dt);
+  updateMeteorSkillUI();
+  updateQuake(dt);
+  updateQuakeSkillUI();
+  updateBullets(dt);
+  updatePetBullets(dt);
+  updatePet2Bullets(dt);
+  updatePetSkillProjectiles(dt);
+  updatePetSkillStreams(dt);
+  updatePetSkillBursts(dt);
+  tryPickupExpItems();
+  tryPickupGoldDrops();
+  updatePetProduction(dt);
+
+  if (missionState.bonusTimeLeft <= 0) {
+    missionState.bonusActive = false;
+    stageCleared = true;
+    stageTransitionTimer = 200;
+    enemyBullets.length = 0;
+    enemies.length = 0;
+    boss = null;
+    if (SFX && SFX.stageClear) SFX.stageClear();
+  }
+}
+
+function finalizeMissionClearStats() {
+  if (missionState.clearRewardGranted && missionState.clearResultCache) {
+    return missionState.clearResultCache;
+  }
+
+  const timeMs = Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now()))));
+  const preciseTimeSec = Math.max(0.1, timeMs / 1000);
+  const displayTimeSec = Math.max(1, Math.round(preciseTimeSec));
+  const expGained = 0;
+  const scoreGained = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
+  const kills = Math.max(0, Math.floor(stageRunKillCount || 0));
+  const bossKills = Math.max(0, Math.floor(stageBossKillCount || 0));
+  const bonusStage = isMissionBonusStage(stage);
+  const missionStageValue = Math.max(1, Math.floor(stage || 1));
+  const missionScoreBase = Math.max(0, Math.floor(scoreGained / 100));
+  const missionTimeBonusExpRaw = bonusStage
+    ? 0
+    : ((missionScoreBase / displayTimeSec) * missionStageValue);
+  const missionTimeBonusExpRounded = Math.max(0, Math.floor(missionTimeBonusExpRaw));
+  const bonusExp = addExpDirect(missionTimeBonusExpRounded);
+  const collectedBonusStageExp = Math.max(0, Math.floor(missionState.bonusCollectedExp || 0));
+  const missionFormulaText = bonusStage
+    ? `보너스 스테이지 수집 EXP: ${formatNumber(collectedBonusStageExp)}`
+    : `${formatNumber(missionScoreBase)} / ${formatNumber(displayTimeSec)} * ${formatNumber(missionStageValue)} = ${formatNumber(missionTimeBonusExpRounded)} EXP`;
+  const missionFormulaText2 = bonusStage
+    ? `즉시 획득 합계 ${formatNumber(collectedBonusStageExp)} EXP`
+    : `이번 미션 획득 점수 ${formatNumber(scoreGained)}점 기준 (${formatNumber(scoreGained)} / 100 = ${formatNumber(missionScoreBase)})`;
+
+  const stageClearStageEl = document.getElementById('stageClearStageText');
+  const stageClearDurationEl = document.getElementById('stageClearDurationText');
+  const stageClearKillsEl = document.getElementById('stageClearKillsText');
+  const stageClearGoldEl = document.getElementById('stageClearGoldText');
+  const stageClearGoldRowEl = document.getElementById('stageClearGoldRow');
+
+  if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
+  if (stageClearDurationEl) stageClearDurationEl.textContent = `${formatNumber(displayTimeSec)}초`;
+  if (stageClearExpEl) stageClearExpEl.textContent = `${formatNumber(bonusExp)}`;
+  if (stageClearExpDetailEl) {
+    if (bonusStage) {
+      stageClearExpDetailEl.textContent = `(보너스 스테이지) 20초 동안 EXP 아이템 수집 완료 · ${missionFormulaText} · ${missionFormulaText2}`;
+    } else {
+      stageClearExpDetailEl.textContent = `${getMissionObjective(stage).label} · 진행 ${formatNumber(getMissionObjectiveProgress(stage))}/${formatNumber(getMissionObjective(stage).target)} · ${missionFormulaText} · ${missionFormulaText2}`;
+    }
+  }
+  if (stageClearKillsEl) stageClearKillsEl.textContent = bonusStage ? '보너스 수집' : `${formatNumber(kills)}마리`;
+  if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
+  if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(stageRunGoldEarned || 0)}골드`;
+  if (stageClearTimeEl) stageClearTimeEl.textContent = '';
+  if (stageClearRankEl) stageClearRankEl.textContent = bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR');
+
+  try {
+    if (!saveData.mission) saveData.mission = { bestStage: 1 };
+    saveData.mission.bestStage = Math.max(Number(saveData.mission.bestStage || 1), Number(stage || 1));
+    saveGameDataDebounced();
+  } catch (e) {}
+
+  const result = { bonusExp, rank: bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR'), expGained, collectedBonusStageExp, formulaText: missionFormulaText, formulaText2: missionFormulaText2 };
+  missionState.clearRewardGranted = true;
+  missionState.clearResultCache = result;
+  return result;
+}
+
 function setGameOverLine(lineEl, labelEl, valueEl, label, value, options = {}) {
   if (!lineEl || !labelEl || !valueEl) return;
   if (options.hidden) {
@@ -12825,13 +13318,14 @@ function updateGameOverModal() {
   if (!gameOverUI) return;
 
   const isInfinite = gameMode === 'infinite';
+  const isMission = gameMode === 'mission';
   const isDungeon = gameMode === 'dungeon';
   const isItemPark = gameMode === 'itempark';
   const isMiniGame = gameMode === 'minigame';
   const levelText = `LV.${formatNumber(level || 1)}`;
 
   if (gameOverModeTextEl) {
-    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isInfinite ? '무한 모드' : '스테이지 모드')));
+    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드'))));
   }
   if (gameOverLevelTextEl) gameOverLevelTextEl.textContent = levelText;
 
@@ -12876,7 +13370,7 @@ function updateGameOverModal() {
   if (gameOverTitleEl) gameOverTitleEl.style.color = '#ff9b9b';
   if (gameOverDescEl) gameOverDescEl.textContent = isInfinite
     ? `무한 모드 기록을 정산합니다. · 획득 골드 ${formatNumber(stageRunGoldEarned || 0)}G`
-    : '스테이지 도전이 종료되었습니다.';
+    : (isMission ? '미션 도전에 실패했습니다. 다음 도전은 미션 1부터 다시 시작됩니다.' : '스테이지 도전이 종료되었습니다.');
 
   if (isInfinite) {
     const huntScore = (window.__finalHuntScore ?? Math.max(0, Math.floor(score || 0)));
@@ -12889,11 +13383,11 @@ function updateGameOverModal() {
     setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '총합 점수', formatNumber(totalScore), { color: '#ffd700' });
     setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '플레이 시간', formatPlayTime(runTimeSec), { color: '#aef' });
   } else {
-    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `스테이지 ${formatNumber(stage || 1)}`;
-    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '누적 EXP', formatNumber(exp), { color: '#aef' });
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = isMission ? `미션 ${formatNumber(stage || 1)}` : `스테이지 ${formatNumber(stage || 1)}`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, isMission ? '미션 점수' : '누적 EXP', isMission ? formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)))) : formatNumber(exp), { color: isMission ? '#ffd6f2' : '#aef' });
     setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '처치 수', `${formatNumber(stageRunKillCount || 0)}마리`);
-    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '', '', { hidden: true });
-    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '', '', { hidden: true });
+    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, isMission ? '보스 처치' : '', isMission ? `${formatNumber(stageBossKillCount || 0)} / ${isMissionBossStage(stage) ? 1 : 0}` : '', { hidden: !isMission });
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, isMission ? '최고 미션' : '', isMission ? `${formatNumber(Math.max(Number(saveData?.mission?.bestStage || 1), Number(stage || 1)))}단계` : '', { hidden: !isMission });
   }
 }
 
@@ -12948,13 +13442,19 @@ return distSq <= r * r;
 
 function update(dt, currentTime) {
   // ✅ [v.79] 스테이지 클리어 연출(3초) 동안은 전투 진행을 멈추고 카운트만 진행
-  if (gameMode === 'stage' && stageClearSeq && stageClearSeq.active) {
+  if ((gameMode === 'stage' || gameMode === 'mission') && stageClearSeq && stageClearSeq.active) {
     stageClearSeq.timer -= dt;
     updateParticles(dt);
     updateDamageTexts(dt);
     if (stageClearSeq.timer <= 0) {
       stageClearSeq.active = false;
       stageClearSeq.timer = 0;
+
+      if (gameMode === 'mission') {
+        // 미션 모드는 setTimeout 기반 자동 진행을 사용함
+        return;
+      }
+
       stageClearModal.classList.remove('hidden');
       // ✅ [v.93.3] 튜토리얼: 1스테이지 클리어 보상/랭크 안내
       maybeStartPostClearTutorial();
@@ -12963,7 +13463,7 @@ function update(dt, currentTime) {
     return;
   }
 
-  if (gameMode === 'stage' && !stageClearModal.classList.contains('hidden')) return;
+  if ((gameMode === 'stage' || gameMode === 'mission') && !stageClearModal.classList.contains('hidden')) return;
   // ✅ 누적 플레이 시간(초)
   if (state === 'playing') {
     saveData.playTimeSec = (saveData.playTimeSec || 0) + (dt / 1000);
@@ -12998,6 +13498,11 @@ function update(dt, currentTime) {
   }
   if (gameMode === 'minigame') {
     updateMiniGame(dt);
+    updateHUD();
+    return;
+  }
+  if (gameMode === 'mission' && missionState.bonusActive) {
+    updateMissionBonusStage(dt, currentTime);
     updateHUD();
     return;
   }
@@ -13157,6 +13662,14 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
           spawnNextWave();
         }
       }
+    } else if (gameMode === 'mission') {
+      if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared) {
+        missionState.spawnAcc = Math.max(0, Number(missionState.spawnAcc) || 0) + dt;
+        while (missionState.spawnAcc >= 100) {
+          missionState.spawnAcc -= 100;
+          spawnNextWave();
+        }
+      }
     } else {
       if (enemies.length === 0 && !bossSpawned) spawnNextWave();
     }
@@ -13165,9 +13678,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     
     // 1) 보스 처치로 클리어 처리 (bossSpawned가 true였다가 boss가 사라진 경우)
 if (bossSpawned && !boss && !stageCleared) {
-  // ✅ [v.79] 스테이지 모드는 "보스/웨이브"로 클리어하지 않습니다(목표 처치 수 달성 즉시 클리어)
-  if (gameMode !== 'stage') {
-    // ✅ 무한 모드: 클리어 연출 없이 즉시 다음 스테이지
+  if (gameMode === 'infinite') {
     stage++;
     if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
     startStage();
@@ -13176,9 +13687,7 @@ if (bossSpawned && !boss && !stageCleared) {
 
 // 2) 웨이브를 다 끝내서 클리어 처리 (보스 없는 구간 대비)
 if (!boss && enemies.length === 0 && waveIndex >= getWavesPerStage(stage) && !bossSpawned) {
-  // ✅ [v.79] 스테이지 모드는 목표 처치 수로만 클리어
-  if (gameMode !== 'stage') {
-    // ✅ 무한 모드: stageCleared를 쓰지 않고 바로 다음 스테이지
+  if (gameMode === 'infinite') {
     stage++;
     if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
     startStage();
@@ -13223,6 +13732,33 @@ if (stageCleared) {
 
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'D');
+      stageClearSeq.formulaText = '';
+      stageClearSeq.formulaText2 = '';
+    } else if (gameMode === 'mission') {
+      const res = finalizeMissionClearStats() || { bonusExp: 0, rank: 'CLEAR', expGained: 0 };
+      stageClearModal.classList.add('hidden');
+      stageClearSeq.active = true;
+      stageClearSeq.timer = 3000;
+      stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
+      stageClearSeq.rank = String(res.rank || 'CLEAR');
+      stageClearSeq.formulaText = String(res.formulaText || '');
+      stageClearSeq.formulaText2 = String(res.formulaText2 || '');
+      clearMissionAutoAdvanceTimer();
+      missionAutoAdvanceTimer = setTimeout(() => {
+        missionAutoAdvanceTimer = null;
+        if (gameMode !== 'mission' || state !== 'playing') return;
+        if (!stageCleared) return;
+        stageClearSeq.active = false;
+        stageClearSeq.timer = 0;
+        stageClearSeq.formulaText = '';
+        stageClearSeq.formulaText2 = '';
+        stageClearModal.classList.add('hidden');
+        stage++;
+        if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
+        missionState.currentStage = stage;
+        runStartStage = 1;
+        startGame(stage);
+      }, 3000);
     } else {
       // (안전장치) 무한 모드에선 원래 여기 오면 안 되지만, 혹시 몰라 방어
       stageCleared = false;
@@ -13614,8 +14150,8 @@ function updateBossIntro(dt) {
       // ✅ 내려오는 시간(체감): 약 1.5초
       bossIntro.descStartY = boss ? boss.y : -140;
       bossIntro.descDuration = 1500;
-      // ✅ 내려오기 시작할 때 보스 BGM으로 전환(원하신 “보스 등장감” 타이밍)
-      playBgmTrack('boss');
+      // ✅ 스테이지 모드는 보스 BGM, 미션 모드는 기존 미션 BGM 유지
+      playBgmTrack(gameMode === 'mission' ? getModeBgmName() : 'boss');
     }
   }
   else if (bossIntro.phase === 'descending') {
@@ -13759,9 +14295,9 @@ if (gameMode === 'dungeon') {
   if (killScoreInfo.multiplier > 1) {
     spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
   }
-  // ✅ [v.79] 무한 모드에서만 골드 드랍(수동 줍기)
+  // 골드 미션이면 미션 모드에서도 골드 드랍 허용
+  spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
   if (gameMode === 'infinite') {
-    spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
     trySpawnInfiniteDropItem(e.x, e.y);
   }
   spawnExpItemFromEnemy(e);
@@ -13800,10 +14336,10 @@ bubbles.forEach(b => {
   if (killScoreInfo.multiplier > 1) {
     spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
   }
-          if (gameMode === 'infinite') {
-    spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
-    trySpawnInfiniteDropItem(e.x, e.y);
-  }
+          spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
+        if (gameMode === 'infinite') {
+          trySpawnInfiniteDropItem(e.x, e.y);
+        }
           spawnExpItemFromEnemy(e);
         }
         spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
@@ -13838,11 +14374,11 @@ petBullets.forEach(b => {
   if (killScoreInfo.multiplier > 1) {
     spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
   }
-        // ✅ [v.79] 무한 모드에서만 골드 드랍(수동 줍기)
+        // 골드 미션이면 미션 모드에서도 골드 드랍 허용
+        spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
         if (gameMode === 'infinite') {
-    spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
-    trySpawnInfiniteDropItem(e.x, e.y);
-  }
+          trySpawnInfiniteDropItem(e.x, e.y);
+        }
         spawnExpItemFromEnemy(e);
         spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
         SFX.enemyDie();
@@ -13875,11 +14411,11 @@ pet2Bullets.forEach(b => {
   if (killScoreInfo.multiplier > 1) {
     spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
   }
-        // ✅ [v.79] 무한 모드에서만 골드 드랍(수동 줍기)
+        // 골드 미션이면 미션 모드에서도 골드 드랍 허용
+        spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
         if (gameMode === 'infinite') {
-    spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
-    trySpawnInfiniteDropItem(e.x, e.y);
-  }
+          trySpawnInfiniteDropItem(e.x, e.y);
+        }
         spawnExpItemFromEnemy(e);
         spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
         SFX.enemyDie();
@@ -14005,10 +14541,15 @@ scoreEl.textContent = '점수: ' + formatNumber(score);
 highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
   // ✅ 스테이지 모드에서는 점수 UI 숨김 (무한 모드에서만 표시)
-  const showScoreUI = (gameMode === 'infinite' || gameMode === 'itempark' || gameMode === 'minigame');
+  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame');
   if (scoreEl) scoreEl.style.display = showScoreUI ? '' : 'none';
   if (highScoreEl) highScoreEl.style.display = showScoreUI ? '' : 'none';
-  if (gameMode === 'infinite') {
+  if (gameMode === 'mission') {
+    if (scoreEl) scoreEl.textContent = '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))));
+    if (highScoreEl) highScoreEl.textContent = isMissionBonusStage(stage)
+      ? `보너스 남은 시간: ${formatMMSS(missionState.bonusTimeLeft || 0)}`
+      : getMissionProgressText(stage);
+  } else if (gameMode === 'infinite') {
     if (scoreEl) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
     if (highScoreEl) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
   } else if (gameMode === 'itempark') {
@@ -14074,6 +14615,11 @@ if (gameMode === 'dungeon') {
     stageEl.textContent = isBossStage(stage)
       ? `스테이지: ${stage} · 몬스터 처치 ${k}/${t}, 보스 처치 ${b}/1`
       : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`;
+  } else if (gameMode === 'mission') {
+    const obj = getMissionObjective(stage);
+    stageEl.textContent = isMissionBonusStage(stage)
+      ? `미션 ${stage} · 보너스 스테이지`
+      : `미션 ${stage} · ${obj.label}`;
   } else {
     stageEl.textContent = (gameMode === 'infinite' ? '무한 · ' : '') + '스테이지: ' + stage;
   }
@@ -14089,6 +14635,11 @@ if (hotTimeEl) {
     } else if (gameMode === 'minigame') {
       hotTimeEl.textContent = `미니게임 · 남은 ${formatMMSS(miniGameState.timeLeft || 0)} · 현재 ${formatNumber(miniGameState.combo || 0)}콤보`;
       hotTimeEl.style.color = '#ffcc66';
+    } else if (gameMode === 'mission') {
+      hotTimeEl.textContent = isMissionBonusStage(stage)
+        ? `🎁 보너스 스테이지 · 남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}`
+        : `🧭 ${getMissionProgressText(stage)}`;
+      hotTimeEl.style.color = isMissionBonusStage(stage) ? '#ff8fd6' : '#ffb8e8';
     } else {
     const m = getHotMultiplier();
     let hotText = '일반 EXP';
@@ -15391,12 +15942,16 @@ function drawStageClearSeqOverlay() {
   // ✅ [UI AUTO LAYOUT] 모든 텍스트를 정중앙 기준으로 "묶음" 정렬 (세로 간격 자동 계산)
   const bonusExpVal = Math.max(0, Math.floor(stageClearSeq.bonusExp || 0));
   const rankVal = String(stageClearSeq.rank || 'D');
+  const formulaText = String(stageClearSeq.formulaText || '');
+  const formulaText2 = String(stageClearSeq.formulaText2 || '');
 
   const lines = [
     { text: '스테이지 클리어!',                size: 22, weight: 'bold',  color: '#ffe8a0', gap: 6  },
     { text: `스테이지 ${stage} 완료`,          size: 14, weight: 'normal',color: '#ffffff', gap: 14 },
     { text: '보너스 경험치!',                 size: 24, weight: 'bold',  color: '#ffe8a0', gap: 8  },
-    { text: `+${formatNumber(bonusExpVal)} EXP`, size: 22, weight: 'bold',  color: '#44ffb8', gap: 10 },
+    { text: `+${formatNumber(bonusExpVal)} EXP`, size: 22, weight: 'bold',  color: '#44ffb8', gap: (formulaText || formulaText2) ? 8 : 10 },
+    ...(formulaText ? [{ text: formulaText, size: 13, weight: 'normal', color: '#cfe7ff', gap: 4 }] : []),
+    ...(formulaText2 ? [{ text: formulaText2, size: 13, weight: 'normal', color: '#9fffd0', gap: 8 }] : []),
     { text: `획득 랭크: ${rankVal}`,           size: 18, weight: 'normal',color: '#ffffff', gap: 0  },
   ];
 
