@@ -10443,8 +10443,7 @@ function drawGainMessages() {
     const duration = Math.max(GAIN_MESSAGE_MIN_DURATION, Number(msg.duration) || GAIN_MESSAGE_DURATION);
     const progress = Math.max(0, Math.min(1, elapsed / duration));
     const alpha = 1 - progress;
-    const lift = progress * 12;
-    const y = baseY - (i * lineGap) - lift;
+    const y = baseY - (i * lineGap);
 
     ctx.globalAlpha = alpha;
     ctx.font = fontStr(12, '900');
