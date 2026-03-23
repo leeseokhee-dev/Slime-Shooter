@@ -3704,9 +3704,11 @@ let quake = null; // {life, tick}
 let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
-let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 8줄)
-const GAIN_MESSAGE_MAX = 8;
-const GAIN_MESSAGE_DURATION = 2500;
+let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 10줄)
+const GAIN_MESSAGE_MAX = 10;
+const GAIN_MESSAGE_DURATION = 3000;
+const GAIN_MESSAGE_MIN_DURATION = 300;
+const GAIN_MESSAGE_ACTIVITY_WINDOW = 1200;
 let fieldItems = []; // ✅ [v.134] 무한 모드 전용 필드 아이템 드랍
 const INFINITE_ITEM_DEFS = {
   magnet: { key: 'magnet', name: '자석', emoji: '🧲', color: '#7ce7ff', dropChance: 0.03, duration: 15000 },
@@ -10312,13 +10314,27 @@ function applyHyperSkillCooldown(ms) {
 
 
 
+function getAdaptiveGainMessageDuration(now = performance.now()) {
+  const recentWindow = GAIN_MESSAGE_ACTIVITY_WINDOW;
+  const recentCount = gainMessages.reduce((count, msg) => {
+    return count + (((now - Number(msg.createdAt || 0)) <= recentWindow) ? 1 : 0);
+  }, 0);
+  const queuePressure = Math.max(0, gainMessages.length - 1);
+  const intensity = Math.max(recentCount, queuePressure);
+  if (intensity <= 0) return GAIN_MESSAGE_DURATION;
+  const t = Math.max(0, Math.min(1, intensity / 12));
+  return Math.round(GAIN_MESSAGE_DURATION - ((GAIN_MESSAGE_DURATION - GAIN_MESSAGE_MIN_DURATION) * t));
+}
+
 function pushGainMessage(text, color = '#ffffff') {
   const msg = String(text || '').trim();
   if (!msg) return;
+  const now = performance.now();
   gainMessages.push({
     text: msg,
     color,
-    createdAt: performance.now()
+    createdAt: now,
+    duration: getAdaptiveGainMessageDuration(now)
   });
   while (gainMessages.length > GAIN_MESSAGE_MAX) gainMessages.shift();
 }
@@ -10405,7 +10421,7 @@ function drawGainMessages() {
   const now = performance.now();
   const lineGap = 24;
   const baseX = 90;
-  const baseY = Math.max(120, height - 112);
+  const baseY = Math.max(120, height - 22);
 
   ctx.save();
   ctx.textAlign = 'left';
@@ -10414,7 +10430,8 @@ function drawGainMessages() {
   for (let i = gainMessages.length - 1; i >= 0; i--) {
     const msg = gainMessages[i];
     const elapsed = now - Number(msg.createdAt || 0);
-    if (elapsed >= GAIN_MESSAGE_DURATION) {
+    const duration = Math.max(GAIN_MESSAGE_MIN_DURATION, Number(msg.duration) || GAIN_MESSAGE_DURATION);
+    if (elapsed >= duration) {
       gainMessages.splice(i, 1);
       continue;
     }
@@ -10423,7 +10440,8 @@ function drawGainMessages() {
   for (let i = 0; i < gainMessages.length; i++) {
     const msg = gainMessages[gainMessages.length - 1 - i];
     const elapsed = now - Number(msg.createdAt || 0);
-    const progress = Math.max(0, Math.min(1, elapsed / GAIN_MESSAGE_DURATION));
+    const duration = Math.max(GAIN_MESSAGE_MIN_DURATION, Number(msg.duration) || GAIN_MESSAGE_DURATION);
+    const progress = Math.max(0, Math.min(1, elapsed / duration));
     const alpha = 1 - progress;
     const lift = progress * 12;
     const y = baseY - (i * lineGap) - lift;
