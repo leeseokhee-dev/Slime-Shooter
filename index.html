@@ -3059,7 +3059,7 @@ let miniGameState = {
   expReward: 0
 };
 
-const MISSION_BONUS_STAGE_DURATION_MS = 20 * 1000;
+const MISSION_BONUS_STAGE_DURATION_MS = 10 * 1000;
 let missionState = {
   currentStage: 1,
   stageScoreStart: 0,
@@ -3168,6 +3168,22 @@ function isMissionGoldObjectiveActive() {
   return gameMode === 'mission' && !isMissionBonusStage(stage) && missionState.objectiveType === 'gold';
 }
 
+function isMissionExpObjectiveActive() {
+  return gameMode === 'mission' && !isMissionBonusStage(stage) && missionState.objectiveType === 'exp';
+}
+
+function isMissionPickupObjectiveActive() {
+  return gameMode === 'mission' && !isMissionBonusStage(stage) && missionState.objectiveType === 'pickup';
+}
+
+function isMissionGemObjectiveActive() {
+  return gameMode === 'mission' && !isMissionBonusStage(stage) && missionState.objectiveType === 'gem';
+}
+
+function isMissionGoldDropObjectiveActive() {
+  return isMissionGoldObjectiveActive() || isMissionPickupObjectiveActive() || isMissionGemObjectiveActive();
+}
+
 function getMissionBossTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   const { tier } = getMissionTierInfo(stg);
@@ -3210,7 +3226,7 @@ function getMissionGemTarget(stg) {
 function getMissionObjective(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   if (isMissionBonusStage(stg)) {
-    return { type: 'bonus', target: 0, label: '20초 동안 EXP 아이템 수집' };
+    return { type: 'bonus', target: 0, label: '10초 동안 EXP 아이템 수집' };
   }
   if (Number(missionState.objectiveStage || 0) === stg && missionState.objectiveLabel) {
     return {
@@ -3228,7 +3244,7 @@ function initMissionObjective(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   let obj = null;
   if (isMissionBonusStage(stg)) {
-    obj = { type: 'bonus', target: 0, label: '20초 동안 EXP 아이템 수집' };
+    obj = { type: 'bonus', target: 0, label: '10초 동안 EXP 아이템 수집' };
   } else {
     const type = getRandomMissionType(stg);
     if (type === 'score') {
@@ -4735,9 +4751,14 @@ function spawnExpItem(x, y, baseExp, gradeKey = 'low', force = false) {
 
 function spawnExpItemFromEnemy(enemy) {
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
-  if (gameMode === 'mission' && !missionState.bonusActive) return;
+  if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   if (!enemy) return;
-  if (Math.random() >= EXP_ITEM_DROP_CHANCE) return;
+
+  let dropChance = EXP_ITEM_DROP_CHANCE;
+  if (isMissionExpObjectiveActive()) {
+    dropChance = Math.max(dropChance, 0.45);
+  }
+  if (Math.random() >= dropChance) return;
 
   const baseExp = calcBaseExpFromScore(enemy.score);
   const gradeKey = rollExpGrade(); // 일반 몬스터도 등급 랜덤(원치 않으면 'low' 고정)
@@ -4747,9 +4768,10 @@ function spawnExpItemFromEnemy(enemy) {
 
 function spawnExpItemFromBoss(force = false) {
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
-  if (gameMode === 'mission' && !missionState.bonusActive) return;
+  if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   // ✅ 요청: 보스 처치 시 10% 확률로 EXP 구슬 드랍
-  if (!force && Math.random() >= BOSS_EXP_ITEM_DROP_CHANCE) return;
+  const bossDropChance = isMissionExpObjectiveActive() ? Math.max(BOSS_EXP_ITEM_DROP_CHANCE, 1) : BOSS_EXP_ITEM_DROP_CHANCE;
+  if (!force && Math.random() >= bossDropChance) return;
 
   // baseExp는 "보스 보너스 점수" 기반으로 잡으면 밸런스가 깔끔함
   const bossScore = getBossBonusByStage(stage);
@@ -4852,7 +4874,7 @@ function drawExpItems() {
 function tryPickupExpItems() {
   if (!player || !player.alive || isPlayerDying) return;
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
-  if (gameMode === 'mission' && !missionState.bonusActive) return;
+  if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
 
   for (let i = expItems.length - 1; i >= 0; i--) {
     const it = expItems[i];
@@ -4868,6 +4890,9 @@ function tryPickupExpItems() {
         if (gameMode === 'mission') {
           if (missionState.bonusActive) {
             missionState.bonusCollectedExp = Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)) + gained;
+            addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
+            stageRunExpOrbs += gained;
+          } else if (isMissionExpObjectiveActive()) {
             addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
             stageRunExpOrbs += gained;
           }
@@ -9962,14 +9987,30 @@ function drawFieldItems() {
 }
 
 function spawnGoldDrop(x, y, amount) {
-  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
+  if (gameMode !== 'infinite' && !isMissionGoldDropObjectiveActive()) return;
   if (!amount || amount <= 0) return;
   // 저사양 폭주 방지
   if (isLowPower() && goldDrops.length > 40) return;
 
   let dropType = 'gold';
   let finalAmount = Math.max(1, Math.floor(amount));
-  if (Math.random() < 0.10) {
+
+  if (isMissionGemObjectiveActive()) {
+    const roll = Math.random();
+    if (roll < 0.55) {
+      dropType = 'ruby';
+      finalAmount = 10;
+    } else if (roll < 0.88) {
+      dropType = 'sapphire';
+      finalAmount = 30;
+    } else {
+      dropType = 'diamond';
+      finalAmount = 50;
+    }
+  } else if (isMissionPickupObjectiveActive()) {
+    dropType = 'gold';
+    finalAmount = Math.max(1, Math.floor(amount));
+  } else if (Math.random() < 0.10) {
     const roll = Math.random();
     if (roll < 0.3333) {
       dropType = 'ruby';
@@ -9996,7 +10037,7 @@ function spawnGoldDrop(x, y, amount) {
 }
 
 function updateGoldDrops(dt) {
-  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) { goldDrops.length = 0; return; }
+  if (gameMode !== 'infinite' && !isMissionGoldDropObjectiveActive()) { goldDrops.length = 0; return; }
   const delta = dt / 16.67;
   const magnetActive = isInfiniteItemEffectActive('magnet');
   for (let i = goldDrops.length - 1; i >= 0; i--) {
@@ -10028,7 +10069,7 @@ function updateGoldDrops(dt) {
 }
 
 function drawGoldDrops() {
-  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
+  if (gameMode !== 'infinite' && !isMissionGoldDropObjectiveActive()) return;
   const blocked = (typeof anyBlockingModalOpen === 'function') ? anyBlockingModalOpen() : false;
   for (const it of goldDrops) {
     ctx.save();
@@ -10113,7 +10154,7 @@ function drawGoldDrops() {
 }
 
 function tryPickupGoldDrops() {
-  if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
+  if (gameMode !== 'infinite' && !isMissionGoldDropObjectiveActive()) return;
   if (!player || !player.alive || isPlayerDying) return;
 
   for (let i = goldDrops.length - 1; i >= 0; i--) {
@@ -13470,7 +13511,7 @@ function finalizeMissionClearStats() {
   if (stageClearExpEl) stageClearExpEl.textContent = `${formatNumber(bonusExp)}`;
   if (stageClearExpDetailEl) {
     if (bonusStage) {
-      stageClearExpDetailEl.textContent = `(보너스 스테이지) 20초 동안 EXP 아이템 수집 완료 · ${missionFormulaText} · ${missionFormulaText2}`;
+      stageClearExpDetailEl.textContent = `(보너스 스테이지) 10초 동안 EXP 아이템 수집 완료 · ${missionFormulaText} · ${missionFormulaText2}`;
     } else {
       stageClearExpDetailEl.textContent = `${getMissionObjective(stage).label} · 진행 ${formatNumber(getMissionObjectiveProgress(stage))}/${formatNumber(getMissionObjective(stage).target)} · ${missionFormulaText} · ${missionFormulaText2}`;
     }
