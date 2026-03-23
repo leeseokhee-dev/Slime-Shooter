@@ -3706,8 +3706,8 @@ let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
 let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 10줄)
 const GAIN_MESSAGE_MAX = 10;
-const GAIN_MESSAGE_DURATION = 3000;
-const GAIN_MESSAGE_MIN_DURATION = 300;
+const GAIN_MESSAGE_DURATION = 2000;
+const GAIN_MESSAGE_MIN_DURATION = 100;
 const GAIN_MESSAGE_ACTIVITY_WINDOW = 1200;
 let fieldItems = []; // ✅ [v.134] 무한 모드 전용 필드 아이템 드랍
 const INFINITE_ITEM_DEFS = {
@@ -10427,14 +10427,12 @@ function drawGainMessages() {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  for (let i = gainMessages.length - 1; i >= 0; i--) {
-    const msg = gainMessages[i];
-    const elapsed = now - Number(msg.createdAt || 0);
-    const duration = Math.max(GAIN_MESSAGE_MIN_DURATION, Number(msg.duration) || GAIN_MESSAGE_DURATION);
-    if (elapsed >= duration) {
-      gainMessages.splice(i, 1);
-      continue;
-    }
+  while (gainMessages.length > 0) {
+    const firstMsg = gainMessages[0];
+    const firstElapsed = now - Number(firstMsg.createdAt || 0);
+    const firstDuration = Math.max(GAIN_MESSAGE_MIN_DURATION, Number(firstMsg.duration) || GAIN_MESSAGE_DURATION);
+    if (firstElapsed < firstDuration) break;
+    gainMessages.shift();
   }
 
   for (let i = 0; i < gainMessages.length; i++) {
@@ -10458,7 +10456,7 @@ function drawGainMessages() {
 }
 
 function addExp(amount, opts = {}) {
-  const rawBaseAmount = Math.max(0, Math.floor(Number((opts && opts.baseAmount) ?? amount) || 0));
+  const rawBaseAmount = Math.max(0, Math.round(Number((opts && opts.baseAmount) ?? amount) || 0));
   const hotMult = Math.max(1, Number((opts && opts.hotMultiplier) || 1) || 1);
 
   // ✅ 만렙이면 EXP 증가 금지 + 표시 고정용 정리
@@ -10483,7 +10481,7 @@ function addExp(amount, opts = {}) {
   const expBuffMult = getBuffMult('exp');
   const petExpMult = getPetExpMultiplier();
   mult *= expBuffMult;
-  amount = Math.max(0, Math.floor(amount * mult * petExpMult));
+  amount = Math.max(0, Math.round(amount * mult * petExpMult));
 
   // ✅ 상한을 넘지 못하게 clamp
   exp = Math.min(MAX_EXP_CAP, exp + amount);
