@@ -3704,9 +3704,9 @@ let quake = null; // {life, tick}
 let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
-let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 9줄)
-const GAIN_MESSAGE_MAX = 9;
-const GAIN_MESSAGE_DURATION = 2000;
+let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 8줄)
+const GAIN_MESSAGE_MAX = 8;
+const GAIN_MESSAGE_DURATION = 2500;
 let fieldItems = []; // ✅ [v.134] 무한 모드 전용 필드 아이템 드랍
 const INFINITE_ITEM_DEFS = {
   magnet: { key: 'magnet', name: '자석', emoji: '🧲', color: '#7ce7ff', dropChance: 0.03, duration: 15000 },
@@ -9790,10 +9790,11 @@ function addScore(amount, source = 'monster', options = {}) {
   const baseExp = Math.floor(score / expUnit) - Math.floor(prevScore / expUnit);
 
   // 🔥 핫타임 배수(평일 2배 / 토·일 3배)
-  const gainedExp = baseExp * getHotMultiplier();
+  const hotMult = getHotMultiplier();
+  const gainedExp = baseExp * hotMult;
 
   if (gainedExp > 0) {
-    addExp(gainedExp);
+    addExp(gainedExp, { baseAmount: baseExp, hotMultiplier: hotMult });
     if (gameMode === 'stage' || gameMode === 'mission') {
       if (source === 'boss') stageRunExpBoss += gainedExp;
       else stageRunExpMonsters += gainedExp;
@@ -10323,36 +10324,48 @@ function pushGainMessage(text, color = '#ffffff') {
 }
 
 function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult = 1, finalAmount = 0) {
-  const safeBase = Math.max(0, Math.floor(Number(baseAmount) || 0));
-  const safeFinal = Math.max(0, Math.floor(Number(finalAmount) || 0));
-  if (safeFinal <= 0) return;
+  const safeBase = Math.max(0, Math.round(Number(baseAmount) || 0));
+  const safeFinal = Math.max(0, Math.round(Number(finalAmount) || 0));
+  if (safeFinal <= 0 && safeBase <= 0) return;
 
   pushGainMessage(`경험치를 얻었습니다(+${formatNumber(safeBase)})`, '#7dffb2');
 
-  let running = safeBase;
+  const stageHitRate = (gameMode === 'stage')
+    ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
+    : 1;
+  if (gameMode === 'stage' && stageHitRate < 1) {
+    const lostRate = 1 - stageHitRate;
+    const lostAmount = Math.max(0, Math.round(safeBase * lostRate));
+    if (lostAmount > 0) {
+      const pct = Math.round(lostRate * 100);
+      pushGainMessage(`피격으로 감소한 경험치 ${pct}%(-${formatNumber(lostAmount)})`, '#ff8f8f');
+    }
+  }
+
   if ((Number(hotMult) || 1) > 1) {
-    const bonus = Math.max(0, Math.floor(safeBase * ((Number(hotMult) || 1) - 1)));
+    const rate = (Number(hotMult) || 1) - 1;
+    const bonus = Math.max(0, Math.round(safeBase * rate));
     if (bonus > 0) {
-      const hotLabel = Number(hotMult) >= 3 ? '핫타임 경험치 보너스 3배' : '핫타임 경험치 보너스 2배';
-      pushGainMessage(`${hotLabel}(+${formatNumber(bonus)})`, '#ffb26b');
-      running += bonus;
+      const pct = Math.round(rate * 100);
+      pushGainMessage(`핫타임 추가 경험치 ${pct}%(+${formatNumber(bonus)})`, '#ffb26b');
     }
   }
 
   if ((Number(expBuffMult) || 1) > 1) {
-    const bonus = Math.max(0, Math.floor(running * ((Number(expBuffMult) || 1) - 1)));
+    const rate = (Number(expBuffMult) || 1) - 1;
+    const bonus = Math.max(0, Math.round(safeBase * rate));
     if (bonus > 0) {
-      const pct = Math.round(((Number(expBuffMult) || 1) - 1) * 100);
-      pushGainMessage(`경험치 버프 보너스 ${pct}%(+${formatNumber(bonus)})`, '#7ce7ff');
-      running += bonus;
+      const pct = Math.round(rate * 100);
+      pushGainMessage(`경험치 버프 추가 ${pct}%(+${formatNumber(bonus)})`, '#7ce7ff');
     }
   }
 
   if ((Number(petExpMult) || 1) > 1) {
-    const bonus = Math.max(0, safeFinal - running);
+    const rate = (Number(petExpMult) || 1) - 1;
+    const bonus = Math.max(0, Math.round(safeBase * rate));
     if (bonus > 0) {
-      const pct = Math.round(((Number(petExpMult) || 1) - 1) * 100);
-      pushGainMessage(`펫 경험치 보너스 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
+      const pct = Math.round(rate * 100);
+      pushGainMessage(`펫 추가 경험치 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
     }
   }
 }
