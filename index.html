@@ -569,7 +569,6 @@ body.dead-mode #consumableQuickBar{
     }
     #titleUI .big-btn,
     #titleUI #dailyRewardBtn,
-    #titleUI #attendanceTableBtn,
     #titleUI #openQuestBtn{
         width: 100%;
         max-width: 260px;
@@ -578,14 +577,12 @@ body.dead-mode #consumableQuickBar{
     /* [v.47 패치] 캔버스 설정(⚙) 열릴 때 타이틀 버튼 숨김(아래로) */
     #titleUI #startBtn,
     #titleUI #dailyRewardBtn,
-    #titleUI #attendanceTableBtn,
     #titleUI #openQuestBtn{
         transition: transform .18s ease, opacity .18s ease;
         will-change: transform, opacity;
     }
     #titleUI.title-buttons-hidden #startBtn,
     #titleUI.title-buttons-hidden #dailyRewardBtn,
-    #titleUI.title-buttons-hidden #attendanceTableBtn,
     #titleUI.title-buttons-hidden #openQuestBtn{
         transform: translateY(140px);
         opacity: 0;
@@ -1337,21 +1334,10 @@ body.tutorial-mode .quake-skill{
         
         <button id="startBtn" class="ui-btn big-btn">게임 시작</button>
         <button id="dailyRewardBtn" class="ui-btn" style="border:1px solid #7ce7ff; color:#e8fbff; margin-top:10px;">📦 출석 보상</button>
-        <button id="attendanceTableBtn" class="ui-btn" style="border:1px solid #9d8cff; color:#efeaff; margin-top:10px;">🎁 연속 출석 확률표</button>
         <button id="openQuestBtn" class="ui-btn" style="border:1px solid #ffd700; color:#ffd700; margin-top:10px;">
             📜 퀘스트 (Quests)
         </button>
         <button id="titleExitBtn" class="ui-btn">게임 종료</button>
-    </div>
-</div>
-
-
-<!-- 연속 출석 확률표 모달 -->
-<div id="attendanceTableModal" class="modal hidden" style="z-index:210; border-color:#9d8cff; max-width:460px;">
-    <div class="modal-header" style="color:#efeaff;">연속 출석 확률표</div>
-    <div class="modal-body" style="gap:12px; line-height:1.6;">
-        <div id="attendanceTableBody" style="font-size:13px; color:#eef3ff;"></div>
-        <button id="closeAttendanceTableBtn" class="ui-btn" style="width:100%;">닫기</button>
     </div>
 </div>
 
@@ -1972,7 +1958,6 @@ const gameOverLine4ValueEl = document.getElementById('gameOverLine4Value');
 // Buttons
 const startBtn = document.getElementById('startBtn');
 const dailyRewardBtn = document.getElementById('dailyRewardBtn');
-const attendanceTableBtn = document.getElementById('attendanceTableBtn');
 const openQuestBtn = document.getElementById('openQuestBtn');
 const titleExitBtn = document.getElementById('titleExitBtn');
 const restartBtn = document.getElementById('restartBtn');
@@ -1991,9 +1976,6 @@ const confirmNoBtn = document.getElementById('confirmNoBtn');
 const questModal = document.getElementById('questModal');
 const questList = document.getElementById('questList');
 const closeQuestBtn = document.getElementById('closeQuestBtn');
-const attendanceTableModal = document.getElementById('attendanceTableModal');
-const attendanceTableBody = document.getElementById('attendanceTableBody');
-const closeAttendanceTableBtn = document.getElementById('closeAttendanceTableBtn');
 
 // 상점 모달
 const shopModal = document.getElementById('shopModal');
@@ -3097,6 +3079,28 @@ let missionState = {
   spawnAcc: 0
 };
 
+const MISSION_TYPE_UNLOCK_ORDER = ['score', 'kill', 'gold', 'skill', 'survival', 'exp', 'pickup', 'gem', 'boss'];
+
+function getMissionTierInfo(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return {
+    tier: Math.floor((stg - 1) / 10),
+    step: ((stg - 1) % 10) + 1
+  };
+}
+
+function getUnlockedMissionTypes(stg) {
+  const { tier } = getMissionTierInfo(stg);
+  const count = Math.max(1, Math.min(MISSION_TYPE_UNLOCK_ORDER.length, tier + 1));
+  return MISSION_TYPE_UNLOCK_ORDER.slice(0, count);
+}
+
+function buildMissionTarget(base, perStep, perTier, stg, extra = 0, maxValue = Infinity) {
+  const { tier, step } = getMissionTierInfo(stg);
+  const value = Math.floor(base + step * perStep + tier * perTier + extra);
+  return Math.max(1, Math.min(Number(maxValue) || Infinity, value));
+}
+
 function getMiniGameDef(type) {
   return MINI_GAME_DEFS[type] || MINI_GAME_DEFS.collector;
 }
@@ -3117,15 +3121,13 @@ function isMissionBossStage(stg) {
 function getMissionKillTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   if (isMissionBonusStage(stg)) return 0;
-  if (stg <= 10) return 3 + stg;
-  return 8 + Math.floor(stg * 2.5);
+  return buildMissionTarget(2, 1, 3, stg);
 }
 
 function getMissionScoreTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   if (isMissionBonusStage(stg)) return 0;
-  if (stg <= 10) return 500 * stg;
-  return 1500 + stg * 1200 + Math.floor(stg / 5) * 500;
+  return buildMissionTarget(200, 350, 900, stg);
 }
 
 function getMissionBonusBaseExp(stg) {
@@ -3157,21 +3159,8 @@ function getMissionType(stg) {
   return 'score';
 }
 
-function getMissionTypePool(stg) {
-  stg = Math.max(1, Math.floor(Number(stg) || 1));
-  const types = ['kill', 'boss', 'score'];
-  if (stg >= 20) types.push('gold');
-  if (stg >= 40) types.push('skill');
-  if (stg >= 60) types.push('survival');
-  if (stg >= 80) types.push('exp');
-  if (stg >= 100) types.push('exporb');
-  if (stg >= 120) types.push('perfect');
-  if (stg >= 140) types.push('hitlesskill');
-  return types;
-}
-
 function getRandomMissionType(stg) {
-  const types = getMissionTypePool(stg);
+  const types = getUnlockedMissionTypes(stg);
   return types[Math.floor(Math.random() * types.length)] || 'score';
 }
 
@@ -3181,55 +3170,41 @@ function isMissionGoldObjectiveActive() {
 
 function getMissionBossTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 10) return 1;
-  return 1 + Math.floor((stg - 1) / 6);
+  const { tier } = getMissionTierInfo(stg);
+  return Math.max(1, Math.min(3, 1 + Math.floor(tier / 4)));
 }
 
 function getMissionGoldTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 10) return 15 + stg * 10;
-  return 60 + stg * 35 + Math.floor(stg / 5) * 40;
+  return buildMissionTarget(12, 8, 25, stg);
 }
 
 function getMissionSkillUseTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 10) return 1 + Math.floor((stg - 1) / 3);
-  return 3 + Math.floor((stg - 1) / 4);
+  const { tier, step } = getMissionTierInfo(stg);
+  return Math.max(1, 1 + Math.floor((step - 1) / 4) + Math.floor(tier / 2));
 }
 
 function getMissionSurvivalTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  return 30;
+  return buildMissionTarget(3, 1, 2, stg, 0, 30);
 }
-
-function getMissionSpawnPerSecond(stg) {
-  stg = Math.max(1, Math.floor(Number(stg) || 1));
-  return 5 + Math.floor((stg - 1) / 20) * 3;
-}
-
 
 function getMissionExpTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 20) return 30 + stg * 8;
-  return 180 + stg * 18 + Math.floor(stg / 10) * 25;
+  return buildMissionTarget(40, 90, 240, stg);
 }
 
-function getMissionExpOrbTarget(stg) {
+function getMissionPickupTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 20) return 20 + stg * 6;
-  return 120 + stg * 15 + Math.floor(stg / 8) * 20;
+  const { tier, step } = getMissionTierInfo(stg);
+  return Math.max(1, 1 + Math.floor((step + 1) / 3) + tier);
 }
 
-function getMissionPerfectTarget(stg) {
+function getMissionGemTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 20) return 5 + Math.floor(stg * 0.8);
-  return 12 + Math.floor(stg * 0.5);
-}
-
-function getMissionHitlessKillTarget(stg) {
-  stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 20) return 8 + stg;
-  return 25 + Math.floor(stg * 1.2);
+  const { tier, step } = getMissionTierInfo(stg);
+  return Math.max(1, Math.min(6, 1 + Math.floor((step - 1) / 5) + Math.floor(tier / 2)));
 }
 
 function getMissionObjective(stg) {
@@ -3271,21 +3246,18 @@ function initMissionObjective(stg) {
     } else if (type === 'skill') {
       const target = getMissionSkillUseTarget(stg);
       obj = { type, target, label: `스킬 ${formatNumber(target)}회 사용` };
-    } else if (type === 'survival') {
-      const target = getMissionSurvivalTarget(stg);
-      obj = { type, target, label: `무피격 ${formatNumber(target)}초 버티기` };
     } else if (type === 'exp') {
       const target = getMissionExpTarget(stg);
-      obj = { type, target, label: `EXP ${formatNumber(target)} 획득` };
-    } else if (type === 'exporb') {
-      const target = getMissionExpOrbTarget(stg);
-      obj = { type, target, label: `EXP 아이템 ${formatNumber(target)} 수집` };
-    } else if (type === 'perfect') {
-      const target = getMissionPerfectTarget(stg);
-      obj = { type, target, label: `피격 없이 ${formatNumber(target)}초 버티기` };
+      obj = { type, target, label: `경험치 ${formatNumber(target)} 획득` };
+    } else if (type === 'pickup') {
+      const target = getMissionPickupTarget(stg);
+      obj = { type, target, label: `아이템 ${formatNumber(target)}개 획득` };
+    } else if (type === 'gem') {
+      const target = getMissionGemTarget(stg);
+      obj = { type, target, label: `보석 ${formatNumber(target)}개 획득` };
     } else {
-      const target = getMissionHitlessKillTarget(stg);
-      obj = { type: 'hitlesskill', target, label: `피격 없이 몬스터 ${formatNumber(target)}마리 처치` };
+      const target = getMissionSurvivalTarget(stg);
+      obj = { type: 'survival', target, label: `무피격 ${formatNumber(target)}초 버티기` };
     }
   }
   missionState.objectiveStage = stg;
@@ -3300,17 +3272,15 @@ function initMissionObjective(stg) {
 function getMissionObjectiveProgress(stg) {
   const obj = getMissionObjective(stg);
   const gainedScore = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
-  const gainedExp = Math.max(0, Math.floor((exp || 0) - (missionState.stageExpStart || 0)));
   if (obj.type === 'score') return gainedScore;
   if (obj.type === 'kill') return Math.max(0, Math.floor(stageRunKillCount || 0));
   if (obj.type === 'boss') return Math.max(0, Math.floor(stageBossKillCount || 0));
   if (obj.type === 'gold') return Math.max(0, Math.floor(stageRunGoldEarned || 0));
   if (obj.type === 'skill') return Math.max(0, Math.floor(missionState.skillUses || 0));
-  if (obj.type === 'survival') return Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
-  if (obj.type === 'exp') return gainedExp;
-  if (obj.type === 'exporb') return Math.max(0, Math.floor(stageRunExpOrbs || 0));
-  if (obj.type === 'perfect') return Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
-  if (obj.type === 'hitlesskill') return Math.max(0, Math.floor(stageRunKillCount || 0));
+  if (obj.type === 'survival') return Math.min(Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000)), Math.max(0, Math.floor(obj.target || 0)));
+  if (obj.type === 'exp') return Math.max(0, Math.floor((stageRunExpMonsters || 0) + (stageRunExpBoss || 0) + (stageRunExpOrbs || 0)));
+  if (obj.type === 'pickup') return Math.max(0, Math.floor(stageRunItemPickupCount || 0));
+  if (obj.type === 'gem') return Math.max(0, Math.floor(stageRunGemPickupCount || 0));
   if (obj.type === 'bonus') return Math.max(0, Math.floor(missionState.bonusCollectedExp || 0));
   return 0;
 }
@@ -3318,8 +3288,9 @@ function getMissionObjectiveProgress(stg) {
 function getMissionProgressText(stg) {
   const obj = getMissionObjective(stg);
   if (obj.type === 'bonus') return `EXP 수집 ${formatNumber(Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)))}`;
-  if ((obj.type === 'survival' || obj.type === 'perfect' || obj.type === 'hitlesskill') && (stageRunHits || 0) > 0) {
-    return `${obj.label} · 실패`;
+  if (obj.type === 'survival') {
+    const progress = getMissionObjectiveProgress(stg);
+    return `${obj.label} · ${formatNumber(progress)} / ${formatNumber(obj.target)}초`;
   }
   return `${obj.label} · ${formatNumber(getMissionObjectiveProgress(stg))} / ${formatNumber(obj.target)}`;
 }
@@ -3401,7 +3372,7 @@ cosmetic: { mode: 'auto', manual: 'none' },
 dungeon: { dayKey: '', used: 0, unlockedTier: 1 },
 itemPark: { dayKey: '', used: 0 },
 miniGame: { dayKey: '', used: 0 },
-dailyAttendance: { dateKey: '', streak: 0 },
+dailyAttendance: { dateKey: '' },
 
 // ✅ 펫 단계(0=없음, 1~5=보유 단계)
 petStage: 0,
@@ -3661,7 +3632,7 @@ function checkMissionStageClearNow() {
   const obj = getMissionObjective(stage);
   const progress = getMissionObjectiveProgress(stage);
 
-  if ((obj.type === 'survival' || obj.type === 'perfect' || obj.type === 'hitlesskill') && (stageRunHits || 0) > 0) return false;
+  if (obj.type === 'survival' && (stageRunHits || 0) > 0) return false;
   if (obj.type === 'boss' && boss) return false;
   if (progress < obj.target) return false;
 
@@ -3717,6 +3688,9 @@ let quake = null; // {life, tick}
 let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
+let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 4줄)
+const GAIN_MESSAGE_MAX = 4;
+const GAIN_MESSAGE_DURATION = 1500;
 let fieldItems = []; // ✅ [v.134] 무한 모드 전용 필드 아이템 드랍
 const INFINITE_ITEM_DEFS = {
   magnet: { key: 'magnet', name: '자석', emoji: '🧲', color: '#7ce7ff', dropChance: 0.03, duration: 15000 },
@@ -4887,17 +4861,18 @@ function tryPickupExpItems() {
       player.x, player.y, player.size * 0.8,
       it.x, it.y, it.r
     )) {
-      // ✅ 핫타임 적용은 여기서!
-      const gained = Math.floor(it.baseExp * (it.gradeMult || 1) * getHotMultiplier());
+      const hotMult = getHotMultiplier();
+      const baseExp = Math.max(0, Math.floor(it.baseExp * (it.gradeMult || 1)));
+      const gained = Math.floor(baseExp * hotMult);
       if (gained > 0) {
         if (gameMode === 'mission') {
           if (missionState.bonusActive) {
             missionState.bonusCollectedExp = Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)) + gained;
-            addExp(gained);
+            addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
             stageRunExpOrbs += gained;
           }
         } else {
-          addExp(gained);
+          addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
           // ✅ 스테이지 EXP 상세 집계(구슬 EXP)
           if (gameMode === 'stage' || gameMode === 'mission') {
             stageRunExpOrbs += gained;
@@ -5004,9 +4979,8 @@ if (typeof saveData.weeklyQuest.key !== 'string') saveData.weeklyQuest.key = '';
 if (!Array.isArray(saveData.weeklyQuest.quests)) saveData.weeklyQuest.quests = [];
 if (typeof saveData.weeklyQuest.claimed !== 'object' || !saveData.weeklyQuest.claimed) saveData.weeklyQuest.claimed = {};
 
-if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '', streak: 0 };
+if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '' };
 if (typeof saveData.dailyAttendance.dateKey !== 'string') saveData.dailyAttendance.dateKey = '';
-if (!Number.isFinite(saveData.dailyAttendance.streak)) saveData.dailyAttendance.streak = 0;
 
 // ✅ 던전 저장값 보정 + 일일 리셋
 if (!saveData.dungeon || typeof saveData.dungeon !== 'object') saveData.dungeon = { dayKey: '', used: 0 };
@@ -6177,8 +6151,6 @@ startQuestCountdown();
 }
 
 if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
-if (attendanceTableBtn) attendanceTableBtn.addEventListener('click', openAttendanceTableModal);
-if (closeAttendanceTableBtn) closeAttendanceTableBtn.addEventListener('click', () => { attendanceTableModal.classList.add('hidden'); });
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
@@ -8363,41 +8335,19 @@ function getLocalDateKey(d = new Date()) {
 }
 
 
-function getYesterdayDateKey(base = new Date()) {
-  const d = new Date(base);
-  d.setDate(d.getDate() - 1);
-  return getLocalDateKey(d);
-}
-
 function getDailyAttendanceRewardTables() {
   return {
-    normal: {
-      exp: [
-        { value: 100, chance: 60 },
-        { value: 1000, chance: 20 },
-        { value: 10000, chance: 15 },
-        { value: 100000, chance: 5 }
-      ],
-      gold: [
-        { value: 10, chance: 60 },
-        { value: 100, chance: 20 },
-        { value: 1000, chance: 15 },
-        { value: 10000, chance: 5 }
-      ]
-    },
-    streak3: [
-      { exp: 1500, gold: 1000, chance: 45 },
-      { exp: 4000, gold: 3000, chance: 25 },
-      { exp: 20000, gold: 7000, chance: 15 },
-      { exp: 300000, gold: 15000, chance: 10 },
-      { exp: 1000000, gold: 50000, chance: 5 }
+    exp: [
+      { value: 100, chance: 60 },
+      { value: 1000, chance: 20 },
+      { value: 10000, chance: 15 },
+      { value: 100000, chance: 5 }
     ],
-    streak7: [
-      { exp: 7500, gold: 5000, chance: 25 },
-      { exp: 30000, gold: 10000, chance: 25 },
-      { exp: 200000, gold: 30000, chance: 25 },
-      { exp: 1000000, gold: 75000, chance: 15 },
-      { exp: 5000000, gold: 200000, chance: 10 }
+    gold: [
+      { value: 10, chance: 60 },
+      { value: 100, chance: 20 },
+      { value: 1000, chance: 15 },
+      { value: 10000, chance: 5 }
     ]
   };
 }
@@ -8407,56 +8357,10 @@ function rollWeightedDailyAttendanceReward(table) {
   let acc = 0;
   for (const item of table) {
     acc += Number(item.chance || 0);
-    if (r < acc) return item;
+    if (r < acc) return Math.floor(Number(item.value || 0));
   }
-  return table && table.length ? table[table.length - 1] : null;
-}
-
-function getNextAttendanceStreak() {
-  const pack = saveData?.dailyAttendance || {};
-  const todayKey = getLocalDateKey();
-  const lastKey = String(pack.dateKey || '');
-  const current = Math.max(0, Math.floor(Number(pack.streak) || 0));
-  if (lastKey === todayKey) return current;
-  return (lastKey === getYesterdayDateKey()) ? (current + 1) : 1;
-}
-
-function getAttendanceRewardTier(streak) {
-  if (streak > 0 && streak % 7 === 0) return 7;
-  if (streak > 0 && streak % 3 === 0) return 3;
-  return 1;
-}
-
-function buildAttendanceRewardTableHtml() {
-  const tables = getDailyAttendanceRewardTables();
-  const nextStreak = getNextAttendanceStreak();
-  const nextTier = getAttendanceRewardTier(nextStreak);
-  const currentStreak = Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0));
-
-  const makeRows = (rows) => rows.map(item => `
-    <div style="display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
-      <span>EXP ${formatNumber(item.exp)} / 골드 ${formatNumber(item.gold)}</span>
-      <span style="color:#ffd76a; font-weight:700;">${item.chance}%</span>
-    </div>
-  `).join('');
-
-  return `
-    <div style="padding:10px 12px; border:1px solid rgba(157,140,255,0.45); border-radius:12px; background:rgba(157,140,255,0.10); margin-bottom:12px;">
-      현재 연속 출석: <b style="color:#fff;">${formatNumber(currentStreak)}일</b><br>
-      다음 출석은 <b style="color:${nextTier === 7 ? '#ffcf66' : nextTier === 3 ? '#8fffd6' : '#ffffff'};">${formatNumber(nextStreak)}일차</b> 보상입니다.
-    </div>
-    <div style="font-size:12px; color:#b7c7ff; margin-bottom:8px;">3일차와 7일차에는 EXP와 골드가 세트로 함께 지급됩니다.</div>
-    <div style="font-weight:900; color:#8fffd6; margin:10px 0 6px;">3일 연속 출석</div>
-    <div style="border:1px solid rgba(143,255,214,0.22); border-radius:12px; padding:8px 10px; background:rgba(143,255,214,0.05);">${makeRows(tables.streak3)}</div>
-    <div style="font-weight:900; color:#ffcf66; margin:14px 0 6px;">7일 연속 출석</div>
-    <div style="border:1px solid rgba(255,207,102,0.22); border-radius:12px; padding:8px 10px; background:rgba(255,207,102,0.05);">${makeRows(tables.streak7)}</div>
-  `;
-}
-
-function openAttendanceTableModal() {
-  if (!attendanceTableModal || !attendanceTableBody) return;
-  attendanceTableBody.innerHTML = buildAttendanceRewardTableHtml();
-  attendanceTableModal.classList.remove('hidden');
+  const last = table && table.length ? table[table.length - 1] : null;
+  return Math.floor(Number(last && last.value || 0));
 }
 
 function canClaimDailyAttendanceReward() {
@@ -8468,12 +8372,8 @@ function canClaimDailyAttendanceReward() {
 function refreshDailyRewardButton() {
   if (!dailyRewardBtn) return;
   const canClaim = canClaimDailyAttendanceReward();
-  const nextStreak = getNextAttendanceStreak();
-  const nextTier = getAttendanceRewardTier(nextStreak);
   dailyRewardBtn.disabled = !canClaim;
-  dailyRewardBtn.textContent = canClaim
-    ? (nextTier === 7 ? `📦 출석 보상 (${formatNumber(nextStreak)}일차★)` : nextTier === 3 ? `📦 출석 보상 (${formatNumber(nextStreak)}일차)` : '📦 출석 보상')
-    : `✅ 오늘 출석 완료 (${formatNumber(Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0)))}일 연속)`;
+  dailyRewardBtn.textContent = canClaim ? '📦 출석 보상' : '✅ 오늘 출석 완료';
   dailyRewardBtn.style.opacity = canClaim ? '1' : '0.72';
 }
 
@@ -8485,45 +8385,18 @@ function claimDailyAttendanceReward() {
   }
 
   const tables = getDailyAttendanceRewardTables();
-  const todayKey = getLocalDateKey();
-  const prevKey = String(saveData?.dailyAttendance?.dateKey || '');
-  const prevStreak = Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0));
-  const streak = (prevKey === getYesterdayDateKey()) ? (prevStreak + 1) : 1;
-  const rewardTier = getAttendanceRewardTier(streak);
-
-  let expReward = 0;
-  let goldReward = 0;
-
-  if (rewardTier === 7) {
-    const result = rollWeightedDailyAttendanceReward(tables.streak7) || { exp: 0, gold: 0 };
-    expReward = Math.floor(Number(result.exp) || 0);
-    goldReward = Math.floor(Number(result.gold) || 0);
-  } else if (rewardTier === 3) {
-    const result = rollWeightedDailyAttendanceReward(tables.streak3) || { exp: 0, gold: 0 };
-    expReward = Math.floor(Number(result.exp) || 0);
-    goldReward = Math.floor(Number(result.gold) || 0);
-  } else {
-    const expItem = rollWeightedDailyAttendanceReward(tables.normal.exp) || { value: 0 };
-    const goldItem = rollWeightedDailyAttendanceReward(tables.normal.gold) || { value: 0 };
-    expReward = Math.floor(Number(expItem.value) || 0);
-    goldReward = Math.floor(Number(goldItem.value) || 0);
-  }
+  const expReward = rollWeightedDailyAttendanceReward(tables.exp);
+  const goldReward = rollWeightedDailyAttendanceReward(tables.gold);
 
   addExp(expReward);
   gold = Math.max(0, Math.floor(gold || 0) + goldReward);
   saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + goldReward);
-  saveData.dailyAttendance.dateKey = todayKey;
-  saveData.dailyAttendance.streak = streak;
+  saveData.dailyAttendance.dateKey = getLocalDateKey();
   saveGameData();
   updateHUD();
   refreshDailyRewardButton();
-  if (!attendanceTableModal.classList.contains('hidden')) openAttendanceTableModal();
 
-  const bonusLabel = rewardTier === 7 ? `
-7일 연속 출석 보상!` : rewardTier === 3 ? `
-3일 연속 출석 보상!` : '';
-  alert(`출석 보상 획득!${bonusLabel}
-현재 연속 출석: ${formatNumber(streak)}일
+  alert(`출석 보상 획득!
 EXP +${formatNumber(expReward)}
 골드 +${formatNumber(goldReward)}`);
 }
@@ -10088,48 +9961,6 @@ function drawFieldItems() {
   }
 }
 
-function getInfiniteGemRatioByDistance(distance) {
-  const points = [
-    { m: 0, ruby: 95, sapphire: 5, diamond: 0 },
-    { m: 1000, ruby: 85, sapphire: 15, diamond: 0 },
-    { m: 2000, ruby: 75, sapphire: 25, diamond: 0 },
-    { m: 3000, ruby: 70, sapphire: 30, diamond: 0 },
-    { m: 5000, ruby: 60, sapphire: 40, diamond: 0 },
-    { m: 7500, ruby: 50, sapphire: 50, diamond: 0 },
-    { m: 10000, ruby: 30, sapphire: 65, diamond: 5 },
-    { m: 12500, ruby: 10, sapphire: 80, diamond: 10 },
-    { m: 15000, ruby: 0, sapphire: 80, diamond: 20 },
-    { m: 17500, ruby: 0, sapphire: 65, diamond: 35 },
-    { m: 20000, ruby: 0, sapphire: 50, diamond: 50 },
-    { m: 25000, ruby: 0, sapphire: 25, diamond: 75 },
-    { m: 30000, ruby: 0, sapphire: 5, diamond: 95 }
-  ];
-  const d = Math.max(0, Number(distance) || 0);
-  if (d <= points[0].m) return { ruby: points[0].ruby, sapphire: points[0].sapphire, diamond: points[0].diamond };
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const b = points[i];
-    if (d <= b.m) {
-      const t = (d - a.m) / Math.max(1, (b.m - a.m));
-      return {
-        ruby: a.ruby + (b.ruby - a.ruby) * t,
-        sapphire: a.sapphire + (b.sapphire - a.sapphire) * t,
-        diamond: a.diamond + (b.diamond - a.diamond) * t
-      };
-    }
-  }
-  const last = points[points.length - 1];
-  return { ruby: last.ruby, sapphire: last.sapphire, diamond: last.diamond };
-}
-
-function rollInfiniteGemTypeByDistance(distance) {
-  const ratio = getInfiniteGemRatioByDistance(distance);
-  const roll = Math.random() * 100;
-  if (roll < ratio.ruby) return 'ruby';
-  if (roll < ratio.ruby + ratio.sapphire) return 'sapphire';
-  return 'diamond';
-}
-
 function spawnGoldDrop(x, y, amount) {
   if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
   if (!amount || amount <= 0) return;
@@ -10138,9 +9969,18 @@ function spawnGoldDrop(x, y, amount) {
 
   let dropType = 'gold';
   let finalAmount = Math.max(1, Math.floor(amount));
-  if (gameMode === 'infinite' && Math.random() < 0.15) {
-    dropType = rollInfiniteGemTypeByDistance(distance);
-    finalAmount = dropType === 'ruby' ? 10 : dropType === 'sapphire' ? 30 : 50;
+  if (Math.random() < 0.10) {
+    const roll = Math.random();
+    if (roll < 0.3333) {
+      dropType = 'ruby';
+      finalAmount = 10;
+    } else if (roll < 0.6666) {
+      dropType = 'sapphire';
+      finalAmount = 30;
+    } else {
+      dropType = 'diamond';
+      finalAmount = 50;
+    }
   }
 
   goldDrops.push({
@@ -10281,6 +10121,9 @@ function tryPickupGoldDrops() {
     if (circleCollision(player.x, player.y, player.size * 0.85, it.x, it.y, it.r)) {
       const baseGained = Math.max(1, Math.floor(it.amount || 1));
       const gained = Math.max(1, Math.floor(baseGained * getPetGoldMultiplier()));
+      addGoldGainMessages(baseGained, gained, it.type || 'gold');
+      stageRunItemPickupCount = (stageRunItemPickupCount || 0) + 1;
+      if (it.type && it.type !== 'gold') stageRunGemPickupCount = (stageRunGemPickupCount || 0) + 1;
       gold += gained;
       stageRunGoldEarned = (stageRunGoldEarned || 0) + gained;
       saveData.goldEarned = (saveData.goldEarned || 0) + gained;
@@ -10426,7 +10269,127 @@ function applyHyperSkillCooldown(ms) {
 }
 
 
-function addExp(amount) {
+
+function pushGainMessage(text, color = '#ffffff') {
+  const msg = String(text || '').trim();
+  if (!msg) return;
+  gainMessages.push({
+    text: msg,
+    color,
+    createdAt: performance.now()
+  });
+  while (gainMessages.length > GAIN_MESSAGE_MAX) gainMessages.shift();
+}
+
+function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult = 1, finalAmount = 0) {
+  const safeBase = Math.max(0, Math.floor(Number(baseAmount) || 0));
+  const safeFinal = Math.max(0, Math.floor(Number(finalAmount) || 0));
+  if (safeFinal <= 0) return;
+
+  pushGainMessage(`경험치를 얻었습니다(+${formatNumber(safeBase)})`, '#7dffb2');
+
+  let running = safeBase;
+  if ((Number(hotMult) || 1) > 1) {
+    const bonus = Math.max(0, Math.floor(safeBase * ((Number(hotMult) || 1) - 1)));
+    if (bonus > 0) {
+      const hotLabel = Number(hotMult) >= 3 ? '핫타임 경험치 보너스 3배' : '핫타임 경험치 보너스 2배';
+      pushGainMessage(`${hotLabel}(+${formatNumber(bonus)})`, '#ffb26b');
+      running += bonus;
+    }
+  }
+
+  if ((Number(expBuffMult) || 1) > 1) {
+    const bonus = Math.max(0, Math.floor(running * ((Number(expBuffMult) || 1) - 1)));
+    if (bonus > 0) {
+      const pct = Math.round(((Number(expBuffMult) || 1) - 1) * 100);
+      pushGainMessage(`경험치 버프 보너스 ${pct}%(+${formatNumber(bonus)})`, '#7ce7ff');
+      running += bonus;
+    }
+  }
+
+  if ((Number(petExpMult) || 1) > 1) {
+    const bonus = Math.max(0, safeFinal - running);
+    if (bonus > 0) {
+      const pct = Math.round(((Number(petExpMult) || 1) - 1) * 100);
+      pushGainMessage(`펫 경험치 보너스 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
+    }
+  }
+}
+
+function addGoldGainMessages(baseAmount, finalAmount, pickupType = 'gold') {
+  const safeBase = Math.max(0, Math.floor(Number(baseAmount) || 0));
+  const safeFinal = Math.max(0, Math.floor(Number(finalAmount) || 0));
+  if (safeFinal <= 0) return;
+
+  const typeLabel = pickupType === 'ruby'
+    ? '루비를 얻었습니다'
+    : pickupType === 'sapphire'
+      ? '사파이어를 얻었습니다'
+      : pickupType === 'diamond'
+        ? '다이아를 얻었습니다'
+        : '골드를 얻었습니다';
+  const typeColor = pickupType === 'ruby'
+    ? '#ff73b8'
+    : pickupType === 'sapphire'
+      ? '#5dff96'
+      : pickupType === 'diamond'
+        ? '#59a8ff'
+        : '#ffd700';
+
+  pushGainMessage(`${typeLabel}(+${formatNumber(safeBase)})`, typeColor);
+
+  const bonus = Math.max(0, safeFinal - safeBase);
+  if (bonus > 0) {
+    const petGoldMult = Number(getPetGoldMultiplier()) || 1;
+    const pct = Math.max(1, Math.round((petGoldMult - 1) * 100));
+    pushGainMessage(`펫 골드 보너스 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
+  }
+}
+
+function drawGainMessages() {
+  if (!gainMessages.length) return;
+  const now = performance.now();
+  const lineGap = 22;
+  const baseX = 100;
+  const baseY = Math.max(120, height - 112);
+
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  for (let i = gainMessages.length - 1; i >= 0; i--) {
+    const msg = gainMessages[i];
+    const elapsed = now - Number(msg.createdAt || 0);
+    if (elapsed >= GAIN_MESSAGE_DURATION) {
+      gainMessages.splice(i, 1);
+      continue;
+    }
+  }
+
+  for (let i = 0; i < gainMessages.length; i++) {
+    const msg = gainMessages[gainMessages.length - 1 - i];
+    const elapsed = now - Number(msg.createdAt || 0);
+    const progress = Math.max(0, Math.min(1, elapsed / GAIN_MESSAGE_DURATION));
+    const alpha = 1 - progress;
+    const lift = progress * 12;
+    const y = baseY - (i * lineGap) - lift;
+
+    ctx.globalAlpha = alpha;
+    ctx.font = fontStr(14, '900');
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.78)';
+    ctx.fillStyle = msg.color || '#ffffff';
+    ctx.strokeText(msg.text, baseX, y);
+    ctx.fillText(msg.text, baseX, y);
+  }
+
+  ctx.restore();
+}
+
+function addExp(amount, opts = {}) {
+  const rawBaseAmount = Math.max(0, Math.floor(Number((opts && opts.baseAmount) ?? amount) || 0));
+  const hotMult = Math.max(1, Number((opts && opts.hotMultiplier) || 1) || 1);
+
   // ✅ 만렙이면 EXP 증가 금지 + 표시 고정용 정리
   if (level >= MAX_LEVEL || exp >= MAX_EXP_CAP) {
 
@@ -10437,7 +10400,7 @@ function addExp(amount) {
   }
 
     updateHUD();
-    return;
+    return 0;
   }
 
   const oldLevel = level;
@@ -10446,8 +10409,10 @@ function addExp(amount) {
   // ✅ [v.41+] EXP 획득률 보정(피격/상점버프)
   let mult = 1;
   if (gameMode === 'stage') mult *= getStageHitExpRate(stageRunHits || 0);
-  mult *= getBuffMult('exp');
-  amount = Math.max(0, Math.floor(amount * mult * getPetExpMultiplier()));
+  const expBuffMult = getBuffMult('exp');
+  const petExpMult = getPetExpMultiplier();
+  mult *= expBuffMult;
+  amount = Math.max(0, Math.floor(amount * mult * petExpMult));
 
   // ✅ 상한을 넘지 못하게 clamp
   exp = Math.min(MAX_EXP_CAP, exp + amount);
@@ -10466,8 +10431,13 @@ levelUpTimer = 1500;
     }
   }
 
+  if (opts == null || opts.showGainMessage !== false) {
+    addExpGainMessages(rawBaseAmount, hotMult, expBuffMult, petExpMult, amount);
+  }
+
   saveGameDataDebounced();
   updateHUD();
+  return amount;
 }
 
 function shootBullet(currentTime) {
@@ -12182,6 +12152,8 @@ if (gameMode === 'stage' || gameMode === 'mission') {
   stageRunExpOrbs = 0;
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunItemPickupCount = 0;
+  stageRunGemPickupCount = 0;
   stageBossTriggered = false;
   stageBossKillCount = 0;
   stageClearSeq.active = false;
@@ -12284,7 +12256,7 @@ if (stage <= 100) {
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
 
-    // ✅ [미션 모드] 초당 스폰 수는 별도 제어, 호출당 1마리만 생성
+    // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
     if (gameMode === 'mission') enemyCount = 1;
 
     // ✅ [v.117 패치] 1웨이브 최대 5마리 제한
@@ -13096,6 +13068,8 @@ if (gameMode === 'stage') {
   stageRunExpOrbs = 0;
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunItemPickupCount = 0;
+  stageRunGemPickupCount = 0;
   stageBossTriggered = false;
   stageBossKillCount = 0;
   playerInvulnTimer = 0;
@@ -13111,6 +13085,8 @@ if (gameMode === 'stage') {
   stageRunExpOrbs = 0;
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunItemPickupCount = 0;
+  stageRunGemPickupCount = 0;
   playerInvulnTimer = 0;
   hyperFlightPostInvulnTimer = 0;
   wasHyperFlightActive = false;
@@ -13360,6 +13336,8 @@ function initMissionBonusStage() {
   stageRunExpOrbs = 0;
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunItemPickupCount = 0;
+  stageRunGemPickupCount = 0;
   stageBossTriggered = false;
   stageBossKillCount = 0;
   playerInvulnTimer = 0;
@@ -13656,7 +13634,7 @@ return distSq <= r * r;
 }
 
 function update(dt, currentTime) {
-  // ✅ [v.79] 스테이지 클리어 연출(1.5초) 동안은 전투 진행을 멈추고 카운트만 진행
+  // ✅ [v.79] 스테이지 클리어 연출(3초) 동안은 전투 진행을 멈추고 카운트만 진행
   if ((gameMode === 'stage' || gameMode === 'mission') && stageClearSeq && stageClearSeq.active) {
     stageClearSeq.timer -= dt;
     updateParticles(dt);
@@ -13880,10 +13858,8 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     } else if (gameMode === 'mission') {
       if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared) {
         missionState.spawnAcc = Math.max(0, Number(missionState.spawnAcc) || 0) + dt;
-        const missionSpawnRate = getMissionSpawnPerSecond(stage);
-        const missionSpawnInterval = 1000 / Math.max(1, missionSpawnRate);
-        while (missionState.spawnAcc >= missionSpawnInterval) {
-          missionState.spawnAcc -= missionSpawnInterval;
+        while (missionState.spawnAcc >= 100) {
+          missionState.spawnAcc -= 100;
           spawnNextWave();
         }
       }
@@ -13942,10 +13918,10 @@ if (stageCleared) {
         }catch(e){}
       })();
 
-      // ✅ [v.79] 결과 모달을 바로 띄우지 않고, 1.5초 동안 "보너스 EXP + 랭크" 연출
+      // ✅ [v.79] 결과 모달을 바로 띄우지 않고, 3초 동안 "보너스 EXP + 랭크" 연출
       stageClearModal.classList.add('hidden');
       stageClearSeq.active = true;
-      stageClearSeq.timer = 1500; // 1.5초 표시
+      stageClearSeq.timer = 1200; // 1.2초 표시
 
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'D');
@@ -13955,7 +13931,7 @@ if (stageCleared) {
       const res = finalizeMissionClearStats() || { bonusExp: 0, rank: 'CLEAR', expGained: 0 };
       stageClearModal.classList.add('hidden');
       stageClearSeq.active = true;
-      stageClearSeq.timer = 1500;
+      stageClearSeq.timer = 3000;
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'CLEAR');
       stageClearSeq.formulaText = String(res.formulaText || '');
@@ -13975,7 +13951,7 @@ if (stageCleared) {
         missionState.currentStage = stage;
         runStartStage = 1;
         startGame(stage);
-      }, 1500);
+      }, 3000);
     } else {
       // (안전장치) 무한 모드에선 원래 여기 오면 안 되지만, 혹시 몰라 방어
       stageCleared = false;
@@ -16307,6 +16283,8 @@ requestAnimationFrame(gameLoop);
     drawDamageTexts();
 
     ctx.restore();
+
+    drawGainMessages();
 
     // UI/오버레이(고정)
     drawLevelUpEffect();
