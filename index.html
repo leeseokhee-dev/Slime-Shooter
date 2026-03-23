@@ -3704,9 +3704,9 @@ let quake = null; // {life, tick}
 let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
-let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 4줄)
-const GAIN_MESSAGE_MAX = 4;
-const GAIN_MESSAGE_DURATION = 1500;
+let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 9줄)
+const GAIN_MESSAGE_MAX = 9;
+const GAIN_MESSAGE_DURATION = 2000;
 let fieldItems = []; // ✅ [v.134] 무한 모드 전용 필드 아이템 드랍
 const INFINITE_ITEM_DEFS = {
   magnet: { key: 'magnet', name: '자석', emoji: '🧲', color: '#7ce7ff', dropChance: 0.03, duration: 15000 },
@@ -10390,8 +10390,8 @@ function addGoldGainMessages(baseAmount, finalAmount, pickupType = 'gold') {
 function drawGainMessages() {
   if (!gainMessages.length) return;
   const now = performance.now();
-  const lineGap = 22;
-  const baseX = 100;
+  const lineGap = 24;
+  const baseX = 90;
   const baseY = Math.max(120, height - 112);
 
   ctx.save();
@@ -10416,7 +10416,7 @@ function drawGainMessages() {
     const y = baseY - (i * lineGap) - lift;
 
     ctx.globalAlpha = alpha;
-    ctx.font = fontStr(14, '900');
+    ctx.font = fontStr(12, '900');
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(0,0,0,0.78)';
     ctx.fillStyle = msg.color || '#ffffff';
