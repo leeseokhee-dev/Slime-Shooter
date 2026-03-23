@@ -569,6 +569,7 @@ body.dead-mode #consumableQuickBar{
     }
     #titleUI .big-btn,
     #titleUI #dailyRewardBtn,
+    #titleUI #attendanceTableBtn,
     #titleUI #openQuestBtn{
         width: 100%;
         max-width: 260px;
@@ -577,12 +578,14 @@ body.dead-mode #consumableQuickBar{
     /* [v.47 패치] 캔버스 설정(⚙) 열릴 때 타이틀 버튼 숨김(아래로) */
     #titleUI #startBtn,
     #titleUI #dailyRewardBtn,
+    #titleUI #attendanceTableBtn,
     #titleUI #openQuestBtn{
         transition: transform .18s ease, opacity .18s ease;
         will-change: transform, opacity;
     }
     #titleUI.title-buttons-hidden #startBtn,
     #titleUI.title-buttons-hidden #dailyRewardBtn,
+    #titleUI.title-buttons-hidden #attendanceTableBtn,
     #titleUI.title-buttons-hidden #openQuestBtn{
         transform: translateY(140px);
         opacity: 0;
@@ -1334,10 +1337,21 @@ body.tutorial-mode .quake-skill{
         
         <button id="startBtn" class="ui-btn big-btn">게임 시작</button>
         <button id="dailyRewardBtn" class="ui-btn" style="border:1px solid #7ce7ff; color:#e8fbff; margin-top:10px;">📦 출석 보상</button>
+        <button id="attendanceTableBtn" class="ui-btn" style="border:1px solid #9d8cff; color:#efeaff; margin-top:10px;">🎁 연속 출석 확률표</button>
         <button id="openQuestBtn" class="ui-btn" style="border:1px solid #ffd700; color:#ffd700; margin-top:10px;">
             📜 퀘스트 (Quests)
         </button>
         <button id="titleExitBtn" class="ui-btn">게임 종료</button>
+    </div>
+</div>
+
+
+<!-- 연속 출석 확률표 모달 -->
+<div id="attendanceTableModal" class="modal hidden" style="z-index:210; border-color:#9d8cff; max-width:460px;">
+    <div class="modal-header" style="color:#efeaff;">연속 출석 확률표</div>
+    <div class="modal-body" style="gap:12px; line-height:1.6;">
+        <div id="attendanceTableBody" style="font-size:13px; color:#eef3ff;"></div>
+        <button id="closeAttendanceTableBtn" class="ui-btn" style="width:100%;">닫기</button>
     </div>
 </div>
 
@@ -1958,6 +1972,7 @@ const gameOverLine4ValueEl = document.getElementById('gameOverLine4Value');
 // Buttons
 const startBtn = document.getElementById('startBtn');
 const dailyRewardBtn = document.getElementById('dailyRewardBtn');
+const attendanceTableBtn = document.getElementById('attendanceTableBtn');
 const openQuestBtn = document.getElementById('openQuestBtn');
 const titleExitBtn = document.getElementById('titleExitBtn');
 const restartBtn = document.getElementById('restartBtn');
@@ -1976,6 +1991,9 @@ const confirmNoBtn = document.getElementById('confirmNoBtn');
 const questModal = document.getElementById('questModal');
 const questList = document.getElementById('questList');
 const closeQuestBtn = document.getElementById('closeQuestBtn');
+const attendanceTableModal = document.getElementById('attendanceTableModal');
+const attendanceTableBody = document.getElementById('attendanceTableBody');
+const closeAttendanceTableBtn = document.getElementById('closeAttendanceTableBtn');
 
 // 상점 모달
 const shopModal = document.getElementById('shopModal');
@@ -3139,8 +3157,21 @@ function getMissionType(stg) {
   return 'score';
 }
 
+function getMissionTypePool(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  const types = ['kill', 'boss', 'score'];
+  if (stg >= 20) types.push('gold');
+  if (stg >= 40) types.push('skill');
+  if (stg >= 60) types.push('survival');
+  if (stg >= 80) types.push('exp');
+  if (stg >= 100) types.push('exporb');
+  if (stg >= 120) types.push('perfect');
+  if (stg >= 140) types.push('hitlesskill');
+  return types;
+}
+
 function getRandomMissionType(stg) {
-  const types = ['score', 'kill', 'boss', 'gold', 'skill', 'survival'];
+  const types = getMissionTypePool(stg);
   return types[Math.floor(Math.random() * types.length)] || 'score';
 }
 
@@ -3168,8 +3199,37 @@ function getMissionSkillUseTarget(stg) {
 
 function getMissionSurvivalTarget(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  if (stg <= 10) return 3 + stg;
-  return 8 + Math.floor(stg * 1.5);
+  return 30;
+}
+
+function getMissionSpawnPerSecond(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  return 5 + Math.floor((stg - 1) / 20) * 3;
+}
+
+
+function getMissionExpTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 20) return 30 + stg * 8;
+  return 180 + stg * 18 + Math.floor(stg / 10) * 25;
+}
+
+function getMissionExpOrbTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 20) return 20 + stg * 6;
+  return 120 + stg * 15 + Math.floor(stg / 8) * 20;
+}
+
+function getMissionPerfectTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 20) return 5 + Math.floor(stg * 0.8);
+  return 12 + Math.floor(stg * 0.5);
+}
+
+function getMissionHitlessKillTarget(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  if (stg <= 20) return 8 + stg;
+  return 25 + Math.floor(stg * 1.2);
 }
 
 function getMissionObjective(stg) {
@@ -3211,9 +3271,21 @@ function initMissionObjective(stg) {
     } else if (type === 'skill') {
       const target = getMissionSkillUseTarget(stg);
       obj = { type, target, label: `스킬 ${formatNumber(target)}회 사용` };
-    } else {
+    } else if (type === 'survival') {
       const target = getMissionSurvivalTarget(stg);
-      obj = { type: 'survival', target, label: `무피격 ${formatNumber(target)}초 버티기` };
+      obj = { type, target, label: `무피격 ${formatNumber(target)}초 버티기` };
+    } else if (type === 'exp') {
+      const target = getMissionExpTarget(stg);
+      obj = { type, target, label: `EXP ${formatNumber(target)} 획득` };
+    } else if (type === 'exporb') {
+      const target = getMissionExpOrbTarget(stg);
+      obj = { type, target, label: `EXP 아이템 ${formatNumber(target)} 수집` };
+    } else if (type === 'perfect') {
+      const target = getMissionPerfectTarget(stg);
+      obj = { type, target, label: `피격 없이 ${formatNumber(target)}초 버티기` };
+    } else {
+      const target = getMissionHitlessKillTarget(stg);
+      obj = { type: 'hitlesskill', target, label: `피격 없이 몬스터 ${formatNumber(target)}마리 처치` };
     }
   }
   missionState.objectiveStage = stg;
@@ -3228,12 +3300,17 @@ function initMissionObjective(stg) {
 function getMissionObjectiveProgress(stg) {
   const obj = getMissionObjective(stg);
   const gainedScore = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
+  const gainedExp = Math.max(0, Math.floor((exp || 0) - (missionState.stageExpStart || 0)));
   if (obj.type === 'score') return gainedScore;
   if (obj.type === 'kill') return Math.max(0, Math.floor(stageRunKillCount || 0));
   if (obj.type === 'boss') return Math.max(0, Math.floor(stageBossKillCount || 0));
   if (obj.type === 'gold') return Math.max(0, Math.floor(stageRunGoldEarned || 0));
   if (obj.type === 'skill') return Math.max(0, Math.floor(missionState.skillUses || 0));
   if (obj.type === 'survival') return Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
+  if (obj.type === 'exp') return gainedExp;
+  if (obj.type === 'exporb') return Math.max(0, Math.floor(stageRunExpOrbs || 0));
+  if (obj.type === 'perfect') return Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
+  if (obj.type === 'hitlesskill') return Math.max(0, Math.floor(stageRunKillCount || 0));
   if (obj.type === 'bonus') return Math.max(0, Math.floor(missionState.bonusCollectedExp || 0));
   return 0;
 }
@@ -3241,6 +3318,9 @@ function getMissionObjectiveProgress(stg) {
 function getMissionProgressText(stg) {
   const obj = getMissionObjective(stg);
   if (obj.type === 'bonus') return `EXP 수집 ${formatNumber(Math.max(0, Math.floor(missionState.bonusCollectedExp || 0)))}`;
+  if ((obj.type === 'survival' || obj.type === 'perfect' || obj.type === 'hitlesskill') && (stageRunHits || 0) > 0) {
+    return `${obj.label} · 실패`;
+  }
   return `${obj.label} · ${formatNumber(getMissionObjectiveProgress(stg))} / ${formatNumber(obj.target)}`;
 }
 
@@ -3321,7 +3401,7 @@ cosmetic: { mode: 'auto', manual: 'none' },
 dungeon: { dayKey: '', used: 0, unlockedTier: 1 },
 itemPark: { dayKey: '', used: 0 },
 miniGame: { dayKey: '', used: 0 },
-dailyAttendance: { dateKey: '' },
+dailyAttendance: { dateKey: '', streak: 0 },
 
 // ✅ 펫 단계(0=없음, 1~5=보유 단계)
 petStage: 0,
@@ -3581,7 +3661,7 @@ function checkMissionStageClearNow() {
   const obj = getMissionObjective(stage);
   const progress = getMissionObjectiveProgress(stage);
 
-  if (obj.type === 'survival' && (stageRunHits || 0) > 0) return false;
+  if ((obj.type === 'survival' || obj.type === 'perfect' || obj.type === 'hitlesskill') && (stageRunHits || 0) > 0) return false;
   if (obj.type === 'boss' && boss) return false;
   if (progress < obj.target) return false;
 
@@ -4924,8 +5004,9 @@ if (typeof saveData.weeklyQuest.key !== 'string') saveData.weeklyQuest.key = '';
 if (!Array.isArray(saveData.weeklyQuest.quests)) saveData.weeklyQuest.quests = [];
 if (typeof saveData.weeklyQuest.claimed !== 'object' || !saveData.weeklyQuest.claimed) saveData.weeklyQuest.claimed = {};
 
-if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '' };
+if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '', streak: 0 };
 if (typeof saveData.dailyAttendance.dateKey !== 'string') saveData.dailyAttendance.dateKey = '';
+if (!Number.isFinite(saveData.dailyAttendance.streak)) saveData.dailyAttendance.streak = 0;
 
 // ✅ 던전 저장값 보정 + 일일 리셋
 if (!saveData.dungeon || typeof saveData.dungeon !== 'object') saveData.dungeon = { dayKey: '', used: 0 };
@@ -6096,6 +6177,8 @@ startQuestCountdown();
 }
 
 if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
+if (attendanceTableBtn) attendanceTableBtn.addEventListener('click', openAttendanceTableModal);
+if (closeAttendanceTableBtn) closeAttendanceTableBtn.addEventListener('click', () => { attendanceTableModal.classList.add('hidden'); });
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
@@ -8280,19 +8363,41 @@ function getLocalDateKey(d = new Date()) {
 }
 
 
+function getYesterdayDateKey(base = new Date()) {
+  const d = new Date(base);
+  d.setDate(d.getDate() - 1);
+  return getLocalDateKey(d);
+}
+
 function getDailyAttendanceRewardTables() {
   return {
-    exp: [
-      { value: 100, chance: 60 },
-      { value: 1000, chance: 20 },
-      { value: 10000, chance: 15 },
-      { value: 100000, chance: 5 }
+    normal: {
+      exp: [
+        { value: 100, chance: 60 },
+        { value: 1000, chance: 20 },
+        { value: 10000, chance: 15 },
+        { value: 100000, chance: 5 }
+      ],
+      gold: [
+        { value: 10, chance: 60 },
+        { value: 100, chance: 20 },
+        { value: 1000, chance: 15 },
+        { value: 10000, chance: 5 }
+      ]
+    },
+    streak3: [
+      { exp: 1500, gold: 1000, chance: 45 },
+      { exp: 4000, gold: 3000, chance: 25 },
+      { exp: 20000, gold: 7000, chance: 15 },
+      { exp: 300000, gold: 15000, chance: 10 },
+      { exp: 1000000, gold: 50000, chance: 5 }
     ],
-    gold: [
-      { value: 10, chance: 60 },
-      { value: 100, chance: 20 },
-      { value: 1000, chance: 15 },
-      { value: 10000, chance: 5 }
+    streak7: [
+      { exp: 7500, gold: 5000, chance: 25 },
+      { exp: 30000, gold: 10000, chance: 25 },
+      { exp: 200000, gold: 30000, chance: 25 },
+      { exp: 1000000, gold: 75000, chance: 15 },
+      { exp: 5000000, gold: 200000, chance: 10 }
     ]
   };
 }
@@ -8302,10 +8407,56 @@ function rollWeightedDailyAttendanceReward(table) {
   let acc = 0;
   for (const item of table) {
     acc += Number(item.chance || 0);
-    if (r < acc) return Math.floor(Number(item.value || 0));
+    if (r < acc) return item;
   }
-  const last = table && table.length ? table[table.length - 1] : null;
-  return Math.floor(Number(last && last.value || 0));
+  return table && table.length ? table[table.length - 1] : null;
+}
+
+function getNextAttendanceStreak() {
+  const pack = saveData?.dailyAttendance || {};
+  const todayKey = getLocalDateKey();
+  const lastKey = String(pack.dateKey || '');
+  const current = Math.max(0, Math.floor(Number(pack.streak) || 0));
+  if (lastKey === todayKey) return current;
+  return (lastKey === getYesterdayDateKey()) ? (current + 1) : 1;
+}
+
+function getAttendanceRewardTier(streak) {
+  if (streak > 0 && streak % 7 === 0) return 7;
+  if (streak > 0 && streak % 3 === 0) return 3;
+  return 1;
+}
+
+function buildAttendanceRewardTableHtml() {
+  const tables = getDailyAttendanceRewardTables();
+  const nextStreak = getNextAttendanceStreak();
+  const nextTier = getAttendanceRewardTier(nextStreak);
+  const currentStreak = Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0));
+
+  const makeRows = (rows) => rows.map(item => `
+    <div style="display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+      <span>EXP ${formatNumber(item.exp)} / 골드 ${formatNumber(item.gold)}</span>
+      <span style="color:#ffd76a; font-weight:700;">${item.chance}%</span>
+    </div>
+  `).join('');
+
+  return `
+    <div style="padding:10px 12px; border:1px solid rgba(157,140,255,0.45); border-radius:12px; background:rgba(157,140,255,0.10); margin-bottom:12px;">
+      현재 연속 출석: <b style="color:#fff;">${formatNumber(currentStreak)}일</b><br>
+      다음 출석은 <b style="color:${nextTier === 7 ? '#ffcf66' : nextTier === 3 ? '#8fffd6' : '#ffffff'};">${formatNumber(nextStreak)}일차</b> 보상입니다.
+    </div>
+    <div style="font-size:12px; color:#b7c7ff; margin-bottom:8px;">3일차와 7일차에는 EXP와 골드가 세트로 함께 지급됩니다.</div>
+    <div style="font-weight:900; color:#8fffd6; margin:10px 0 6px;">3일 연속 출석</div>
+    <div style="border:1px solid rgba(143,255,214,0.22); border-radius:12px; padding:8px 10px; background:rgba(143,255,214,0.05);">${makeRows(tables.streak3)}</div>
+    <div style="font-weight:900; color:#ffcf66; margin:14px 0 6px;">7일 연속 출석</div>
+    <div style="border:1px solid rgba(255,207,102,0.22); border-radius:12px; padding:8px 10px; background:rgba(255,207,102,0.05);">${makeRows(tables.streak7)}</div>
+  `;
+}
+
+function openAttendanceTableModal() {
+  if (!attendanceTableModal || !attendanceTableBody) return;
+  attendanceTableBody.innerHTML = buildAttendanceRewardTableHtml();
+  attendanceTableModal.classList.remove('hidden');
 }
 
 function canClaimDailyAttendanceReward() {
@@ -8317,8 +8468,12 @@ function canClaimDailyAttendanceReward() {
 function refreshDailyRewardButton() {
   if (!dailyRewardBtn) return;
   const canClaim = canClaimDailyAttendanceReward();
+  const nextStreak = getNextAttendanceStreak();
+  const nextTier = getAttendanceRewardTier(nextStreak);
   dailyRewardBtn.disabled = !canClaim;
-  dailyRewardBtn.textContent = canClaim ? '📦 출석 보상' : '✅ 오늘 출석 완료';
+  dailyRewardBtn.textContent = canClaim
+    ? (nextTier === 7 ? `📦 출석 보상 (${formatNumber(nextStreak)}일차★)` : nextTier === 3 ? `📦 출석 보상 (${formatNumber(nextStreak)}일차)` : '📦 출석 보상')
+    : `✅ 오늘 출석 완료 (${formatNumber(Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0)))}일 연속)`;
   dailyRewardBtn.style.opacity = canClaim ? '1' : '0.72';
 }
 
@@ -8330,18 +8485,45 @@ function claimDailyAttendanceReward() {
   }
 
   const tables = getDailyAttendanceRewardTables();
-  const expReward = rollWeightedDailyAttendanceReward(tables.exp);
-  const goldReward = rollWeightedDailyAttendanceReward(tables.gold);
+  const todayKey = getLocalDateKey();
+  const prevKey = String(saveData?.dailyAttendance?.dateKey || '');
+  const prevStreak = Math.max(0, Math.floor(Number(saveData?.dailyAttendance?.streak) || 0));
+  const streak = (prevKey === getYesterdayDateKey()) ? (prevStreak + 1) : 1;
+  const rewardTier = getAttendanceRewardTier(streak);
+
+  let expReward = 0;
+  let goldReward = 0;
+
+  if (rewardTier === 7) {
+    const result = rollWeightedDailyAttendanceReward(tables.streak7) || { exp: 0, gold: 0 };
+    expReward = Math.floor(Number(result.exp) || 0);
+    goldReward = Math.floor(Number(result.gold) || 0);
+  } else if (rewardTier === 3) {
+    const result = rollWeightedDailyAttendanceReward(tables.streak3) || { exp: 0, gold: 0 };
+    expReward = Math.floor(Number(result.exp) || 0);
+    goldReward = Math.floor(Number(result.gold) || 0);
+  } else {
+    const expItem = rollWeightedDailyAttendanceReward(tables.normal.exp) || { value: 0 };
+    const goldItem = rollWeightedDailyAttendanceReward(tables.normal.gold) || { value: 0 };
+    expReward = Math.floor(Number(expItem.value) || 0);
+    goldReward = Math.floor(Number(goldItem.value) || 0);
+  }
 
   addExp(expReward);
   gold = Math.max(0, Math.floor(gold || 0) + goldReward);
   saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + goldReward);
-  saveData.dailyAttendance.dateKey = getLocalDateKey();
+  saveData.dailyAttendance.dateKey = todayKey;
+  saveData.dailyAttendance.streak = streak;
   saveGameData();
   updateHUD();
   refreshDailyRewardButton();
+  if (!attendanceTableModal.classList.contains('hidden')) openAttendanceTableModal();
 
-  alert(`출석 보상 획득!
+  const bonusLabel = rewardTier === 7 ? `
+7일 연속 출석 보상!` : rewardTier === 3 ? `
+3일 연속 출석 보상!` : '';
+  alert(`출석 보상 획득!${bonusLabel}
+현재 연속 출석: ${formatNumber(streak)}일
 EXP +${formatNumber(expReward)}
 골드 +${formatNumber(goldReward)}`);
 }
@@ -9906,6 +10088,48 @@ function drawFieldItems() {
   }
 }
 
+function getInfiniteGemRatioByDistance(distance) {
+  const points = [
+    { m: 0, ruby: 95, sapphire: 5, diamond: 0 },
+    { m: 1000, ruby: 85, sapphire: 15, diamond: 0 },
+    { m: 2000, ruby: 75, sapphire: 25, diamond: 0 },
+    { m: 3000, ruby: 70, sapphire: 30, diamond: 0 },
+    { m: 5000, ruby: 60, sapphire: 40, diamond: 0 },
+    { m: 7500, ruby: 50, sapphire: 50, diamond: 0 },
+    { m: 10000, ruby: 30, sapphire: 65, diamond: 5 },
+    { m: 12500, ruby: 10, sapphire: 80, diamond: 10 },
+    { m: 15000, ruby: 0, sapphire: 80, diamond: 20 },
+    { m: 17500, ruby: 0, sapphire: 65, diamond: 35 },
+    { m: 20000, ruby: 0, sapphire: 50, diamond: 50 },
+    { m: 25000, ruby: 0, sapphire: 25, diamond: 75 },
+    { m: 30000, ruby: 0, sapphire: 5, diamond: 95 }
+  ];
+  const d = Math.max(0, Number(distance) || 0);
+  if (d <= points[0].m) return { ruby: points[0].ruby, sapphire: points[0].sapphire, diamond: points[0].diamond };
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (d <= b.m) {
+      const t = (d - a.m) / Math.max(1, (b.m - a.m));
+      return {
+        ruby: a.ruby + (b.ruby - a.ruby) * t,
+        sapphire: a.sapphire + (b.sapphire - a.sapphire) * t,
+        diamond: a.diamond + (b.diamond - a.diamond) * t
+      };
+    }
+  }
+  const last = points[points.length - 1];
+  return { ruby: last.ruby, sapphire: last.sapphire, diamond: last.diamond };
+}
+
+function rollInfiniteGemTypeByDistance(distance) {
+  const ratio = getInfiniteGemRatioByDistance(distance);
+  const roll = Math.random() * 100;
+  if (roll < ratio.ruby) return 'ruby';
+  if (roll < ratio.ruby + ratio.sapphire) return 'sapphire';
+  return 'diamond';
+}
+
 function spawnGoldDrop(x, y, amount) {
   if (gameMode !== 'infinite' && !isMissionGoldObjectiveActive()) return;
   if (!amount || amount <= 0) return;
@@ -9914,18 +10138,9 @@ function spawnGoldDrop(x, y, amount) {
 
   let dropType = 'gold';
   let finalAmount = Math.max(1, Math.floor(amount));
-  if (Math.random() < 0.10) {
-    const roll = Math.random();
-    if (roll < 0.3333) {
-      dropType = 'ruby';
-      finalAmount = 10;
-    } else if (roll < 0.6666) {
-      dropType = 'sapphire';
-      finalAmount = 30;
-    } else {
-      dropType = 'diamond';
-      finalAmount = 50;
-    }
+  if (gameMode === 'infinite' && Math.random() < 0.15) {
+    dropType = rollInfiniteGemTypeByDistance(distance);
+    finalAmount = dropType === 'ruby' ? 10 : dropType === 'sapphire' ? 30 : 50;
   }
 
   goldDrops.push({
@@ -12069,7 +12284,7 @@ if (stage <= 100) {
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
 
-    // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
+    // ✅ [미션 모드] 초당 스폰 수는 별도 제어, 호출당 1마리만 생성
     if (gameMode === 'mission') enemyCount = 1;
 
     // ✅ [v.117 패치] 1웨이브 최대 5마리 제한
@@ -13441,7 +13656,7 @@ return distSq <= r * r;
 }
 
 function update(dt, currentTime) {
-  // ✅ [v.79] 스테이지 클리어 연출(3초) 동안은 전투 진행을 멈추고 카운트만 진행
+  // ✅ [v.79] 스테이지 클리어 연출(1.5초) 동안은 전투 진행을 멈추고 카운트만 진행
   if ((gameMode === 'stage' || gameMode === 'mission') && stageClearSeq && stageClearSeq.active) {
     stageClearSeq.timer -= dt;
     updateParticles(dt);
@@ -13665,8 +13880,10 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     } else if (gameMode === 'mission') {
       if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared) {
         missionState.spawnAcc = Math.max(0, Number(missionState.spawnAcc) || 0) + dt;
-        while (missionState.spawnAcc >= 100) {
-          missionState.spawnAcc -= 100;
+        const missionSpawnRate = getMissionSpawnPerSecond(stage);
+        const missionSpawnInterval = 1000 / Math.max(1, missionSpawnRate);
+        while (missionState.spawnAcc >= missionSpawnInterval) {
+          missionState.spawnAcc -= missionSpawnInterval;
           spawnNextWave();
         }
       }
@@ -13725,10 +13942,10 @@ if (stageCleared) {
         }catch(e){}
       })();
 
-      // ✅ [v.79] 결과 모달을 바로 띄우지 않고, 3초 동안 "보너스 EXP + 랭크" 연출
+      // ✅ [v.79] 결과 모달을 바로 띄우지 않고, 1.5초 동안 "보너스 EXP + 랭크" 연출
       stageClearModal.classList.add('hidden');
       stageClearSeq.active = true;
-      stageClearSeq.timer = 1200; // 1.2초 표시
+      stageClearSeq.timer = 1500; // 1.5초 표시
 
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'D');
@@ -13738,7 +13955,7 @@ if (stageCleared) {
       const res = finalizeMissionClearStats() || { bonusExp: 0, rank: 'CLEAR', expGained: 0 };
       stageClearModal.classList.add('hidden');
       stageClearSeq.active = true;
-      stageClearSeq.timer = 3000;
+      stageClearSeq.timer = 1500;
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'CLEAR');
       stageClearSeq.formulaText = String(res.formulaText || '');
@@ -13758,7 +13975,7 @@ if (stageCleared) {
         missionState.currentStage = stage;
         runStartStage = 1;
         startGame(stage);
-      }, 3000);
+      }, 1500);
     } else {
       // (안전장치) 무한 모드에선 원래 여기 오면 안 되지만, 혹시 몰라 방어
       stageCleared = false;
