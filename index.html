@@ -13931,7 +13931,7 @@ if (stageCleared) {
       const res = finalizeMissionClearStats() || { bonusExp: 0, rank: 'CLEAR', expGained: 0 };
       stageClearModal.classList.add('hidden');
       stageClearSeq.active = true;
-      stageClearSeq.timer = 3000;
+      stageClearSeq.timer = 1000;
       stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
       stageClearSeq.rank = String(res.rank || 'CLEAR');
       stageClearSeq.formulaText = String(res.formulaText || '');
