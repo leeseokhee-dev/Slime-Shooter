@@ -10340,49 +10340,46 @@ function pushGainMessage(text, color = '#ffffff') {
 }
 
 function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult = 1, finalAmount = 0) {
-  const safeBase = Math.max(0, Math.round(Number(baseAmount) || 0));
+  const safeBaseRaw = Math.max(0, Number(baseAmount) || 0);
   const safeFinal = Math.max(0, Math.round(Number(finalAmount) || 0));
-  if (safeFinal <= 0 && safeBase <= 0) return;
-
-  pushGainMessage(`경험치를 얻었습니다(+${formatNumber(safeBase)})`, '#7dffb2');
+  if (safeFinal <= 0 && safeBaseRaw <= 0) return;
 
   const stageHitRate = (gameMode === 'stage')
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
-  if (gameMode === 'stage' && stageHitRate < 1) {
-    const lostRate = 1 - stageHitRate;
-    const lostAmount = Math.max(0, Math.round(safeBase * lostRate));
-    if (lostAmount > 0) {
-      const pct = Math.round(lostRate * 100);
-      pushGainMessage(`피격으로 감소한 경험치 ${pct}%(-${formatNumber(lostAmount)})`, '#ff8f8f');
-    }
+  const lostRate = (gameMode === 'stage') ? (1 - stageHitRate) : 0;
+
+  const hotRate = Math.max(0, (Number(hotMult) || 1) - 1);
+  const expBuffRate = Math.max(0, (Number(expBuffMult) || 1) - 1);
+  const petRate = Math.max(0, (Number(petExpMult) || 1) - 1);
+
+  const hotBonusRaw = safeBaseRaw * hotRate;
+  const expBuffBonusRaw = safeBaseRaw * expBuffRate;
+  const petBonusRaw = safeBaseRaw * petRate;
+
+  const prePenaltyTotalRaw = safeBaseRaw + hotBonusRaw + expBuffBonusRaw + petBonusRaw;
+  const lostAmountRaw = prePenaltyTotalRaw * lostRate;
+
+  pushGainMessage(`경험치를 얻었습니다(+${formatNumber(Math.round(safeBaseRaw))})`, '#7dffb2');
+
+  if (hotBonusRaw > 0) {
+    const pct = Math.round(hotRate * 100);
+    pushGainMessage(`핫타임 추가 경험치 ${pct}%(+${formatNumber(Math.round(hotBonusRaw))})`, '#ffb26b');
   }
 
-  if ((Number(hotMult) || 1) > 1) {
-    const rate = (Number(hotMult) || 1) - 1;
-    const bonus = Math.max(0, Math.round(safeBase * rate));
-    if (bonus > 0) {
-      const pct = Math.round(rate * 100);
-      pushGainMessage(`핫타임 추가 경험치 ${pct}%(+${formatNumber(bonus)})`, '#ffb26b');
-    }
+  if (expBuffBonusRaw > 0) {
+    const pct = Math.round(expBuffRate * 100);
+    pushGainMessage(`경험치 버프 추가 ${pct}%(+${formatNumber(Math.round(expBuffBonusRaw))})`, '#7ce7ff');
   }
 
-  if ((Number(expBuffMult) || 1) > 1) {
-    const rate = (Number(expBuffMult) || 1) - 1;
-    const bonus = Math.max(0, Math.round(safeBase * rate));
-    if (bonus > 0) {
-      const pct = Math.round(rate * 100);
-      pushGainMessage(`경험치 버프 추가 ${pct}%(+${formatNumber(bonus)})`, '#7ce7ff');
-    }
+  if (petBonusRaw > 0) {
+    const pct = Math.round(petRate * 100);
+    pushGainMessage(`펫 추가 경험치 ${pct}%(+${formatNumber(Math.round(petBonusRaw))})`, '#ffe07a');
   }
 
-  if ((Number(petExpMult) || 1) > 1) {
-    const rate = (Number(petExpMult) || 1) - 1;
-    const bonus = Math.max(0, Math.round(safeBase * rate));
-    if (bonus > 0) {
-      const pct = Math.round(rate * 100);
-      pushGainMessage(`펫 추가 경험치 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
-    }
+  if (lostAmountRaw > 0) {
+    const pct = Math.round(lostRate * 100);
+    pushGainMessage(`피격으로 감소한 경험치 ${pct}%(-${formatNumber(Math.round(lostAmountRaw))})`, '#ff8f8f');
   }
 }
 
@@ -10456,7 +10453,7 @@ function drawGainMessages() {
 }
 
 function addExp(amount, opts = {}) {
-  const rawBaseAmount = Math.max(0, Math.round(Number((opts && opts.baseAmount) ?? amount) || 0));
+  const rawBaseAmount = Math.max(0, Number((opts && opts.baseAmount) ?? amount) || 0);
   const hotMult = Math.max(1, Number((opts && opts.hotMultiplier) || 1) || 1);
 
   // ✅ 만렙이면 EXP 증가 금지 + 표시 고정용 정리
@@ -10475,13 +10472,19 @@ function addExp(amount, opts = {}) {
   const oldLevel = level;
 
 
-  // ✅ [v.41+] EXP 획득률 보정(피격/상점버프)
-  let mult = 1;
-  if (gameMode === 'stage') mult *= getStageHitExpRate(stageRunHits || 0);
+  // ✅ [v.41+] EXP 획득률 보정(피격/상점버프/핫타임/펫)
+  const stageHitRate = (gameMode === 'stage')
+    ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
+    : 1;
   const expBuffMult = getBuffMult('exp');
   const petExpMult = getPetExpMultiplier();
-  mult *= expBuffMult;
-  amount = Math.max(0, Math.round(amount * mult * petExpMult));
+
+  const hotBonusRaw = rawBaseAmount * Math.max(0, hotMult - 1);
+  const expBuffBonusRaw = rawBaseAmount * Math.max(0, expBuffMult - 1);
+  const petBonusRaw = rawBaseAmount * Math.max(0, petExpMult - 1);
+  const prePenaltyTotal = rawBaseAmount + hotBonusRaw + expBuffBonusRaw + petBonusRaw;
+
+  amount = Math.max(0, Math.round(prePenaltyTotal * stageHitRate));
 
   // ✅ 상한을 넘지 못하게 clamp
   exp = Math.min(MAX_EXP_CAP, exp + amount);
