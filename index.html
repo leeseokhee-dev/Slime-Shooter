@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.144.0)</title>
+<title>Slime Shooter - Ultimate Evolution (v.148.9)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -148,56 +148,69 @@ padding: 8px 0;
         display: flex;
         align-items: stretch;
         gap: 0;
-        margin: 2px 0 0;
+        margin: 4px 0 0;
     }
     #expLabel {
         flex: 0 0 auto;
-        min-width: 58px;
-        padding: 0 12px;
+        min-width: 50px;
+        padding: 0 8px;
+        margin-right: -2px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, rgba(64,255,196,0.42) 0%, rgba(34,196,128,0.26) 100%);
-        color: #f5fffb;
-        border: 1px solid rgba(255,255,255,0.52);
-        border-right: none;
-        font-size: var(--exp-label-font);
-        font-weight: 900;
-        letter-spacing: -0.5px;
+        background: linear-gradient(180deg, rgba(84,136,255,0.98) 0%, rgba(36,77,206,0.96) 52%, rgba(23,52,158,0.96) 100%);
+        color: #f7fbff;
+        border: 2px solid rgba(186,224,255,0.92);
+        font-size: 14px;
+        font-weight: 1000;
+        letter-spacing: -0.4px;
         line-height: 1;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(255,255,255,0.12), 0 8px 20px rgba(0,0,0,0.16);
-        backdrop-filter: blur(10px) saturate(145%);
-        -webkit-backdrop-filter: blur(10px) saturate(145%);
+        border-radius: 0;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -1px 0 rgba(0,0,0,0.18), 0 6px 18px rgba(0,0,0,0.18);
+        position: relative;
+        z-index: 3;
     }
     #expWrapper {
         flex: 1 1 auto;
-        height: 18px;
+        height: 24px;
         position: relative;
-        background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%);
-        border: 1px solid rgba(255,255,255,0.52);
+        background:
+          linear-gradient(180deg, rgba(12,24,52,0.98) 0%, rgba(7,14,31,0.98) 100%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 24px, rgba(255,255,255,0.00) 24px 26px);
+        border: 2px solid rgba(186,224,255,0.92);
         overflow: hidden;
         margin: 0;
         border-radius: 0;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -1px 0 rgba(255,255,255,0.10), 0 8px 20px rgba(40,0,0,0.16);
-        backdrop-filter: blur(10px) saturate(145%);
-        -webkit-backdrop-filter: blur(10px) saturate(145%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.05), 0 6px 18px rgba(0,0,0,0.18);
+        position: relative;
+        z-index: 1;
     }
     #expWrapper::before {
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.12) 24%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.10) 100%);
+        background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.00) 55%, rgba(255,255,255,0.07) 100%);
         pointer-events: none;
         z-index: 2;
     }
     #expBarFill {
         width: 0%;
         height: 100%;
-        background: linear-gradient(90deg, rgba(27,216,88,1.00) 0%, rgba(27,216,88,1.00) 50%, rgba(27,216,88,1.00) 100%);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.34), 0 0 12px rgba(94,255,186,0.16);
+        background:
+          linear-gradient(90deg, #2fd1ff 0%, #44ffb8 52%, #b7ff6e 100%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 20px, rgba(255,255,255,0.00) 20px 24px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px rgba(68,255,184,0.24);
         transition: width 0.9s linear;
+        position: relative;
     }
-    /* EXP 텍스트 (바 우측 정렬) */
+    #expBarFill::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.02) 56%, rgba(255,255,255,0.12) 100%);
+        pointer-events: none;
+    }
+    /* EXP 텍스트 (가운데 정렬) */
     
 #expText {
     position: absolute;
@@ -210,20 +223,21 @@ padding: 8px 0;
     padding: 0 8px;
     box-sizing: border-box;
     font-size: var(--exp-text-font);
-    font-weight: 900;
-    color: #f7fffb;
+    font-weight: 1000;
+    color: #f8feff;
 
     text-shadow:
-        -1px -1px 0 #000,
-         1px -1px 0 #000,
-        -1px  1px 0 #000,
-         1px  1px 0 #000;
+        0 1px 0 rgba(0,0,0,0.92),
+        0 0 6px rgba(0,0,0,0.72),
+        -1px -1px 0 rgba(0,0,0,0.58),
+         1px  1px 0 rgba(0,0,0,0.58);
 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
     z-index: 3;
     text-align: center;
+    letter-spacing: -0.2px;
 }
 
 
@@ -666,8 +680,8 @@ body.tutorial-mode #pauseBtn{
   max-width: 118px;
 }
 #gameContainer.compact-ui #expLabel{
-  min-width: 50px;
-  padding: 0 9px;
+  min-width: 44px;
+  padding: 0 7px;
 }
 #gameContainer.compact-ui #consumableQuickBar{
   gap: 6px;
@@ -707,8 +721,8 @@ body.tutorial-mode #pauseBtn{
   border-radius: 3px;
 }
 #gameContainer.ultra-compact-ui #expLabel{
-  min-width: 44px;
-  padding: 0 7px;
+  min-width: 40px;
+  padding: 0 6px;
 }
 #gameContainer.ultra-compact-ui .consumable-quick-btn{
   width: 48px;
@@ -883,8 +897,8 @@ body.tutorial-mode #pauseBtn{
         #hud { width: 95vw; max-width: 95vw; font-size: 12px; }
         #gameCanvas { width: 95vw; height: calc(95vw * (640 / 960)); }
         #playerCompactText { font-size: 18px; }
-        #expLabel { min-width: 48px; font-size: 14px; padding: 0 8px; }
-        #expWrapper { height: 18px; }
+        #expLabel { min-width: 44px; font-size: 13px; padding: 0 6px; }
+        #expWrapper { height: 22px; }
         #expText { font-size: 12px; right: auto; padding: 0 6px; }
     }
 #laserSkillBtn {
@@ -2044,6 +2058,11 @@ function fitTextElementToWidth(el, maxPx, minPx = 10) {
 // ✅ 최초 1회 + 리사이즈/회전 대응
 window.addEventListener('resize', () => fitCanvasToViewport());
 window.addEventListener('orientationchange', () => setTimeout(fitCanvasToViewport, 150));
+window.addEventListener('beforeunload', stopShopAutoRefresh);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopShopAutoRefresh();
+  else if (shopModal && !shopModal.classList.contains('hidden')) startShopAutoRefresh();
+});
 
 const bgmBtn = document.getElementById('bgmBtn');
 const sfxBtn = document.getElementById('sfxBtn');
@@ -6426,12 +6445,34 @@ if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanc
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
-closeShopBtn.addEventListener('click', () => { shopModal.classList.add('hidden'); });
+closeShopBtn.addEventListener('click', () => {
+  stopShopAutoRefresh();
+  shopModal.classList.add('hidden');
+});
+
+let shopAutoRefreshTimer = null;
+function stopShopAutoRefresh() {
+  if (shopAutoRefreshTimer) {
+    clearInterval(shopAutoRefreshTimer);
+    shopAutoRefreshTimer = null;
+  }
+}
+function startShopAutoRefresh() {
+  stopShopAutoRefresh();
+  shopAutoRefreshTimer = setInterval(() => {
+    if (!shopModal || shopModal.classList.contains('hidden')) {
+      stopShopAutoRefresh();
+      return;
+    }
+    renderShop();
+  }, 1000);
+}
 
 function openShop() {
   stopProfileAutoRefresh();
   renderShop();
   shopModal.classList.remove('hidden');
+  startShopAutoRefresh();
 }
 if (shopBtn) shopBtn.addEventListener('click', () => { initAudio(); openShop(); });
 inventoryBtn && inventoryBtn.addEventListener('click', () => { initAudio(); openInventoryModal(); });
@@ -7290,6 +7331,80 @@ function formatRemain(ms) {
   return `${mm}m ${String(ss).padStart(2,'0')}s`;
 }
 
+function getBuffDisplayMeta(typeKey) {
+  const map = {
+    exp:   { icon:'📈', label:'EXP',  color:'#63f5b4' },
+    speed: { icon:'🚀', label:'탄속', color:'#7ce7ff' },
+    dmg:   { icon:'💥', label:'공격', color:'#ff8a80' },
+    pet:   { icon:'🐾', label:'펫',   color:'#d8a8ff' },
+    gold:  { icon:'🪙', label:'골드', color:'#ffd36a' }
+  };
+  return map[typeKey] || { icon:'✨', label:typeKey, color:'#ffffff' };
+}
+
+function getActiveShopBuffs() {
+  ensureBuffContainer();
+  const now = Date.now();
+  return Object.keys(saveData.buffs || {}).map((key) => {
+    const buff = saveData.buffs[key];
+    const remain = Math.max(0, Number(buff?.until || 0) - now);
+    if (remain <= 0) return null;
+    return {
+      key,
+      remain,
+      mult: Number(buff?.mult || 1),
+      ...getBuffDisplayMeta(key)
+    };
+  }).filter(Boolean).sort((a, b) => a.remain - b.remain);
+}
+
+function drawActiveBuffPanel() {
+  if (state !== 'playing') return;
+  const buffs = getActiveShopBuffs();
+  if (!buffs.length) return;
+
+  const pad = isDesktopCanvasMode() ? 12 : 10;
+  const rowH = isDesktopCanvasMode() ? 24 : 22;
+  const boxW = isDesktopCanvasMode() ? 232 : 188;
+  const boxH = 14 + buffs.length * rowH;
+  const x = width - boxW - 12;
+  const y = gameMode === 'infinite' ? 44 : 12;
+
+  ctx.save();
+  ctx.globalAlpha = 1;
+
+  const bg = ctx.createLinearGradient(x, y, x, y + boxH);
+  bg.addColorStop(0, 'rgba(8,16,34,0.88)');
+  bg.addColorStop(1, 'rgba(3,8,18,0.82)');
+  ctx.fillStyle = bg;
+  ctx.strokeStyle = 'rgba(124,231,255,0.34)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x, y, boxW, boxH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#dff7ff';
+  ctx.font = `900 ${isDesktopCanvasMode() ? 13 : 12}px ${getUIFontFamily()}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('버프 남은 시간', x + pad, y + 6);
+
+  buffs.forEach((buff, idx) => {
+    const yy = y + 26 + idx * rowH;
+    ctx.fillStyle = buff.color;
+    ctx.font = `900 ${isDesktopCanvasMode() ? 13 : 12}px ${getUIFontFamily()}`;
+    const bonusPct = Math.max(0, Math.round((buff.mult - 1) * 100));
+    ctx.fillText(`${buff.icon} ${buff.label} +${bonusPct}%`, x + pad, yy);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatRemain(buff.remain), x + boxW - pad, yy);
+    ctx.textAlign = 'left';
+  });
+
+  ctx.restore();
+}
+
 function renderShop() {
   if (!shopListEl) return;
   if (shopGoldTextEl) shopGoldTextEl.textContent = formatNumber(gold);
@@ -7388,14 +7503,18 @@ function renderShop() {
     top.style.alignItems = 'center';
 
     const left = document.createElement('div');
-    left.innerHTML = `<div style="font-weight:900; font-size:14px;">${it.title}</div><div style="font-size:12px; color:#cfd6ff; margin-top:2px;">효과: <b>${it.note}</b></div>`;
+    left.innerHTML = `<div style="font-weight:900; font-size:14px;">${it.title}</div><div style="font-size:12px; color:#cfd6ff; margin-top:2px;">효과: <b>${it.note}</b> · 상점 1초 갱신</div>`;
     top.appendChild(left);
 
     const remain = getBuffRemainMs(it.buffKey);
     const right = document.createElement('div');
     right.style.fontSize = '12px';
-    right.style.color = remain > 0 ? '#7cff7c' : '#aaa';
-    right.style.fontWeight = '800';
+    right.style.color = remain > 0 ? '#0e2b18' : '#cfd6ff';
+    right.style.fontWeight = '900';
+    right.style.padding = '6px 10px';
+    right.style.borderRadius = '999px';
+    right.style.border = remain > 0 ? '1px solid rgba(124,255,124,0.45)' : '1px solid rgba(255,255,255,0.10)';
+    right.style.background = remain > 0 ? 'linear-gradient(180deg, rgba(124,255,124,0.92), rgba(62,198,123,0.92))' : 'rgba(255,255,255,0.06)';
     right.textContent = remain > 0 ? `적용중 · ${formatRemain(remain)}` : '미적용';
     top.appendChild(right);
 
@@ -16610,6 +16729,7 @@ requestAnimationFrame(gameLoop);
 
     // ✅ 튜토리얼/스킬 해금 안내(오버레이)
     drawTutorialOverlay();
+    drawActiveBuffPanel();
 
     drawInfiniteBossCountdown();
 
