@@ -65,7 +65,7 @@ padding: 8px 0;
         background: rgba(0, 0, 0, 0.7);
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        font-size: calc(16px * var(--hud-font-scale));
+        font-size: calc(14px * var(--hud-font-scale));
         display: flex;
         flex-direction: column; /* 세로 정렬로 변경 */
         gap: 6px;
@@ -152,38 +152,36 @@ padding: 8px 0;
     }
     #expLabel {
         flex: 0 0 auto;
-        min-width: 50px;
+        min-width: 46px;
         padding: 0 8px;
-        margin-right: -2px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, rgba(84,136,255,0.98) 0%, rgba(36,77,206,0.96) 52%, rgba(23,52,158,0.96) 100%);
+        background: linear-gradient(180deg, rgba(70,118,255,0.98) 0%, rgba(40,78,204,0.96) 56%, rgba(26,56,170,0.96) 100%);
         color: #f7fbff;
-        border: 2px solid rgba(186,224,255,0.92);
-        font-size: 14px;
+        border: 0.2px solid rgba(176,214,255,0.86);
+        border-right: 0;
+        font-size: var(--exp-label-font);
         font-weight: 1000;
-        letter-spacing: -0.4px;
+        letter-spacing: -0.2px;
         line-height: 1;
+        white-space: nowrap;
         border-radius: 0;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -1px 0 rgba(0,0,0,0.18), 0 6px 18px rgba(0,0,0,0.18);
-        position: relative;
-        z-index: 3;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -1px 0 rgba(0,0,0,0.10), 0 6px 18px rgba(0,0,0,0.18);
     }
     #expWrapper {
         flex: 1 1 auto;
-        height: 24px;
+        min-width: 0;
+        height: 17px;
         position: relative;
         background:
-          linear-gradient(180deg, rgba(12,24,52,0.98) 0%, rgba(7,14,31,0.98) 100%),
-          repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 24px, rgba(255,255,255,0.00) 24px 26px);
-        border: 2px solid rgba(186,224,255,0.92);
+          linear-gradient(180deg, rgba(8,20,44,0.98) 0%, rgba(6,12,28,0.98) 100%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 26px, rgba(255,255,255,0.00) 26px 28px);
+        border: 0.2px solid rgba(176,214,255,0.86);
         overflow: hidden;
         margin: 0;
         border-radius: 0;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.05), 0 6px 18px rgba(0,0,0,0.18);
-        position: relative;
-        z-index: 1;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.06), 0 6px 18px rgba(0,0,0,0.18);
     }
     #expWrapper::before {
         content: "";
@@ -680,8 +678,8 @@ body.tutorial-mode #pauseBtn{
   max-width: 118px;
 }
 #gameContainer.compact-ui #expLabel{
-  min-width: 44px;
-  padding: 0 7px;
+  min-width: 50px;
+  padding: 0 9px;
 }
 #gameContainer.compact-ui #consumableQuickBar{
   gap: 6px;
@@ -721,8 +719,8 @@ body.tutorial-mode #pauseBtn{
   border-radius: 3px;
 }
 #gameContainer.ultra-compact-ui #expLabel{
-  min-width: 40px;
-  padding: 0 6px;
+  min-width: 44px;
+  padding: 0 7px;
 }
 #gameContainer.ultra-compact-ui .consumable-quick-btn{
   width: 48px;
@@ -897,8 +895,8 @@ body.tutorial-mode #pauseBtn{
         #hud { width: 95vw; max-width: 95vw; font-size: 12px; }
         #gameCanvas { width: 95vw; height: calc(95vw * (640 / 960)); }
         #playerCompactText { font-size: 18px; }
-        #expLabel { min-width: 44px; font-size: 13px; padding: 0 6px; }
-        #expWrapper { height: 22px; }
+        #expLabel { min-width: 42px; font-size: 14px; padding: 0 6px; }
+        #expWrapper { height: 20px; }
         #expText { font-size: 12px; right: auto; padding: 0 6px; }
     }
 #laserSkillBtn {
@@ -1402,8 +1400,8 @@ body.tutorial-mode .quake-skill{
         <div class="hud-column">
             <span id="scoreText">점수: 0</span>
             <span id="highScoreText">최고: 0</span>
-            <span id="hotTimeText" style="color:#ff8844; font-size:12px;">일반 EXP</span>
-            <span id="goldText" style="color:#ffd700; font-size:12px;">골드: 0</span>
+            <span id="hotTimeText" style="color:#ff8844; font-size:10px;">일반 EXP</span>
+            <span id="goldText" style="color:#ffd700; font-size:11px;">골드: 0</span>
         </div>
         <div class="hud-column text-right">
             <span id="stageText">스테이지: 1</span>
@@ -2978,6 +2976,12 @@ function applyBuff(typeKey, minutes, mult, cost) {
   saveGameDataDebounced();
   updateHUD();
   return { ok:true, msg:`${minutes}분 버프 적용!` };
+}
+function confirmShopBuffPurchase(itemTitle, minutes, cost, note = '') {
+  const suffix = note ? `
+효과: ${note}` : '';
+  return confirm(`${itemTitle} ${minutes}분을 구매하시겠습니까?
+가격: ${formatNumber(cost)}G${suffix}`);
 }
 
 // ===== [추가] 스테이지 기반 배경 테마 / 별 필드 =====
@@ -7532,8 +7536,10 @@ function renderShop() {
       btn.textContent = `${min}분 · ${formatNumber(cost)}G`;
       btn.disabled = gold < cost;
       btn.addEventListener('click', () => {
+        if (!confirmShopBuffPurchase(it.title, min, cost, `효과 +${it.note}`)) return;
         const r = applyBuff(it.buffKey, min, it.mult, cost);
         if (!r.ok) { alert(r.msg); return; }
+        showToast(`${it.title} ${min}분 구매 완료!`, '#7ce7ff', 1200);
         renderShop();
       });
       btnRow.appendChild(btn);
