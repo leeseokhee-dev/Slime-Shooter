@@ -2284,8 +2284,15 @@ function applyStageClearRank(rank) {
   if (!stageClearRankEl) return;
   const rankText = String(rank || 'D').toUpperCase();
   stageClearRankEl.classList.remove('rank-s','rank-a','rank-b','rank-c','rank-d');
-  stageClearRankEl.classList.add(`rank-${rankText.toLowerCase()}`);
-  stageClearRankEl.textContent = `RANK ${rankText}`;
+
+  if (['S','A','B','C','D'].includes(rankText)) {
+    stageClearRankEl.classList.add(`rank-${rankText.toLowerCase()}`);
+    stageClearRankEl.textContent = `RANK ${rankText}`;
+    return;
+  }
+
+  // 미션 모드 전용 표기(BONUS / BOSS / CLEAR)는 일반 뱃지 스타일로 표시
+  stageClearRankEl.textContent = rankText;
 }
 
 function animateStageClearExp(value) {
@@ -13917,8 +13924,7 @@ function finalizeMissionClearStats() {
   if (stageClearKillsEl) stageClearKillsEl.textContent = bonusStage ? '보너스 수집' : `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(stageRunGoldEarned || 0)}골드`;
-  if (stageClearTimeEl) stageClearTimeEl.textContent = '';
-  if (stageClearRankEl) stageClearRankEl.textContent = bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR');
+  applyStageClearRank(bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR'));
 
   try {
     if (!saveData.mission) saveData.mission = { bestStage: 1 };
