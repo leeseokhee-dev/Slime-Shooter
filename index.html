@@ -1162,6 +1162,221 @@ body.tutorial-mode .quake-skill{
   0%,100%{ transform: scale(1); filter: brightness(1); }
   50%{ transform: scale(1.02); filter: brightness(1.08); }
 }
+
+/* ===== UI 리디자인 (컬러 업그레이드) ===== */
+:root{
+  --main-accent:#44ffb8;
+  --gold-accent:#ffd700;
+  --danger-accent:#ff6b6b;
+}
+
+/* HUD 강화 */
+#hud{
+  background: linear-gradient(180deg, rgba(20,30,50,0.9), rgba(5,10,20,0.9));
+  border:1px solid rgba(68,255,184,0.5);
+  box-shadow:0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* 버튼 업그레이드 */
+.ui-btn{
+  background: linear-gradient(to bottom, #2a3f5f, #0f1a2b);
+  border:1px solid rgba(255,255,255,0.2);
+  transition: all 0.15s ease;
+}
+.ui-btn:hover{
+  background: linear-gradient(to bottom, #3f5f88, #1a2a44);
+  transform: translateY(-1px);
+}
+.ui-btn:active{
+  transform: scale(0.97);
+}
+
+/* 메인 버튼 강조 */
+.big-btn{
+  background: linear-gradient(to bottom, #3affc2, #0a5a44);
+  color:#002b1f;
+  border-color:#44ffb8;
+  box-shadow:0 0 20px rgba(68,255,184,0.4);
+}
+
+/* EXP 바 강화 */
+#expBarFill{
+  background: linear-gradient(90deg, #00ff88, #44ffb8);
+  box-shadow:0 0 12px rgba(68,255,184,0.5);
+}
+
+/* 모달 스타일 통일 */
+.modal{
+  background: linear-gradient(180deg, rgba(20,25,40,0.95), rgba(5,8,18,0.95));
+  border:1px solid rgba(68,255,184,0.4);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* 게임오버 강조 */
+#gameOverTitle{
+  color:#ff6b6b;
+  text-shadow:0 0 15px rgba(255,100,100,0.6);
+}
+
+/* 스킬 버튼 컬러 개선 */
+.laser-skill{
+  background: linear-gradient(to bottom, #665500, #332200);
+  box-shadow:0 0 15px rgba(255,215,0,0.5);
+}
+.blizzard-skill{
+  box-shadow:0 0 15px rgba(150,220,255,0.4);
+}
+.meteor-skill{
+  box-shadow:0 0 15px rgba(255,140,0,0.5);
+}
+
+
+
+/* ===== Stage Clear UI 리파인 ===== */
+#stageClearModal{
+  max-width: 440px;
+  border: 1px solid rgba(255,215,90,0.55) !important;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(255,214,92,0.18) 0%, rgba(255,214,92,0.06) 18%, rgba(14,18,34,0.96) 44%, rgba(7,10,20,0.98) 100%);
+  box-shadow: 0 22px 64px rgba(0,0,0,0.68), 0 0 24px rgba(255,210,90,0.12);
+  overflow: hidden;
+}
+#stageClearModal .modal-header{
+  font-size: 30px;
+  font-weight: 1000;
+  letter-spacing: -0.4px;
+  color: #ffe48a !important;
+  text-shadow: 0 0 16px rgba(255,184,0,0.42);
+}
+#stageClearModal .modal-body{
+  padding: 18px 18px 16px !important;
+  gap: 12px;
+}
+#stageClearIntroText{
+  color: #eef6ff;
+  line-height: 1.55;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+#stageClearStats{
+  margin: 0 auto 12px !important;
+  width: 100%;
+  max-width: 360px !important;
+  padding: 16px 16px 14px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255,215,90,0.32) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 28px rgba(0,0,0,0.25);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+}
+#stageClearTopRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+#stageClearMiniTitle{
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffe48a;
+  letter-spacing: -0.2px;
+}
+#stageClearRankBadge{
+  min-width: 84px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  text-align:center;
+  font-size: 15px;
+  font-weight: 1000;
+  letter-spacing: 0.4px;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(90,110,150,0.88), rgba(38,48,70,0.92));
+  box-shadow: 0 8px 24px rgba(0,0,0,0.26);
+}
+#stageClearRankBadge.rank-s{ background: linear-gradient(135deg, #ffe57a, #ffb300); color:#332100; box-shadow: 0 0 20px rgba(255,208,64,0.42); }
+#stageClearRankBadge.rank-a{ background: linear-gradient(135deg, #cfecff, #73c7ff); color:#08253f; box-shadow: 0 0 18px rgba(115,199,255,0.34); }
+#stageClearRankBadge.rank-b{ background: linear-gradient(135deg, #d9f7ff, #5ae3d6); color:#06352f; box-shadow: 0 0 18px rgba(90,227,214,0.28); }
+#stageClearRankBadge.rank-c{ background: linear-gradient(135deg, #e3d7ff, #ad8cff); color:#24124b; box-shadow: 0 0 18px rgba(173,140,255,0.26); }
+#stageClearRankBadge.rank-d{ background: linear-gradient(135deg, #ffd1d1, #ff8484); color:#431313; box-shadow: 0 0 16px rgba(255,132,132,0.22); }
+.stage-clear-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding: 6px 0;
+}
+.stage-clear-row + .stage-clear-row{
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.stage-clear-label{
+  color:#d8ebff;
+  font-size: 14px;
+}
+.stage-clear-value{
+  color:#fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+#stageClearExpValueWrap{
+  margin-top: 10px;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(68,255,184,0.16), rgba(68,255,184,0.05));
+  border: 1px solid rgba(68,255,184,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+#stageClearExpLabel{
+  font-size: 13px;
+  font-weight: 800;
+  color:#cffff0;
+  margin-bottom: 6px;
+}
+#stageClearExpText{
+  display:block;
+  font-size: 30px !important;
+  font-weight: 1000 !important;
+  color:#8fffd3 !important;
+  letter-spacing: -0.6px;
+  text-shadow: 0 0 18px rgba(68,255,184,0.28);
+}
+#stageClearExpDetail{
+  margin-top: 8px !important;
+  font-size: 12px !important;
+  line-height: 1.55;
+  color:#d9ebff !important;
+}
+#stageClearButtonGroup{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:100%;
+  max-width: 300px;
+}
+#nextStageBtn{
+  width:100%;
+  border-color:#7bffb5 !important;
+  color:#eafff4 !important;
+  background: linear-gradient(to bottom, #19a561, #0b4b2f) !important;
+  box-shadow: 0 10px 24px rgba(25,165,97,0.28);
+}
+#clearToTitleBtn{
+  width:100%;
+  padding: 12px !important;
+  border-radius: 12px;
+}
+#stageClearModal.stage-clear-pop{
+  animation: stageClearModalPop .34s cubic-bezier(.2,.9,.2,1);
+}
+@keyframes stageClearModalPop{
+  0%{ transform: translate(-50%, -50%) scale(0.86); opacity:0; }
+  72%{ transform: translate(-50%, -50%) scale(1.03); opacity:1; }
+  100%{ transform: translate(-50%, -50%) scale(1); opacity:1; }
+}
+
 </style>
 </head>
 <body>
@@ -1561,49 +1776,42 @@ body.tutorial-mode .quake-skill{
 </div
 <!-- [추가] 스테이지 클리어 선택 모달 -->
 <div id="stageClearModal" class="modal hidden" style="z-index: 150; border-color: #ffd700;">
-    <div class="modal-header" style="color: #ffd700; text-shadow: 0 0 10px orange;">
-        STAGE CLEAR!
-    </div>
-    <div class="modal-body" style="text-align: center; padding: 20px;">
-        <p style="color: #fff; margin-bottom: 20px;">스테이지를 정복했습니다.<br>무엇을 하시겠습니까?</p>
-        <div id="stageClearStats" style="margin: 0 auto 14px; padding: 12px 14px; border: 1px solid rgba(255,215,0,0.45); border-radius: 12px; background: rgba(0,0,0,0.25); max-width: 340px; text-align:left; line-height:1.55;">
-          <div style="font-weight:900; color:#ffd700; font-size:16px; margin-bottom:8px;">Stage Clear!</div>
-          <div style="display:flex; justify-content:space-between; gap:10px;">
-            <span style="color:#cfefff;">Stage</span>
-            <span id="stageClearStageText" style="color:#fff; font-weight:800;">1</span>
+    <div class="modal-header">STAGE CLEAR!</div>
+    <div class="modal-body" style="text-align: center;">
+        <p id="stageClearIntroText">스테이지를 정복했습니다.<br>결과를 확인하고 다음 행동을 선택해주세요.</p>
+        <div id="stageClearStats">
+          <div id="stageClearTopRow">
+            <div id="stageClearMiniTitle">Stage Result</div>
+            <div id="stageClearRankBadge" class="rank-s">RANK S</div>
           </div>
-          <div style="display:flex; justify-content:space-between; gap:10px;">
-            <span style="color:#cfefff;">소요 시간</span>
-            <span id="stageClearDurationText" style="color:#fff; font-weight:800;">0초</span>
+          <div class="stage-clear-row">
+            <span class="stage-clear-label">Stage</span>
+            <span id="stageClearStageText" class="stage-clear-value">1</span>
           </div>
-          <div style="margin-top:6px;">
-            <div style="display:flex; justify-content:space-between; gap:10px;">
-              <span style="color:#cfefff;">획득 경험치</span>
-              <span id="stageClearExpText" style="color:#aef; font-weight:900;">0</span>
-            </div>
+          <div class="stage-clear-row">
+            <span class="stage-clear-label">소요 시간</span>
+            <span id="stageClearDurationText" class="stage-clear-value">0초</span>
           </div>
-          <div id="stageClearExpDetail" style="margin-top:4px; font-size:13px; color:#cfd6ff;">(몬스터: 0, 보스: 0, 구슬: 0)</div>
-          <div style="display:flex; justify-content:space-between; gap:10px; margin-top:4px;">
-            <span style="color:#cfefff;">잡은 몬스터</span>
-            <span id="stageClearKillsText" style="color:#fff; font-weight:800;">0마리</span>
+          <div class="stage-clear-row">
+            <span class="stage-clear-label">잡은 몬스터</span>
+            <span id="stageClearKillsText" class="stage-clear-value">0마리</span>
           </div>
-          <div id="stageClearGoldRow" style="display:flex; justify-content:space-between; gap:10px;">
-            <span style="color:#cfefff;">획득 골드</span>
-            <span id="stageClearGoldText" style="color:#ffd700; font-weight:900;">0골드</span>
+          <div id="stageClearGoldRow" class="stage-clear-row" style="display:none;">
+            <span class="stage-clear-label">획득 골드</span>
+            <span id="stageClearGoldText" class="stage-clear-value" style="color:#ffd86b; font-weight:900;">0골드</span>
+          </div>
+          <div id="stageClearExpValueWrap">
+            <div id="stageClearExpLabel">획득 경험치</div>
+            <span id="stageClearExpText">+0</span>
+            <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 구슬 0 · 클리어 보너스 +0</div>
           </div>
         </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button id="nextStageBtn" class="ui-btn big-btn" style="border-color: #00ff00; color: #ccffcc;">
-                다음 스테이지로 ▶
-            </button>
-            <button id="clearToTitleBtn" class="ui-btn" style="padding: 12px;">
-                타이틀 화면으로
-            </button>
+        <div id="stageClearButtonGroup">
+            <button id="nextStageBtn" class="ui-btn big-btn">다음 스테이지로 ▶</button>
+            <button id="clearToTitleBtn" class="ui-btn">타이틀 화면으로</button>
         </div>
     </div>
 </div>
-
 
 <!-- ✅ [v.138] 펫 부화 / 판매 연출 -->
 <div id="petFxOverlay">
@@ -2052,8 +2260,45 @@ const nextStageBtn = document.getElementById('nextStageBtn');
 const clearToTitleBtn = document.getElementById('clearToTitleBtn');
 const stageClearExpEl = document.getElementById('stageClearExpText');
 const stageClearExpDetailEl = document.getElementById('stageClearExpDetail');
-const stageClearTimeEl = document.getElementById('stageClearTimeText');
-const stageClearRankEl = document.getElementById('stageClearRankText');
+const stageClearRankEl = document.getElementById('stageClearRankBadge');
+let stageClearExpAnimToken = 0;
+
+function applyStageClearRank(rank) {
+  if (!stageClearRankEl) return;
+  const rankText = String(rank || 'D').toUpperCase();
+  stageClearRankEl.classList.remove('rank-s','rank-a','rank-b','rank-c','rank-d');
+  stageClearRankEl.classList.add(`rank-${rankText.toLowerCase()}`);
+  stageClearRankEl.textContent = `RANK ${rankText}`;
+}
+
+function animateStageClearExp(value) {
+  if (!stageClearExpEl) return;
+  const token = ++stageClearExpAnimToken;
+  const target = Math.max(0, Math.floor(Number(value) || 0));
+  const duration = 720;
+  const started = performance.now();
+  function step(now){
+    if (token !== stageClearExpAnimToken) return;
+    const t = Math.min(1, (now - started) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.floor(target * eased);
+    stageClearExpEl.textContent = `+${formatNumber(current)}`;
+    if (t < 1) requestAnimationFrame(step);
+    else stageClearExpEl.textContent = `+${formatNumber(target)}`;
+  }
+  stageClearExpEl.textContent = '+0';
+  requestAnimationFrame(step);
+}
+
+function showStageClearModalAnimated(totalExp, rank) {
+  if (!stageClearModal) return;
+  stageClearModal.classList.remove('hidden');
+  stageClearModal.classList.remove('stage-clear-pop');
+  void stageClearModal.offsetWidth;
+  stageClearModal.classList.add('stage-clear-pop');
+  applyStageClearRank(rank);
+  animateStageClearExp(totalExp);
+}
 
 nextStageBtn.addEventListener('click', () => {
     if (gameMode !== 'stage' && gameMode !== 'mission') { stageClearModal.classList.add('hidden'); return; }
@@ -13361,15 +13606,12 @@ function finalizeStageClearStats() {
 
   if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${timeSec}초`;
-  if (stageClearExpEl) stageClearExpEl.textContent = `${formatNumber(expGained + grantedBonusExp)}`;
-  if (stageClearExpDetailEl) stageClearExpDetailEl.textContent = `(몬스터: ${formatNumber(mExp)}, 보스: ${formatNumber(bExp)}, 구슬: ${formatNumber(oExp)})  + 클리어 보너스: +${formatNumber(grantedBonusExp)} (랭크 ${rank})`;
+  if (stageClearExpDetailEl) stageClearExpDetailEl.textContent = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 구슬 ${formatNumber(oExp)} · 클리어 보너스 +${formatNumber(grantedBonusExp)}`;
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
-  if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
+  if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = goldGained > 0 ? 'flex' : 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(goldGained)}골드`;
-
-  // (기존 호환) 남아있는 엘리먼트는 비워둠
-  if (stageClearTimeEl) stageClearTimeEl.textContent = '';
-  if (stageClearRankEl) stageClearRankEl.textContent = rank;
+  applyStageClearRank(rank);
+  animateStageClearExp(expGained + grantedBonusExp);
   // 저장(스테이지별 최고 랭크/최단 시간)
   saveData.stageRanks = saveData.stageRanks || {};
   const prev = saveData.stageRanks[String(stage)] || null;
@@ -13720,7 +13962,7 @@ function update(dt, currentTime) {
         return;
       }
 
-      stageClearModal.classList.remove('hidden');
+      showStageClearModalAnimated((gameMode === 'stage' ? Number((document.getElementById('stageClearExpText')?.textContent || '0').replace(/[^0-9]/g,'')) : Number((document.getElementById('stageClearExpText')?.textContent || '0').replace(/[^0-9]/g,''))), stageClearSeq.rank);
       // ✅ [v.93.3] 튜토리얼: 1스테이지 클리어 보상/랭크 안내
       maybeStartPostClearTutorial();
       if (SFX && SFX.stageClear) SFX.stageClear();
