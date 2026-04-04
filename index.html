@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.148.9)</title>
+<title>Slime Shooter - Ultimate Evolution (v.149.5)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2284,15 +2284,8 @@ function applyStageClearRank(rank) {
   if (!stageClearRankEl) return;
   const rankText = String(rank || 'D').toUpperCase();
   stageClearRankEl.classList.remove('rank-s','rank-a','rank-b','rank-c','rank-d');
-
-  if (['S','A','B','C','D'].includes(rankText)) {
-    stageClearRankEl.classList.add(`rank-${rankText.toLowerCase()}`);
-    stageClearRankEl.textContent = `RANK ${rankText}`;
-    return;
-  }
-
-  // 미션 모드 전용 표기(BONUS / BOSS / CLEAR)는 일반 뱃지 스타일로 표시
-  stageClearRankEl.textContent = rankText;
+  stageClearRankEl.classList.add(`rank-${rankText.toLowerCase()}`);
+  stageClearRankEl.textContent = `RANK ${rankText}`;
 }
 
 function animateStageClearExp(value) {
@@ -4025,14 +4018,84 @@ function getInfiniteMonsterDistanceProfile() {
   return { tier: 1, proxyStage: 1, hp: 50, eliteHp: 100 };
 }
 
-const INFINITE_MONSTER_SCORE_RULES = {
-  1: { base: 100, stepDist: 20, stepScore: 10 },
-  2: { base: 150, stepDist: 20, stepScore: 15 },
-  3: { base: 200, stepDist: 20, stepScore: 20 },
-  4: { base: 300, stepDist: 30, stepScore: 30 },
-  5: { base: 500, stepDist: 50, stepScore: 50 },
-  6: { base: 1000, stepDist: 100, stepScore: 100 }
-};
+const INFINITE_MONSTER_SCORE_STAGE_RULES = [
+  { stage: 1, threshold: 30, score: 100 },
+  { stage: 2, threshold: 35, score: 150 },
+  { stage: 3, threshold: 40, score: 200 },
+  { stage: 4, threshold: 45, score: 250 },
+  { stage: 5, threshold: 50, score: 300 },
+  { stage: 6, threshold: 60, score: 400 },
+  { stage: 7, threshold: 70, score: 500 },
+  { stage: 8, threshold: 80, score: 600 },
+  { stage: 9, threshold: 90, score: 700 },
+  { stage: 10, threshold: 100, score: 800 },
+  { stage: 11, threshold: 110, score: 900 },
+  { stage: 12, threshold: 120, score: 1000 },
+  { stage: 13, threshold: 130, score: 1100 },
+  { stage: 14, threshold: 140, score: 1200 },
+  { stage: 15, threshold: 150, score: 1300 },
+  { stage: 16, threshold: 160, score: 1400 },
+  { stage: 17, threshold: 170, score: 1500 },
+  { stage: 18, threshold: 180, score: 1600 },
+  { stage: 19, threshold: 190, score: 1700 },
+  { stage: 20, threshold: 200, score: 1800 },
+  { stage: 21, threshold: 220, score: 1900 },
+  { stage: 22, threshold: 240, score: 2000 },
+  { stage: 23, threshold: 260, score: 2100 },
+  { stage: 24, threshold: 280, score: 2200 },
+  { stage: 25, threshold: 300, score: 2300 },
+  { stage: 26, threshold: 320, score: 2400 },
+  { stage: 27, threshold: 340, score: 2500 },
+  { stage: 28, threshold: 360, score: 2600 },
+  { stage: 29, threshold: 380, score: 2700 },
+  { stage: 30, threshold: 400, score: 2800 },
+  { stage: 31, threshold: 430, score: 3000 },
+  { stage: 32, threshold: 460, score: 3200 },
+  { stage: 33, threshold: 490, score: 3400 },
+  { stage: 34, threshold: 520, score: 3600 },
+  { stage: 35, threshold: 550, score: 3800 },
+  { stage: 36, threshold: 580, score: 4000 },
+  { stage: 37, threshold: 610, score: 4300 },
+  { stage: 38, threshold: 640, score: 4600 },
+  { stage: 39, threshold: 670, score: 4900 },
+  { stage: 40, threshold: 700, score: 5200 },
+  { stage: 41, threshold: 740, score: 5600 },
+  { stage: 42, threshold: 780, score: 6000 },
+  { stage: 43, threshold: 820, score: 6500 },
+  { stage: 44, threshold: 860, score: 7000 },
+  { stage: 45, threshold: 900, score: 7600 },
+  { stage: 46, threshold: 930, score: 8300 },
+  { stage: 47, threshold: 960, score: 9000 },
+  { stage: 48, threshold: 980, score: 10000 },
+  { stage: 49, threshold: 990, score: 11000 },
+  { stage: 50, threshold: 1000, score: 12000 }
+];
+function getInfiniteMonsterScoreProgressData(killCount = null) {
+  const kills = Math.max(0, Math.floor(Number(killCount ?? infiniteMonsterKillCount) || 0));
+  let current = INFINITE_MONSTER_SCORE_STAGE_RULES[0];
+  let next = null;
+
+  for (let i = 0; i < INFINITE_MONSTER_SCORE_STAGE_RULES.length; i++) {
+    const rule = INFINITE_MONSTER_SCORE_STAGE_RULES[i];
+    if (kills < rule.threshold) {
+      current = rule;
+      next = INFINITE_MONSTER_SCORE_STAGE_RULES[i + 1] || null;
+      break;
+    }
+    current = rule;
+    next = INFINITE_MONSTER_SCORE_STAGE_RULES[i + 1] || null;
+  }
+
+  return {
+    kills,
+    stage: current.stage,
+    score: current.score,
+    threshold: current.threshold,
+    nextStage: next ? next.stage : current.stage,
+    nextThreshold: next ? next.threshold : current.threshold,
+    maxStage: current.stage >= INFINITE_MONSTER_SCORE_STAGE_RULES.length
+  };
+}
 function getInfiniteMonsterDistanceTier() {
   return getInfiniteMonsterDistanceProfile().tier;
 }
@@ -5361,7 +5424,7 @@ function buildBackupPayload() {
 
 let dataObj = {};
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(getCurrentSaveStorageKey());
     if (raw) dataObj = JSON.parse(raw);
   } catch (e) { dataObj = {}; }
 
@@ -5441,6 +5504,15 @@ function applyRestoreObject(obj) {
   if (typeof data.level !== 'number' || !isFinite(data.level)) data.level = 1;
 
   localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
+  try {
+    if (currentCharacterId) localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
+  } catch (e) {}
+  try {
+    saveData = { ...saveData, ...data };
+    exp = Number(data.exp || 0) || 0;
+    level = Number(data.level || getLevelFromExp(exp) || 1) || 1;
+    updateCharacterMetaSnapshot();
+  } catch (e) {}
 }
 
 function doRestoreFromText(jsonText, metaLabel) {
@@ -6637,6 +6709,10 @@ function registerEnemyKill(isBoss = false) {
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
+
+  if (!isBoss && gameMode === 'infinite') {
+    infiniteMonsterKillCount = Math.max(0, Math.floor(infiniteMonsterKillCount || 0)) + 1;
+  }
 
   if (gameMode === 'stage' || gameMode === 'mission') {
     checkStageKillClearNow();
@@ -9347,13 +9423,14 @@ const PET_STAR_COLORS = {
   5: '#ff9ecf'
 };
 const PET_DEFS = {
-  slime:    { id:'slime',    name:'슬라임 펫',   icon:'🟢', color:'#69f59a', accent:'#c9ffe2', ability:'exp'      },
-  fairy:    { id:'fairy',    name:'요정 펫',     icon:'🧚', color:'#7cd3ff', accent:'#e5fbff', ability:'gold'     },
-  dragon:   { id:'dragon',   name:'드래곤 펫',   icon:'🐉', color:'#ff8a7a', accent:'#ffd6bf', ability:'attack'   },
-  angel:    { id:'angel',    name:'천사 펫',     icon:'😇', color:'#fff1a8', accent:'#ffffff', ability:'hp'       },
-  scorer:   { id:'scorer',   name:'점수형 펫',   icon:'🏆', color:'#ffcc55', accent:'#fff1bf', ability:'score'    },
-  producer: { id:'producer', name:'생산형 펫',   icon:'📦', color:'#b48bff', accent:'#efe1ff', ability:'producer' },
-  laserpet: { id:'laserpet', name:'레이저형 펫', icon:'🔺', color:'#ff6ad5', accent:'#ffd8f5', ability:'laserpet' }
+  slime:     { id:'slime',     name:'슬라임 펫',   icon:'🟢', color:'#69f59a', accent:'#c9ffe2', ability:'exp'       },
+  fairy:     { id:'fairy',     name:'요정 펫',     icon:'🧚', color:'#7cd3ff', accent:'#e5fbff', ability:'gold'      },
+  dragon:    { id:'dragon',    name:'드래곤 펫',   icon:'🐉', color:'#ff8a7a', accent:'#ffd6bf', ability:'attack'    },
+  angel:     { id:'angel',     name:'천사 펫',     icon:'😇', color:'#fff1a8', accent:'#ffffff', ability:'hp'        },
+  scorer:    { id:'scorer',    name:'점수형 펫',   icon:'🏆', color:'#ffcc55', accent:'#fff1bf', ability:'score'     },
+  distancepet:{ id:'distancepet', name:'거리형 펫', icon:'📏', color:'#7ce7ff', accent:'#dff8ff', ability:'distance' },
+  producer:  { id:'producer',  name:'생산형 펫',   icon:'📦', color:'#b48bff', accent:'#efe1ff', ability:'producer'  },
+  laserpet:  { id:'laserpet',  name:'레이저형 펫', icon:'🔺', color:'#ff6ad5', accent:'#ffd8f5', ability:'laserpet'  }
 };
 
 const PET_ACTIVE_SKILL_LABELS = {
@@ -9483,7 +9560,7 @@ function rollPetType() {
 }
 
 function getPetBonusTotalsForSingle(pet) {
-  const totals = { exp:0, gold:0, attack:0, hp:0, score:0 };
+  const totals = { exp:0, gold:0, attack:0, hp:0, score:0, distance:0 };
   if (!pet) return totals;
   const star = Math.max(1, Math.min(5, Number(pet.star) || 1));
   const def = getPetDef(pet.type);
@@ -9492,14 +9569,15 @@ function getPetBonusTotalsForSingle(pet) {
   else if (def.ability === 'attack') totals.attack = [0,0.05,0.08,0.12,0.16,0.22][star] || 0;
   else if (def.ability === 'hp') totals.hp = [0,8,14,22,32,45][star] || 0;
   else if (def.ability === 'score') totals.score = [0,0.05,0.10,0.20,0.30,0.50][star] || 0;
+  else if (def.ability === 'distance') totals.distance = [0,0.40,0.80,1.20,2.00,3.00][star] || 0;
   return totals;
 }
 
 function getPetBonusTotals() {
-  const totals = { exp:0, gold:0, attack:0, hp:0, score:0 };
+  const totals = { exp:0, gold:0, attack:0, hp:0, score:0, distance:0 };
   for (const pet of getEquippedPetList()) {
     const s = getPetBonusTotalsForSingle(pet);
-    totals.exp += s.exp; totals.gold += s.gold; totals.attack += s.attack; totals.hp += s.hp; totals.score += s.score;
+    totals.exp += s.exp; totals.gold += s.gold; totals.attack += s.attack; totals.hp += s.hp; totals.score += s.score; totals.distance += s.distance;
   }
   return totals;
 }
@@ -9602,6 +9680,7 @@ function getPetAbilityText(pet) {
   if (single.attack) return `능력: 공격력 +${Math.round(single.attack * 100)}%`;
   if (single.hp) return `능력: HP +${formatNumber(single.hp)}`;
   if (single.score) return `능력: 점수 +${Math.round(single.score * 100)}%`;
+  if (single.distance) return `능력: 무한 모드 거리 점수 +${Math.round(single.distance * 100)}% (EXP 미적용)`;
   if ((pet && pet.type) === 'laserpet') {
     const dmgPct = [0,40,80,120,160,200][star] || 40;
     const cdSec = ([0,8,7,6,5,3][star] || 8);
@@ -9857,6 +9936,9 @@ function getPetGoldMultiplier() {
 function getPetScoreMultiplier() {
   return 1 + (getPetBonusTotals().score || 0);
 }
+function getPetDistanceScoreMultiplier() {
+  return 1 + (getPetBonusTotals().distance || 0);
+}
 function getPetExpMultiplier() {
   return 1 + (getPetBonusTotals().exp || 0);
 }
@@ -9931,6 +10013,7 @@ function renderPetCard(pet, slot = null) {
     : s.attack ? `공격력 +${Math.round(s.attack * 100)}%`
     : s.hp ? `HP +${formatNumber(s.hp)}`
     : s.score ? `점수 +${Math.round(s.score * 100)}%`
+    : s.distance ? `거리 점수 +${Math.round(s.distance * 100)}%`
     : pet.type === 'producer' ? `생산 ${[0,6,5,4,3,2][pet.star] || 6}초`
     : pet.type === 'laserpet' ? `레이저 ${([0,40,80,120,160,200][pet.star] || 40)}%`
     : `능력 없음`;
@@ -10036,6 +10119,16 @@ function drawSinglePet(slot) {
     ctx.fill();
     ctx.fillStyle = def.accent;
     ctx.beginPath(); ctx.moveTo(-s*0.20, -s*0.60); ctx.lineTo(0, -s*1.05); ctx.lineTo(s*0.18, -s*0.55); ctx.fill();
+  } else if (petData.type === 'distancepet') {
+    ctx.fillStyle = def.color;
+    ctx.beginPath();
+    ctx.roundRect(-s*0.95, -s*0.78, s*1.9, s*1.56, s*0.26);
+    ctx.fill();
+    ctx.fillStyle = def.accent;
+    ctx.fillRect(-s*0.62, -s*0.10, s*1.24, s*0.22);
+    ctx.fillRect(-s*0.10, -s*0.62, s*0.22, s*1.24);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath(); ctx.arc(0, 0, s*0.14, 0, Math.PI*2); ctx.fill();
   } else if (petData.type === 'laserpet') {
     ctx.fillStyle = def.color;
     ctx.beginPath();
@@ -10100,7 +10193,12 @@ function getCloseKillScoreInfo(enemy) {
 }
 
 function getEnemyKillScore(enemy) {
-  const base = Math.max(0, Math.floor(Number(enemy && enemy.score) || 0));
+  const base = (() => {
+    if (gameMode === 'infinite') {
+      return getInfiniteMonsterKillScore();
+    }
+    return Math.max(0, Math.floor(Number(enemy && enemy.score) || 0));
+  })();
   const info = getCloseKillScoreInfo(enemy);
   return {
     amount: Math.max(0, Math.floor(base * info.multiplier)),
@@ -13924,7 +14022,8 @@ function finalizeMissionClearStats() {
   if (stageClearKillsEl) stageClearKillsEl.textContent = bonusStage ? '보너스 수집' : `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(stageRunGoldEarned || 0)}골드`;
-  applyStageClearRank(bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR'));
+  if (stageClearTimeEl) stageClearTimeEl.textContent = '';
+  if (stageClearRankEl) stageClearRankEl.textContent = bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR');
 
   try {
     if (!saveData.mission) saveData.mission = { bestStage: 1 };
@@ -17038,13 +17137,11 @@ let infiniteWaveSpawnTimer = 0;
 let infiniteDashImpactPendingMs = 0;
 let infiniteDashImpactFxTimer = 0;
 let infiniteFirstBossKillDistance = null;
+let infiniteMonsterKillCount = 0;
 
-function getInfiniteMonsterKillScore(tier = null) {
-  const resolvedTier = Math.max(1, Math.min(6, Math.floor(Number(tier || getInfiniteMonsterDistanceTier()) || 1)));
-  const rule = INFINITE_MONSTER_SCORE_RULES[resolvedTier] || INFINITE_MONSTER_SCORE_RULES[1];
-  const dist = Math.max(0, Math.floor(Number(infiniteDistance || 0)));
-  const bonusSteps = Math.floor(dist / Math.max(1, rule.stepDist));
-  return Math.max(0, Math.floor(rule.base + bonusSteps * rule.stepScore));
+function getInfiniteMonsterKillScore() {
+  const progress = getInfiniteMonsterScoreProgressData(infiniteMonsterKillCount);
+  return Math.max(100, Math.floor(progress.score || 100));
 }
 
 function resetInfiniteModeRun() {
@@ -17067,6 +17164,7 @@ function resetInfiniteModeRun() {
   infiniteDashImpactPendingMs = 0;
   infiniteDashImpactFxTimer = 0;
   infiniteFirstBossKillDistance = null;
+  infiniteMonsterKillCount = 0;
   score = 0;
 }
 
@@ -17296,7 +17394,7 @@ createEnemy = function(type, x, y, vy, pattern = 'straight', vx = 0, extra = {})
   e.vy = vy * enemySpeedScale;
   if (typeof vx === 'number') e.vx = vx * Math.min(1.8, 1 + progress * 0.35);
   e.size = e._fixedSize; // 무한 모드 몬스터 크기 고정
-  e.score = getInfiniteMonsterKillScore(distanceProfile.tier); // 현재 단계 규칙만 적용 (이전 단계 중첩 없음)
+  e.score = getInfiniteMonsterKillScore(); // 무한 모드 몬스터 점수는 거리와 무관하게 처치 단계표만 적용
   e._infiniteDistanceTier = distanceProfile.tier;
   e._infiniteProxyStage = distanceProfile.proxyStage;
   const fixedHp = extra.isElite ? distanceProfile.eliteHp : distanceProfile.hp;
@@ -17477,7 +17575,7 @@ update = function(dt, currentTime) {
       }
       infiniteDistance += infiniteDistanceSpeed * sec;
       saveData.bestInfiniteDistance = Math.max(Math.floor(saveData.bestInfiniteDistance || 0), Math.floor(infiniteDistance || 0));
-      infiniteDistanceScore += infiniteDistanceSpeed * sec * getInfiniteDistanceScoreStep();
+      infiniteDistanceScore += infiniteDistanceSpeed * sec * getInfiniteDistanceScoreStep() * getPetDistanceScoreMultiplier();
 
       if (stageEl) {
         stageEl.textContent = `거리: ${formatNumber(Math.floor(infiniteDistance))}m`;
@@ -17509,7 +17607,7 @@ update = function(dt, currentTime) {
       e.vx = 0;
       if (typeof e._fixedSize === 'number') e.size = e._fixedSize;
       const enemyTier = Math.max(1, Math.floor(Number(e && e._infiniteDistanceTier) || getInfiniteMonsterDistanceTier()));
-      e.score = getInfiniteMonsterKillScore(enemyTier);
+      e.score = getInfiniteMonsterKillScore();
       if (gameMode === 'infinite') e.pattern = 'straight';
     }
 
