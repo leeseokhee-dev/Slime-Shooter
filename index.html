@@ -1386,6 +1386,20 @@ body.tutorial-mode .quake-skill{
 #stageClearModal.stage-clear-pop{
   animation: stageClearModalPop .34s cubic-bezier(.2,.9,.2,1);
 }
+
+/* ===== HUD 캔버스 표시 모드 ===== */
+body.canvas-hud-mode #hud{
+  padding: 6px 8px;
+  margin-bottom: 6px;
+}
+body.canvas-hud-mode #hudTop,
+body.canvas-hud-mode #playerHudCompact,
+body.canvas-hud-mode #expRow{
+  display: none !important;
+}
+body.canvas-hud-mode #settingsBar{
+  justify-content: center;
+}
 @keyframes stageClearModalPop{
   0%{ transform: translate(-50%, -50%) scale(0.86); opacity:0; }
   72%{ transform: translate(-50%, -50%) scale(1.03); opacity:1; }
@@ -1394,7 +1408,7 @@ body.tutorial-mode .quake-skill{
 
 </style>
 </head>
-<body>
+<body class="canvas-hud-mode">
 <div id="gameContainer">
 <!-- HUD -->
 <div id="hud">
@@ -3644,18 +3658,8 @@ let dungeonState = {
 let lastTime = 0;
 const keys = {};
 let lastRenderTs = 0;
-let perfFrameTick = 0;
-let perfLastHudTs = 0;
-let perfLastDynamicState = '';
-let perfAutoBatterySaving = false;
-let perfBatteryLevel = null;
-let perfBatteryCharging = null;
-let perfBatteryInited = false;
 const FPS_NORMAL = 60;
 const FPS_LOW = 30;
-const FPS_BATTERY_OPT = 45;
-const HUD_UPDATE_INTERVAL_PLAYING = 120;
-const HUD_UPDATE_INTERVAL_MENU = 0;
 
 // 저장 데이터
 let saveData = {
@@ -5032,91 +5036,6 @@ function maybeShowSkillUnlockNotice(oldLv, newLv) {
 
 function randRange(min, max) { return Math.random() * (max - min) + min; }
 function isLowPower() { return !!saveData.lowPower; }
-function isBatteryOptimizedMode() { return isLowPower() || perfAutoBatterySaving; }
-function getCurrentHudInterval() { return state === 'playing' ? HUD_UPDATE_INTERVAL_PLAYING : HUD_UPDATE_INTERVAL_MENU; }
-function shouldThrottleHud(force = false) {
-  if (force) return false;
-  const interval = getCurrentHudInterval();
-  if (interval <= 0) return false;
-  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-  if (now - perfLastHudTs < interval) return true;
-  perfLastHudTs = now;
-  return false;
-}
-function setCachedText(el, value) {
-  if (!el) return;
-  const next = String(value);
-  if (el.__cachedText !== next) {
-    el.textContent = next;
-    el.__cachedText = next;
-  }
-}
-function setCachedDisplay(el, value) {
-  if (!el) return;
-  const next = String(value);
-  if (el.__cachedDisplay !== next) {
-    el.style.display = next;
-    el.__cachedDisplay = next;
-  }
-}
-function setCachedColor(el, value) {
-  if (!el) return;
-  const next = String(value);
-  if (el.__cachedColor !== next) {
-    el.style.color = next;
-    el.__cachedColor = next;
-  }
-}
-function updateDynamicBatteryMode(force = false) {
-  const shouldAuto = !saveData.lowPower && state === 'playing' && (
-    (typeof perfBatteryLevel === 'number' && perfBatteryCharging === false && perfBatteryLevel <= 0.20) ||
-    (navigator.connection && navigator.connection.saveData === true) ||
-    (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4) ||
-    (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4)
-  );
-  const next = !!shouldAuto;
-  if (!force && perfAutoBatterySaving === next) return;
-  perfAutoBatterySaving = next;
-  updateSettingsUI();
-  updateHUD(true);
-}
-function initBatteryOptimization() {
-  if (perfBatteryInited) return;
-  perfBatteryInited = true;
-  try {
-    if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
-      navigator.connection.addEventListener('change', () => updateDynamicBatteryMode(true));
-    }
-  } catch(e) {}
-  try {
-    if (navigator.getBattery) {
-      navigator.getBattery().then((battery) => {
-        const syncBattery = () => {
-          perfBatteryLevel = Number(battery.level);
-          perfBatteryCharging = !!battery.charging;
-          updateDynamicBatteryMode(true);
-        };
-        syncBattery();
-        battery.addEventListener('levelchange', syncBattery);
-        battery.addEventListener('chargingchange', syncBattery);
-      }).catch(() => {});
-    } else {
-      updateDynamicBatteryMode(true);
-    }
-  } catch(e) {
-    updateDynamicBatteryMode(true);
-  }
-}
-function getTargetFpsForCurrentState() {
-  if (saveData.lowPower) return FPS_LOW;
-  if (perfAutoBatterySaving) return FPS_BATTERY_OPT;
-  return FPS_NORMAL;
-}
-function shouldReduceHeavyEffects() {
-  if (saveData.lowPower) return true;
-  const pressure = enemies.length + particles.length + dmgTexts.length + enemyBullets.length + bullets.length + expItems.length + goldDrops.length;
-  return perfAutoBatterySaving || pressure >= 220;
-}
 // ===== [핫타임 EXP] =====
 // 매일 08:00~12:00, 18:00~22:00
 function isHotTimeNow(date = new Date()) {
@@ -5894,8 +5813,8 @@ function updateSettingsUI() {
     sfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
   }
   if (lowPowerBtn) {
-    lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : (perfAutoBatterySaving ? "저사양 OFF · 절전 최적화" : "저사양 OFF");
-    lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : (perfAutoBatterySaving ? "#7ce7ff" : "#fff");
+    lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
+    lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
   if (homingBtn) {
     if (level < 61) {
@@ -5951,7 +5870,6 @@ function toggleBgmFromCanvas() {
   }
   saveGameData();
   updateSettingsUI();
-  updateHUD(true);
 }
 function toggleSfxFromCanvas() {
   sfxEnabled = !sfxEnabled;
@@ -8660,14 +8578,11 @@ function handleBackgroundVisibilityLoss() {
   }
   lastTime = 0;
   lastRenderTs = 0;
-  perfLastHudTs = 0;
 }
 
 function handleBackgroundVisibilityGain() {
   lastTime = 0;
   lastRenderTs = 0;
-  perfLastHudTs = 0;
-  updateDynamicBatteryMode(true);
 }
 
 function togglePause() {
@@ -8756,7 +8671,6 @@ window.addEventListener('blur', () => {
   if (document.hidden) handleBackgroundVisibilityLoss();
 });
 window.addEventListener('focus', handleBackgroundVisibilityGain);
-initBatteryOptimization();
 resumeBtn && resumeBtn.addEventListener('click', resumeGame);
 pauseToTitleBtn && pauseToTitleBtn.addEventListener('click', () => {
   showConfirmDialog('게임을 종료하고 타이틀 화면으로 이동할까요?', () => {
@@ -13887,10 +13801,10 @@ restartBtn.addEventListener('click', () => {
     goToTitle();
     openDungeonSelect();
   } else if (gameMode === 'mission') {
-    if (scoreEl) setCachedText(scoreEl, '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)))));
-    if (highScoreEl) setCachedText(highScoreEl, isMissionBonusStage(stage)
+    if (scoreEl) scoreEl.textContent = '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))));
+    if (highScoreEl) highScoreEl.textContent = isMissionBonusStage(stage)
       ? `보너스 남은 시간: ${formatMMSS(missionState.bonusTimeLeft || 0)}`
-      : getMissionProgressText(stage));
+      : getMissionProgressText(stage);
   } else if (gameMode === 'itempark') {
     ensureItemParkDailyReset();
     if (Number(saveData?.itemPark?.used || 0) >= ITEM_PARK_MAX_DAILY_RUNS) {
@@ -15460,36 +15374,35 @@ if (boss && !bossInvincible) {
 }
 }
 
-function updateHUD(force = false) {
-  if (shouldThrottleHud(force)) return;
+function updateHUD() {
   try { updateConsumableQuickBar(); } catch(e){}
-setCachedText(scoreEl, '점수: ' + formatNumber(score));
-setCachedText(highScoreEl, '최고: ' + formatNumber(saveData.highScore));
+scoreEl.textContent = '점수: ' + formatNumber(score);
+highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
   // ✅ 스테이지 모드에서는 점수 UI 숨김 (무한 모드에서만 표시)
   const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame');
-  if (scoreEl) setCachedDisplay(scoreEl, showScoreUI ? '' : 'none');
-  if (highScoreEl) setCachedDisplay(highScoreEl, showScoreUI ? '' : 'none');
+  if (scoreEl) scoreEl.style.display = showScoreUI ? '' : 'none';
+  if (highScoreEl) highScoreEl.style.display = showScoreUI ? '' : 'none';
   if (gameMode === 'mission') {
-    if (scoreEl) setCachedText(scoreEl, '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)))));
-    if (highScoreEl) setCachedText(highScoreEl, isMissionBonusStage(stage)
+    if (scoreEl) scoreEl.textContent = '미션 점수: ' + formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))));
+    if (highScoreEl) highScoreEl.textContent = isMissionBonusStage(stage)
       ? `보너스 남은 시간: ${formatMMSS(missionState.bonusTimeLeft || 0)}`
-      : getMissionProgressText(stage));
+      : getMissionProgressText(stage);
   } else if (gameMode === 'infinite') {
-    if (scoreEl) setCachedText(scoreEl, '사냥 점수: ' + formatNumber(score));
-    if (highScoreEl) setCachedText(highScoreEl, '거리 점수: ' + formatNumber(getInfiniteDistanceScore()));
+    if (scoreEl) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
+    if (highScoreEl) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
   } else if (gameMode === 'itempark') {
-    if (scoreEl) setCachedText(scoreEl, '수집 수: ' + formatNumber(itemParkState.caught || 0));
-    if (highScoreEl) setCachedText(highScoreEl, '획득 EXP: ' + formatNumber(itemParkState.expGained || 0));
+    if (scoreEl) scoreEl.textContent = '수집 수: ' + formatNumber(itemParkState.caught || 0);
+    if (highScoreEl) highScoreEl.textContent = '획득 EXP: ' + formatNumber(itemParkState.expGained || 0);
   } else if (gameMode === 'minigame') {
-    if (scoreEl) setCachedText(scoreEl, '미니게임 점수: ' + formatNumber(miniGameState.score || 0));
-    if (highScoreEl) setCachedText(highScoreEl, `콤보 x${formatNumber(miniGameState.combo || 0)} · 예상 EXP: ${formatNumber(Math.floor((miniGameState.score || 0) / 100))}`);
+    if (scoreEl) scoreEl.textContent = '미니게임 점수: ' + formatNumber(miniGameState.score || 0);
+    if (highScoreEl) highScoreEl.textContent = `콤보 x${formatNumber(miniGameState.combo || 0)} · 예상 EXP: ${formatNumber(Math.floor((miniGameState.score || 0) / 100))}`;
   }
 
-  if (goldEl) setCachedText(goldEl, '골드: ' + formatNumber(gold));
+  if (goldEl) goldEl.textContent = '골드: ' + formatNumber(gold);
   if (hpEl) {
-    setCachedText(hpEl, '');
-    setCachedDisplay(hpEl, 'none');
+    hpEl.textContent = '';
+    hpEl.style.display = 'none';
   }
 
 const prog = getLevelProgress(exp, level);
@@ -15500,8 +15413,8 @@ let percentDigits = 2;
 if (level >= 200) percentDigits = 3;
 else if (level >= 100) percentDigits = 2;
 
-setCachedText(expEl,
-  `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`);
+expEl.textContent =
+  `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
 
 // ✅ 레벨업 등으로 %가 떨어질 때(바가 줄어들 때)는 애니메이션 없이 즉시 반영
 if (nextPercent + 0.001 < __lastExpBarPercent) {
@@ -15520,52 +15433,52 @@ const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
 const compactPlayerText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
-if (playerCompactEl) setCachedText(playerCompactEl, compactPlayerText);
-setCachedText(levelEl, `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`);
+if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
+levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
-  if (state === 'playing') setCachedText(stageEl, `던전 ${dungeonState.tier}단계 · 남은시간 ${formatMMSS(dungeonState.timeLeft)}`);
-  else setCachedText(stageEl, `던전 ${dungeonState.tier}단계`);
+  if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 남은시간 ${formatMMSS(dungeonState.timeLeft)}`;
+  else stageEl.textContent = `던전 ${dungeonState.tier}단계`;
 } else if (gameMode === 'itempark') {
   const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
-  setCachedText(stageEl, `아이템 파크 · 수집 ${formatNumber(itemParkState.caught || 0)}개 · 남은 ${left}회`);
+  stageEl.textContent = `아이템 파크 · 수집 ${formatNumber(itemParkState.caught || 0)}개 · 남은 ${left}회`;
 } else if (gameMode === 'minigame') {
   const left = Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0));
-  setCachedText(stageEl, `미니게임 · ${getMiniGameTypeLabel(miniGameState.type)} · 최고 ${formatNumber(miniGameState.bestCombo || 0)}콤보 · 남은 ${left}회`);
+  stageEl.textContent = `미니게임 · ${getMiniGameTypeLabel(miniGameState.type)} · 최고 ${formatNumber(miniGameState.bestCombo || 0)}콤보 · 남은 ${left}회`;
 } else {
   if (gameMode === 'stage') {
     const t = getStageKillTarget(stage);
     const k = Math.max(0, Math.floor(stageRunKillCount || 0));
     const b = (isBossStage(stage) ? Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0))) : 0);
-    setCachedText(stageEl, isBossStage(stage)
+    stageEl.textContent = isBossStage(stage)
       ? `스테이지: ${stage} · 몬스터 처치 ${k}/${t}, 보스 처치 ${b}/1`
-      : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`);
+      : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`;
   } else if (gameMode === 'mission') {
     const obj = getMissionObjective(stage);
-    setCachedText(stageEl, isMissionBonusStage(stage)
+    stageEl.textContent = isMissionBonusStage(stage)
       ? `미션 ${stage} · 보너스 스테이지`
-      : `미션 ${stage} · ${obj.label}`);
+      : `미션 ${stage} · ${obj.label}`;
   } else {
-    setCachedText(stageEl, (gameMode === 'infinite' ? '무한 · ' : '') + '스테이지: ' + stage);
+    stageEl.textContent = (gameMode === 'infinite' ? '무한 · ' : '') + '스테이지: ' + stage;
   }
 }
 
 if (hotTimeEl) {
     if (gameMode === 'dungeon') {
-      setCachedText(hotTimeEl, '던전 EXP');
-      setCachedColor(hotTimeEl, '#44ffb8');
+      hotTimeEl.textContent = '던전 EXP';
+      hotTimeEl.style.color = '#44ffb8';
     } else if (gameMode === 'itempark') {
-      setCachedText(hotTimeEl, `아이템 파크 · 남은 ${formatMMSS(itemParkState.timeLeft || 0)}`);
-      setCachedColor(hotTimeEl, '#7ce7ff');
+      hotTimeEl.textContent = `아이템 파크 · 남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
+      hotTimeEl.style.color = '#7ce7ff';
     } else if (gameMode === 'minigame') {
-      setCachedText(hotTimeEl, `미니게임 · 남은 ${formatMMSS(miniGameState.timeLeft || 0)} · 현재 ${formatNumber(miniGameState.combo || 0)}콤보`);
-      setCachedColor(hotTimeEl, '#ffcc66');
+      hotTimeEl.textContent = `미니게임 · 남은 ${formatMMSS(miniGameState.timeLeft || 0)} · 현재 ${formatNumber(miniGameState.combo || 0)}콤보`;
+      hotTimeEl.style.color = '#ffcc66';
     } else if (gameMode === 'mission') {
-      setCachedText(hotTimeEl, isMissionBonusStage(stage)
+      hotTimeEl.textContent = isMissionBonusStage(stage)
         ? `🎁 보너스 스테이지 · 남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}`
-        : `🧭 ${getMissionProgressText(stage)}`);
-      setCachedColor(hotTimeEl, isMissionBonusStage(stage) ? '#ff8fd6' : '#ffb8e8');
+        : `🧭 ${getMissionProgressText(stage)}`;
+      hotTimeEl.style.color = isMissionBonusStage(stage) ? '#ff8fd6' : '#ffb8e8';
     } else {
     const m = getHotMultiplier();
     let hotText = '일반 EXP';
@@ -15590,14 +15503,122 @@ if (hotTimeEl) {
       }
     }
 
-    setCachedText(hotTimeEl, hotText);
-    setCachedColor(hotTimeEl, hotColor);
+    hotTimeEl.textContent = hotText;
+    hotTimeEl.style.color = hotColor;
     }
   }
 }
 
+
+function drawTextStrokeFill(text, x, y, options = {}) {
+  const {
+    font = `bold 16px ${getUIFontFamily()}`,
+    fill = '#ffffff',
+    stroke = 'rgba(0,0,0,0.72)',
+    lineWidth = 4,
+    align = 'left',
+    baseline = 'alphabetic',
+    alpha = 1,
+  } = options;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = font;
+  ctx.textAlign = align;
+  ctx.textBaseline = baseline;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = stroke;
+  ctx.fillStyle = fill;
+  ctx.strokeText(String(text ?? ''), x, y);
+  ctx.fillText(String(text ?? ''), x, y);
+  ctx.restore();
+}
+
+function drawCanvasHud() {
+  if (state === 'title') return;
+  if (bossIntro && bossIntro.active && bossIntro.phase === 'warning') return;
+
+  const uiScale = Number(document.documentElement.style.getPropertyValue('--canvas-scale') || '1') || 1;
+  const padX = Math.max(12, Math.round(14 * uiScale));
+  const panelY = Math.max(10, Math.round(12 * uiScale));
+  const panelH = Math.max(72, Math.round(84 * uiScale));
+  const panelW = Math.min(width - padX * 2, Math.max(220, Math.round(width * 0.72)));
+  const panelX = Math.round((width - panelW) / 2);
+  const leftX = panelX + Math.round(14 * uiScale);
+  const rightX = panelX + panelW - Math.round(14 * uiScale);
+  const topY = panelY + Math.round(22 * uiScale);
+  const rowGap = Math.max(14, Math.round(16 * uiScale));
+  const labelFont = `900 ${Math.max(11, Math.round(13 * uiScale))}px ${getUIFontFamily()}`;
+  const subFont = `800 ${Math.max(10, Math.round(11 * uiScale))}px ${getUIFontFamily()}`;
+  const titleFont = `900 ${Math.max(13, Math.round(16 * uiScale))}px ${getUIFontFamily()}`;
+  const expFont = `900 ${Math.max(10, Math.round(11 * uiScale))}px ${getUIFontFamily()}`;
+
+  const scoreText = scoreEl ? scoreEl.textContent : '';
+  const highScoreText = highScoreEl ? highScoreEl.textContent : '';
+  const hotText = hotTimeEl ? hotTimeEl.textContent : '';
+  const hotColor = hotTimeEl ? (hotTimeEl.style.color || '#ffb84d') : '#ffb84d';
+  const goldText = goldEl ? goldEl.textContent : '';
+  const stageText = stageEl ? stageEl.textContent : '';
+  const playerText = playerCompactEl ? playerCompactEl.textContent : '';
+  const expText = expEl ? expEl.textContent : '';
+  const expPercent = Math.max(0, Math.min(100, Number(__lastExpBarPercent || 0)));
+
+  ctx.save();
+  drawRoundRect(panelX, panelY, panelW, panelH, Math.max(12, Math.round(14 * uiScale)));
+  const bg = ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelH);
+  bg.addColorStop(0, 'rgba(9,18,36,0.82)');
+  bg.addColorStop(1, 'rgba(3,8,18,0.62)');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.2, 1.6 * uiScale);
+  ctx.strokeStyle = 'rgba(124,231,255,0.30)';
+  ctx.stroke();
+
+  drawTextStrokeFill(scoreText, leftX, topY, { font: titleFont, fill: '#ffffff', lineWidth: 5 * uiScale });
+  drawTextStrokeFill(stageText, rightX, topY, { font: titleFont, fill: '#ffffff', lineWidth: 5 * uiScale, align: 'right' });
+
+  drawTextStrokeFill(highScoreText, leftX, topY + rowGap, { font: subFont, fill: '#ffeeaa', lineWidth: 4 * uiScale });
+  drawTextStrokeFill(goldText, rightX, topY + rowGap, { font: subFont, fill: '#ffd700', lineWidth: 4 * uiScale, align: 'right' });
+
+  drawTextStrokeFill(playerText, leftX, topY + rowGap * 2, { font: labelFont, fill: '#9dffcf', lineWidth: 4 * uiScale });
+  drawTextStrokeFill(hotText, rightX, topY + rowGap * 2, { font: subFont, fill: hotColor, lineWidth: 4 * uiScale, align: 'right' });
+
+  const expBarX = leftX;
+  const expBarY = panelY + panelH - Math.max(18, Math.round(20 * uiScale));
+  const expBarW = panelW - Math.round(28 * uiScale);
+  const expBarH = Math.max(10, Math.round(12 * uiScale));
+  const fillW = Math.max(0, Math.min(expBarW, expBarW * (expPercent / 100)));
+
+  drawRoundRect(expBarX, expBarY, expBarW, expBarH, Math.max(5, Math.round(6 * uiScale)));
+  ctx.fillStyle = 'rgba(10,20,44,0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(176,214,255,0.50)';
+  ctx.lineWidth = Math.max(1, 1.2 * uiScale);
+  ctx.stroke();
+
+  if (fillW > 0) {
+    drawRoundRect(expBarX, expBarY, fillW, expBarH, Math.max(5, Math.round(6 * uiScale)));
+    const expGrad = ctx.createLinearGradient(expBarX, expBarY, expBarX + expBarW, expBarY);
+    expGrad.addColorStop(0, '#2fd1ff');
+    expGrad.addColorStop(0.52, '#44ffb8');
+    expGrad.addColorStop(1, '#b7ff6e');
+    ctx.fillStyle = expGrad;
+    ctx.fill();
+  }
+
+  drawTextStrokeFill(expText, panelX + panelW / 2, expBarY + expBarH / 2, {
+    font: expFont,
+    fill: '#f8feff',
+    lineWidth: 4 * uiScale,
+    align: 'center',
+    baseline: 'middle'
+  });
+  ctx.restore();
+}
+
 // ===== 그리기 =====
 function drawBackground() {
+
   const img = getStageBackgroundImage(stage, state);
   const drew = drawCoverImage(img, 0, 0, width, height);
 
@@ -16983,11 +17004,8 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  updateDynamicBatteryMode();
-  const targetFps = getTargetFpsForCurrentState();
+  const targetFps = saveData.lowPower ? FPS_LOW : FPS_NORMAL;
   const frameInterval = 1000 / targetFps;
-  const reduceHeavyEffects = shouldReduceHeavyEffects();
-  perfFrameTick = (perfFrameTick + 1) % 120;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
     setPauseUI();
@@ -17031,8 +17049,8 @@ requestAnimationFrame(gameLoop);
     ctx.translate(quakeSh.x + dashSh.x, quakeSh.y + dashSh.y);
 
     drawLasers();
-    if (!reduceHeavyEffects || (perfFrameTick % 2 === 0)) drawLightningFx();
-    if (!reduceHeavyEffects || (perfFrameTick % 2 === 0)) drawBlizzardFx();
+    drawLightningFx();
+    drawBlizzardFx();
     drawMeteors();
     drawEnemies();
     drawExpItems();
@@ -17045,17 +17063,18 @@ requestAnimationFrame(gameLoop);
     drawBubbles();
     drawPetBullets();
     drawPet2Bullets();
-    if (!reduceHeavyEffects || (perfFrameTick % 2 === 0)) drawPetSkillEffects();
+    drawPetSkillEffects();
     drawEnemyBullets();
     drawPet();
     drawPet2();
     drawPlayer();
     drawPlayerHpBar();
-    if (!reduceHeavyEffects || (perfFrameTick % 2 === 0)) drawParticles();
-    if (!reduceHeavyEffects || (perfFrameTick % 2 === 0)) drawDamageTexts();
+    drawParticles();
+    drawDamageTexts();
 
     ctx.restore();
 
+    drawCanvasHud();
     drawGainMessages();
 
     // UI/오버레이(고정)
