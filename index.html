@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.150.5)</title>
+<title>Slime Shooter - Ultimate Evolution (v.151)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1364,6 +1364,44 @@ body.tutorial-mode .quake-skill{
   line-height: 1.55;
   color:#d9ebff !important;
 }
+
+#stageClearBestRow .stage-clear-value{
+  color:#aee6ff;
+  font-weight:900;
+}
+#stageClearPetBonusRow{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(159,139,255,0.14), rgba(68,255,184,0.06));
+  border: 1px solid rgba(159,139,255,0.22);
+  color:#e9e4ff;
+  font-size: 12px;
+  line-height: 1.55;
+}
+#stageClearPetBonusTitle{
+  font-weight: 900;
+  color:#d9d2ff;
+  margin-bottom: 4px;
+}
+#stageClearPetBonusText{
+  color:#eef4ff;
+}
+.profile-pet-bonus-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:6px;
+  margin-top:8px;
+}
+.profile-pet-bonus-chip{
+  padding:7px 8px;
+  border-radius:10px;
+  background:rgba(159,139,255,0.10);
+  border:1px solid rgba(159,139,255,0.18);
+  font-size:12px;
+  font-weight:900;
+  color:#eef4ff;
+}
 #stageClearButtonGroup{
   display:flex;
   flex-direction:column;
@@ -1577,11 +1615,11 @@ body.tutorial-mode .quake-skill{
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 320px; line-height: 1.65; color:#eef4ff;">
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.150.5 업데이트]</div>
-            <div>이번 업데이트부터 미션 모드가 삭제되었습니다.</div>
-            <div>모드 선택 화면에서 미션 모드 버튼과 안내 문구를 제거했습니다.</div>
-            <div>스테이지 모드 보스 경험치와 클리어 집계가 정상 반영됩니다.</div>
-            <div>퀘스트 보상 경험치는 펫, 체력 패널티와 관계 없이 적힌 수치 그대로 지급됩니다.</div>
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.151 업데이트]</div>
+            <div>미션 모드 삭제 이후, 핵심 플레이 모드 중심으로 구성을 정리했습니다.</div>
+            <div>스테이지 클리어 화면에 최고 기록과 펫 보너스 요약 표시를 추가했습니다.</div>
+            <div>프로필의 장착 펫 효과 표시를 더 보기 좋게 개선했습니다.</div>
+            <div>무한 모드에서 등장하는 골드와 보석 아이템 크기를 살짝 키웠습니다.</div>
         </div>
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
@@ -1823,6 +1861,10 @@ body.tutorial-mode .quake-skill{
             <span class="stage-clear-label">잡은 몬스터</span>
             <span id="stageClearKillsText" class="stage-clear-value">0마리</span>
           </div>
+          <div id="stageClearBestRow" class="stage-clear-row">
+            <span class="stage-clear-label">최고 기록</span>
+            <span id="stageClearBestText" class="stage-clear-value">첫 기록</span>
+          </div>
           <div id="stageClearGoldRow" class="stage-clear-row" style="display:none;">
             <span class="stage-clear-label">획득 골드</span>
             <span id="stageClearGoldText" class="stage-clear-value" style="color:#ffd86b; font-weight:900;">0골드</span>
@@ -1831,6 +1873,10 @@ body.tutorial-mode .quake-skill{
             <div id="stageClearExpLabel">획득 경험치</div>
             <span id="stageClearExpText">+0</span>
             <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 구슬 0 · 클리어 보너스 +0</div>
+            <div id="stageClearPetBonusRow">
+              <div id="stageClearPetBonusTitle">장착 펫 보너스</div>
+              <div id="stageClearPetBonusText">EXP +0% · 골드 +0% · 점수 +0% · 공격력 +0%</div>
+            </div>
           </div>
         </div>
         <div id="stageClearButtonGroup">
@@ -7333,8 +7379,13 @@ function openProfile(isRefresh = false) {
           왼쪽: <span style="color:${leftPet ? (PET_STAR_COLORS[leftPet.star] || '#fff') : '#aaa'};">${leftPet ? `${getPetDef(leftPet.type).icon} ${getPetDisplayName(leftPet)}` : '없음'}</span><br>
           오른쪽: <span style="color:${rightPet ? (PET_STAR_COLORS[rightPet.star] || '#fff') : '#aaa'};">${rightPet ? `${getPetDef(rightPet.type).icon} ${getPetDisplayName(rightPet)}` : '없음'}</span>
         </div>
-        <div style="margin-top:6px; font-size:12px; color:#cfd6ff; line-height:1.55;">
-          EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}
+        <div class="profile-pet-bonus-grid">
+          <div class="profile-pet-bonus-chip">EXP +${Math.round((petBonus.exp || 0) * 100)}%</div>
+          <div class="profile-pet-bonus-chip">골드 +${Math.round((petBonus.gold || 0) * 100)}%</div>
+          <div class="profile-pet-bonus-chip">점수 +${Math.round((petBonus.score || 0) * 100)}%</div>
+          <div class="profile-pet-bonus-chip">공격력 +${Math.round((petBonus.attack || 0) * 100)}%</div>
+          <div class="profile-pet-bonus-chip">HP +${formatNumber(petBonus.hp || 0)}</div>
+          <div class="profile-pet-bonus-chip">거리 +${Math.round((petBonus.distance || 0) * 100)}%</div>
         </div>
       </div>
 
@@ -10540,7 +10591,7 @@ function spawnGoldDrop(x, y, amount) {
   goldDrops.push({
     x, y,
     type: dropType,
-    r: (dropType === 'gold') ? 11 : 12,
+    r: (dropType === 'gold') ? 14 : 15, // ✅ [v.151] 무한 모드 골드/보석 드랍 크기 확대
     vx: (Math.random() - 0.5) * 1.8,
     vy: -(2.8 + Math.random() * 1.0),
     gravity: 0.17 + Math.random() * 0.03,
@@ -10654,12 +10705,12 @@ function drawGoldDrops() {
       ctx.globalAlpha = 1;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = fontStr(10, 'bold');
-      ctx.lineWidth = 1.6;
+      ctx.font = fontStr(12, 'bold');
+      ctx.lineWidth = 1.8;
       ctx.strokeStyle = 'rgba(0,0,0,0.72)';
       ctx.fillStyle = '#ffffff';
-      ctx.strokeText(String(it.amount), it.x, it.y + it.r + 10);
-      ctx.fillText(String(it.amount), it.x, it.y + it.r + 10);
+      ctx.strokeText(String(it.amount), it.x, it.y + it.r + 12);
+      ctx.fillText(String(it.amount), it.x, it.y + it.r + 12);
     }
 
     ctx.restore();
@@ -13907,6 +13958,10 @@ function finalizeStageClearStats() {
   const stageClearKillsEl = document.getElementById('stageClearKillsText');
   const stageClearGoldEl = document.getElementById('stageClearGoldText');
   const stageClearGoldRowEl = document.getElementById('stageClearGoldRow');
+  const stageClearBestEl = document.getElementById('stageClearBestText');
+  const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
+  const prevStageRecord = (saveData.stageRanks || {})[String(stage)] || null;
+  const petBonus = (typeof getPetBonusTotals === 'function') ? getPetBonusTotals() : { exp:0, gold:0, score:0, attack:0, hp:0 };
 
   if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${timeSec}초`;
@@ -13914,6 +13969,17 @@ function finalizeStageClearStats() {
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = goldGained > 0 ? 'flex' : 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(goldGained)}골드`;
+  if (stageClearBestEl) {
+    if (prevStageRecord) {
+      const prevTime = Math.max(0, Math.floor((prevStageRecord.timeMs || 0) / 1000));
+      stageClearBestEl.textContent = `RANK ${String(prevStageRecord.rank || '-').toUpperCase()} · ${prevTime}초`;
+    } else {
+      stageClearBestEl.textContent = '첫 기록';
+    }
+  }
+  if (stageClearPetBonusEl) {
+    stageClearPetBonusEl.textContent = `EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}`;
+  }
   applyStageClearRank(rank);
   animateStageClearExp(expGained + grantedBonusExp);
   // 저장(스테이지별 최고 랭크/최단 시간)
@@ -14082,6 +14148,10 @@ function finalizeMissionClearStats() {
   const stageClearKillsEl = document.getElementById('stageClearKillsText');
   const stageClearGoldEl = document.getElementById('stageClearGoldText');
   const stageClearGoldRowEl = document.getElementById('stageClearGoldRow');
+  const stageClearBestEl = document.getElementById('stageClearBestText');
+  const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
+  const prevStageRecord = (saveData.stageRanks || {})[String(stage)] || null;
+  const petBonus = (typeof getPetBonusTotals === 'function') ? getPetBonusTotals() : { exp:0, gold:0, score:0, attack:0, hp:0 };
 
   if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${formatNumber(displayTimeSec)}초`;
@@ -14096,7 +14166,11 @@ function finalizeMissionClearStats() {
   if (stageClearKillsEl) stageClearKillsEl.textContent = bonusStage ? '보너스 수집' : `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(stageRunGoldEarned || 0)}골드`;
-  if (stageClearTimeEl) stageClearTimeEl.textContent = '';
+  if (stageClearBestEl) stageClearBestEl.textContent = '미션 기록 없음';
+  if (stageClearPetBonusEl) {
+    stageClearPetBonusEl.textContent = `EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}`;
+  }
+  if (typeof stageClearTimeEl !== 'undefined' && stageClearTimeEl) stageClearTimeEl.textContent = '';
   if (stageClearRankEl) stageClearRankEl.textContent = bonusStage ? 'BONUS' : (isMissionBossStage(stage) ? 'BOSS' : 'CLEAR');
 
   try {
