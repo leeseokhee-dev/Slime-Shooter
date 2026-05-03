@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.150)</title>
+<title>Slime Shooter - Ultimate Evolution (v.150.5)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -134,15 +134,13 @@ padding: 8px 0;
     line-height: 1.05;
     flex: 0 1 auto;
 }
-#settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fontSelect{
     max-width: 148px;
     padding: 5px 8px;
 }
 @media (max-width: 520px){
   #settingsBar .ui-btn{ font-size: 11px; padding: 5px 8px; }
-  #settingsBar #fontSelect,
-  #settingsBar #fpsSelect{ max-width: 124px; }
+  #settingsBar #fontSelect{ max-width: 124px; }
 }
 /* 상단 EXP 행 */
     #expRow {
@@ -528,8 +526,8 @@ body.dead-mode #consumableQuickBar{
     }
     .ui-btn:active { background: #112233; transform: translateY(1px); }
 
-    /* 설정 셀렉트는 글자 안 잘리게 */
-    #fontSelect, #fpsSelect { max-width: 170px; }
+    /* 서체 셀렉트는 글자 안 잘리게 */
+    #fontSelect { max-width: 170px; }
 
     .big-btn {
         font-size: 18px;
@@ -679,8 +677,7 @@ body.tutorial-mode #pauseBtn{
 #gameContainer.compact-ui #settingsBar{
   gap: 3px;
 }
-#gameContainer.compact-ui #settingsBar #fontSelect,
-#gameContainer.compact-ui #settingsBar #fpsSelect{
+#gameContainer.compact-ui #settingsBar #fontSelect{
   max-width: 118px;
 }
 #gameContainer.compact-ui #expLabel{
@@ -718,8 +715,7 @@ body.tutorial-mode #pauseBtn{
 #gameContainer.ultra-compact-ui #settingsBar{
   gap: 2px;
 }
-#gameContainer.ultra-compact-ui #settingsBar #fontSelect,
-#gameContainer.ultra-compact-ui #settingsBar #fpsSelect{
+#gameContainer.ultra-compact-ui #settingsBar #fontSelect{
   max-width: 108px;
 }
 #gameContainer.ultra-compact-ui .ui-btn{
@@ -1422,13 +1418,6 @@ body.tutorial-mode .quake-skill{
         <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
         <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
-        <select id="fpsSelect" class="ui-btn">
-            <option value="60">FPS 60</option>
-            <option value="30">FPS 30</option>
-            <option value="20">FPS 20</option>
-            <option value="15">FPS 15</option>
-            <option value="10">FPS 10</option>
-        </select>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
             <option value="system">기기 기본</option>
@@ -1588,8 +1577,9 @@ body.tutorial-mode .quake-skill{
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 320px; line-height: 1.65; color:#eef4ff;">
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.150.4 업데이트]</div>
-            <div>공지사항 기능이 다시 추가되었습니다.</div>
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.150.5 업데이트]</div>
+            <div>이번 업데이트부터 미션 모드가 삭제되었습니다.</div>
+            <div>모드 선택 화면에서 미션 모드 버튼과 안내 문구를 제거했습니다.</div>
             <div>스테이지 모드 보스 경험치와 클리어 집계가 정상 반영됩니다.</div>
             <div>퀘스트 보상 경험치는 펫, 체력 패널티와 관계 없이 적힌 수치 그대로 지급됩니다.</div>
         </div>
@@ -1751,10 +1741,6 @@ body.tutorial-mode .quake-skill{
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
         </button>
-        <button id="modeMissionBtn" class="ui-btn big-btn" style="width:100%; border-color:#ff8fd6; color:#ffe6f7; background:linear-gradient(to bottom, #5a1f46, #220914);">
-            🧭 미션 모드 (LV.11+)
-        </button>
-                
         <button id="modeItemParkBtn" class="ui-btn big-btn" style="width:100%; border-color:#7ce7ff; color:#e8fbff; background:linear-gradient(to bottom, #0f3e52, #071824);">
             🫧 아이템 파크 (1분 · 하루 10회)
         </button>
@@ -1767,7 +1753,6 @@ body.tutorial-mode .quake-skill{
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
-            미션 모드: 점수·처치 목표 달성형 진행<br>
             아이템 파크: 하늘에서 아이템 수집<br>
             미니게임: 줍기형 2종 + 터치형 3종
         </div>
@@ -2095,7 +2080,6 @@ document.addEventListener('visibilitychange', () => {
 const bgmBtn = document.getElementById('bgmBtn');
 const sfxBtn = document.getElementById('sfxBtn');
 const lowPowerBtn = document.getElementById('lowPowerBtn');
-const fpsSelect = document.getElementById('fpsSelect');
 const homingBtn = document.getElementById('homingBtn');
 const laserSkillBtn = document.getElementById('laserSkillBtn');
 const bubbleSkillBtn = document.getElementById('bubbleSkillBtn');
@@ -2296,7 +2280,6 @@ const closeDungeonBtn = document.getElementById('closeDungeonBtn');
 const modeModal = document.getElementById('modeModal');
 const modeStageBtn = document.getElementById('modeStageBtn');
 const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
-const modeMissionBtn = document.getElementById('modeMissionBtn');
 const modeDungeonBtn = document.getElementById('modeDungeonBtn');
 const modeItemParkBtn = document.getElementById('modeItemParkBtn');
 const modeMiniGameBtn = document.getElementById('modeMiniGameBtn');
@@ -3317,7 +3300,7 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'mission' | 'infinite' | 'itempark' | 'minigame' | 'dungeon'
+let gameMode = 'stage';      // 'stage' | 'infinite' | 'itempark' | 'minigame' | 'dungeon'
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
 
@@ -3658,7 +3641,6 @@ const keys = {};
 let lastRenderTs = 0;
 const FPS_NORMAL = 60;
 const FPS_LOW = 30;
-const ALLOWED_FPS_OPTIONS = [60, 30, 20, 15, 10];
 
 // 저장 데이터
 let saveData = {
@@ -3675,7 +3657,6 @@ bestInfiniteDistance: 0, // ✅ 무한 모드 최고 거리
 titleSystem: { equipped: 'title_slime' }, // ✅ 칭호 시스템
 bgmEnabled: true,
 sfxEnabled: true,
-fps: 60,
 lowPower: false,
 homingEnabled: true,
 fontKey: 'system',
@@ -5320,9 +5301,7 @@ if (typeof saveData.quests.pet.claimed !== 'number') saveData.quests.pet.claimed
 if (typeof saveData.petStage !== 'number') saveData.petStage = 0;
 ensurePetSystemState();
 ensurePetDexState();
-if (!ALLOWED_FPS_OPTIONS.includes(Number(saveData.fps))) saveData.fps = (saveData.lowPower ? 30 : 60);
-saveData.fps = Number(saveData.fps) || 60;
-saveData.lowPower = (saveData.fps < 60);
+if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
@@ -5815,10 +5794,9 @@ function updateSettingsUI() {
     sfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
   }
   if (lowPowerBtn) {
-    lowPowerBtn.textContent = saveData.lowPower ? "배터리 절약 ON" : "배터리 절약 OFF";
+    lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
     lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
-  if (fpsSelect) fpsSelect.value = String(ALLOWED_FPS_OPTIONS.includes(Number(saveData.fps)) ? Number(saveData.fps) : 60);
   if (homingBtn) {
     if (level < 61) {
       homingBtn.textContent = "유도탄 LV.61";
@@ -5944,7 +5922,7 @@ function getCanvasSettingsLayout() {
   const items = [
     { key:'bgm',   label: () => `BGM: ${bgmEnabled ? 'ON' : 'OFF'}`, action: toggleBgmFromCanvas },
     { key:'sfx',   label: () => `SFX: ${sfxEnabled ? 'ON' : 'OFF'}`, action: toggleSfxFromCanvas },
-    { key:'lp',    label: () => `배터리 절약: ${saveData.lowPower ? 'ON' : 'OFF'} (${saveData.fps || 60} FPS)`, action: toggleLowPowerFromCanvas },
+    { key:'lp',    label: () => `저사양: ${saveData.lowPower ? 'ON' : 'OFF'}`, action: toggleLowPowerFromCanvas },
     { key:'hm',    label: () => (level < 61 ? `유도탄: LV.61 필요` : `유도탄: ${(saveData.homingEnabled !== false) ? 'ON' : 'OFF'}`), action: toggleHomingSetting },
     { key:'font',  label: () => `서체: ${FONT_LABELS[saveData.fontKey || 'system'] || '기본'} (탭)`, action: cycleFont },
     { key:'nick',  label: () => `캐릭터 관리`, action: openCharacterModal },
@@ -6107,7 +6085,6 @@ function createCharacterData(name, options = {}) {
   data.fontKey = saveData.fontKey || 'system';
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
-  data.fps = ALLOWED_FPS_OPTIONS.includes(Number(saveData.fps)) ? Number(saveData.fps) : 60;
   data.lowPower = !!saveData.lowPower;
   data.homingEnabled = (saveData.homingEnabled !== false);
   return data;
@@ -6434,20 +6411,7 @@ saveGameData();
 });
 
 (lowPowerBtn && lowPowerBtn.addEventListener) && lowPowerBtn.addEventListener('click', () => {
-  const nextFps = saveData.lowPower ? 60 : 30;
-  saveData.fps = nextFps;
-  saveData.lowPower = (nextFps < 60);
-  updateSettingsUI();
-  saveGameData();
-  requestAnimationFrame(() => fitCanvasToViewport());
-});
-
-(fpsSelect && fpsSelect.addEventListener) && fpsSelect.addEventListener('change', () => {
-  const nextFps = Number(fpsSelect.value);
-  saveData.fps = ALLOWED_FPS_OPTIONS.includes(nextFps) ? nextFps : 60;
-  saveData.lowPower = (saveData.fps < 60);
-  lastRenderTs = 0;
-  lastTime = 0;
+  saveData.lowPower = !saveData.lowPower;
   updateSettingsUI();
   saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
@@ -8749,15 +8713,6 @@ if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
   startInfiniteMode();
 });
 
-if (modeMissionBtn) modeMissionBtn.addEventListener('click', () => {
-  if (level < 11) {
-    alert(`미션 모드는 LV.11부터 입장 가능합니다.\n(현재 LV.${level})`);
-    return;
-  }
-  gameMode = 'mission';
-  modeModal.classList.add('hidden');
-  startMissionMode();
-});
 
 function renderMiniGameSelect() {
   if (!miniGameSelectList) return;
@@ -16913,8 +16868,8 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  const selectedFps = ALLOWED_FPS_OPTIONS.includes(Number(saveData.fps)) ? Number(saveData.fps) : (saveData.lowPower ? FPS_LOW : FPS_NORMAL);
-  const frameInterval = 1000 / selectedFps;
+  const targetFps = saveData.lowPower ? FPS_LOW : FPS_NORMAL;
+  const frameInterval = 1000 / targetFps;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
     setPauseUI();
