@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.151)</title>
+<title>Slime Shooter - Ultimate Evolution (v.151.1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -525,6 +525,19 @@ body.dead-mode #consumableQuickBar{
         box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     .ui-btn:active { background: #112233; transform: translateY(1px); }
+
+/* ===== FPS 선택 버튼 ===== */
+.fps-btn{
+  min-width: 48px;
+  font-weight: 900;
+  border-color: rgba(124,231,255,0.34);
+}
+.fps-btn.active{
+  color:#001f18 !important;
+  background: linear-gradient(to bottom, #7cffd2, #24b980) !important;
+  border-color:#7cffd2 !important;
+  box-shadow:0 0 14px rgba(124,255,210,0.42);
+}
 
     /* 서체 셀렉트는 글자 안 잘리게 */
     #fontSelect { max-width: 170px; }
@@ -1456,6 +1469,10 @@ body.tutorial-mode .quake-skill{
         <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
         <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
+        <button class="ui-btn fps-btn" data-fps="15" type="button">15FPS</button>
+        <button class="ui-btn fps-btn" data-fps="20" type="button">20FPS</button>
+        <button class="ui-btn fps-btn" data-fps="30" type="button">30FPS</button>
+        <button class="ui-btn fps-btn active" data-fps="60" type="button">60FPS</button>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
             <option value="system">기기 기본</option>
@@ -1615,11 +1632,12 @@ body.tutorial-mode .quake-skill{
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 320px; line-height: 1.65; color:#eef4ff;">
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.151 업데이트]</div>
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.151.1 업데이트]</div>
             <div>미션 모드 삭제 이후, 핵심 플레이 모드 중심으로 구성을 정리했습니다.</div>
             <div>스테이지 클리어 화면에 최고 기록과 펫 보너스 요약 표시를 추가했습니다.</div>
             <div>프로필의 장착 펫 효과 표시를 더 보기 좋게 개선했습니다.</div>
             <div>무한 모드에서 등장하는 골드와 보석 아이템 크기를 살짝 키웠습니다.</div>
+            <div>원하는 프레임을 15 / 20 / 30 / 60FPS 버튼으로 직접 선택할 수 있습니다.</div>
         </div>
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
@@ -3685,8 +3703,8 @@ let dungeonState = {
 let lastTime = 0;
 const keys = {};
 let lastRenderTs = 0;
-const FPS_NORMAL = 60;
-const FPS_LOW = 30;
+const FPS_OPTIONS = [15, 20, 30, 60];
+const DEFAULT_TARGET_FPS = 60;
 
 // 저장 데이터
 let saveData = {
@@ -3704,6 +3722,7 @@ titleSystem: { equipped: 'title_slime' }, // ✅ 칭호 시스템
 bgmEnabled: true,
 sfxEnabled: true,
 lowPower: false,
+targetFps: DEFAULT_TARGET_FPS,
 homingEnabled: true,
 fontKey: 'system',
 maxUnlockedStage: 1,
@@ -5348,6 +5367,7 @@ if (typeof saveData.petStage !== 'number') saveData.petStage = 0;
 ensurePetSystemState();
 ensurePetDexState();
 if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
+if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFAULT_TARGET_FPS;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
@@ -5854,6 +5874,11 @@ function updateSettingsUI() {
     }
   }
   if (fontSelect) fontSelect.value = (saveData.fontKey || 'system');
+  document.querySelectorAll('.fps-btn').forEach(btn => {
+    const isActive = Number(btn.dataset.fps) === Number(saveData.targetFps || DEFAULT_TARGET_FPS);
+    btn.classList.toggle('active', isActive);
+    btn.style.color = isActive ? '#001f18' : '#fff';
+  });
 }
 
 
@@ -6132,6 +6157,7 @@ function createCharacterData(name, options = {}) {
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
+  data.targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
   data.homingEnabled = (saveData.homingEnabled !== false);
   return data;
 }
@@ -6461,6 +6487,18 @@ saveGameData();
   updateSettingsUI();
   saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
+});
+
+document.querySelectorAll('.fps-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const nextFps = Number(btn.dataset.fps);
+    if (!FPS_OPTIONS.includes(nextFps)) return;
+    saveData.targetFps = nextFps;
+    lastRenderTs = 0;
+    lastTime = 0;
+    updateSettingsUI();
+    saveGameData();
+  });
 });
 
 (homingBtn && homingBtn.addEventListener) && homingBtn.addEventListener('click', () => {
@@ -16942,7 +16980,7 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  const targetFps = saveData.lowPower ? FPS_LOW : FPS_NORMAL;
+  const targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
   const frameInterval = 1000 / targetFps;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
