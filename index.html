@@ -3,15 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.152.1)</title>
+<title>Slime Shooter - Ultimate Evolution (v.152.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
 <style>
 /* ===== 기본 레이아웃 / 배경 ===== */
-<script>
-const ELITE_EXP_MULTIPLIER = 2.5;
-</script>
 * {
 box-sizing: border-box;
 margin: 0;
@@ -1639,6 +1636,7 @@ body.tutorial-mode .quake-skill{
             <div>스테이지 모드의 몬스터 처치 경험치를 새 구간표로 조정했습니다.</div>
             <div>스테이지 모드의 보스 처치 경험치를 1~200스테이지 구간별 배율로 재조정했습니다.</div>
             <div>EXP 구슬도 점수 환산이 아니라 현재 스테이지의 몬스터 EXP 기준으로 변경했습니다.</div>
+            <div>101스테이지부터 등장하는 엘리트 몬스터는 처치 EXP와 EXP 구슬 기준 EXP가 2.5배로 적용됩니다.</div>
             <div>EXP 구슬의 하/중/상 등급 획득량 배율은 그대로 유지됩니다.</div>
             <div>핫타임 EXP 배수가 스테이지 모드의 몬스터 처치 EXP와 보스 처치 EXP에도 적용되도록 수정했습니다.</div>
             <div style="margin-top:6px; color:#bfe9ff;">이전 v.151.1의 FPS 선택, 무한 모드 드랍 크기 확대, 스테이지 결과 화면 개선 사항도 유지됩니다.</div>
@@ -5188,7 +5186,7 @@ function spawnExpItemFromEnemy(enemy) {
 
   // ✅ [v.152.1] EXP 구슬도 점수 환산이 아닌 현재 스테이지의 몬스터 EXP 기준으로 계산합니다.
   // 하/중/상 등급 배율은 EXP_ITEM_GRADES에서 그대로 유지됩니다.
-  const baseExp = getStageMonsterExpReward(stage);
+  const baseExp = getStageMonsterExpRewardForEnemy(stage, enemy);
   const gradeKey = rollExpGrade();
 
   spawnExpItem(enemy.x, enemy.y, baseExp, gradeKey, false);
@@ -10392,7 +10390,7 @@ function addScore(amount, source = 'monster', options = {}) {
 
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
   if (gameMode === 'stage' && source === 'monster') {
-    const baseExp = getStageMonsterExpReward(stage);
+    const baseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
     const hotMult = getHotMultiplier();
     const gainedExp = addExp(baseExp, { source: 'monster', baseAmount: baseExp, hotMultiplier: hotMult });
     if (gainedExp > 0) {
@@ -11875,7 +11873,7 @@ function handleEnemyKilledBySkill(e) {
     addExp(gained);
   } else {
     const killScoreInfo = getEnemyKillScore(e);
-    addScore(killScoreInfo.amount, 'monster');
+    addScore(killScoreInfo.amount, 'monster', { enemy: e });
     if (gameMode === 'infinite') {
       spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
     }
@@ -12788,6 +12786,19 @@ function getStageMonsterExpReward(stageValue) {
     if (s <= 160) return s * 54;
     if (s <= 180) return s * 63;
     return s * 71;
+}
+
+function getStageMonsterExpRewardForEnemy(stageValue, enemy) {
+    const baseExp = getStageMonsterExpReward(stageValue);
+    const s = Math.max(1, Math.floor(Number(stageValue) || 1));
+    const isElite = !!(enemy && enemy.isElite);
+
+    // ✅ 101스테이지부터 등장하는 엘리트 몬스터만 EXP 2.5배 적용
+    // 기존 일반 몬스터 EXP는 그대로 유지합니다.
+    if (s >= 101 && isElite) {
+        return Math.max(0, Math.floor(baseExp * 2.5));
+    }
+    return baseExp;
 }
 
 function getBossWarningDescription(stageValue, kind = 'slime') {
@@ -15252,7 +15263,7 @@ if (gameMode === 'dungeon') {
   addExp(gained);
 } else {
   const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster');
+  addScore(killScoreInfo.amount, 'monster', { enemy: e });
   if (gameMode === 'infinite') {
     spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
   }
@@ -15293,7 +15304,7 @@ bubbles.forEach(b => {
           addExp(gained);
         } else {
           const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster');
+  addScore(killScoreInfo.amount, 'monster', { enemy: e });
   if (gameMode === 'infinite') {
     spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
   }
@@ -15331,7 +15342,7 @@ petBullets.forEach(b => {
 
       if (e.hp <= 0) {
         const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster');
+  addScore(killScoreInfo.amount, 'monster', { enemy: e });
   if (gameMode === 'infinite') {
     spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
   }
@@ -15368,7 +15379,7 @@ pet2Bullets.forEach(b => {
 
       if (e.hp <= 0) {
         const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster');
+  addScore(killScoreInfo.amount, 'monster', { enemy: e });
   if (gameMode === 'infinite') {
     spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
   }
@@ -17939,10 +17950,3 @@ requestAnimationFrame(gameLoop);
 
 </body>
 </html>
-
-<!-- v.152.2 PATCH: Elite Monster EXP x2.5 -->
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[v.152.2] 정예 몬스터 경험치 2.5배 적용');
-});
-</script>
