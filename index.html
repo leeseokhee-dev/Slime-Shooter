@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.152.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.153)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1632,14 +1632,14 @@ body.tutorial-mode .quake-skill{
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 320px; line-height: 1.65; color:#eef4ff;">
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.152.1 업데이트]</div>
-            <div>스테이지 모드의 몬스터 처치 경험치를 새 구간표로 조정했습니다.</div>
-            <div>스테이지 모드의 보스 처치 경험치를 1~200스테이지 구간별 배율로 재조정했습니다.</div>
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.153 업데이트]</div>
+            <div>스테이지 모드의 몬스터 처치 경험치를 v.153 구간표로 재조정했습니다.</div>
+            <div>스테이지 모드의 보스 처치 경험치를 v.153 구간별 배율로 재조정했습니다.</div>
             <div>EXP 구슬도 점수 환산이 아니라 현재 스테이지의 몬스터 EXP 기준으로 변경했습니다.</div>
             <div>101스테이지부터 등장하는 엘리트 몬스터는 처치 EXP와 EXP 구슬 기준 EXP가 2.5배로 적용됩니다.</div>
             <div>EXP 구슬의 하/중/상 등급 획득량 배율은 그대로 유지됩니다.</div>
             <div>핫타임 EXP 배수가 스테이지 모드의 몬스터 처치 EXP와 보스 처치 EXP에도 적용되도록 수정했습니다.</div>
-            <div style="margin-top:6px; color:#bfe9ff;">이전 v.151.1의 FPS 선택, 무한 모드 드랍 크기 확대, 스테이지 결과 화면 개선 사항도 유지됩니다.</div>
+            <div style="margin-top:6px; color:#bfe9ff;">이전 FPS 선택, 무한 모드 드랍 크기 확대, 스테이지 결과 화면 개선 사항도 유지됩니다.</div>
         </div>
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
@@ -5184,7 +5184,7 @@ function spawnExpItemFromEnemy(enemy) {
   }
   if (Math.random() >= dropChance) return;
 
-  // ✅ [v.152.1] EXP 구슬도 점수 환산이 아닌 현재 스테이지의 몬스터 EXP 기준으로 계산합니다.
+  // ✅ [v.153] EXP 구슬도 점수 환산이 아닌 현재 스테이지의 몬스터 EXP 기준으로 계산합니다.
   // 하/중/상 등급 배율은 EXP_ITEM_GRADES에서 그대로 유지됩니다.
   const baseExp = getStageMonsterExpRewardForEnemy(stage, enemy);
   const gradeKey = rollExpGrade();
@@ -5199,7 +5199,7 @@ function spawnExpItemFromBoss(force = false) {
   const bossDropChance = isMissionExpObjectiveActive() ? Math.max(BOSS_EXP_ITEM_DROP_CHANCE, 1) : BOSS_EXP_ITEM_DROP_CHANCE;
   if (!force && Math.random() >= bossDropChance) return;
 
-  // ✅ [v.152.1] 보스가 떨어뜨리는 EXP 구슬도 몬스터 기준 EXP를 사용합니다.
+  // ✅ [v.153] 보스가 떨어뜨리는 EXP 구슬도 몬스터 기준 EXP를 사용합니다.
   // 실제 획득량은 하/중/상 등급 배율로 차등 적용됩니다.
   const baseExp = getStageMonsterExpReward(stage);
 
@@ -6627,7 +6627,7 @@ questModal.classList.remove('hidden');
 startQuestCountdown();
 }
 
-const NOTICE_VERSION_KEY = 'ss_notice_seen_v152';
+const NOTICE_VERSION_KEY = 'ss_notice_seen_v153';
 
 function openNoticeModal() {
   if (!noticeModal) return;
@@ -12750,16 +12750,19 @@ function getBossDisplayLevelByStage(stageValue) {
 
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
-    if (lv <= 10) return lv * 40;
-    if (lv <= 20) return lv * 63;
-    if (lv <= 30) return lv * 102;
-    if (lv <= 40) return lv * 151;
-    if (lv <= 50) return lv * 297;
-    if (lv <= 60) return lv * 330;
-    if (lv <= 70) return lv * 614;
-    if (lv <= 80) return lv * 666;
-    if (lv <= 90) return lv * 1103;
-    if (lv <= 100) return lv * 1237;
+    // ✅ [v.153] 보스 EXP: 스테이지 번호 × 구간별 1레벨당 EXP
+    if (lv <= 5) return lv * 10;
+    if (lv <= 15) return lv * 30;
+    if (lv <= 20) return lv * 91;
+    if (lv <= 25) return lv * 184;
+    if (lv <= 30) return lv * 241;
+    if (lv <= 40) return lv * 277;
+    if (lv <= 50) return lv * 605;
+    if (lv <= 60) return lv * 702;
+    if (lv <= 70) return lv * 1310;
+    if (lv <= 80) return lv * 1514;
+    if (lv <= 90) return lv * 3771;
+    if (lv <= 100) return lv * 4121;
     if (lv <= 110) return lv * 2719;
     if (lv <= 120) return lv * 2955;
     if (lv <= 130) return lv * 5129;
@@ -12774,18 +12777,19 @@ function getStageBossExpReward(stageValue) {
 
 function getStageMonsterExpReward(stageValue) {
     const s = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
+    // ✅ [v.153] 몬스터 EXP: 스테이지 번호 × 구간별 1마리당 EXP 계수
     if (s <= 5) return s * 1;
-    if (s <= 10) return s * 2;
-    if (s <= 15) return s * 3;
-    if (s <= 20) return s * 5;
-    if (s <= 25) return s * 7;
-    if (s <= 40) return s * 8;
-    if (s <= 100) return s * 10;
-    if (s <= 120) return s * 41;
-    if (s <= 140) return s * 47;
-    if (s <= 160) return s * 54;
-    if (s <= 180) return s * 63;
-    return s * 71;
+    if (s <= 15) return s * 2;
+    if (s <= 20) return s * 3;
+    if (s <= 40) return s * 5;
+    if (s <= 60) return s * 7;
+    if (s <= 80) return s * 9;
+    if (s <= 100) return s * 11;
+    if (s <= 120) return s * 34;
+    if (s <= 140) return s * 37;
+    if (s <= 160) return s * 40;
+    if (s <= 180) return s * 51;
+    return s * 69;
 }
 
 function getStageMonsterExpRewardForEnemy(stageValue, enemy) {
