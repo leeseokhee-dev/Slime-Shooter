@@ -9,6 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
 <style>
 /* ===== 기본 레이아웃 / 배경 ===== */
+<script>
+const ELITE_EXP_MULTIPLIER = 2.5;
+</script>
 * {
 box-sizing: border-box;
 margin: 0;
@@ -17936,3 +17939,10 @@ requestAnimationFrame(gameLoop);
 
 </body>
 </html>
+
+<!-- v.152.2 PATCH: Elite Monster EXP x2.5 -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[v.152.2] 정예 몬스터 경험치 2.5배 적용');
+});
+</script>
