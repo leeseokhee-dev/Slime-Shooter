@@ -10601,6 +10601,12 @@ function drawFieldItems() {
   }
 }
 
+const INFINITE_GEM_GOLD_VALUE = { ruby: 10, sapphire: 30, diamond: 50 };
+
+function getInfiniteGemGoldValue(type) {
+  return INFINITE_GEM_GOLD_VALUE[type] || 1;
+}
+
 function spawnGoldDrop(x, y, amount) {
   if (gameMode !== 'infinite' && !isMissionGoldDropObjectiveActive()) return;
   if (!amount || amount <= 0) return;
@@ -10642,7 +10648,7 @@ function spawnGoldDrop(x, y, amount) {
   goldDrops.push({
     x, y,
     type: dropType,
-    r: (dropType === 'gold') ? 14 : 15, // ✅ [v.151] 무한 모드 골드/보석 드랍 크기 확대
+    r: (dropType === 'gold') ? 14 : 17, // ✅ [v.153.1] 무한 모드 보석 드랍 크기 살짝 확대
     vx: (Math.random() - 0.5) * 1.8,
     vy: -(2.8 + Math.random() * 1.0),
     gravity: 0.17 + Math.random() * 0.03,
@@ -10655,6 +10661,7 @@ function spawnGoldDrop(x, y, amount) {
 // ✅ [v.153] 무한 모드 보스 전용 보상 드랍 연출
 // - 보스 처치 시 골드 50개가 코인 50개로 비 오듯 쏟아집니다.
 // - 보석은 10~20개가 별도 드랍됩니다.
+// - 보석 골드값: 루비 10골드 / 사파이어 30골드 / 다이아몬드 50골드
 // - 일반 몬스터 처치 보상은 기존 spawnGoldDrop 로직을 그대로 사용합니다.
 function spawnInfiniteBossTreasureRain(x, y) {
   if (gameMode !== 'infinite') return;
@@ -10670,7 +10677,7 @@ function spawnInfiniteBossTreasureRain(x, y) {
       x: baseX + arc + randRange(-18, 18),
       y: baseY + randRange(-36, 12),
       type,
-      r: isGem ? 15 : 14,
+      r: isGem ? 17 : 14,
       vx: randRange(-4.4, 4.4),
       vy: -randRange(4.2, 8.0),
       gravity: 0.16 + Math.random() * 0.045,
@@ -10687,7 +10694,8 @@ function spawnInfiniteBossTreasureRain(x, y) {
   const gemCount = 10 + Math.floor(Math.random() * 11); // 10~20개
   const gemTypes = ['ruby', 'sapphire', 'diamond'];
   for (let i = 0; i < gemCount; i++) {
-    pushTreasureDrop(gemTypes[(Math.random() * gemTypes.length) | 0], 1, i, gemCount);
+    const gemType = gemTypes[(Math.random() * gemTypes.length) | 0];
+    pushTreasureDrop(gemType, getInfiniteGemGoldValue(gemType), i, gemCount);
   }
 
   spawnDamageText(baseX, baseY - 70, `골드 +50 / 보석 +${gemCount}`, '#ffe16b', true);
