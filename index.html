@@ -1191,13 +1191,6 @@ body.tutorial-mode .quake-skill{
   50%{ transform: scale(1.02); filter: brightness(1.08); }
 }
 
-
-// ===== [v.154.2] 스테이지 모드 몬스터 생성 설정 =====
-const STAGE_MONSTER_SPAWN_INTERVAL = 200; // 0.2초
-const STAGE_MONSTER_MAX_ON_SCREEN = 15;
-const INFINITE_MONSTER_SCALE = 1.12; // 무한 모드 몬스터 크기 12% 증가
-
-
 /* ===== UI 리디자인 (컬러 업그레이드) ===== */
 :root{
   --main-accent:#44ffb8;
@@ -3821,6 +3814,7 @@ let bossSpawned = false;
 let stageCleared = false;
 let stageTransitionTimer = 0;
 let infiniteWaveSpawnAcc = 0; // 무한 모드 전용: 1.5초마다 새 줄 강제 생성
+let stageWaveSpawnAcc = 0; // ✅ [v.154.2] 스테이지 모드: 0.2초마다 1마리씩 생성
 
 // ✅ [v.79] 스테이지 클리어 연출: 3초(보너스 EXP + 랭크) → 결과 모달
 let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D', formulaText: '', formulaText2: '' };
@@ -12739,7 +12733,12 @@ enemies = enemies.filter(e => e.hp > 0);
 
 function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
     const cfg = ENEMY_CONFIG[type] || { score: 50, baseHp: 40 };
-    const size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale();
+    // ✅ [v.154.2] 무한 모드는 몬스터 크기를 살짝 키우되, 캔버스 좌우 밖으로 나가지 않게 보정
+    let size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale();
+    if (gameMode === 'infinite') {
+        size = Math.min(size * 1.12, Math.min(width, height) * 0.075);
+        x = clamp(x, size, width - size);
+    }
     
     // [업데이트] HP 계산 로직 분기 (101 스테이지부터 급상승)
     let hp;
@@ -12950,6 +12949,7 @@ function startStage() {
 waveIndex = 0; bossSpawned = false; stageCleared = false;
 stageTransitionTimer = 0; lastBossBonus = 0;
 infiniteWaveSpawnAcc = 0;
+stageWaveSpawnAcc = 0;
 enemies.length = 0; enemyBullets.length = 0; boss = null;
 lasers = [];
 
@@ -13069,11 +13069,14 @@ if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
     // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
     if (gameMode === 'mission') enemyCount = 1;
 
-    // ✅ [v.117 패치] 1웨이브 최대 5마리 제한
+    // ✅ [v.154.2] 스테이지 모드: 한 번에 5마리 → 0.2초 간격으로 1마리씩 생성
+    if (gameMode === 'stage') enemyCount = 1;
+
+    // ✅ [v.117 패치] 1웨이브 최대 5마리 제한(무한/기타 모드 유지)
     enemyCount = Math.min(enemyCount, 5);
 
-    // ✅ [v.101 패치] 화면 내 몬스터 과밀 방지(렉/폭우 방지)
-    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage' || gameMode === 'mission') ? 55 : 70;
+    // ✅ [v.101/v.154.2] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 15마리)
+    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 15 : ((gameMode === 'mission') ? 55 : 70);
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
@@ -14696,7 +14699,14 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
         }
       }
     } else {
-      if (enemies.length === 0 && !bossSpawned) spawnNextWave();
+      // ✅ [v.154.2] 스테이지 모드: 0.2초마다 1마리씩 생성, 화면 최대 15마리 유지
+      if (!bossSpawned && !stageCleared) {
+        stageWaveSpawnAcc += dt;
+        while (stageWaveSpawnAcc >= 200 && enemies.length < 15) {
+          stageWaveSpawnAcc -= 200;
+          spawnNextWave();
+        }
+      }
     }
     // ✅ [v.79] 스테이지 모드는 보스가 나오지 않도록(목표 처치 수 기반 클리어)
     if (gameMode !== 'stage') spawnBossIfReady();
