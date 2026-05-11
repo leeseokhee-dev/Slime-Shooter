@@ -473,6 +473,46 @@ padding: 8px 0;
 .bubble-skill:active{ transform: translateY(1px) scale(0.985); }
 .bubble-skill[disabled]{ opacity: 0.55; filter: grayscale(0.25); }
 
+
+
+/* ===== [v.156] 추가 범위형 스킬 버튼: 독안개 / 블랙홀 / 플라즈마 ===== */
+.toxic-skill, .blackhole-skill, .plasma-skill{
+  position:absolute;
+  left: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  z-index: 60;
+  box-shadow:0 10px 26px rgba(0,0,0,0.55);
+  touch-action:manipulation;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  overflow:hidden;
+}
+.toxic-skill{ bottom: calc(250px + env(safe-area-inset-bottom)); border:2px solid rgba(120,255,150,0.95); color:#d6ffd9; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(0,0,0,0.55)), linear-gradient(to bottom, #124d22, #061b0c); }
+.blackhole-skill{ bottom: calc(305px + env(safe-area-inset-bottom)); border:2px solid rgba(190,150,255,0.95); color:#eee2ff; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), rgba(0,0,0,0.62)), linear-gradient(to bottom, #24124d, #080414); }
+.plasma-skill{ bottom: calc(360px + env(safe-area-inset-bottom)); border:2px solid rgba(255,120,230,0.95); color:#ffd8fb; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(0,0,0,0.55)), linear-gradient(to bottom, #4d1247, #1b0618); }
+.toxic-skill:active, .blackhole-skill:active, .plasma-skill:active{ transform: translateY(1px) scale(0.985); }
+.toxic-skill[disabled], .blackhole-skill[disabled], .plasma-skill[disabled]{ opacity:0.55; filter:grayscale(0.25); }
+.toxic-skill .skill-icon, .blackhole-skill .skill-icon, .plasma-skill .skill-icon{ font-size:20px; transform:translateY(-2px); pointer-events:none; }
+.toxic-skill .skill-cd, .blackhole-skill .skill-cd, .plasma-skill .skill-cd{ position:absolute; bottom:8px; font-size:10px; font-weight:900; text-shadow:0 2px 6px rgba(0,0,0,0.85); pointer-events:none; }
+.toxic-skill .skill-cd.ready, .blackhole-skill .skill-cd.ready, .plasma-skill .skill-cd.ready{ display:none; }
+.toxic-skill.cooling::after, .blackhole-skill.cooling::after, .plasma-skill.cooling::after{
+  content:''; position:absolute; inset:3px; border-radius:999px;
+  background: conic-gradient(from -90deg, rgba(255,255,255,0.75) calc(var(--cdp,0) * 1turn), rgba(0,0,0,0) 0);
+  opacity:0.55; pointer-events:none;
+}
+body.title-mode .toxic-skill, body.title-mode .blackhole-skill, body.title-mode .plasma-skill,
+body.tutorial-mode .toxic-skill, body.tutorial-mode .blackhole-skill, body.tutorial-mode .plasma-skill,
+body.dead-mode .toxic-skill, body.dead-mode .blackhole-skill, body.dead-mode .plasma-skill{ display:none !important; }
+#gameContainer.compact-ui .toxic-skill, #gameContainer.compact-ui .blackhole-skill, #gameContainer.compact-ui .plasma-skill{ width:44px; height:44px; }
+#gameContainer.ultra-compact-ui .toxic-skill, #gameContainer.ultra-compact-ui .blackhole-skill, #gameContainer.ultra-compact-ui .plasma-skill{ width:40px; height:40px; }
+
 /* ===== 모바일 소모품 퀵바 ===== */
 #consumableQuickBar{
   position:absolute;
@@ -1588,6 +1628,10 @@ body.tutorial-mode .quake-skill{
 <!-- ✅ [v.78] 번개 / 지진 스킬 버튼 -->
 <button id="lightningSkillBtn" class="ui-btn lightning-skill hidden">⚡</button>
 <button id="quakeSkillBtn" class="ui-btn quake-skill hidden">🌎</button>
+<!-- ✅ [v.156] 멀티킬 특화 범위형 스킬 -->
+<button id="toxicSkillBtn" class="ui-btn toxic-skill hidden">☣️</button>
+<button id="blackholeSkillBtn" class="ui-btn blackhole-skill hidden">🕳️</button>
+<button id="plasmaSkillBtn" class="ui-btn plasma-skill hidden">💥</button>
 
 <!-- 모바일 소모품 퀵바 -->
 <div id="consumableQuickBar">
@@ -1639,6 +1683,7 @@ body.tutorial-mode .quake-skill{
             <div>101스테이지부터 등장하는 엘리트 몬스터는 처치 EXP와 EXP 구슬 기준 EXP가 2.5배로 적용됩니다.</div>
             <div>EXP 구슬의 하/중/상 등급 획득량 배율은 그대로 유지됩니다.</div>
             <div>핫타임 EXP 배수가 스테이지 모드의 몬스터 처치 EXP와 보스 처치 EXP에도 적용되도록 수정했습니다.</div>
+            <div>신규 기능: 몬스터 3마리 이상을 동시에 처치하면 멀티킬이 발동되고 처치 EXP 합계 기준 추가 경험치가 지급됩니다.</div>
             <div style="margin-top:6px; color:#bfe9ff;">이전 FPS 선택, 무한 모드 드랍 크기 확대, 스테이지 결과 화면 개선 사항도 유지됩니다.</div>
         </div>
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
@@ -2153,6 +2198,9 @@ const blizzardSkillBtn = document.getElementById('blizzardSkillBtn');
 const meteorSkillBtn = document.getElementById('meteorSkillBtn');
 const lightningSkillBtn = document.getElementById('lightningSkillBtn');
 const quakeSkillBtn = document.getElementById('quakeSkillBtn');
+const toxicSkillBtn = document.getElementById('toxicSkillBtn');
+const blackholeSkillBtn = document.getElementById('blackholeSkillBtn');
+const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
@@ -3799,8 +3847,9 @@ purchases: {}
 },
 
 // 누적 카운트(리셋 시 함께 초기화)
-dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 },
-weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 }
+dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+multikill: { total: 0, best: 0, bonusExp: 0, achievements: {} }
 };
 const BASE_SAVE_DATA = deepClone(saveData);
 
@@ -5431,8 +5480,8 @@ for (const _k of _skillQuestKeys) {
 if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
 if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
 
-if (!saveData.dailyStats) saveData.dailyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
-if (!saveData.weeklyStats) saveData.weeklyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
+if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
 // 누락/타입 보정
 function _fixStatsObj(o) {
@@ -6638,6 +6687,33 @@ if (quakeSkillBtn) {
 }
 
 
+// ✅ [v.156] 추가 범위형 스킬 버튼
+if (toxicSkillBtn) {
+  let lastTap = 0;
+  const fire = (e) => { try { e.preventDefault(); e.stopPropagation(); } catch(_) {} const now = Date.now(); if (now - lastTap < 120) return; lastTap = now; handleInputStart(); tryCastToxicSkill(); };
+  toxicSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  toxicSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  toxicSkillBtn.addEventListener('mousedown', fire);
+  toxicSkillBtn.addEventListener('click', fire);
+}
+if (blackholeSkillBtn) {
+  let lastTap = 0;
+  const fire = (e) => { try { e.preventDefault(); e.stopPropagation(); } catch(_) {} const now = Date.now(); if (now - lastTap < 120) return; lastTap = now; handleInputStart(); tryCastBlackholeSkill(); };
+  blackholeSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  blackholeSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  blackholeSkillBtn.addEventListener('mousedown', fire);
+  blackholeSkillBtn.addEventListener('click', fire);
+}
+if (plasmaSkillBtn) {
+  let lastTap = 0;
+  const fire = (e) => { try { e.preventDefault(); e.stopPropagation(); } catch(_) {} const now = Date.now(); if (now - lastTap < 120) return; lastTap = now; handleInputStart(); tryCastPlasmaSkill(); };
+  plasmaSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  plasmaSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  plasmaSkillBtn.addEventListener('mousedown', fire);
+  plasmaSkillBtn.addEventListener('click', fire);
+}
+
+
 
 fontSelect && fontSelect.addEventListener('change', () => {
   applyFont(fontSelect.value);
@@ -6855,7 +6931,7 @@ function getGroupedTitlesForProfile() {
   })).filter(g => g.items.length > 0);
 }
 
-function registerEnemyKill(isBoss = false) {
+function registerEnemyKill(isBoss = false, opts = {}) {
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
@@ -6869,6 +6945,7 @@ function registerEnemyKill(isBoss = false) {
   }
 
   addQuestStat('kills', 1);
+  registerMultiKillKill(!!(opts && opts.skill));
 
   if (isBoss) {
     saveData.quests.boss.count++;
@@ -8053,29 +8130,50 @@ function getQuestScale(lv, mode = 'daily') {
   return 1.0 + t * (maxMul - 1.0);
 }
 
+
+
+// ===============================
+// ✅ [v.156] 멀티킬 / 돌발 퀘스트 공통 상태 보정
+// ===============================
+function getDefaultQuestStatsObj() {
+  return { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 };
+}
+function ensureMultiKillPatchState() {
+  if (!saveData.multikill || typeof saveData.multikill !== 'object') saveData.multikill = { total:0, best:0, bonusExp:0, achievements:{} };
+  if (!saveData.multikill.achievements || typeof saveData.multikill.achievements !== 'object') saveData.multikill.achievements = {};
+  for (const k of ['total','best','bonusExp']) if (typeof saveData.multikill[k] !== 'number' || !isFinite(saveData.multikill[k])) saveData.multikill[k] = 0;
+  for (const packKey of ['dailyStats','weeklyStats']) {
+    if (!saveData[packKey] || typeof saveData[packKey] !== 'object') saveData[packKey] = getDefaultQuestStatsObj();
+    const def = getDefaultQuestStatsObj();
+    for (const [k,v] of Object.entries(def)) if (typeof saveData[packKey][k] !== 'number' || !isFinite(saveData[packKey][k])) saveData[packKey][k] = v;
+  }
+}
+
 function resetDailyQuestsIfNeeded() {
+  ensureMultiKillPatchState();
   const key = getDailyKey();
   if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
-  if (!saveData.dailyStats) saveData.dailyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+  if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
 
-  if (saveData.dailyQuest.key !== key || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 6) {
+  if (saveData.dailyQuest.key !== key || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
     saveData.dailyQuest.key = key;
     saveData.dailyQuest.claimed = {};
-    saveData.dailyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+    saveData.dailyStats = getDefaultQuestStatsObj();
     saveData.dailyQuest.quests = generateDailyQuests(level);
     saveGameData();
   }
 }
 
 function resetWeeklyQuestsIfNeeded() {
+  ensureMultiKillPatchState();
   const key = getISOWeekKey();
   if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
-  if (!saveData.weeklyStats) saveData.weeklyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+  if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
-  if (saveData.weeklyQuest.key !== key || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 8) {
+  if (saveData.weeklyQuest.key !== key || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
     saveData.weeklyQuest.key = key;
     saveData.weeklyQuest.claimed = {};
-    saveData.weeklyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+    saveData.weeklyStats = getDefaultQuestStatsObj();
     saveData.weeklyQuest.quests = generateWeeklyQuests(level);
     saveGameData();
   }
@@ -8106,7 +8204,9 @@ function generateDailyQuests(lv) {
     { id:'d_stage', type:'stageClears', title:'스테이지 클리어의 달인', target: Math.floor(30 * mul), reward: Math.floor(45000 * mul) },
     { id:'d_laser', type:'lasers', title:'레이저 발사의 달인', target: Math.floor(120 * mul), reward: Math.floor(18000 * mul) },
     { id:'d_gold', type:'goldSpent', title:'골드 사용하기', target: goldGoal, reward: goldReward },
-    { id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } }
+    { id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
+    { id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: Math.floor(35000 * mul) },
+    { id:'d_best_multi', type:'bestMultiKill', title:'7킬 이상 멀티킬 달성', target: 7, reward: Math.floor(50000 * mul) }
   ];
 }
 
@@ -8128,15 +8228,18 @@ function generateWeeklyQuests(lv) {
     { id:'w_laser', type:'lasers', title:'레이저 발사의 신', target: Math.floor(1000 * mul), reward: Math.floor(180000 * mul) },
     { id:'w_surv', type:'survivalSec', title:'생존의 신', target: Math.floor(10000 * mul), reward: Math.floor(115000 * mul) },
     { id:'w_gold', type:'goldSpent', title:'골드 사용의 신', target: goldGoal, reward: goldReward },
-    { id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } }
+    { id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
+    { id:'w_multikill', type:'multiKills', title:'멀티킬 100회 달성', target: Math.floor(100 * mul), reward: Math.floor(260000 * mul) },
+    { id:'w_skill_kills', type:'skillKills', title:'범위형 스킬 처치 5,000마리', target: Math.floor(5000 * mul), reward: Math.floor(320000 * mul) }
   ];
 }
 
 
 // 퀘스트 카운터 업데이트(일일/주간 동시)
 function addQuestStat(key, amount) {
-  if (!saveData.dailyStats) saveData.dailyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
-  if (!saveData.weeklyStats) saveData.weeklyStats = { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0 };
+  ensureMultiKillPatchState();
+  if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
+  if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
   // 숫자 누적
   if (typeof saveData.dailyStats[key] === 'number') saveData.dailyStats[key] += amount;
@@ -8163,6 +8266,7 @@ function getQuestProgress(q, statsObj) {
   if (!q || !statsObj) return 0;
   const t = q.type;
   if (t === 'bestRunScore') return Math.max(0, statsObj.bestRunScore || 0);
+  if (t === 'bestMultiKill') return Math.max(0, statsObj.bestMultiKill || 0);
   return Math.max(0, statsObj[t] || 0);
 }
 
@@ -8184,6 +8288,225 @@ function addGoldSpentStat(amount) {
   const v = Math.max(0, Math.floor(Number(amount) || 0));
   if (v <= 0) return;
   addQuestStat('goldSpent', v);
+}
+
+
+
+// ===============================
+// ✅ [v.156] 멀티킬 집계 / 보상 / 표시
+// ===============================
+let multiKillPending = { count:0, firstAt:0, lastAt:0, skillCount:0 };
+let multiKillPopups = [];
+function getMultiKillBonusRate(count) {
+  const c = Math.max(0, Math.floor(Number(count) || 0));
+  if (c >= 10) return 1.50;
+  if (c === 9) return 1.20;
+  if (c === 8) return 0.90;
+  if (c === 7) return 0.70;
+  if (c === 6) return 0.50;
+  if (c === 5) return 0.30;
+  if (c === 4) return 0.20;
+  if (c === 3) return 0.10;
+  return 0;
+}
+function estimateKillBaseExpForMultiKill() {
+  try {
+    if (gameMode === 'stage' || gameMode === 'mission') return Math.max(1, getStageMonsterExpReward(stage));
+    const need = Math.max(1, Number(EXP_TABLE?.[Math.max(1, Math.min(MAX_LEVEL - 1, level || 1))]?.needed || 100));
+    return Math.max(1, Math.floor(need * 0.00003));
+  } catch(_) { return Math.max(1, level * 3); }
+}
+function getMultiKillColor(count) {
+  if (count >= 20) return '#ff7cff';
+  if (count >= 15) return '#ff4d4d';
+  if (count >= 10) return '#ff9a3d';
+  if (count >= 7) return '#ffe066';
+  if (count >= 5) return '#7dff9b';
+  return '#73c7ff';
+}
+function registerMultiKillKill(isSkillKill = false) {
+  const now = performance.now();
+  if (!multiKillPending.count || now - multiKillPending.lastAt > 220) {
+    multiKillPending = { count:0, firstAt:now, lastAt:now, skillCount:0 };
+  }
+  multiKillPending.count += 1;
+  if (isSkillKill) multiKillPending.skillCount += 1;
+  multiKillPending.lastAt = now;
+  if (gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'kills') {
+    suddenQuest.current = Math.min(suddenQuest.target, (suddenQuest.current || 0) + 1);
+  }
+}
+function flushMultiKillIfReady(force = false) {
+  if (!multiKillPending || multiKillPending.count <= 0) return;
+  const now = performance.now();
+  if (!force && now - multiKillPending.lastAt < 240) return;
+  const count = Math.floor(multiKillPending.count || 0);
+  const skillCount = Math.floor(multiKillPending.skillCount || 0);
+  multiKillPending = { count:0, firstAt:0, lastAt:0, skillCount:0 };
+  if (count < 3) return;
+
+  ensureMultiKillPatchState();
+  const rate = getMultiKillBonusRate(count);
+  const base = estimateKillBaseExpForMultiKill() * count;
+  const bonus = Math.max(1, Math.floor(base * rate));
+  const gained = addExp(bonus, { baseAmount: bonus, hotMultiplier: 1, showGainMessage:false });
+  saveData.multikill.total += 1;
+  saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
+  saveData.multikill.bonusExp += Math.max(0, gained || bonus);
+  addQuestStat('multiKills', 1);
+  if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
+  if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
+  if (skillCount > 0) addQuestStat('skillKills', skillCount);
+
+  if (gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'multi') {
+    suddenQuest.current = Math.min(suddenQuest.target, (suddenQuest.current || 0) + 1);
+  }
+
+  const color = getMultiKillColor(count);
+  multiKillPopups.push({ count, bonus: gained || bonus, color, createdAt: performance.now(), life: 1150 });
+  if (multiKillPopups.length > 5) multiKillPopups.shift();
+  pushGainMessage(`멀티킬 ${count}킬 보너스 EXP +${formatNumber(gained || bonus)}`, color);
+}
+
+
+// ===============================
+// ✅ [v.156] 무한 모드 돌발 퀘스트
+// ===============================
+let suddenQuest = { active:false, timer:0, interval:90000, type:'', title:'', current:0, target:0, duration:0, rewardRate:0, rewardExp:0 };
+function getSuddenQuestRewardRate(lv) {
+  const n = Math.max(1, Math.floor(Number(lv) || 1));
+  const rnd = (a,b) => a + Math.random() * (b - a);
+  if (n <= 10) return rnd(0.60, 1.00);
+  if (n <= 30) return rnd(0.30, 0.60);
+  if (n <= 60) return rnd(0.15, 0.30);
+  if (n <= 100) return rnd(0.04, 0.10);
+  if (n <= 150) return rnd(0.01, 0.02);
+  if (n <= 180) return rnd(0.005, 0.009);
+  if (n <= 200) return rnd(0.002, 0.004);
+  if (n <= 210) return 0.0004;
+  if (n <= 220) return 0.00015;
+  if (n <= 230) return 0.00007;
+  if (n <= 240) return 0.00003;
+  return rnd(0.00001, 0.00002);
+}
+function getSuddenQuestRewardExp() {
+  const curLv = Math.max(1, Math.min(MAX_LEVEL - 1, level || 1));
+  const need = Math.max(1, Number(EXP_TABLE?.[curLv]?.needed || 1));
+  const rate = getSuddenQuestRewardRate(level);
+  return { rate, exp: Math.max(1, Math.floor(need * rate)) };
+}
+function startSuddenQuest() {
+  if (gameMode !== 'infinite' || state !== 'playing' || level < 11) return;
+  const lvMul = Math.max(1, Math.min(4.5, 1 + (level - 11) / 80));
+  const pool = [
+    { type:'kills', title:'30초 안에 N킬 하기', duration:30000, target: Math.floor(45 * lvMul) },
+    { type:'kills', title:'20초 안에 빠르게 처치하기', duration:20000, target: Math.floor(32 * lvMul) },
+    { type:'multi', title:'15초 안에 멀티킬 N번 하기', duration:15000, target: Math.max(2, Math.floor(3 + lvMul)) },
+    { type:'multi', title:'20초 안에 멀티킬 연속 성공', duration:20000, target: Math.max(3, Math.floor(4 + lvMul)) }
+  ];
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  const reward = getSuddenQuestRewardExp();
+  suddenQuest = { active:true, timer:q.duration, interval:90000, type:q.type, title:q.title.replace('N', formatNumber(q.target)), current:0, target:q.target, duration:q.duration, rewardRate:reward.rate, rewardExp:reward.exp };
+  showToast(`⚠ 돌발 퀘스트 발생!\n${suddenQuest.title}`, '#ffdf7a', 1400);
+}
+function completeSuddenQuest() {
+  if (!suddenQuest || !suddenQuest.active) return;
+  const gained = addExp(suddenQuest.rewardExp, { baseAmount:suddenQuest.rewardExp, hotMultiplier:1 });
+  addQuestStat('suddenQuestSuccess', 1);
+  pushGainMessage(`돌발 퀘스트 완료! +${formatNumber(gained || suddenQuest.rewardExp)} EXP`, '#ffdf7a');
+  showToast(`MISSION COMPLETE!\n+${formatNumber(gained || suddenQuest.rewardExp)} EXP`, '#7dff9b', 1300);
+  suddenQuest.active = false;
+  suddenQuest.timer = 0;
+  suddenQuest.interval = 90000;
+}
+function failSuddenQuest() {
+  if (!suddenQuest || !suddenQuest.active) return;
+  pushGainMessage('돌발 퀘스트 실패', '#ff8f8f');
+  suddenQuest.active = false;
+  suddenQuest.timer = 0;
+  suddenQuest.interval = 90000;
+}
+function updateInfiniteSuddenQuest(dt) {
+  if (gameMode !== 'infinite' || state !== 'playing') {
+    suddenQuest.active = false;
+    suddenQuest.timer = 0;
+    suddenQuest.interval = 90000;
+    return;
+  }
+  if (suddenQuest.active) {
+    suddenQuest.timer -= dt;
+    if ((suddenQuest.current || 0) >= suddenQuest.target) completeSuddenQuest();
+    else if (suddenQuest.timer <= 0) failSuddenQuest();
+    return;
+  }
+  suddenQuest.interval = Math.max(0, (suddenQuest.interval || 90000) - dt);
+  if (suddenQuest.interval <= 0) startSuddenQuest();
+}
+function drawSuddenQuestUI() {
+  if (gameMode !== 'infinite' || !suddenQuest || !suddenQuest.active) return;
+  const remain = Math.max(0, suddenQuest.timer || 0);
+  const pct = Math.max(0, Math.min(1, remain / Math.max(1, suddenQuest.duration || 1)));
+  const x = width / 2;
+  const y = 76;
+  const w = Math.min(520, width - 80);
+  const h = 58;
+  ctx.save();
+  ctx.translate(x - w/2, y);
+  ctx.fillStyle = 'rgba(10,14,28,0.86)';
+  drawRoundRect(0, 0, w, h, 12);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = remain <= 5000 ? '#ff6666' : '#ffdf7a';
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `900 15px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffdf7a';
+  ctx.fillText(`⚠ 돌발 퀘스트: ${suddenQuest.title}`, w/2, 18);
+  ctx.font = `900 13px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`${formatNumber(suddenQuest.current || 0)} / ${formatNumber(suddenQuest.target || 0)} · 남은 시간 ${(remain/1000).toFixed(1)}초 · 보상 EXP ${formatNumber(suddenQuest.rewardExp || 0)}`, w/2, 38);
+  ctx.fillStyle = remain <= 5000 ? '#ff6666' : (remain <= 10000 ? '#ffe066' : '#73c7ff');
+  ctx.fillRect(12, h - 8, (w - 24) * pct, 4);
+  ctx.restore();
+}
+
+function updateMultiKillSystem(dt) {
+  flushMultiKillIfReady(false);
+  for (const p of multiKillPopups) p.life -= dt;
+  multiKillPopups = multiKillPopups.filter(p => p.life > 0);
+}
+function drawMultiKillFx() {
+  if (!multiKillPopups.length) return;
+  const p = multiKillPopups[multiKillPopups.length - 1];
+  const age = performance.now() - p.createdAt;
+  const t = Math.max(0, Math.min(1, age / 1150));
+  const scale = 1.28 - t * 0.18 + Math.sin(t * Math.PI) * 0.12;
+  const alpha = 1 - Math.max(0, (t - 0.72) / 0.28);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const x = width / 2;
+  const y = height * 0.30;
+  if (p.count >= 10 && !saveData.lowPower) {
+    ctx.globalAlpha = alpha * 0.18;
+    ctx.fillStyle = p.count >= 20 ? '#ffffff' : p.color;
+    ctx.fillRect(0, 0, width, height);
+    ctx.globalAlpha = alpha;
+  }
+  ctx.font = `900 ${Math.floor(44 * scale)}px ${getUIFontFamily()}`;
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(0,0,0,0.82)';
+  ctx.fillStyle = p.color || '#ffffff';
+  const label = `${p.count} KILL!`;
+  ctx.strokeText(label, x, y);
+  ctx.fillText(label, x, y);
+  ctx.font = `900 ${Math.floor(17 * scale)}px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeText(`MULTI KILL BONUS +${formatNumber(p.bonus)} EXP`, x, y + 42);
+  ctx.fillText(`MULTI KILL BONUS +${formatNumber(p.bonus)} EXP`, x, y + 42);
+  ctx.restore();
 }
 
 const SKILL_QUEST_META = {
@@ -8484,10 +8807,42 @@ function updateQuestUI() {
     questList.appendChild(done);
   }
 
+
+
+  // ===============================
+  // ✅ 멀티킬 업적 / 일반 퀘스트
+  // ===============================
+  ensureMultiKillPatchState();
+  createQuestSectionTitle('💥 멀티킬 업적', '#ff9df3');
+  const mkAch = [
+    { id:'mk_first', title:'첫 멀티킬', desc:'3마리 동시 처치', type:'best', target:3, reward:2000 },
+    { id:'mk_5', title:'폭격 개시', desc:'5마리 동시 처치', type:'best', target:5, reward:8000 },
+    { id:'mk_7', title:'학살자', desc:'7마리 동시 처치', type:'best', target:7, reward:20000 },
+    { id:'mk_10', title:'슬라임 청소부', desc:'10마리 이상 동시 처치', type:'best', target:10, reward:60000 },
+    { id:'mk_100', title:'멀티킬 마스터', desc:'멀티킬 100회 달성', type:'total', target:100, reward:120000 },
+    { id:'mk_bonus', title:'폭풍 성장', desc:'멀티킬 보너스 EXP 누적 100만 획득', type:'bonus', target:1000000, reward:200000 }
+  ];
+  for (const a of mkAch) {
+    const cur = a.type === 'best' ? (saveData.multikill.best || 0) : a.type === 'bonus' ? (saveData.multikill.bonusExp || 0) : (saveData.multikill.total || 0);
+    const claimed = !!saveData.multikill.achievements[a.id];
+    createQuestItem(a.title, `${a.desc}: ${formatNumber(Math.floor(cur))} / ${formatNumber(a.target)}`, a.reward, !claimed && cur >= a.target, () => {
+      saveData.multikill.achievements[a.id] = true;
+      addExpDirect(a.reward);
+      saveGameData();
+      updateQuestUI();
+      if (SFX && SFX.questComplete) SFX.questComplete();
+    }, cur, a.target, '#ff9df3');
+    if (claimed) {
+      const last = questList.lastElementChild;
+      const btn = last && last.querySelector && last.querySelector('button.claim-btn');
+      if (btn) { btn.textContent = '완료'; btn.disabled = true; }
+    }
+  }
+
   // ===============================
   // ✅ 일일 퀘스트 (LV 60+)
   // ===============================
-  createQuestSectionTitle('🗓️ 일일 퀘스트 (LV.60+, 보상 스케일 LV.80까지)');
+  createQuestSectionTitle('🗓️ 일일 퀘스트 (LV.60+, 8개)');
   // ⏳ 남은 시간(일일)
   const _dailyTimer = document.createElement('div');
   _dailyTimer.id = 'dailyQuestTimer';
@@ -8512,7 +8867,7 @@ function updateQuestUI() {
     const stats = saveData.dailyStats;
 
     // 6개 보장
-    if (!pack || !Array.isArray(pack.quests) || pack.quests.length !== 6) resetDailyQuestsIfNeeded();
+    if (!pack || !Array.isArray(pack.quests) || pack.quests.length !== 8) resetDailyQuestsIfNeeded();
 
     for (const q of (saveData.dailyQuest.quests || [])) {
       const prog = getQuestProgress(q, saveData.dailyStats);
@@ -8542,7 +8897,7 @@ function updateQuestUI() {
   // ===============================
   // ✅ 주간 퀘스트 (LV 100+)
   // ===============================
-  createQuestSectionTitle('📅 주간 퀘스트 (LV.100+, 보상 스케일 LV.150까지)', '#ffcc66');
+  createQuestSectionTitle('📅 주간 퀘스트 (LV.100+, 10개)', '#ffcc66');
   // ⏳ 남은 시간(주간)
   const _weeklyTimer = document.createElement('div');
   _weeklyTimer.id = 'weeklyQuestTimer';
@@ -8563,7 +8918,7 @@ function updateQuestUI() {
     lock.textContent = `주간 퀘스트는 LV.100부터 열립니다. (현재: LV.${level})`;
     questList.appendChild(lock);
   } else {
-    if (!saveData.weeklyQuest || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 8) resetWeeklyQuestsIfNeeded();
+    if (!saveData.weeklyQuest || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) resetWeeklyQuestsIfNeeded();
 
     for (const q of (saveData.weeklyQuest.quests || [])) {
       const prog = getQuestProgress(q, saveData.weeklyStats);
@@ -9262,6 +9617,10 @@ function updateDungeon(dt, currentTime) {
     updateMeteorSkillUI();
     updateQuake(dt);
     updateQuakeSkillUI();
+  updateExtraAreaSkills(dt);
+  updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  updateInfiniteSuddenQuest(dt);
 
     if (deathAnimationTimer <= 0) gameOver();
     return;
@@ -10386,6 +10745,138 @@ function getBossScorePopupText(amount, options = {}) {
   return `+${formatNumber(finalAmount)}점`;
 }
 
+
+// ===============================
+// ✅ [v.155] 멀티킬 보너스 EXP
+// - 같은 처리 프레임 안에서 몬스터 3마리 이상 처치 시 발동
+// - 일반 처치로 실제 지급된 EXP 합계 기준으로 추가 지급
+// ===============================
+const MULTI_KILL_EXP_BONUS_RATES = [
+  { min: 10, rate: 1.50 },
+  { min: 9,  rate: 1.20 },
+  { min: 8,  rate: 0.90 },
+  { min: 7,  rate: 0.70 },
+  { min: 6,  rate: 0.50 },
+  { min: 5,  rate: 0.30 },
+  { min: 4,  rate: 0.20 },
+  { min: 3,  rate: 0.10 }
+];
+let pendingMultiKill = null;
+let pendingMultiKillTimer = null;
+
+function getMultiKillBonusRate(killCount) {
+  const count = Math.max(0, Math.floor(Number(killCount) || 0));
+  const row = MULTI_KILL_EXP_BONUS_RATES.find(r => count >= r.min);
+  return row ? row.rate : 0;
+}
+
+function getMultiKillStyle(killCount) {
+  const count = Math.max(0, Math.floor(Number(killCount) || 0));
+
+  if (count >= 10) {
+    return {
+      title: `LEGEND MULTI KILL x${count}!`,
+      color: '#ffffff',
+      stroke: '#4b003f',
+      glow: '#ff3df2',
+      accent: '#ffe66d',
+      scale: 2.15,
+      life: 1200
+    };
+  }
+  if (count >= 9) {
+    return { title: `ULTRA MULTI KILL x${count}!`, color: '#ffd6ff', stroke: '#3a005c', glow: '#d35cff', accent: '#7cf7ff', scale: 1.95, life: 1120 };
+  }
+  if (count >= 8) {
+    return { title: `MEGA MULTI KILL x${count}!`, color: '#7cf7ff', stroke: '#003b54', glow: '#00eaff', accent: '#fff27a', scale: 1.82, life: 1080 };
+  }
+  if (count >= 7) {
+    return { title: `SUPER MULTI KILL x${count}!`, color: '#ff8df0', stroke: '#580039', glow: '#ff47cf', accent: '#8dffb2', scale: 1.68, life: 1040 };
+  }
+  if (count >= 6) {
+    return { title: `MULTI KILL x${count}!`, color: '#ff6b6b', stroke: '#5b0000', glow: '#ff3b3b', accent: '#ffd86b', scale: 1.55, life: 1000 };
+  }
+  if (count >= 5) {
+    return { title: `MULTI KILL x${count}!`, color: '#ffb347', stroke: '#5b2c00', glow: '#ff9a2e', accent: '#fff27a', scale: 1.43, life: 940 };
+  }
+  if (count >= 4) {
+    return { title: `MULTI KILL x${count}!`, color: '#b6ff5c', stroke: '#204900', glow: '#90ff33', accent: '#7cf7ff', scale: 1.32, life: 880 };
+  }
+  return { title: `MULTI KILL x${count}!`, color: '#ffef7a', stroke: '#3a2a00', glow: '#ffdf4d', accent: '#ffffff', scale: 1.22, life: 820 };
+}
+
+function spawnMultiKillText(killCount, bonusExp, x, y) {
+  const style = getMultiKillStyle(killCount);
+  const text = style.title;
+  const subText = `EXP +${formatNumber(bonusExp)}`;
+
+  if (isLowPower() && dmgTexts.length > 40) return;
+
+  dmgTexts.push({
+    x: width / 2,
+    y: Math.max(92, Math.min(height * 0.42, y || height * 0.35)),
+    vy: -0.42,
+    life: style.life,
+    maxLife: style.life,
+    text,
+    subText,
+    color: style.color,
+    stroke: style.stroke,
+    glow: style.glow,
+    accent: style.accent,
+    scale: style.scale,
+    kind: 'multiKill',
+    born: performance.now()
+  });
+}
+
+function recordMultiKillCandidate(gainedExp, enemy) {
+  // 미션 모드는 처치 즉시 EXP 흐름이 다르므로 제외
+  if (gameMode === 'mission') return;
+
+  const addExpAmount = Math.max(0, Math.floor(Number(gainedExp) || 0));
+  if (!pendingMultiKill) {
+    pendingMultiKill = { count: 0, exp: 0, x: 0, y: 0 };
+  }
+
+  pendingMultiKill.count += 1;
+  pendingMultiKill.exp += addExpAmount;
+
+  if (enemy && Number.isFinite(enemy.x) && Number.isFinite(enemy.y)) {
+    pendingMultiKill.x = enemy.x;
+    pendingMultiKill.y = enemy.y;
+  } else if (player) {
+    pendingMultiKill.x = player.x;
+    pendingMultiKill.y = player.y;
+  }
+
+  if (pendingMultiKillTimer) clearTimeout(pendingMultiKillTimer);
+  pendingMultiKillTimer = setTimeout(finalizeMultiKillBonus, 0);
+}
+
+function finalizeMultiKillBonus() {
+  const batch = pendingMultiKill;
+  pendingMultiKill = null;
+  pendingMultiKillTimer = null;
+
+  if (!batch) return;
+  const count = Math.max(0, Math.floor(Number(batch.count) || 0));
+  const baseExp = Math.max(0, Math.floor(Number(batch.exp) || 0));
+  const rate = getMultiKillBonusRate(count);
+  if (count < 3 || rate <= 0 || baseExp <= 0) return;
+
+  const bonusExp = Math.max(1, Math.round(baseExp * rate));
+  const granted = addExpDirect(bonusExp);
+  if (granted <= 0) return;
+
+  const pct = Math.round(rate * 100);
+  const x = Number.isFinite(batch.x) ? batch.x : (player ? player.x : width / 2);
+  const y = Number.isFinite(batch.y) ? batch.y : (player ? player.y : height / 2);
+
+  spawnMultiKillText(count, granted, x, y - 34);
+  pushGainMessage(`멀티킬 ${count}마리 보너스 ${pct}%(+${formatNumber(granted)} EXP)`, getMultiKillStyle(count).color);
+}
+
 function addScore(amount, source = 'monster', options = {}) {
   options = options || {};
   amount = resolveScoreAmount(amount, source, options);
@@ -10406,11 +10897,11 @@ function addScore(amount, source = 'monster', options = {}) {
   }
 
   if (gameMode === 'mission') {
-    return;
+    return 0;
   }
 
   if (options.noExp === true) {
-    return;
+    return 0;
   }
 
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
@@ -10421,7 +10912,8 @@ function addScore(amount, source = 'monster', options = {}) {
     if (gainedExp > 0) {
       stageRunExpMonsters += Math.max(0, Math.floor(gainedExp || 0));
     }
-    return;
+    recordMultiKillCandidate(gainedExp, options.enemy);
+    return gainedExp;
   }
 
   // 무한 모드: 10점당 1EXP / 나머지 모드: 기존 100점당 1EXP 유지
@@ -10432,13 +10924,19 @@ function addScore(amount, source = 'monster', options = {}) {
   const hotMult = getHotMultiplier();
   const gainedExp = baseExp * hotMult;
 
+  let grantedExp = 0;
   if (gainedExp > 0) {
-    addExp(gainedExp, { baseAmount: baseExp, hotMultiplier: hotMult });
+    grantedExp = addExp(gainedExp, { baseAmount: baseExp, hotMultiplier: hotMult });
     if (gameMode === 'stage' || gameMode === 'mission') {
-      if (source === 'boss') stageRunExpBoss += gainedExp;
-      else stageRunExpMonsters += gainedExp;
+      if (source === 'boss') stageRunExpBoss += grantedExp;
+      else stageRunExpMonsters += grantedExp;
     }
   }
+
+  if (source === 'monster') {
+    recordMultiKillCandidate(grantedExp, options.enemy);
+  }
+  return grantedExp;
 }
 
 // ===============================
@@ -11967,7 +12465,7 @@ function handleEnemyKilledBySkill(e) {
   SFX.enemyDie();
 
   // 퀘스트/통계
-  registerEnemyKill();
+  registerEnemyKill(false, { skill:true });
 }
 
 
@@ -12667,6 +13165,146 @@ function drawBlizzardFx() {
 }
 
 
+
+
+// ===============================
+// ✅ [v.156] 멀티킬 특화 범위형 스킬 3종
+// - 독안개: 지속 장판 / 블랙홀: 흡입 후 폭발 / 플라즈마 폭발: 연쇄 폭발
+// ===============================
+let toxicClouds = [];
+let blackholes = [];
+let plasmaBursts = [];
+function canUseToxicSkill(){ return level >= 41; }
+function canUseBlackholeSkill(){ return level >= 81; }
+function canUsePlasmaSkill(){ return level >= 121; }
+function tryCastToxicSkill(){ if (!player || !canUseToxicSkill() || (player.toxicCooldown || 0) > 0) return; castToxicSkill(); }
+function tryCastBlackholeSkill(){ if (!player || !canUseBlackholeSkill() || (player.blackholeCooldown || 0) > 0) return; castBlackholeSkill(); }
+function tryCastPlasmaSkill(){ if (!player || !canUsePlasmaSkill() || (player.plasmaCooldown || 0) > 0) return; castPlasmaSkill(); }
+function castToxicSkill(){
+  addSkillQuestCount('blizzard', 1);
+  const tx = player ? player.x : width/2;
+  const ty = player ? Math.max(120, player.y - 180) : height/2;
+  toxicClouds.push({ x:tx, y:ty, r:165, life:5200, maxLife:5200, tick:0, damage:Math.max(1, Math.round(getPlayerAttackPower() * 0.55)) });
+  player.toxicCooldown = applyHyperSkillCooldown(14000);
+  spawnDamageText(tx, ty, '☣️ 독안개', '#9dff9d');
+}
+function castBlackholeSkill(){
+  addSkillQuestCount('quake', 1);
+  blackholes.push({ x:width/2, y:height*0.38, r:215, life:3300, maxLife:3300, tick:0, exploded:false, damage:Math.max(1, Math.round(getPlayerAttackPower() * 3.2)) });
+  player.blackholeCooldown = applyHyperSkillCooldown(24000);
+  spawnDamageText(width/2, height*0.38, '🕳️ 블랙홀', '#d8c4ff');
+}
+function castPlasmaSkill(){
+  addSkillQuestCount('lightning', 1);
+  const living = enemies.filter(e => e && e.hp > 0);
+  const seed = living.length ? living[Math.floor(Math.random() * living.length)] : { x:width/2, y:height/2 };
+  plasmaBursts.push({ x:seed.x, y:seed.y, r:105, life:620, maxLife:620, tick:0, chain:0, maxChain:7, damage:Math.max(1, Math.round(getPlayerAttackPower() * 2.2)), hit:new Set() });
+  player.plasmaCooldown = applyHyperSkillCooldown(11000);
+  spawnDamageText(seed.x, seed.y, '💥 플라즈마', '#ff9df3');
+}
+function damageEnemyByAreaSkill(e, dmg, color){
+  if (!e || e.hp <= 0) return false;
+  const _dmg = calcLevelScaledDamage(dmg, e);
+  e.hp -= _dmg;
+  e.hitTimer = 100;
+  spawnDamageText(e.x, e.y - (e.size || 20) * 0.75, _dmg, color || '#ffffff');
+  spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
+  if (e.hp <= 0) { handleEnemyKilledBySkill(e); e.hp = 0; return true; }
+  return false;
+}
+function updateExtraAreaSkills(dt){
+  if (!player || !player.alive || isPlayerDying || gameMode === 'dungeon') return;
+  if (canUseToxicSkill()) player.toxicCooldown = Math.max(0, (player.toxicCooldown || 0) - dt);
+  if (canUseBlackholeSkill()) player.blackholeCooldown = Math.max(0, (player.blackholeCooldown || 0) - dt);
+  if (canUsePlasmaSkill()) player.plasmaCooldown = Math.max(0, (player.plasmaCooldown || 0) - dt);
+
+  for (const c of toxicClouds) {
+    c.life -= dt; c.tick -= dt;
+    if (c.tick <= 0) {
+      c.tick = 250;
+      for (const e of enemies) {
+        if (!e || e.hp <= 0) continue;
+        const dx=e.x-c.x, dy=e.y-c.y; if (dx*dx+dy*dy <= (c.r + (e.size||20))**2) damageEnemyByAreaSkill(e, c.damage, '#9dff9d');
+      }
+    }
+  }
+  toxicClouds = toxicClouds.filter(c => c.life > 0);
+
+  for (const b of blackholes) {
+    b.life -= dt; b.tick -= dt;
+    const pull = Math.max(0.05, 1 - (b.life / Math.max(1,b.maxLife)));
+    for (const e of enemies) {
+      if (!e || e.hp <= 0) continue;
+      const dx=b.x-e.x, dy=b.y-e.y, d=Math.max(1, Math.hypot(dx,dy));
+      if (d <= b.r) { e.x += (dx/d) * (1.4 + pull*3.2) * (dt/16.67); e.y += (dy/d) * (1.4 + pull*3.2) * (dt/16.67); }
+    }
+    if (!b.exploded && b.life <= 450) {
+      b.exploded = true;
+      spawnExplosion(b.x, b.y, '#b48bff', saveData.lowPower ? 24 : 48);
+      for (const e of enemies) {
+        if (!e || e.hp <= 0) continue;
+        const dx=e.x-b.x, dy=e.y-b.y; if (dx*dx+dy*dy <= (b.r*0.72 + (e.size||20))**2) damageEnemyByAreaSkill(e, b.damage, '#d8c4ff');
+      }
+    }
+  }
+  blackholes = blackholes.filter(b => b.life > 0);
+
+  for (const p of plasmaBursts) {
+    p.life -= dt; p.tick -= dt;
+    if (p.tick <= 0 && p.chain <= p.maxChain) {
+      p.tick = 85;
+      let hitAny = false;
+      for (const e of enemies) {
+        if (!e || e.hp <= 0 || (p.hit && p.hit.has(e))) continue;
+        const dx=e.x-p.x, dy=e.y-p.y;
+        if (dx*dx+dy*dy <= (p.r + (e.size||20))**2) {
+          if (p.hit) p.hit.add(e);
+          const killed = damageEnemyByAreaSkill(e, p.damage, '#ff9df3');
+          hitAny = true;
+          if (killed) {
+            plasmaBursts.push({ x:e.x, y:e.y, r:92, life:420, maxLife:420, tick:35, chain:p.chain+1, maxChain:p.maxChain, damage:Math.max(1, Math.floor(p.damage*0.72)), hit:new Set(p.hit || []) });
+            spawnExplosion(e.x, e.y, '#ff9df3', saveData.lowPower ? 10 : 18);
+          }
+          break;
+        }
+      }
+      if (!hitAny) p.chain = p.maxChain + 1;
+    }
+  }
+  plasmaBursts = plasmaBursts.filter(p => p.life > 0 && p.chain <= p.maxChain + 1);
+  enemies = enemies.filter(e => e && e.hp > 0);
+}
+function updateExtraAreaSkillUI(){
+  if (toxicSkillBtn) { const show=canUseToxicSkill(); toxicSkillBtn.classList.toggle('hidden', !show); if(show) applySkillButtonVisual(toxicSkillBtn, Math.max(0, player?.toxicCooldown || 0), 14000, '☣️', ''); }
+  if (blackholeSkillBtn) { const show=canUseBlackholeSkill(); blackholeSkillBtn.classList.toggle('hidden', !show); if(show) applySkillButtonVisual(blackholeSkillBtn, Math.max(0, player?.blackholeCooldown || 0), 24000, '🕳️', ''); }
+  if (plasmaSkillBtn) { const show=canUsePlasmaSkill(); plasmaSkillBtn.classList.toggle('hidden', !show); if(show) applySkillButtonVisual(plasmaSkillBtn, Math.max(0, player?.plasmaCooldown || 0), 11000, '💥', ''); }
+}
+function drawExtraAreaSkillFx(){
+  ctx.save();
+  for (const c of toxicClouds) {
+    const a = Math.max(0, Math.min(1, c.life / c.maxLife));
+    ctx.globalAlpha = 0.20 + a*0.12;
+    ctx.fillStyle = '#54ff78';
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 0.68; ctx.strokeStyle = '#9dff9d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.stroke();
+  }
+  for (const b of blackholes) {
+    const t = 1 - Math.max(0, b.life / b.maxLife);
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = '#090313';
+    ctx.beginPath(); ctx.arc(b.x, b.y, 38 + t*24, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#b48bff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(b.x, b.y, 80 + Math.sin(performance.now()/90)*8, 0, Math.PI*2); ctx.stroke();
+  }
+  for (const p of plasmaBursts) {
+    const a = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = 0.28 * a;
+    ctx.fillStyle = '#ff75ef';
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1.15-a*0.2), 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 0.85 * a; ctx.strokeStyle = '#ffd8fb'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // ===============================
 // ✅ [v.78] 스킬 버튼(아이콘 + 쿨타임 링)
 // - btn.style.setProperty('--cdp', 0~1) 로 진행도 표시
@@ -12832,10 +13470,10 @@ function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
     // ✅ [v.154] 보스 EXP: 5스테이지 단위 구간 × 현재 스테이지 레벨
     const table = [
-        [5, 10], [10, 36], [15, 41], [20, 152], [25, 401],
-        [30, 433], [35, 465], [40, 497], [45, 1266], [50, 1304],
-        [55, 1342], [60, 1380], [65, 3016], [70, 3081], [75, 3146],
-        [80, 3211], [85, 7316], [90, 7389], [95, 7462], [100, 7535],
+        [5, 10], [10, 36], [15, 107], [20, 230], [25, 496],
+        [30, 525], [35, 556], [40, 587], [45, 1113], [50, 1145],
+        [55, 1177], [60, 1209], [65, 2648], [70, 2701], [75, 2754],
+        [80, 2809], [85, 6000], [90, 6101], [95, 6202], [100, 6303],
         [105, 3591], [110, 3616], [115, 3644], [120, 3673], [125, 7411],
         [130, 7494], [135, 7553], [140, 7622], [145, 15446], [150, 15583],
         [155, 15741], [160, 15905], [165, 32004], [170, 32309], [175, 32610],
@@ -14261,6 +14899,10 @@ function updateMissionBonusStage(dt, currentTime) {
   updateMeteorSkillUI();
   updateQuake(dt);
   updateQuakeSkillUI();
+  updateExtraAreaSkills(dt);
+  updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  updateInfiniteSuddenQuest(dt);
   updateBullets(dt);
   updatePetBullets(dt);
   updatePet2Bullets(dt);
@@ -14610,6 +15252,10 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
   updateMeteorSkillUI();
   updateQuake(dt);
   updateQuakeSkillUI();
+  updateExtraAreaSkills(dt);
+  updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  updateInfiniteSuddenQuest(dt);
   updateBullets(dt);
   updatePetBullets(dt);
   updatePet2Bullets(dt);
@@ -14654,7 +15300,11 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     updateMeteors(dt);
     updateMeteorSkillUI();
     updateQuake(dt);
-    updateQuakeSkillUI();if (deathAnimationTimer <= 0) gameOver();
+    updateQuakeSkillUI();
+  updateExtraAreaSkills(dt);
+  updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  updateInfiniteSuddenQuest(dt);if (deathAnimationTimer <= 0) gameOver();
     return;
   }
 
@@ -14683,6 +15333,10 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     updateLightningSkillUI();
     updateQuake(dt);
     updateQuakeSkillUI();
+  updateExtraAreaSkills(dt);
+  updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  updateInfiniteSuddenQuest(dt);
     updateBullets(dt);
     updateBlizzard(dt);
     updateBlizzardSkillUI();
@@ -15276,6 +15930,54 @@ function drawDamageTexts() {
   dmgTexts.forEach(t => {
     const a = Math.max(0, t.life / t.maxLife);
     ctx.globalAlpha = Math.min(1, a);
+
+    if (t.kind === 'multiKill') {
+      const progress = 1 - a;
+      const pulse = 1 + Math.sin(progress * Math.PI * 6) * 0.035;
+      const pop = progress < 0.18 ? (0.72 + progress / 0.18 * 0.34) : 1;
+      const fontSize = Math.floor(22 * (t.scale || 1) * pulse * pop);
+      const subSize = Math.floor(fontSize * 0.46);
+      const fam = getUIFontFamily();
+
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.shadowColor = t.glow || t.color || '#ffffff';
+      ctx.shadowBlur = 18 + 8 * (t.scale || 1);
+      ctx.lineJoin = 'round';
+
+      ctx.font = `900 ${fontSize}px ${fam}`;
+      ctx.lineWidth = Math.max(4, fontSize * 0.12);
+      ctx.strokeStyle = t.stroke || 'rgba(0,0,0,0.85)';
+      ctx.fillStyle = t.color || '#ffffff';
+      ctx.strokeText(t.text, 0, 0);
+      ctx.fillText(t.text, 0, 0);
+
+      // 짧고 굵은 보너스 EXP 보조 문구
+      ctx.shadowBlur = 10 + 4 * (t.scale || 1);
+      ctx.font = `900 ${subSize}px ${fam}`;
+      ctx.lineWidth = Math.max(2, subSize * 0.12);
+      ctx.strokeStyle = 'rgba(0,0,0,0.78)';
+      ctx.fillStyle = t.accent || '#ffef7a';
+      ctx.strokeText(t.subText || '', 0, fontSize * 0.72);
+      ctx.fillText(t.subText || '', 0, fontSize * 0.72);
+
+      // 8킬 이상은 한 줄 광선 느낌 추가
+      if ((t.scale || 1) >= 1.8) {
+        ctx.globalAlpha *= 0.82;
+        ctx.shadowBlur = 20;
+        ctx.strokeStyle = t.accent || '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-fontSize * 4.2, fontSize * 0.24);
+        ctx.lineTo(-fontSize * 2.1, fontSize * 0.24);
+        ctx.moveTo(fontSize * 2.1, fontSize * 0.24);
+        ctx.lineTo(fontSize * 4.2, fontSize * 0.24);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
     ctx.font = `bold ${Math.floor(16 * t.scale)}px ${getUIFontFamily()}`;
     ctx.lineWidth = 1.6;
     ctx.strokeStyle = 'rgba(0,0,0,0.68)';
@@ -17165,6 +17867,7 @@ requestAnimationFrame(gameLoop);
     drawLightningFx();
     drawBlizzardFx();
     drawMeteors();
+    drawExtraAreaSkillFx();
     drawEnemies();
     drawExpItems();
     drawFieldItems();
@@ -17188,6 +17891,8 @@ requestAnimationFrame(gameLoop);
     ctx.restore();
 
     drawGainMessages();
+    drawMultiKillFx();
+    drawSuddenQuestUI();
 
     // UI/오버레이(고정)
     drawLevelUpEffect();
