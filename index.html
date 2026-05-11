@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.154)</title>
+<title>Slime Shooter - Ultimate Evolution (v.157.1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1672,19 +1672,36 @@ body.tutorial-mode .quake-skill{
 </div>
 
 
-<div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66;">
+<div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
-    <div id="noticeBody" class="modal-body" style="max-height: 320px; line-height: 1.65; color:#eef4ff;">
-        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.154 업데이트]</div>
-            <div>스테이지 모드의 몬스터 처치 경험치를 보스 EXP의 50% 총합 기준으로 재조정했습니다.</div>
-            <div>스테이지 모드의 보스 처치 경험치를 v.154 5스테이지 구간표로 재조정했습니다.</div>
-            <div>EXP 구슬도 점수 환산이 아니라 현재 스테이지의 몬스터 EXP 기준으로 변경했습니다.</div>
-            <div>101스테이지부터 등장하는 엘리트 몬스터는 처치 EXP와 EXP 구슬 기준 EXP가 2.5배로 적용됩니다.</div>
-            <div>EXP 구슬의 하/중/상 등급 획득량 배율은 그대로 유지됩니다.</div>
-            <div>핫타임 EXP 배수가 스테이지 모드의 몬스터 처치 EXP와 보스 처치 EXP에도 적용되도록 수정했습니다.</div>
-            <div>신규 기능: 몬스터 3마리 이상을 동시에 처치하면 멀티킬이 발동되고 처치 EXP 합계 기준 추가 경험치가 지급됩니다.</div>
-            <div style="margin-top:6px; color:#bfe9ff;">이전 FPS 선택, 무한 모드 드랍 크기 확대, 스테이지 결과 화면 개선 사항도 유지됩니다.</div>
+    <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
+            <div>멀티킬 시스템이 추가되었습니다. 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동되며, 처치 수에 따라 추가 경험치가 지급됩니다.</div>
+            <div>멀티킬 수가 높을수록 화면 중앙의 연출 색상과 효과가 더욱 화려해집니다.</div>
+        </div>
+        <div style="background:rgba(124,231,255,0.08); border:1px solid rgba(124,231,255,0.24); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#9beeff; margin-bottom:6px;">신규 퀘스트 / 업적</div>
+            <div>멀티킬 관련 업적, 일일 퀘스트, 주간 퀘스트, 일반 퀘스트가 추가되었습니다.</div>
+            <div>멀티킬 횟수, 최고 동시 처치 수, 멀티킬 추가 EXP 누적량 등이 기록됩니다.</div>
+            <div>퀘스트 메뉴에서 진행도를 확인하고 보상을 받을 수 있습니다.</div>
+        </div>
+        <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">무한 모드 돌발 퀘스트</div>
+            <div>무한 모드에서는 90초마다 짧은 돌발 퀘스트가 발생합니다.</div>
+            <div>예시: 30초 안에 N킬 하기, 15초 안에 멀티킬 N번 하기, 제한 시간 안에 대량 처치하기.</div>
+            <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
+        </div>
+        <div style="background:rgba(120,255,150,0.08); border:1px solid rgba(120,255,150,0.24); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#baffc7; margin-bottom:6px;">신규 범위형 스킬</div>
+            <div>독안개, 블랙홀, 플라즈마 폭발 스킬이 추가되었습니다.</div>
+            <div>독안개는 지속 피해, 블랙홀은 몬스터 압축, 플라즈마 폭발은 연쇄 폭발에 특화되어 있습니다.</div>
+            <div>기존 메테오, 번개, 눈보라, 지진과 조합하면 멀티킬을 더 쉽게 노릴 수 있습니다.</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#ffffff; margin-bottom:6px;">플레이 팁</div>
+            <div>무한 모드에서는 돌발 퀘스트가 곧 올 수 있으므로, 강력한 범위형 스킬을 무조건 바로 쓰기보다 잠깐 아껴두는 전략도 좋습니다.</div>
+            <div>블랙홀로 몬스터를 모은 뒤 메테오나 플라즈마를 사용하면 높은 멀티킬을 노리기 쉽습니다.</div>
         </div>
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
@@ -1825,9 +1842,9 @@ body.tutorial-mode .quake-skill{
 </div>
 
 <!-- 스킬 가이드 모달 -->
-<div id="skillGuideModal" class="modal hidden" style="z-index: 120;">
-  <div class="modal-header">스킬 가이드</div>
-  <div id="skillGuideBody" class="modal-body"></div>
+<div id="skillGuideModal" class="modal hidden" style="z-index: 190; max-width:480px; border-color:#7ce7ff;">
+  <div class="modal-header" style="color:#9beeff;">스킬 가이드</div>
+  <div id="skillGuideBody" class="modal-body" style="max-height:380px; gap:10px;"></div>
   <button id="closeSkillGuideBtn" class="close-btn">닫기</button>
 </div>
 
@@ -2229,38 +2246,41 @@ function escapeHtml(s){
 }
 
 function renderSkillGuide() {
-  const guide = (typeof SKILL_UNLOCK_TUTORIAL === 'object' && SKILL_UNLOCK_TUTORIAL) ? SKILL_UNLOCK_TUTORIAL : {};
-  const keys = Object.keys(guide)
-    .map(k => Number(k))
-    .filter(n => Number.isFinite(n))
-    .sort((a,b)=>a-b);
+  const guide = (typeof SKILL_GUIDE_DATA === 'object' && SKILL_GUIDE_DATA) ? SKILL_GUIDE_DATA : [];
+  const currentLevel = Number(level || 1);
 
-  const unlocked = keys.filter(lv => level >= lv);
+  if (!skillGuideBody) return;
 
-  if (!unlocked.length) {
-    if (skillGuideBody) {
-      skillGuideBody.innerHTML = `<div style="opacity:.85; line-height:1.5;">
-        아직 표시할 스킬 가이드가 없습니다.<br>
-        레벨을 올려 스킬을 해금해보세요!
-      </div>`;
-    }
+  if (!Array.isArray(guide) || !guide.length) {
+    skillGuideBody.innerHTML = `<div style="opacity:.85; line-height:1.5;">아직 표시할 스킬 가이드가 없습니다.</div>`;
     return;
   }
 
-  const html = unlocked.map(lv => {
-    const lines = guide[lv] || [];
-    const body = lines.map(s => `<div style="margin:2px 0;">• ${escapeHtml(s)}</div>`).join('');
+  const html = guide.map(item => {
+    const unlocked = currentLevel >= Number(item.level || 1);
+    const statusText = unlocked ? '사용 가능' : `LV.${item.level} 해금`;
+    const statusColor = unlocked ? '#7cffb2' : '#aebfff';
+    const lines = (item.lines || []).map(s => `<div style="margin:3px 0;">• ${escapeHtml(s)}</div>`).join('');
+    const tips = (item.tips || []).map(s => `<div style="margin:3px 0; color:#ffe8a3;">TIP. ${escapeHtml(s)}</div>`).join('');
     return `
-      <div style="border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px; background:rgba(255,255,255,0.04);">
-        <div style="font-weight:900; color:#ffd700; margin-bottom:6px;">LV.${lv} 스킬</div>
-        <div style="font-size:13px; line-height:1.45;">${body}</div>
+      <div style="border:1px solid ${unlocked ? 'rgba(124,255,178,0.28)' : 'rgba(255,255,255,0.12)'}; border-radius:12px; padding:11px; background:${unlocked ? 'rgba(124,255,178,0.055)' : 'rgba(255,255,255,0.035)'}; opacity:${unlocked ? '1' : '.72'};">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:7px;">
+          <div style="font-weight:1000; color:${item.color || '#ffd700'};">${escapeHtml(item.icon || '')} ${escapeHtml(item.name || '스킬')}</div>
+          <div style="font-size:11px; font-weight:900; color:${statusColor}; border:1px solid rgba(255,255,255,0.14); border-radius:999px; padding:3px 7px; white-space:nowrap;">${escapeHtml(statusText)}</div>
+        </div>
+        <div style="font-size:13px; line-height:1.5; color:#eef4ff;">${lines}</div>
+        ${tips ? `<div style="margin-top:6px; font-size:12px; line-height:1.45;">${tips}</div>` : ''}
       </div>
     `;
   }).join('');
 
-  if (skillGuideBody) skillGuideBody.innerHTML = html;
+  skillGuideBody.innerHTML = `
+    <div style="font-size:12px; line-height:1.55; color:#cfd6ff; background:rgba(124,231,255,0.08); border:1px solid rgba(124,231,255,0.20); border-radius:10px; padding:9px;">
+      스킬은 레벨에 따라 해금됩니다. 범위형 스킬은 멀티킬, 돌발 퀘스트, 위기 탈출에 특히 좋습니다.
+    </div>
+    ${html}
+  `;
 }
-
 function openSkillGuide() {
   if (!skillGuideModal) return;
   renderSkillGuide();
@@ -5068,49 +5088,117 @@ function maybeShowFirstTutorial() {
   tutorialShown = true;
 }
 
-// ✅ [스킬 가이드] 레벨별 스킬 해금 설명(버튼에서 확인)
-const SKILL_UNLOCK_TUTORIAL = {
-    11: [
-      "LV.11 달성으로 거품 스킬이 추가되었어요!",
-      "스킬 버튼 [거품]을 누르면 1.5초 동안 거품을 연속 발사합니다.",
-      "거품은 가장 가까운 적(보스 우선)을 향해 날아가며, 거품 1발당 공격력 200% 피해를 줍니다.",
-      "0.15초마다 발사되니 짧은 시간에 다수 타격이 가능해요.",
-      "쿨타임은 3초예요. 몰아치고 빠르게 다시 쓰세요!"
+// ✅ [스킬 가이드] 전체 스킬 설명(버튼에서 확인)
+const SKILL_GUIDE_DATA = [
+  {
+    level: 11,
+    name: '거품', icon: '🫧', color: '#bff8ff',
+    lines: [
+      '1.5초 동안 거품을 연속 발사합니다.',
+      '가장 가까운 적을 향해 날아가며 보스를 우선으로 노립니다.',
+      '거품 1발당 공격력 200% 피해를 줍니다.',
+      '쿨타임은 3초입니다.'
     ],
-
-    31: [
-      "LV.31 달성으로 번개 스킬이 추가되었어요!",
-      "스킬 버튼 [번개]를 누르면 3초 동안 번개 폭풍이 발생합니다.",
-      "0.3초마다 번개가 내려치며, 공격력 500% 피해 + 주변 반경(약 70px) 범위 피해를 줍니다.",
-      "지금 레벨에서는 한 번에 1회씩 내려치지만, 더 높은 레벨에서 번개 횟수가 늘어나요.",
-      "쿨타임은 5초예요. 몬스터가 많을 때 쓰면 효율 최고!"
+    tips: ['초반 보스전과 가까운 적 처리에 좋습니다.']
+  },
+  {
+    level: 31,
+    name: '번개', icon: '⚡', color: '#fff38a',
+    lines: [
+      '3초 동안 번개 폭풍이 발생합니다.',
+      '0.3초마다 번개가 내려치며 공격력 500% 피해를 줍니다.',
+      '번개 주변 반경 약 70px에도 범위 피해가 들어갑니다.',
+      '쿨타임은 5초입니다.'
     ],
-
-    61: [
-      "LV.61 달성으로 레이저 / 눈보라 스킬이 추가되었어요!",
-      "레이저: 버튼 [레이저]를 누르면 강력한 직선 레이저를 발사해요. (LV.61 기준 직선 1줄)",
-      "레이저는 적을 빠르게 관통 타격하며, 쿨타임은 7초예요.",
-      "눈보라: 버튼 [눈보라]를 누르면 6초 동안 화면 전체에 냉기가 퍼집니다.",
-      "0.2초마다 틱 데미지가 들어가며, 화면 안의 적들에게 공격력 300% 피해를 계속 줘요. 쿨타임은 12초!"
+    tips: ['몬스터가 여러 마리 모였을 때 쓰면 멀티킬을 만들기 쉽습니다.']
+  },
+  {
+    level: 61,
+    name: '레이저', icon: '🔆', color: '#ffd700',
+    lines: [
+      '강력한 직선 레이저를 발사합니다.',
+      '적을 빠르게 관통 타격하는 직선형 스킬입니다.',
+      'LV.61 기준 직선 1줄로 시작합니다.',
+      '쿨타임은 7초입니다.'
     ],
-
-    101: [
-      "LV.101 달성으로 메테오 스킬이 추가되었어요!",
-      "스킬 버튼 [메테오]를 누르면 메테오 6개가 소환되어 적을 강타합니다.",
-      "직격 피해는 공격력 450%로 강력해요.",
-      "또한 폭발이 일어나 주변(반경 약 230px)에도 추가 피해가 들어갑니다. (가까울수록 더 아픔)",
-      "쿨타임은 7초예요. 보스전/대량 처치에 딱!"
+    tips: ['일자로 몰려오는 적을 정리할 때 효율이 좋습니다.']
+  },
+  {
+    level: 61,
+    name: '눈보라', icon: '❄️', color: '#9beeff',
+    lines: [
+      '6초 동안 화면 전체에 냉기가 퍼집니다.',
+      '0.2초마다 화면 안의 적에게 공격력 300% 피해를 줍니다.',
+      '지속형 광역 피해라 많은 몬스터를 천천히 정리할 수 있습니다.',
+      '쿨타임은 12초입니다.'
     ],
+    tips: ['돌발 퀘스트 중 N킬 누적형 목표와 잘 맞습니다.']
+  },
+  {
+    level: 101,
+    name: '메테오', icon: '☄️', color: '#ffb36a',
+    lines: [
+      '메테오 6개가 떨어져 적을 강타합니다.',
+      '직격 피해는 공격력 450%입니다.',
+      '폭발 반경 약 230px 안의 적에게 추가 피해가 들어갑니다.',
+      '쿨타임은 7초입니다.'
+    ],
+    tips: ['블랙홀로 적을 모은 뒤 사용하면 높은 멀티킬을 노리기 좋습니다.']
+  },
+  {
+    level: 120,
+    name: '독안개', icon: '☣️', color: '#9cffaa',
+    lines: [
+      '지정된 범위에 독안개를 펼쳐 지속 피해를 줍니다.',
+      '약한 몬스터를 넓게 정리하는 데 특화되어 있습니다.',
+      '무한 모드에서 몬스터가 많이 나올수록 효율이 좋아집니다.',
+      '멀티킬 누적과 돌발 퀘스트 진행에 도움이 됩니다.'
+    ],
+    tips: ['즉시 폭딜보다는 지속적으로 처치 수를 쌓는 스킬입니다.']
+  },
+  {
+    level: 150,
+    name: '블랙홀', icon: '🕳️', color: '#d8c6ff',
+    lines: [
+      '주변 몬스터를 한 지점으로 끌어당깁니다.',
+      '몬스터를 압축한 뒤 다른 범위형 스킬과 연계하기 좋습니다.',
+      '직접 피해보다 콤보 준비에 강한 스킬입니다.',
+      '메테오, 플라즈마 폭발과 궁합이 좋습니다.'
+    ],
+    tips: ['블랙홀 → 메테오 순서로 쓰면 10킬 이상 멀티킬을 만들기 쉽습니다.']
+  },
+  {
+    level: 180,
+    name: '플라즈마 폭발', icon: '💥', color: '#ff9df0',
+    lines: [
+      '강한 폭발로 주변 적을 한 번에 타격합니다.',
+      '처치된 적 주변으로 연쇄 폭발이 이어질 수 있습니다.',
+      '몬스터가 밀집해 있을수록 위력이 크게 올라갑니다.',
+      '멀티킬 특화 스킬입니다.'
+    ],
+    tips: ['블랙홀로 적을 모은 뒤 사용하면 폭발 연쇄가 더 잘 터집니다.']
+  },
+  {
+    level: 200,
+    name: '지진', icon: '🌎', color: '#ffb0b0',
+    lines: [
+      '20초 동안 지진이 지속됩니다.',
+      '0.04초마다 몬스터를 1마리씩 순차 공격합니다.',
+      '피해는 고정 4000이며 스테이지 보정이 적용됩니다.',
+      '쿨타임은 30초입니다.'
+    ],
+    tips: ['위기 상황에서 화면을 천천히 정리하는 안정형 광역 스킬입니다.']
+  }
+];
 
-    200: [
-      "LV.200 달성으로 지진 스킬이 추가되었어요!",
-      "스킬 버튼 [지진]을 누르면 20초 동안 지진이 지속됩니다.",
-      "지진은 0.04초마다 몬스터를 1마리씩 순차 공격해요. (한 번에 전부 삭제가 아니라 ‘쭉’ 정리!)",
-      "피해는 고정 4000(스테이지 보정 적용)이라 안정적으로 쓸 수 있어요.",
-      "쿨타임은 30초예요. 위기 때 ‘판정리’로 쓰면 시원합니다!"
-    ]
-  };
-
+// ✅ [스킬 가이드] 레벨별 스킬 해금 안내 문구
+const SKILL_UNLOCK_TUTORIAL = Object.fromEntries(
+  SKILL_GUIDE_DATA.map(item => [item.level, [
+    `LV.${item.level} 달성으로 ${item.name} 스킬이 해금되었습니다!`,
+    ...(item.lines || []),
+    '상단의 [스킬 가이드] 버튼에서 자세한 설명을 다시 볼 수 있습니다.'
+  ]])
+);
 function maybeShowSkillUnlockNotice(oldLv, newLv) {
   // 레벨별 스킬 해금 튜토리얼(자세 설명)
   for (const lv of SKILL_NOTICE_LEVELS) {
@@ -6728,7 +6816,7 @@ questModal.classList.remove('hidden');
 startQuestCountdown();
 }
 
-const NOTICE_VERSION_KEY = 'ss_notice_seen_v153';
+const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
 
 function openNoticeModal() {
   if (!noticeModal) return;
