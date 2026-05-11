@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.157.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.157.4 Responsive)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1483,6 +1483,109 @@ body.tutorial-mode .quake-skill{
   100%{ transform: translate(-50%, -50%) scale(1); opacity:1; }
 }
 
+
+/* ===============================
+   ✅ [v.157.4] 모든 화면 비율 대응 + 애플워치 초소형 모드
+   =============================== */
+body.watch-ui{
+  justify-content:flex-start;
+  padding:2px 0 !important;
+}
+#gameContainer.watch-ui{
+  padding:2px 0 !important;
+  max-height:100dvh;
+}
+#gameContainer.watch-ui #hud{
+  padding:2px 3px !important;
+  margin-bottom:2px !important;
+  gap:2px !important;
+  border-radius:4px !important;
+}
+#gameContainer.watch-ui #settingsBar,
+#gameContainer.watch-ui #playerHudCompact,
+#gameContainer.watch-ui #highScoreText,
+#gameContainer.watch-ui #hotTimeText,
+#gameContainer.watch-ui #goldText,
+#gameContainer.watch-ui #hpText{
+  display:none !important;
+}
+#gameContainer.watch-ui #hudTop{
+  margin-top:0 !important;
+  font-size:9px !important;
+  line-height:1.1 !important;
+}
+#gameContainer.watch-ui #scoreText,
+#gameContainer.watch-ui #stageText{
+  font-size:9px !important;
+}
+#gameContainer.watch-ui #expRow{
+  margin-top:1px !important;
+}
+#gameContainer.watch-ui #expWrapper{
+  height:9px !important;
+}
+#gameContainer.watch-ui #expLabel{
+  min-width:24px !important;
+  padding:0 3px !important;
+}
+#gameContainer.watch-ui #expText{
+  font-size:7px !important;
+  padding:0 2px !important;
+}
+#gameContainer.watch-ui #gameCanvas{
+  border-width:1px !important;
+  border-radius:6px !important;
+}
+#gameContainer.watch-ui #pauseBtn{
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  font-size:14px !important;
+  border-radius:999px !important;
+}
+#gameContainer.watch-ui .laser-skill,
+#gameContainer.watch-ui .bubble-skill,
+#gameContainer.watch-ui .blizzard-skill,
+#gameContainer.watch-ui .meteor-skill,
+#gameContainer.watch-ui .lightning-skill,
+#gameContainer.watch-ui .quake-skill,
+#gameContainer.watch-ui .toxic-skill,
+#gameContainer.watch-ui .blackhole-skill,
+#gameContainer.watch-ui .plasma-skill{
+  width:30px !important;
+  height:30px !important;
+  font-size:9px !important;
+  border-width:1px !important;
+}
+#gameContainer.watch-ui .laser-skill{ right:3px !important; bottom:calc(3px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .blizzard-skill{ right:3px !important; bottom:calc(36px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .meteor-skill{ right:3px !important; bottom:calc(69px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .lightning-skill{ right:3px !important; bottom:calc(102px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .quake-skill{ right:3px !important; bottom:calc(135px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .bubble-skill{ right:3px !important; bottom:calc(168px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .toxic-skill{ left:3px !important; bottom:calc(69px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .blackhole-skill{ left:3px !important; bottom:calc(102px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .plasma-skill{ left:3px !important; bottom:calc(135px + env(safe-area-inset-bottom)) !important; }
+#gameContainer.watch-ui .skill-icon{ font-size:14px !important; transform:none !important; }
+#gameContainer.watch-ui .skill-cd{ font-size:7px !important; bottom:2px !important; }
+#gameContainer.watch-ui #consumableQuickBar{
+  display:none !important;
+}
+#gameContainer.watch-ui .modal{
+  width:96vw !important;
+  max-width:96vw !important;
+  max-height:92dvh !important;
+  padding:8px !important;
+}
+@media (orientation: landscape) and (max-height: 520px){
+  #hud{ padding:4px 6px; margin-bottom:4px; gap:3px; }
+  #settingsBar{ gap:2px; }
+  #settingsBar .ui-btn{ font-size:8px; padding:3px 5px; }
+  #playerHudCompact{ min-height:20px; max-height:20px; }
+  #playerCompactText{ line-height:20px; }
+  #expWrapper{ height:13px; }
+}
+
 </style>
 </head>
 <body>
@@ -2004,14 +2107,42 @@ const ctx = canvas.getContext('2d');
 let width = canvas.width;
 let height = canvas.height;
 
+const WATCH_CANVAS_W = 320;
+const WATCH_CANVAS_H = 320;
 const MOBILE_CANVAS_W = 480;
 const MOBILE_CANVAS_H = 640;
+const PHONE_LANDSCAPE_CANVAS_W = 640;
+const PHONE_LANDSCAPE_CANVAS_H = 360;
 const DESKTOP_CANVAS_W = 960;
 const DESKTOP_CANVAS_H = 640;
 const DESKTOP_BREAKPOINT = 900;
 
+function getViewportSize() {
+  const vv = window.visualViewport;
+  return {
+    width: Math.max(120, Math.floor(vv ? vv.width : (window.innerWidth || document.documentElement.clientWidth || 320))),
+    height: Math.max(120, Math.floor(vv ? vv.height : (window.innerHeight || document.documentElement.clientHeight || 480)))
+  };
+}
+
 function getTargetCanvasSize() {
-  const isDesktopWide = window.innerWidth >= DESKTOP_BREAKPOINT && window.innerWidth > window.innerHeight;
+  const vp = getViewportSize();
+  const vw = vp.width;
+  const vh = vp.height;
+  const minSide = Math.min(vw, vh);
+  const maxSide = Math.max(vw, vh);
+
+  // 애플워치/초소형 웹뷰: 정사각형 전장으로 UI를 최대한 단순화
+  if (minSide <= 260 || maxSide <= 360) {
+    return { width: WATCH_CANVAS_W, height: WATCH_CANVAS_H, mode: 'watch' };
+  }
+
+  // 휴대폰 가로 모드: 세로 공간이 부족하므로 16:9에 가깝게 사용
+  if (vw > vh && vw < DESKTOP_BREAKPOINT) {
+    return { width: PHONE_LANDSCAPE_CANVAS_W, height: PHONE_LANDSCAPE_CANVAS_H, mode: 'phone-landscape' };
+  }
+
+  const isDesktopWide = vw >= DESKTOP_BREAKPOINT && vw > vh;
   return isDesktopWide
     ? { width: DESKTOP_CANVAS_W, height: DESKTOP_CANVAS_H, mode: 'desktop' }
     : { width: MOBILE_CANVAS_W, height: MOBILE_CANVAS_H, mode: 'mobile' };
@@ -2110,21 +2241,27 @@ let __lastExpBarPercent = 0;
 function applyResponsiveUiDensity() {
   const container = document.getElementById('gameContainer');
   if (!container) return;
-  const vw = Math.max(320, window.innerWidth || 0);
-  const vh = Math.max(480, window.innerHeight || 0);
-  const compact = vw <= 430 || vh <= 760;
-  const ultraCompact = vw <= 390 || vh <= 700;
+  const vp = getViewportSize();
+  const vw = vp.width;
+  const vh = vp.height;
+  const minSide = Math.min(vw, vh);
+  const maxSide = Math.max(vw, vh);
+  const watch = minSide <= 260 || maxSide <= 360;
+  const compact = watch || vw <= 430 || vh <= 760;
+  const ultraCompact = watch || vw <= 390 || vh <= 700;
 
   container.classList.toggle('compact-ui', compact);
   container.classList.toggle('ultra-compact-ui', ultraCompact);
+  container.classList.toggle('watch-ui', watch);
+  document.body.classList.toggle('watch-ui', watch);
 
-  document.documentElement.style.setProperty('--hud-font-scale', ultraCompact ? '0.84' : compact ? '0.90' : '1');
-  document.documentElement.style.setProperty('--settings-btn-font', ultraCompact ? '9px' : compact ? '10px' : '11px');
-  document.documentElement.style.setProperty('--settings-btn-pad-y', ultraCompact ? '3px' : '4px');
-  document.documentElement.style.setProperty('--settings-btn-pad-x', ultraCompact ? '6px' : compact ? '7px' : '8px');
-  document.documentElement.style.setProperty('--player-compact-font', ultraCompact ? '16px' : compact ? '18px' : '22px');
-  document.documentElement.style.setProperty('--exp-label-font', ultraCompact ? '13px' : compact ? '14px' : '16px');
-  document.documentElement.style.setProperty('--exp-text-font', ultraCompact ? '11px' : compact ? '12px' : '15px');
+  document.documentElement.style.setProperty('--hud-font-scale', watch ? '0.58' : ultraCompact ? '0.84' : compact ? '0.90' : '1');
+  document.documentElement.style.setProperty('--settings-btn-font', watch ? '7px' : ultraCompact ? '9px' : compact ? '10px' : '11px');
+  document.documentElement.style.setProperty('--settings-btn-pad-y', watch ? '2px' : ultraCompact ? '3px' : '4px');
+  document.documentElement.style.setProperty('--settings-btn-pad-x', watch ? '4px' : ultraCompact ? '6px' : compact ? '7px' : '8px');
+  document.documentElement.style.setProperty('--player-compact-font', watch ? '11px' : ultraCompact ? '16px' : compact ? '18px' : '22px');
+  document.documentElement.style.setProperty('--exp-label-font', watch ? '9px' : ultraCompact ? '13px' : compact ? '14px' : '16px');
+  document.documentElement.style.setProperty('--exp-text-font', watch ? '8px' : ultraCompact ? '11px' : compact ? '12px' : '15px');
 }
 
 
@@ -2135,12 +2272,14 @@ function fitCanvasToViewport() {
   const container = document.getElementById('gameContainer');
   const target = applyCanvasPreset();
 
-  const safeTop = 8;
-  const safeBottom = 10;
-  const sidePadding = 14;
+  const vp = getViewportSize();
+  const watchMode = target.mode === 'watch';
+  const safeTop = watchMode ? 2 : 8;
+  const safeBottom = watchMode ? 2 : 10;
+  const sidePadding = watchMode ? 4 : 14;
 
-  const vw = Math.max(320, window.innerWidth);
-  const vh = Math.max(480, window.innerHeight);
+  const vw = vp.width;
+  const vh = vp.height;
 
   const hudH = hud ? hud.getBoundingClientRect().height : 0;
   const aspect = target.width / target.height;
@@ -2148,13 +2287,14 @@ function fitCanvasToViewport() {
   let w = Math.min(target.width, vw - sidePadding);
   let h = w / aspect;
 
-  const availableH = Math.max(220, vh - hudH - safeTop - safeBottom - 10);
+  const minCanvasH = watchMode ? 96 : 180;
+  const availableH = Math.max(minCanvasH, vh - hudH - safeTop - safeBottom - 6);
   if (h > availableH) {
     h = availableH;
     w = h * aspect;
   }
 
-  const minWidth = Math.min(vw - 8, 240);
+  const minWidth = Math.min(vw - 4, watchMode ? 120 : 220);
   if (w < minWidth) {
     w = minWidth;
     h = w / aspect;
@@ -2198,6 +2338,7 @@ function fitTextElementToWidth(el, maxPx, minPx = 10) {
 
 // ✅ 최초 1회 + 리사이즈/회전 대응
 window.addEventListener('resize', () => fitCanvasToViewport());
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => fitCanvasToViewport());
 window.addEventListener('orientationchange', () => setTimeout(fitCanvasToViewport, 150));
 window.addEventListener('beforeunload', stopShopAutoRefresh);
 document.addEventListener('visibilitychange', () => {
