@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.157.1)</title>
+<title>Slime Shooter - Ultimate Evolution (v.157.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1677,7 +1677,7 @@ body.tutorial-mode .quake-skill{
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
         <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
-            <div>멀티킬 시스템이 추가되었습니다. 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동되며, 처치 수에 따라 추가 경험치가 지급됩니다.</div>
+            <div>멀티킬 시스템이 추가되었습니다. 번개, 눈보라처럼 동시 공격이 가능한 범위형 스킬로 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동됩니다.</div>
             <div>멀티킬 수가 높을수록 화면 중앙의 연출 색상과 효과가 더욱 화려해집니다.</div>
         </div>
         <div style="background:rgba(124,231,255,0.08); border:1px solid rgba(124,231,255,0.24); border-radius:10px; padding:10px;">
@@ -1696,7 +1696,7 @@ body.tutorial-mode .quake-skill{
             <div style="font-weight:900; color:#baffc7; margin-bottom:6px;">신규 범위형 스킬</div>
             <div>독안개, 블랙홀, 플라즈마 폭발 스킬이 추가되었습니다.</div>
             <div>독안개는 지속 피해, 블랙홀은 몬스터 압축, 플라즈마 폭발은 연쇄 폭발에 특화되어 있습니다.</div>
-            <div>기존 메테오, 번개, 눈보라, 지진과 조합하면 멀티킬을 더 쉽게 노릴 수 있습니다.</div>
+            <div>메테오, 번개, 눈보라, 지진처럼 여러 몬스터를 같은 순간에 처치할 수 있는 범위형 스킬과 조합하면 멀티킬을 노리기 쉽습니다.</div>
         </div>
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffffff; margin-bottom:6px;">플레이 팁</div>
@@ -7033,7 +7033,16 @@ function registerEnemyKill(isBoss = false, opts = {}) {
   }
 
   addQuestStat('kills', 1);
-  registerMultiKillKill(!!(opts && opts.skill));
+  if (opts && opts.skill === true) addQuestStat('skillKills', 1);
+
+  // ✅ 돌발 퀘스트의 N킬 목표는 일반 처치/스킬 처치 모두 카운트합니다.
+  if (!isBoss && gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'kills') {
+    suddenQuest.current = Math.min(suddenQuest.target, (suddenQuest.current || 0) + 1);
+  }
+
+  // ✅ 멀티킬은 일반 처치/연속 처치가 아니라,
+  // 같은 처리 프레임 안에서 범위형 스킬로 동시에 처치된 경우에만 별도 집계합니다.
+  // 기존 220ms 누적 방식은 빠른 일반 탄환/펫 탄환도 멀티킬로 오인될 수 있어 사용하지 않습니다.
 
   if (isBoss) {
     saveData.quests.boss.count++;
@@ -10918,7 +10927,11 @@ function spawnMultiKillText(killCount, bonusExp, x, y) {
   });
 }
 
-function recordMultiKillCandidate(gainedExp, enemy) {
+function recordMultiKillCandidate(gainedExp, enemy, options = {}) {
+  // ✅ 멀티킬은 반드시 '동시 처치 가능한 스킬'에서만 후보로 등록합니다.
+  // 일반 탄환, 펫 탄환, 빠른 연속 처치는 멀티킬 후보가 아닙니다.
+  if (!options || options.eligible !== true) return;
+
   // 미션 모드는 처치 즉시 EXP 흐름이 다르므로 제외
   if (gameMode === 'mission') return;
 
@@ -10957,6 +10970,18 @@ function finalizeMultiKillBonus() {
   const granted = addExpDirect(bonusExp);
   if (granted <= 0) return;
 
+  // ✅ 같은 처리 프레임의 스킬 동시 처치만 여기까지 도달합니다.
+  ensureMultiKillPatchState();
+  saveData.multikill.total += 1;
+  saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
+  saveData.multikill.bonusExp += Math.max(0, Math.floor(granted || bonusExp));
+  addQuestStat('multiKills', 1);
+  if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
+  if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
+  if (gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'multi') {
+    suddenQuest.current = Math.min(suddenQuest.target, (suddenQuest.current || 0) + 1);
+  }
+
   const pct = Math.round(rate * 100);
   const x = Number.isFinite(batch.x) ? batch.x : (player ? player.x : width / 2);
   const y = Number.isFinite(batch.y) ? batch.y : (player ? player.y : height / 2);
@@ -10970,6 +10995,10 @@ function addScore(amount, source = 'monster', options = {}) {
   amount = resolveScoreAmount(amount, source, options);
   const prevScore = score;
   score += amount;
+
+  if (gameMode === 'infinite' && source === 'monster' && options.noAllKill !== true) {
+    recordInfiniteAllKillCandidate(options.enemy, amount);
+  }
 
   // ✅ [v.79] 골드는 자동 획득하지 않습니다.
   // - 다른 모드(스테이지/던전/아이템 파크/미니게임 등): 골드 획득 불가
@@ -11000,7 +11029,9 @@ function addScore(amount, source = 'monster', options = {}) {
     if (gainedExp > 0) {
       stageRunExpMonsters += Math.max(0, Math.floor(gainedExp || 0));
     }
-    recordMultiKillCandidate(gainedExp, options.enemy);
+    if (options.multikillEligible === true) {
+      recordMultiKillCandidate(gainedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
+    }
     return gainedExp;
   }
 
@@ -11021,8 +11052,8 @@ function addScore(amount, source = 'monster', options = {}) {
     }
   }
 
-  if (source === 'monster') {
-    recordMultiKillCandidate(grantedExp, options.enemy);
+  if (source === 'monster' && options.multikillEligible === true) {
+    recordMultiKillCandidate(grantedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
   }
   return grantedExp;
 }
@@ -12531,10 +12562,11 @@ function handleEnemyKilledBySkill(e) {
   // 던전은 즉시 EXP 지급, 그 외는 EXP 구슬 드랍(기존 로직과 동일)
   if (gameMode === 'dungeon') {
     const gained = calcDungeonKillExp(dungeonState.tier, level);
-    addExp(gained);
+    const granted = addExp(gained);
+    recordMultiKillCandidate(granted || gained, e, { eligible: true, source: 'skill' });
   } else {
     const killScoreInfo = getEnemyKillScore(e);
-    addScore(killScoreInfo.amount, 'monster', { enemy: e });
+    addScore(killScoreInfo.amount, 'monster', { enemy: e, multikillEligible: true, multikillSource: 'skill' });
     if (gameMode === 'infinite') {
       spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
     }
@@ -13774,10 +13806,13 @@ function spawnNextWave() {
       const enemyCount = 5;
       const speedBase = getInfiniteEnemyFallVy();
       const y = -40;
+      const allKillRowId = createInfiniteAllKillRowId();
+      registerInfiniteAllKillRow(allKillRowId, enemyCount);
       for (let i = 0; i < enemyCount; i++) {
         const x = (width / 6) * (i + 1);
         const type = ENEMY_TYPES[(i + waveIndex) % ENEMY_TYPES.length];
         const enemy = createEnemy(type, x, y, speedBase, 'straight', 0, { attackStyle: getEnemyAttackStyle(stage, waveIndex, i) });
+        enemy._infiniteAllKillRowId = allKillRowId;
         enemies.push(enemy);
       }
       waveIndex++;
@@ -18291,6 +18326,65 @@ let infiniteDashImpactFxTimer = 0;
 let infiniteFirstBossKillDistance = null;
 let infiniteMonsterKillCount = 0;
 
+// ===============================
+// ✅ [v.157.3] 무한 모드 올킬 보너스
+// - 한 줄로 내려오는 5마리를 모두 처치하면 발동
+// - 해당 줄 5마리의 실제 사냥 점수 합계의 50%를 추가 지급
+// - addScore()를 통해 지급하므로 10점당 1EXP 규칙도 그대로 반영
+// ===============================
+const INFINITE_ALL_KILL_ROW_SIZE = 5;
+const INFINITE_ALL_KILL_BONUS_RATE = 0.50;
+let infiniteAllKillRows = Object.create(null);
+let infiniteAllKillRowSeq = 0;
+
+function resetInfiniteAllKillRows() {
+  infiniteAllKillRows = Object.create(null);
+  infiniteAllKillRowSeq = 0;
+}
+
+function createInfiniteAllKillRowId() {
+  infiniteAllKillRowSeq = (infiniteAllKillRowSeq || 0) + 1;
+  return `inf-row-${infiniteAllKillRowSeq}`;
+}
+
+function registerInfiniteAllKillRow(rowId, targetCount = INFINITE_ALL_KILL_ROW_SIZE) {
+  if (gameMode !== 'infinite' || !rowId) return;
+  infiniteAllKillRows[rowId] = {
+    target: Math.max(1, Math.floor(Number(targetCount) || INFINITE_ALL_KILL_ROW_SIZE)),
+    killed: 0,
+    score: 0,
+    completed: false,
+    x: width / 2,
+    y: 120
+  };
+}
+
+function recordInfiniteAllKillCandidate(enemy, actualScore) {
+  if (gameMode !== 'infinite' || !enemy) return;
+  const rowId = enemy._infiniteAllKillRowId;
+  if (!rowId) return;
+
+  const row = infiniteAllKillRows[rowId];
+  if (!row || row.completed) return;
+
+  row.killed += 1;
+  row.score += Math.max(0, Math.floor(Number(actualScore) || 0));
+  if (Number.isFinite(enemy.x)) row.x = enemy.x;
+  if (Number.isFinite(enemy.y)) row.y = enemy.y;
+
+  if (row.killed >= row.target) {
+    row.completed = true;
+    const bonusScore = Math.max(1, Math.floor(row.score * INFINITE_ALL_KILL_BONUS_RATE));
+    const gainedExp = addScore(bonusScore, 'allkill', { noAllKill: true });
+    spawnDamageText(width / 2, Math.max(86, Math.min(height * 0.35, row.y - 44)), `ALL KILL! +${formatNumber(bonusScore)}점`, '#fff27a', true);
+    if (gainedExp > 0) {
+      spawnDamageText(width / 2, Math.max(116, Math.min(height * 0.42, row.y - 10)), `EXP +${formatNumber(gainedExp)}`, '#8fffd3', true);
+    }
+    pushGainMessage(`올킬 보너스: 사냥 점수 50%(+${formatNumber(bonusScore)}점)` + (gainedExp > 0 ? ` / EXP +${formatNumber(gainedExp)}` : ''), '#fff27a');
+    delete infiniteAllKillRows[rowId];
+  }
+}
+
 function getInfiniteMonsterKillScore() {
   const progress = getInfiniteMonsterScoreProgressData(infiniteMonsterKillCount);
   return Math.max(100, Math.floor(progress.score || 100));
@@ -18317,6 +18411,7 @@ function resetInfiniteModeRun() {
   infiniteDashImpactFxTimer = 0;
   infiniteFirstBossKillDistance = null;
   infiniteMonsterKillCount = 0;
+  resetInfiniteAllKillRows();
   score = 0;
 }
 
