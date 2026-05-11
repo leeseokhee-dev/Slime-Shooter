@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.157.5 MultiKill Pets)</title>
+<title>Slime Shooter - Ultimate Evolution (v.157.6 Simple EXP Messages)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -8503,7 +8503,7 @@ function flushMultiKillIfReady(force = false) {
   const color = getMultiKillColor(count);
   multiKillPopups.push({ count, bonus: gained || bonus, color, createdAt: performance.now(), life: 1150 });
   if (multiKillPopups.length > 5) multiKillPopups.shift();
-  pushGainMessage(`멀티킬 ${count}킬 보너스 EXP +${formatNumber(gained || bonus)}`, color);
+  pushGainMessage(`멀티킬(${count}) (+${formatNumber(gained || bonus)})`, color);
 }
 
 
@@ -11041,7 +11041,7 @@ function finalizeMultiKillBonus() {
   const y = Number.isFinite(batch.y) ? batch.y : (player ? player.y : height / 2);
 
   spawnMultiKillText(count, granted, x, y - 34);
-  pushGainMessage(`멀티킬 ${count}마리 보너스 ${pct}%(+${formatNumber(granted)} EXP)`, getMultiKillStyle(count).color);
+  pushGainMessage(`멀티킬(${count}) (+${formatNumber(granted)})`, getMultiKillStyle(count).color);
 }
 
 function addScore(amount, source = 'monster', options = {}) {
@@ -18551,7 +18551,7 @@ function recordInfiniteAllKillCandidate(enemy, actualScore) {
     if (gainedExp > 0) {
       spawnDamageText(width / 2, Math.max(116, Math.min(height * 0.42, row.y - 10)), `EXP +${formatNumber(gainedExp)}`, '#8fffd3', true);
     }
-    pushGainMessage(`올킬 보너스: 사냥 점수 50%(+${formatNumber(bonusScore)}점)` + (gainedExp > 0 ? ` / EXP +${formatNumber(gainedExp)}` : ''), '#fff27a');
+    pushGainMessage(`올킬 보너스 (+${formatNumber(gainedExp)})`, '#fff27a');
     delete infiniteAllKillRows[rowId];
   }
 }
