@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.158.4 Title Card UI)</title>
+<title>Slime Shooter - Ultimate Evolution (v.160 Bubble Step + Skill SFX)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3572,6 +3572,30 @@ siren: () => {
         playTone(392, 'sawtooth', 0.5, 0.1);
         setTimeout(() => playTone(330, 'sawtooth', 0.5, 0.1), 300);
         setTimeout(() => playTone(262, 'sawtooth', 1.0, 0.1), 600);
+    },
+    // ✅ [v.160] 스킬 전용 효과음
+    bubbleShot: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        playTone(720, 'sine', 0.045, 0.055);
+        setTimeout(() => playTone(980, 'triangle', 0.06, 0.04), 35);
+    },
+    petBombThrow: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        playTone(180, 'triangle', 0.08, 0.08);
+        setTimeout(() => playTone(130, 'sawtooth', 0.12, 0.055), 55);
+    },
+    petTornado: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        playNoise(0.22, 0.07);
+        playTone(220, 'sine', 0.16, 0.04);
+        setTimeout(() => playTone(330, 'sine', 0.16, 0.04), 90);
+    },
+    hyperFlight: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        playNoise(0.28, 0.09);
+        playTone(260, 'sawtooth', 0.10, 0.06);
+        setTimeout(() => playTone(520, 'sawtooth', 0.12, 0.07), 70);
+        setTimeout(() => playTone(1040, 'triangle', 0.14, 0.055), 150);
     },
   // ✅ [v.56] 만렙(250) 도달 축하 사운드
   maxLevel: () => {
@@ -11922,7 +11946,15 @@ function trySpawnInfiniteDropItem(x, y) {
 function applyInfiniteFieldItem(type) {
   const def = INFINITE_ITEM_DEFS[type];
   if (!def) return;
+  const wasInactive = !(infiniteItemTimers[type] > 0);
   infiniteItemTimers[type] = Math.max(0, Number(def.duration || 0));
+  if (type === 'dash' && wasInactive) {
+    try { if (SFX && SFX.hyperFlight) SFX.hyperFlight(); } catch(e) {}
+    if (player) {
+      spawnDamageText(player.x, player.y - player.size - 22, '슈우웅!', '#ffb36b', true);
+      spawnHyperFlightBurstFx(player.x, player.y);
+    }
+  }
 }
 
 function pickupFieldItem(item) {
@@ -13058,6 +13090,7 @@ function castPetActiveSkill(slot, petData) {
         tail: []
       });
     }
+    try { if (SFX && SFX.petBombThrow) SFX.petBombThrow(); } catch(e) {}
     if (count >= 3) spawnDamageText(anchor.x, anchor.y - anchor.size - 28, '💣 3연속 폭탄!', color);
   }
   else if (petData.type === 'tornadopet') {
@@ -13073,6 +13106,7 @@ function castPetActiveSkill(slot, petData) {
       life: 3000, maxLife: 3000, tickTimer: 0, tickInterval: 200,
       swirl: Math.random() * Math.PI * 2
     });
+    try { if (SFX && SFX.petTornado) SFX.petTornado(); } catch(e) {}
   }
 }
 
@@ -13371,6 +13405,7 @@ function tryCastLaserSkill() {
 // ===============================
 // ✅ [v.88] 거품 스킬 (LV.11+)
 // - 쿨타임 3초 / 1.5초 동안 0.15초 간격 발사
+// - LV.11=1발, LV.31=2발, LV.61=3발, LV.101=4발, LV.200=5발
 // - 모든 몬스터(보스 포함)에게 공격력 200% 피해
 // ===============================
 
@@ -13379,6 +13414,15 @@ let bubbleSpray = null;    // { life, tick }
 
 function canUseBubbleSkill() {
   return (typeof level === 'number') && (level >= 11);
+}
+
+function getBubbleSkillShotCount() {
+  if (level >= 200) return 5;
+  if (level >= 101) return 4;
+  if (level >= 61) return 3;
+  if (level >= 31) return 2;
+  if (level >= 11) return 1;
+  return 0;
 }
 
 function castBubbleSkill() {
@@ -13406,7 +13450,7 @@ function updateBubbleSkillUI() {
   bubbleSkillBtn.classList.remove('hidden');
 
   const cd = Math.max(0, (player.bubbleCooldown || 0));
-  applySkillButtonVisual(bubbleSkillBtn, cd, 3000, '💧', '');
+  applySkillButtonVisual(bubbleSkillBtn, cd, 3000, '💧', cd > 0 ? '' : `${getBubbleSkillShotCount()}발`);
 }
 
 function shootBubbleProjectile() {
@@ -13426,21 +13470,32 @@ function shootBubbleProjectile() {
     target = best;
   }
 
-  let angle = -Math.PI / 2;
-  if (target) angle = Math.atan2(target.y - player.y, target.x - player.x);
+  let baseAngle = -Math.PI / 2;
+  if (target) baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
 
   const speed = 10 * getBuffMult('speed');
   const atk = getPlayerAttackPower();
   const dmg = Math.max(1, Math.round(atk * 2.0));
+  const count = getBubbleSkillShotCount();
+  const gap = 0.18; // 약 10도 간격의 부채꼴 발사
 
-  bubbles.push({
-    x: player.x,
-    y: player.y - player.size,
-    radius: 10,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    damage: dmg
-  });
+  for (let i = 0; i < count; i++) {
+    const offset = (i - (count - 1) / 2) * gap;
+    const angle = baseAngle + offset;
+    const side = (i - (count - 1) / 2) * 7;
+    const px = Math.cos(baseAngle + Math.PI / 2) * side;
+    const py = Math.sin(baseAngle + Math.PI / 2) * side;
+    bubbles.push({
+      x: player.x + px,
+      y: player.y - player.size + py,
+      radius: 10,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      damage: dmg
+    });
+  }
+
+  try { if (SFX && SFX.bubbleShot) SFX.bubbleShot(); } catch(e) {}
 }
 
 function updateBubble(dt) {
@@ -14005,6 +14060,25 @@ function getInfiniteDashShakeOffset() {
   const mag = isLowPower() ? 2.2 : 4.2;
   const m = mag * (0.55 + ratio * 0.45);
   return { x: randRange(-m, m), y: randRange(-m, m) };
+}
+
+
+function spawnHyperFlightBurstFx(x, y) {
+  const count = isLowPower() ? 14 : 26;
+  for (let i = 0; i < count; i++) {
+    const ang = (Math.PI * 2 * i / count) + randRange(-0.18, 0.18);
+    const sp = randRange(3.8, 8.8);
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp,
+      r: randRange(2.2, 5.2),
+      color: i % 3 === 0 ? '#fff2a8' : (i % 3 === 1 ? '#ffb36b' : '#bff7ff'),
+      life: randRange(260, 520),
+      maxLife: 520,
+      grow: -0.015
+    });
+  }
 }
 
 function updateQuakeSkillUI() {
@@ -18088,6 +18162,31 @@ if (hyperFlightActive) {
   ctx.beginPath();
   ctx.ellipse(0, 0, size * (1.55 + ringPulse * 0.08), size * (1.18 + ringPulse * 0.05), 0, 0, Math.PI * 2);
   ctx.stroke();
+
+  // ✅ [v.160] 하이퍼 플라이트 돌진 중 이펙트: 슬라임 주변 속도선 + 전방 광원
+  const rush = (t / 48) % 1;
+  ctx.rotate(-Math.PI / 2);
+  for (let i = 0; i < 8; i++) {
+    const lane = (i - 3.5) * size * 0.24;
+    const len = size * (0.55 + (i % 3) * 0.18);
+    const sx = -size * (1.95 + ((rush + i * 0.13) % 1) * 0.95);
+    ctx.globalAlpha = 0.22 + ringPulse * 0.18;
+    ctx.strokeStyle = i % 2 ? '#bff7ff' : '#ffdf8a';
+    ctx.lineWidth = Math.max(2, size * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(sx, lane);
+    ctx.lineTo(sx + len, lane * 0.86);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 0.20 + ringPulse * 0.16;
+  const grad = ctx.createRadialGradient(size * 1.15, 0, 0, size * 1.15, 0, size * 1.05);
+  grad.addColorStop(0, 'rgba(255,243,180,0.95)');
+  grad.addColorStop(0.48, 'rgba(255,179,107,0.32)');
+  grad.addColorStop(1, 'rgba(255,179,107,0.00)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(size * 1.15, 0, size * 1.05, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
