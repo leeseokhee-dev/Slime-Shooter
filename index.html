@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.157.6 Simple EXP Messages)</title>
+<title>Slime Shooter - Ultimate Evolution (v.157.7 Bomb Pet Throw Animation)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -12287,11 +12287,33 @@ function castPetActiveSkill(slot, petData) {
       const angle = (-Math.PI / 2) + (i - (count - 1) / 2) * 1.15;
       const tx = clamp(target.x + Math.cos(angle) * spread, 24, width - 24);
       const ty = clamp(target.y + Math.sin(angle) * spread, 40, height - 24);
-      petSkillBursts.push({
-        kind: 'bombpet', slot, x: tx, y: ty, radius: 0, maxRadius: radius,
-        damage, color, life: 360, maxLife: 360, hitSet: null, clearBullets: false
+      const sx = anchor.x;
+      const sy = anchor.y - anchor.size * 0.92;
+      const travel = 430 + Math.random() * 90;
+      petSkillProjectiles.push({
+        kind: 'bombpet',
+        slot,
+        x: sx,
+        y: sy,
+        startX: sx,
+        startY: sy,
+        targetX: tx,
+        targetY: ty,
+        progress: 0,
+        travel,
+        radius: 11 + star * 1.4,
+        blastRadius: radius,
+        damage,
+        color,
+        accent: def.accent || '#fff0bf',
+        life: travel + 220,
+        maxLife: travel + 220,
+        spin: (Math.random() * Math.PI * 2),
+        spinSpeed: (i - (count - 1) / 2) * 0.12 + (Math.random() < 0.5 ? -0.22 : 0.22),
+        arcHeight: 78 + star * 8 + Math.random() * 18,
+        exploded: false,
+        tail: []
       });
-      applyPetAreaDamage(tx, ty, radius, damage, color, 'bombpet');
     }
     if (count >= 3) spawnDamageText(anchor.x, anchor.y - anchor.size - 28, '💣 3연속 폭탄!', color);
   }
@@ -12337,6 +12359,31 @@ function updatePetSkillProjectiles(dt) {
         const sp = Math.hypot(p.vx, p.vy);
         if (sp > vmax) { p.vx = (p.vx / sp) * vmax; p.vy = (p.vy / sp) * vmax; }
       }
+    }
+    if (p.kind === 'bombpet') {
+      p.progress = Math.min(1, (p.progress || 0) + dt / Math.max(1, p.travel || 480));
+      const t = p.progress;
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const sx = Number(p.startX ?? p.x) || p.x;
+      const sy = Number(p.startY ?? p.y) || p.y;
+      const tx = Number(p.targetX ?? p.x) || p.x;
+      const ty = Number(p.targetY ?? p.y) || p.y;
+      p.x = sx + (tx - sx) * ease;
+      p.y = sy + (ty - sy) * ease - Math.sin(Math.PI * t) * (p.arcHeight || 86);
+      p.spin = (p.spin || 0) + (p.spinSpeed || 0.2) * delta;
+      if (!Array.isArray(p.tail)) p.tail = [];
+      p.tail.unshift({ x:p.x, y:p.y, r:p.radius || 13, a: 0.55 });
+      if (p.tail.length > 7) p.tail.length = 7;
+      if (t >= 1 && !p.exploded) {
+        p.exploded = true;
+        petSkillBursts.push({
+          kind: 'bombpet', slot: p.slot, x: tx, y: ty, radius: 0, maxRadius: p.blastRadius || 100,
+          damage: p.damage || 1, color: p.color, life: 360, maxLife: 360, hitSet: null, clearBullets: false
+        });
+        applyPetAreaDamage(tx, ty, p.blastRadius || 100, p.damage || 1, p.color || '#ffb347', 'bombpet');
+        p.life = 0;
+      }
+      continue;
     }
     p.x += (p.vx || 0) * delta;
     p.y += (p.vy || 0) * delta;
@@ -17762,6 +17809,42 @@ function drawPetSkillEffects() {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(2, p.radius * 0.38 + glow * 0.06), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.kind === 'bombpet') {
+      if (Array.isArray(p.tail) && p.tail.length) {
+        p.tail.forEach((t, idx) => {
+          const k = 1 - idx / p.tail.length;
+          ctx.save();
+          ctx.globalAlpha = (t.a || 0.45) * k * 0.34;
+          ctx.fillStyle = idx % 2 === 0 ? 'rgba(255,179,71,0.95)' : 'rgba(255,240,191,0.85)';
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, Math.max(1.4, t.r * k * 0.75), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+      const r = p.radius || 13;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.spin || 0);
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = p.color || '#ffb347';
+      ctx.fillStyle = '#2b2522';
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = p.color || '#ffb347';
+      ctx.beginPath();
+      ctx.arc(-r * 0.28, -r * 0.32, Math.max(2.2, r * 0.28), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = p.accent || '#fff0bf';
+      ctx.lineWidth = Math.max(2, r * 0.16);
+      ctx.beginPath();
+      ctx.moveTo(r * 0.45, -r * 0.58);
+      ctx.quadraticCurveTo(r * 0.95, -r * 1.05, r * 1.22, -r * 0.62);
+      ctx.stroke();
+      ctx.fillStyle = '#fff0bf';
+      ctx.beginPath();
+      ctx.arc(r * 1.27, -r * 0.56, Math.max(2, r * 0.20), 0, Math.PI * 2);
       ctx.fill();
     } else {
       if (Array.isArray(p.tail) && p.tail.length) {
