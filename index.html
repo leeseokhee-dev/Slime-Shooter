@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.160 Bubble Step + Skill SFX)</title>
+<title>Slime Shooter - Ultimate Evolution (v.161 HTML Skill SFX)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3596,6 +3596,60 @@ siren: () => {
         playTone(260, 'sawtooth', 0.10, 0.06);
         setTimeout(() => playTone(520, 'sawtooth', 0.12, 0.07), 70);
         setTimeout(() => playTone(1040, 'triangle', 0.14, 0.055), 150);
+    },
+    // ✅ [v.161] HTML 합성 스킬 효과음(외부 mp3/wav 없이 Web Audio API만 사용)
+    laserBeam: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        playTone(980, 'sawtooth', 0.14, 0.045);
+        setTimeout(() => playTone(1240, 'triangle', 0.10, 0.035), 45);
+        setTimeout(() => playNoise(0.08, 0.035), 20);
+    },
+    lightningZap: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // 짧고 날카로운 “칙!” 전기 스파크
+        playNoise(0.055, 0.08);
+        playTone(1450, 'square', 0.045, 0.035);
+        setTimeout(() => playTone(980, 'sawtooth', 0.035, 0.025), 28);
+    },
+    meteorLaunch: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // 화면 아래에서 솟구치는 발사/비행음
+        playNoise(0.22, 0.055);
+        playTone(180, 'sawtooth', 0.10, 0.045);
+        setTimeout(() => playTone(320, 'sawtooth', 0.14, 0.04), 80);
+        setTimeout(() => playTone(520, 'triangle', 0.11, 0.03), 165);
+    },
+    meteorImpact: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // 맞았을 때 격파/폭발음
+        playNoise(0.34, 0.18);
+        playTone(92, 'sawtooth', 0.20, 0.09);
+        setTimeout(() => playTone(55, 'triangle', 0.28, 0.10), 80);
+    },
+    blizzardWind: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // 3초 지속 바람음 + 얼음 입자 느낌
+        playNoise(3.0, 0.055);
+        playTone(210, 'sine', 0.55, 0.025);
+        setTimeout(() => playTone(260, 'sine', 0.60, 0.022), 520);
+        setTimeout(() => playTone(330, 'triangle', 0.42, 0.018), 1150);
+        setTimeout(() => playTone(420, 'triangle', 0.36, 0.016), 1850);
+    },
+    quakeRumble: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // “쿠구구구구궁!” 저음 진동
+        playNoise(1.8, 0.09);
+        playTone(64, 'sawtooth', 0.48, 0.13);
+        setTimeout(() => playTone(58, 'sawtooth', 0.55, 0.13), 300);
+        setTimeout(() => playTone(72, 'triangle', 0.62, 0.12), 650);
+        setTimeout(() => playTone(45, 'sawtooth', 0.75, 0.15), 1120);
+    },
+    hyperFlightImpact: () => {
+        if(!audioCtx || !sfxEnabled) return;
+        // 하이퍼 플라이트 종료 충격파 “쾅!”
+        playNoise(0.38, 0.20);
+        playTone(82, 'sawtooth', 0.22, 0.13);
+        setTimeout(() => playTone(48, 'triangle', 0.30, 0.11), 70);
     },
   // ✅ [v.56] 만렙(250) 도달 축하 사운드
   maxLevel: () => {
@@ -11988,6 +12042,11 @@ function updateHyperFlightPostInvuln(dt) {
 
   if (justEnded) {
     hyperFlightPostInvulnTimer = 1500;
+    try { if (SFX && SFX.hyperFlightImpact) SFX.hyperFlightImpact(); } catch(e) {}
+    if (player) {
+      spawnDamageText(player.x, player.y - player.size - 18, '쾅!', '#ffd36b', true);
+      spawnHyperFlightBurstFx(player.x, player.y);
+    }
   }
 
   if (hyperFlightPostInvulnTimer > 0) {
@@ -13346,6 +13405,7 @@ function canUseLaserSkill() {
 function castLaserSkill() {
   addSkillQuestCount('laser', 1);
   if (!player) return;
+  try { if (SFX && SFX.laserBeam) SFX.laserBeam(); } catch(e) {}
   let pStage = 1;
   if (level >= 200) pStage = 6;
   else if (level >= 101) pStage = 5;
@@ -13695,6 +13755,7 @@ function canUseBlizzardSkill() {
 function castBlizzardSkill() {
   addSkillQuestCount('blizzard', 1);
   if (!player) return;
+  try { if (SFX && SFX.blizzardWind) SFX.blizzardWind(); } catch(e) {}
   // 6초 지속
   blizzard = { life: 6000, tick: 0 };
 
@@ -13808,6 +13869,7 @@ function canUseMeteorSkill() {
 function castMeteorSkill() {
   addSkillQuestCount('meteor', 1);
   if (!player) return;
+  try { if (SFX && SFX.meteorLaunch) SFX.meteorLaunch(); } catch(e) {}
 
   const N = 6;
   for (let i = 0; i < N; i++) {
@@ -13919,6 +13981,7 @@ function updateLightning(dt) {
       }
 
       // 이펙트(위에서 떨어지는 번개)
+      try { if (SFX && SFX.lightningZap) SFX.lightningZap(); } catch(e) {}
       lightningFx.push({ x: tx, y: ty, life: 180, maxLife: 180, w: 2 + Math.random()*2 });
 
       // 범위 피해
@@ -13994,6 +14057,7 @@ function canUseQuakeSkill() {
 function castQuakeSkill() {
   addSkillQuestCount('quake', 1);
   if (!player) return;
+  try { if (SFX && SFX.quakeRumble) SFX.quakeRumble(); } catch(e) {}
   // ✅ [v.86.1] 20초 지속, 0.07초마다 1마리씩 순차 공격
   quake = { life: 20000, tick: 0, maxLife: 20000 };
   player.quakeCooldown = applyHyperSkillCooldown(30000);
@@ -14206,6 +14270,7 @@ const applyMeteorSplash = (cx, cy, excludeEnemy, hitBoss = true) => {
         applyMeteorSplash(m.x, m.y, e, true); // ✅ 주변 폭발 데미지(맞은 대상 e는 중복타격 방지)
 
         // ✅ [v.68] 메테오 폭발 이펙트(시각 표현)
+        try { if (SFX && SFX.meteorImpact) SFX.meteorImpact(); } catch(e) {}
         spawnMeteorImpactFx(m.x, m.y, false);
 
         if (e.hp <= 0) { handleEnemyKilledBySkill(e); e.hp = 0; }
@@ -14229,6 +14294,7 @@ const applyMeteorSplash = (cx, cy, excludeEnemy, hitBoss = true) => {
 
 
         // ✅ [v.68] 보스 메테오 폭발 이펙트(시각 표현)
+        try { if (SFX && SFX.meteorImpact) SFX.meteorImpact(); } catch(e) {}
         spawnMeteorImpactFx(m.x, m.y, true);
 
         if (boss && boss.hp <= 0) handleBossKilledBySkill();
