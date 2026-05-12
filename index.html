@@ -1760,6 +1760,66 @@ body.watch-ui{
   }
 }
 
+
+/* ===============================
+   ✅ [v.158.2] iPhone 8 타이틀 버튼 축소/2열 재배치
+   - 게임 타이틀명, 현재 레벨, 누적 EXP, 최고 점수가 버튼에 가려지지 않게 수정
+   - 출석 완료는 전체 폭, 하단 4개 버튼은 2열 배치
+   =============================== */
+@media (max-width: 430px) and (max-height: 740px){
+  #titleUI{
+    justify-content:flex-start !important;
+    pointer-events:none !important;
+  }
+  #titleUI .overlay-content{
+    left:50% !important;
+    bottom:clamp(20px, 4.2vh, 34px) !important;
+    transform:translateX(-50%) !important;
+    width:min(82vw, 320px) !important;
+    max-width:320px !important;
+    display:grid !important;
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+    gap:8px !important;
+    padding:0 !important;
+    background:none !important;
+    pointer-events:auto !important;
+  }
+  #titleUI #dailyRewardBtn{
+    grid-column:1 / -1 !important;
+  }
+  #titleUI #startBtn,
+  #titleUI #dailyRewardBtn,
+  #titleUI #openNoticeBtn,
+  #titleUI #openQuestBtn,
+  #titleExitBtn{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    min-height:34px !important;
+    height:34px !important;
+    padding:5px 8px !important;
+    margin:0 !important;
+    border-radius:8px !important;
+    font-size:14px !important;
+    line-height:1.05 !important;
+    letter-spacing:-0.25px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:clip !important;
+    box-shadow:0 5px 14px rgba(0,0,0,0.42) !important;
+  }
+  #titleUI #startBtn{
+    font-size:14px !important;
+    font-weight:1000 !important;
+  }
+  #titleUI #openQuestBtn{
+    font-size:13px !important;
+  }
+}
+
 </style>
 </head>
 <body>
