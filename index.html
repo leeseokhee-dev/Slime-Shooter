@@ -134,13 +134,14 @@ padding: 8px 0;
     line-height: 1.05;
     flex: 0 1 auto;
 }
-#settingsBar #fontSelect{
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     max-width: 148px;
     padding: 5px 8px;
 }
 @media (max-width: 520px){
   #settingsBar .ui-btn{ font-size: 11px; padding: 5px 8px; }
-  #settingsBar #fontSelect{ max-width: 124px; }
+  #settingsBar #fontSelect, #settingsBar #fpsSelect{ max-width: 124px; }
 }
 /* 상단 EXP 행 */
     #expRow {
@@ -544,6 +545,7 @@ body.dead-mode #consumableQuickBar{
 
     /* 서체 셀렉트는 글자 안 잘리게 */
     #fontSelect { max-width: 170px; }
+    #fpsSelect { max-width: 90px; }
 
     .big-btn {
         font-size: 18px;
@@ -693,7 +695,8 @@ body.tutorial-mode #pauseBtn{
 #gameContainer.compact-ui #settingsBar{
   gap: 3px;
 }
-#gameContainer.compact-ui #settingsBar #fontSelect{
+#gameContainer.compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 118px;
 }
 #gameContainer.compact-ui #expLabel{
@@ -731,7 +734,8 @@ body.tutorial-mode #pauseBtn{
 #gameContainer.ultra-compact-ui #settingsBar{
   gap: 2px;
 }
-#gameContainer.ultra-compact-ui #settingsBar #fontSelect{
+#gameContainer.ultra-compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 108px;
 }
 #gameContainer.ultra-compact-ui .ui-btn{
@@ -1587,7 +1591,8 @@ body.watch-ui{
     width:100% !important;
   }
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     width:100% !important;
     min-width:0 !important;
     max-width:none !important;
@@ -1645,7 +1650,8 @@ body.watch-ui{
   gap: 3px !important;
 }
 #settingsBar .ui-btn,
-#settingsBar #fontSelect{
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   font-size: var(--settings-btn-font) !important;
   padding: var(--settings-btn-pad-y) var(--settings-btn-pad-x) !important;
   line-height: 1 !important;
@@ -1654,7 +1660,8 @@ body.watch-ui{
   overflow: hidden !important;
   text-overflow: clip !important;
 }
-#settingsBar #fontSelect{
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 118px !important;
 }
 #expWrapper{
@@ -1667,12 +1674,14 @@ body.watch-ui{
 }
 
 #gameContainer.compact-ui #settingsBar .ui-btn,
-#gameContainer.compact-ui #settingsBar #fontSelect{
+#gameContainer.compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   min-height: 20px !important;
   font-size: 8px !important;
   padding: 3px 4px !important;
 }
-#gameContainer.compact-ui #settingsBar #fontSelect{
+#gameContainer.compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 104px !important;
 }
 #gameContainer.compact-ui #expWrapper{
@@ -1683,12 +1692,14 @@ body.watch-ui{
 }
 
 #gameContainer.ultra-compact-ui #settingsBar .ui-btn,
-#gameContainer.ultra-compact-ui #settingsBar #fontSelect{
+#gameContainer.ultra-compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   min-height: 18px !important;
   font-size: 7px !important;
   padding: 2px 3px !important;
 }
-#gameContainer.ultra-compact-ui #settingsBar #fontSelect{
+#gameContainer.ultra-compact-ui #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 94px !important;
 }
 #gameContainer.ultra-compact-ui #expWrapper{
@@ -1701,12 +1712,14 @@ body.watch-ui{
 
 @media (max-width: 520px){
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     font-size: 8px !important;
     padding: 3px 4px !important;
     min-height: 20px !important;
   }
-  #settingsBar #fontSelect{ max-width: 104px !important; }
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{ max-width: 104px !important; }
   #expWrapper{ height: 19px !important; }
   #expText{ font-size: 10px !important; padding: 0 4px !important; }
 }
@@ -1722,7 +1735,8 @@ body.watch-ui{
     gap: 2px !important;
   }
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     min-height: 17px !important;
     font-size: 7px !important;
     line-height: 1 !important;
@@ -1754,7 +1768,8 @@ body.watch-ui{
 
 @media (orientation: landscape) and (max-height: 520px){
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     min-height: 16px !important;
     font-size: 7px !important;
     padding: 2px 3px !important;
@@ -1805,7 +1820,8 @@ body.watch-ui{
     gap: 2px !important;
   }
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     min-height: 0 !important;
     height: 22px !important;
     font-size: 8px !important;
@@ -1874,7 +1890,8 @@ body.watch-ui{
   #hud{ max-height: 28dvh !important; }
   #settingsBar{ grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     height: 20px !important;
     font-size: 7px !important;
     padding: 1px !important;
@@ -2097,7 +2114,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 }
 
 #settingsBar .ui-btn,
-#settingsBar #fontSelect{
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   font-size: 7px !important;
   padding: 2px 3px !important;
   min-height: 16px !important;
@@ -2109,7 +2127,8 @@ body.title-mode #titleUI #dailyRewardBtn{
   text-overflow: clip !important;
 }
 
-#settingsBar #fontSelect{
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect{
   max-width: 92px !important;
 }
 
@@ -2153,7 +2172,8 @@ body.title-mode #titleUI #dailyRewardBtn{
   }
 
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -2199,7 +2219,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 @media (max-width: 390px){
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     font-size: 6px !important;
     padding: 1px 1px !important;
     min-height: 14px !important;
@@ -2218,12 +2239,37 @@ body.title-mode #titleUI #dailyRewardBtn{
   }
 
   #settingsBar .ui-btn,
-  #settingsBar #fontSelect{
+  #settingsBar #fontSelect,
+#settingsBar #fpsSelect{
     min-height: 14px !important;
   }
 
   #expWrapper{
     height: 21px !important;
+  }
+}
+
+
+/* ===============================
+   ✅ [v.159.1] FPS 버튼 4개를 선택창 1개로 통합
+   =============================== */
+#fpsSelect{
+  max-width: 82px !important;
+  min-width: 66px !important;
+  text-align:center;
+}
+#settingsBar #fpsSelect{
+  font-weight:900;
+  border-color: rgba(124,231,255,0.34);
+}
+@media (max-width: 430px) and (max-height: 740px){
+  #settingsBar{
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  #settingsBar #fpsSelect{
+    font-size: 7px !important;
+    padding: 1px !important;
+    min-height: 14px !important;
   }
 }
 
@@ -2253,10 +2299,12 @@ body.title-mode #titleUI #dailyRewardBtn{
         <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
         <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
-        <button class="ui-btn fps-btn" data-fps="15" type="button">15FPS</button>
-        <button class="ui-btn fps-btn" data-fps="20" type="button">20FPS</button>
-        <button class="ui-btn fps-btn" data-fps="30" type="button">30FPS</button>
-        <button class="ui-btn fps-btn active" data-fps="60" type="button">60FPS</button>
+        <select id="fpsSelect" class="ui-btn" title="FPS 선택">
+            <option value="15">15FPS</option>
+            <option value="20">20FPS</option>
+            <option value="30">30FPS</option>
+            <option value="60">60FPS</option>
+        </select>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
             <option value="system">기기 기본</option>
@@ -3010,6 +3058,7 @@ const toxicSkillBtn = document.getElementById('toxicSkillBtn');
 const blackholeSkillBtn = document.getElementById('blackholeSkillBtn');
 const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
+const fpsSelect = document.getElementById('fpsSelect');
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
 const restoreBtn = document.getElementById('restoreBtn');
@@ -6798,11 +6847,11 @@ function updateSettingsUI() {
     }
   }
   if (fontSelect) fontSelect.value = (saveData.fontKey || 'system');
-  document.querySelectorAll('.fps-btn').forEach(btn => {
-    const isActive = Number(btn.dataset.fps) === Number(saveData.targetFps || DEFAULT_TARGET_FPS);
-    btn.classList.toggle('active', isActive);
-    btn.style.color = isActive ? '#001f18' : '#fff';
-  });
+  if (fpsSelect) {
+    const currentFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
+    fpsSelect.value = String(currentFps);
+    fpsSelect.style.color = '#fff';
+  }
 }
 
 
@@ -7413,16 +7462,14 @@ saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
 });
 
-document.querySelectorAll('.fps-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const nextFps = Number(btn.dataset.fps);
-    if (!FPS_OPTIONS.includes(nextFps)) return;
-    saveData.targetFps = nextFps;
-    lastRenderTs = 0;
-    lastTime = 0;
-    updateSettingsUI();
-    saveGameData();
-  });
+(fpsSelect && fpsSelect.addEventListener) && fpsSelect.addEventListener('change', () => {
+  const nextFps = Number(fpsSelect.value);
+  if (!FPS_OPTIONS.includes(nextFps)) return;
+  saveData.targetFps = nextFps;
+  lastRenderTs = 0;
+  lastTime = 0;
+  updateSettingsUI();
+  saveGameData();
 });
 
 (homingBtn && homingBtn.addEventListener) && homingBtn.addEventListener('click', () => {
