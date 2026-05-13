@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.161 HTML Skill SFX)</title>
+<title>Slime Shooter - Ultimate Evolution (v.162 iPhone Battery Saver)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -25,6 +25,26 @@ padding: 0;
   --player-compact-font: 22px;
   --exp-label-font: 16px;
   --exp-text-font: 15px;
+}
+
+/* ===============================
+   ✅ [v.162] iPhone 배터리 절약 / 과열 방지
+   - iOS 자동 에너지 세이버 상태에서는 무거운 CSS 효과를 줄입니다.
+   =============================== */
+body.ios-energy-saver #gameCanvas,
+body.ios-energy-saver .ui-btn,
+body.ios-energy-saver .big-btn,
+body.ios-energy-saver .laser-skill,
+body.ios-energy-saver .bubble-skill,
+body.ios-energy-saver .blizzard-skill,
+body.ios-energy-saver .meteor-skill,
+body.ios-energy-saver .lightning-skill,
+body.ios-energy-saver .quake-skill{
+  box-shadow:none !important;
+  filter:none !important;
+}
+body.ios-energy-saver *{
+  transition:none !important;
 }
 
 body {
@@ -2464,6 +2484,12 @@ body.title-mode #titleUI #dailyRewardBtn{
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(124,255,210,0.10); border:1px solid rgba(124,255,210,0.30); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#7cffd2; margin-bottom:6px;">[v.162 마이너 업데이트] iPhone 배터리 절약 / 과열 방지</div>
+            <div>iPhone 15 Plus와 iPhone 8 환경에서 장시간 플레이 시 폰이 따뜻해지고 배터리가 빨리 줄어드는 현상을 줄이기 위해 자동 에너지 세이버가 적용되었습니다.</div>
+            <div>60FPS 선택 상태는 유지하되, iOS에서는 그림자·파티클·데미지 숫자·타이틀 대기 렌더링을 자동으로 가볍게 처리합니다.</div>
+            <div>앱을 잠깐 내리거나 화면이 꺼지면 게임 루프와 오디오가 즉시 쉬도록 수정했습니다.</div>
+        </div>
         <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
             <div>멀티킬 시스템이 추가되었습니다. 번개, 눈보라처럼 동시 공격이 가능한 범위형 스킬로 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동됩니다.</div>
@@ -2788,7 +2814,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 (() => {
 // ===== 캔버스 / 컨텍스트 =====
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+ctx.imageSmoothingEnabled = false;
 
 let width = canvas.width;
 let height = canvas.height;
@@ -3040,8 +3067,16 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', () =
 window.addEventListener('orientationchange', () => setTimeout(fitCanvasToViewport, 150));
 window.addEventListener('beforeunload', stopShopAutoRefresh);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopShopAutoRefresh();
-  else if (shopModal && !shopModal.classList.contains('hidden')) startShopAutoRefresh();
+  if (document.hidden) {
+    stopShopAutoRefresh();
+    lastTime = 0;
+    lastRenderTs = 0;
+    if (currentBgm && typeof currentBgm.pause === 'function') currentBgm.pause();
+    if (audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(()=>{});
+  } else {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    if (shopModal && !shopModal.classList.contains('hidden')) startShopAutoRefresh();
+  }
 });
 
 const bgmBtn = document.getElementById('bgmBtn');
@@ -4694,6 +4729,53 @@ let lastRenderTs = 0;
 const FPS_OPTIONS = [15, 20, 30, 60];
 const DEFAULT_TARGET_FPS = 60;
 
+
+// ===============================
+// ✅ [v.162] iPhone 배터리 절약 / 과열 방지
+// - 60FPS를 선택해도 iOS에서는 파티클/그림자/텍스트 팝업을 자동으로 줄여 발열을 낮춥니다.
+// - 타이틀/일시정지/백그라운드에서는 렌더링 부담을 크게 낮춥니다.
+// ===============================
+const UA = navigator.userAgent || '';
+const IS_IOS_DEVICE = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let autoEnergySaver = IS_IOS_DEVICE;
+let lowFpsStreak = 0;
+let hiddenFrameTimer = null;
+
+function isEnergySaverActive() {
+  return !!saveData.lowPower || !!autoEnergySaver;
+}
+
+function getEffectiveTargetFps(selectedFps) {
+  const fps = FPS_OPTIONS.includes(Number(selectedFps)) ? Number(selectedFps) : DEFAULT_TARGET_FPS;
+  if (document.hidden) return 5;
+  if (isPaused) return 12;
+  if (state === 'title' || state === 'gameover') return Math.min(fps, IS_IOS_DEVICE ? 30 : 45);
+  return fps; // 플레이 중에는 선택한 60FPS 유지
+}
+
+function trimPerformanceBuffers() {
+  const particleLimit = isEnergySaverActive() ? 95 : 180;
+  const damageLimit = isEnergySaverActive() ? 32 : 80;
+  const enemyBulletLimit = isEnergySaverActive() ? 90 : 160;
+  if (particles.length > particleLimit) particles.splice(0, particles.length - particleLimit);
+  if (dmgTexts.length > damageLimit) dmgTexts.splice(0, dmgTexts.length - damageLimit);
+  if (enemyBullets.length > enemyBulletLimit) enemyBullets.splice(0, enemyBullets.length - enemyBulletLimit);
+}
+
+function updateEnergySaverClass() {
+  document.body.classList.toggle('ios-energy-saver', isEnergySaverActive());
+}
+
+function handleFrameHealth(rawDt) {
+  if (!IS_IOS_DEVICE || state !== 'playing') return;
+  if (rawDt > 28) lowFpsStreak++;
+  else lowFpsStreak = Math.max(0, lowFpsStreak - 1);
+  if (lowFpsStreak >= 80) {
+    autoEnergySaver = true;
+    updateEnergySaverClass();
+  }
+}
+
 // 저장 데이터
 let saveData = {
   tutorialShown: false,
@@ -6132,7 +6214,7 @@ function maybeShowSkillUnlockNotice(oldLv, newLv) {
 }
 
 function randRange(min, max) { return Math.random() * (max - min) + min; }
-function isLowPower() { return !!saveData.lowPower; }
+function isLowPower() { return isEnergySaverActive(); }
 // ===== [핫타임 EXP] =====
 // 매일 08:00~12:00, 18:00~22:00
 function isHotTimeNow(date = new Date()) {
@@ -6163,7 +6245,7 @@ function spawnDamageText(x, y, amount, color = '#ffffff', isCrit = false) {
     if (isPlainPositiveNumber) return;
   }
 
-  if (isLowPower() && dmgTexts.length > 40) return;
+  if (isLowPower() && dmgTexts.length > 32) return;
   dmgTexts.push({
     x, y,
     vy: -0.9,
@@ -6902,6 +6984,7 @@ function getScoreQuestRewardByTier(tier) {
 
 // ===== UI/설정 이벤트 처리 =====
 function updateSettingsUI() {
+  updateEnergySaverClass();
   if (bgmBtn) {
     bgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
     bgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
@@ -6911,8 +6994,9 @@ function updateSettingsUI() {
     sfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
   }
   if (lowPowerBtn) {
-    lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
-    lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
+    lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : (autoEnergySaver ? "iPhone 절약" : "저사양 OFF");
+    lowPowerBtn.title = autoEnergySaver && !saveData.lowPower ? "iPhone 과열 방지를 위해 자동 경량화가 적용 중입니다." : "";
+    lowPowerBtn.style.color = (saveData.lowPower || autoEnergySaver) ? "#ffd700" : "#fff";
   }
   if (homingBtn) {
     if (level < 61) {
@@ -7678,7 +7762,7 @@ questModal.classList.remove('hidden');
 startQuestCountdown();
 }
 
-const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
+const NOTICE_VERSION_KEY = 'ss_notice_seen_v162_iphone_battery';
 
 function openNoticeModal() {
   if (!noticeModal) return;
@@ -11782,7 +11866,7 @@ function spawnMultiKillText(killCount, bonusExp, x, y) {
   const text = style.title;
   const subText = `EXP +${formatNumber(bonusExp)}`;
 
-  if (isLowPower() && dmgTexts.length > 40) return;
+  if (isLowPower() && dmgTexts.length > 32) return;
 
   dmgTexts.push({
     x: width / 2,
@@ -15196,8 +15280,8 @@ function spawnBossIfReady() {
 function spawnExplosion(x, y, color, count = 10) {
   // ✅ 저사양: 파티클 폭주 방지
   if (isLowPower()) {
-    if (particles.length > 140) return;         // 이미 많으면 더 생성 안 함
-    count = Math.min(count, 10);                // 폭발 개수 제한
+    if (particles.length > 90) return;          // 이미 많으면 더 생성 안 함
+    count = Math.min(count, IS_IOS_DEVICE ? 6 : 10); // iPhone에서는 더 가볍게
   }
 
   for (let i = 0; i < count; i++) {
@@ -17098,6 +17182,7 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
+trimPerformanceBuffers();
 const delta = dt / 16.67;
 particles.forEach(p => {
   // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
@@ -18853,9 +18938,12 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
-  particles.forEach(p => {
+  const energy = isEnergySaverActive();
+  particles.forEach((p, idx) => {
+    if (energy && idx % 2 === 1 && particles.length > 60) return;
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
+    if (energy && alpha < 0.18) return;
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
@@ -19104,20 +19192,30 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  const targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
+  if (document.hidden) {
+    lastTime = 0;
+    lastRenderTs = 0;
+    hiddenFrameTimer = setTimeout(() => requestAnimationFrame(gameLoop), 500);
+    return;
+  }
+
+  const targetFps = getEffectiveTargetFps(saveData.targetFps);
   const frameInterval = 1000 / targetFps;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
     setPauseUI();
-requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameLoop);
     return;
   }
   lastRenderTs = timestamp;
 
   if (!lastTime) lastTime = timestamp;
   const rawDt = timestamp - lastTime;
-  const dt = Math.max(0, Math.min(rawDt, 100));
+  handleFrameHealth(rawDt);
+  const dt = Math.max(0, Math.min(rawDt, isEnergySaverActive() ? 50 : 100));
   lastTime = timestamp;
+  trimPerformanceBuffers();
+  ctx.imageSmoothingEnabled = false;
 
   // 배경은 항상
   drawBackground();
@@ -19215,6 +19313,7 @@ if (state === 'gameover') drawGameOverScreen();
   requestAnimationFrame(gameLoop);
 }
 
+updateEnergySaverClass();
 
 // ===== [v.114] 소모품 사용 시스템 재구성 =====
 (function(){
