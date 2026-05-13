@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.162 iPhone Battery Saver)</title>
+<title>Slime Shooter - Ultimate Evolution (v.163 Battery Settings)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -45,6 +45,49 @@ body.ios-energy-saver .quake-skill{
 }
 body.ios-energy-saver *{
   transition:none !important;
+}
+
+/* ===============================
+   ✅ [v.163] 설정형 배터리/이펙트 절약 모드
+   - 사용자가 직접 발열 강도를 조절할 수 있게 합니다.
+   =============================== */
+body.effect-lite #gameCanvas,
+body.effect-lite .ui-btn,
+body.effect-lite .big-btn,
+body.effect-lite .laser-skill,
+body.effect-lite .bubble-skill,
+body.effect-lite .blizzard-skill,
+body.effect-lite .meteor-skill,
+body.effect-lite .lightning-skill,
+body.effect-lite .quake-skill{
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28) !important;
+  filter:none !important;
+}
+body.effect-minimal #gameCanvas,
+body.effect-minimal .ui-btn,
+body.effect-minimal .big-btn,
+body.effect-minimal .laser-skill,
+body.effect-minimal .bubble-skill,
+body.effect-minimal .blizzard-skill,
+body.effect-minimal .meteor-skill,
+body.effect-minimal .lightning-skill,
+body.effect-minimal .quake-skill{
+  box-shadow:none !important;
+  filter:none !important;
+  text-shadow:none !important;
+}
+body.effect-minimal *{
+  transition:none !important;
+  animation-duration:0.01ms !important;
+  animation-iteration-count:1 !important;
+}
+body.power-cool #expBarFill,
+body.effect-minimal #expBarFill{
+  transition:none !important;
+}
+#powerModeSelect,
+#effectModeSelect{
+  max-width: 118px;
 }
 
 body {
@@ -2325,6 +2368,16 @@ body.title-mode #titleUI #dailyRewardBtn{
             <option value="30">30FPS</option>
             <option value="60">60FPS</option>
         </select>
+        <select id="powerModeSelect" class="ui-btn" title="배터리/발열 모드">
+            <option value="normal">일반</option>
+            <option value="balanced">균형</option>
+            <option value="cool">쿨링</option>
+        </select>
+        <select id="effectModeSelect" class="ui-btn" title="이펙트 표시 강도">
+            <option value="full">이펙트 전체</option>
+            <option value="lite">이펙트 절약</option>
+            <option value="minimal">이펙트 최소</option>
+        </select>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
             <option value="system">기기 기본</option>
@@ -2485,7 +2538,7 @@ body.title-mode #titleUI #dailyRewardBtn{
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
         <div style="background:rgba(124,255,210,0.10); border:1px solid rgba(124,255,210,0.30); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#7cffd2; margin-bottom:6px;">[v.162 마이너 업데이트] iPhone 배터리 절약 / 과열 방지</div>
+            <div style="font-weight:900; color:#7cffd2; margin-bottom:6px;">[v.163 마이너 업데이트] 설정형 배터리/이펙트 절약 모드</div>
             <div>iPhone 15 Plus와 iPhone 8 환경에서 장시간 플레이 시 폰이 따뜻해지고 배터리가 빨리 줄어드는 현상을 줄이기 위해 자동 에너지 세이버가 적용되었습니다.</div>
             <div>60FPS 선택 상태는 유지하되, iOS에서는 그림자·파티클·데미지 숫자·타이틀 대기 렌더링을 자동으로 가볍게 처리합니다.</div>
             <div>앱을 잠깐 내리거나 화면이 꺼지면 게임 루프와 오디오가 즉시 쉬도록 수정했습니다.</div>
@@ -3094,6 +3147,8 @@ const blackholeSkillBtn = document.getElementById('blackholeSkillBtn');
 const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
 const fpsSelect = document.getElementById('fpsSelect');
+const powerModeSelect = document.getElementById('powerModeSelect');
+const effectModeSelect = document.getElementById('effectModeSelect');
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
 const restoreBtn = document.getElementById('restoreBtn');
@@ -4729,6 +4784,10 @@ let lastRenderTs = 0;
 const FPS_OPTIONS = [15, 20, 30, 60];
 const DEFAULT_TARGET_FPS = 60;
 
+const POWER_MODE_OPTIONS = ['normal', 'balanced', 'cool'];
+const EFFECT_MODE_OPTIONS = ['full', 'lite', 'minimal'];
+let shadowGuardInstalled = false;
+
 
 // ===============================
 // ✅ [v.162] iPhone 배터리 절약 / 과열 방지
@@ -4741,29 +4800,89 @@ let autoEnergySaver = IS_IOS_DEVICE;
 let lowFpsStreak = 0;
 let hiddenFrameTimer = null;
 
+function getPowerMode() {
+  const mode = String(saveData.powerMode || 'balanced');
+  return POWER_MODE_OPTIONS.includes(mode) ? mode : 'balanced';
+}
+
+function getEffectMode() {
+  const mode = String(saveData.effectMode || 'lite');
+  return EFFECT_MODE_OPTIONS.includes(mode) ? mode : 'lite';
+}
+
 function isEnergySaverActive() {
-  return !!saveData.lowPower || !!autoEnergySaver;
+  return !!saveData.lowPower || !!autoEnergySaver || getPowerMode() !== 'normal' || getEffectMode() !== 'full';
+}
+
+function getEffectLevel() {
+  const mode = getEffectMode();
+  if (mode === 'minimal') return 2;
+  if (mode === 'lite' || saveData.lowPower || autoEnergySaver || getPowerMode() === 'cool') return 1;
+  return 0;
+}
+
+function shouldDrawHeavyFx(timestamp, bucket = 2) {
+  const level = getEffectLevel();
+  if (level <= 0) return true;
+  if (level >= 2) return false;
+  return (Math.floor((timestamp || 0) / 100) % Math.max(2, bucket)) === 0;
+}
+
+function getMaxShadowBlur() {
+  const level = getEffectLevel();
+  if (level >= 2) return 0;
+  if (level === 1) return 4;
+  if (getPowerMode() === 'balanced') return 10;
+  return 99;
+}
+
+function installCanvasShadowGuard() {
+  if (shadowGuardInstalled || !ctx || typeof CanvasRenderingContext2D === 'undefined') return;
+  const proto = CanvasRenderingContext2D.prototype;
+  const desc = Object.getOwnPropertyDescriptor(proto, 'shadowBlur');
+  if (!desc || !desc.get || !desc.set) return;
+  try {
+    Object.defineProperty(ctx, 'shadowBlur', {
+      configurable: true,
+      get(){ return desc.get.call(ctx); },
+      set(v){
+        const n = Number(v) || 0;
+        desc.set.call(ctx, Math.max(0, Math.min(n, getMaxShadowBlur())));
+      }
+    });
+    shadowGuardInstalled = true;
+  } catch(e){}
 }
 
 function getEffectiveTargetFps(selectedFps) {
   const fps = FPS_OPTIONS.includes(Number(selectedFps)) ? Number(selectedFps) : DEFAULT_TARGET_FPS;
+  const mode = getPowerMode();
   if (document.hidden) return 5;
   if (isPaused) return 12;
-  if (state === 'title' || state === 'gameover') return Math.min(fps, IS_IOS_DEVICE ? 30 : 45);
-  return fps; // 플레이 중에는 선택한 60FPS 유지
+  if (state === 'title' || state === 'gameover') return Math.min(fps, mode === 'normal' ? 45 : 30);
+  if (mode === 'cool') return Math.min(fps, 45);
+  if (mode === 'balanced' && fps >= 60 && enemies.length < 4 && particles.length < 25) return 45;
+  return fps; // 일반/전투 중에는 선택한 60FPS 유지
 }
 
 function trimPerformanceBuffers() {
-  const particleLimit = isEnergySaverActive() ? 95 : 180;
-  const damageLimit = isEnergySaverActive() ? 32 : 80;
-  const enemyBulletLimit = isEnergySaverActive() ? 90 : 160;
+  const level = getEffectLevel();
+  const particleLimit = level >= 2 ? 36 : (level === 1 ? 70 : (isEnergySaverActive() ? 95 : 180));
+  const damageLimit = level >= 2 ? 12 : (level === 1 ? 24 : (isEnergySaverActive() ? 32 : 80));
+  const enemyBulletLimit = level >= 2 ? 60 : (level === 1 ? 80 : (isEnergySaverActive() ? 90 : 160));
   if (particles.length > particleLimit) particles.splice(0, particles.length - particleLimit);
   if (dmgTexts.length > damageLimit) dmgTexts.splice(0, dmgTexts.length - damageLimit);
   if (enemyBullets.length > enemyBulletLimit) enemyBullets.splice(0, enemyBullets.length - enemyBulletLimit);
 }
 
 function updateEnergySaverClass() {
+  const power = getPowerMode();
+  const effect = getEffectMode();
   document.body.classList.toggle('ios-energy-saver', isEnergySaverActive());
+  document.body.classList.toggle('power-balanced', power === 'balanced');
+  document.body.classList.toggle('power-cool', power === 'cool');
+  document.body.classList.toggle('effect-lite', effect === 'lite');
+  document.body.classList.toggle('effect-minimal', effect === 'minimal');
 }
 
 function handleFrameHealth(rawDt) {
@@ -4793,6 +4912,8 @@ bgmEnabled: true,
 sfxEnabled: true,
 lowPower: false,
 targetFps: DEFAULT_TARGET_FPS,
+powerMode: 'balanced',
+effectMode: 'lite',
 homingEnabled: true,
 fontKey: 'system',
 maxUnlockedStage: 1,
@@ -6501,6 +6622,8 @@ ensurePetSystemState();
 ensurePetDexState();
 if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
 if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFAULT_TARGET_FPS;
+if (!POWER_MODE_OPTIONS.includes(String(saveData.powerMode || ''))) saveData.powerMode = IS_IOS_DEVICE ? 'balanced' : 'normal';
+if (!EFFECT_MODE_OPTIONS.includes(String(saveData.effectMode || ''))) saveData.effectMode = IS_IOS_DEVICE ? 'lite' : 'full';
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
@@ -7014,6 +7137,14 @@ function updateSettingsUI() {
     fpsSelect.value = String(currentFps);
     fpsSelect.style.color = '#fff';
   }
+  if (powerModeSelect) {
+    powerModeSelect.value = getPowerMode();
+    powerModeSelect.style.color = getPowerMode() === 'normal' ? '#fff' : (getPowerMode() === 'balanced' ? '#7ce7ff' : '#ffd27c');
+  }
+  if (effectModeSelect) {
+    effectModeSelect.value = getEffectMode();
+    effectModeSelect.style.color = getEffectMode() === 'full' ? '#fff' : (getEffectMode() === 'lite' ? '#7ce7ff' : '#ffd27c');
+  }
 }
 
 
@@ -7293,6 +7424,8 @@ function createCharacterData(name, options = {}) {
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
   data.targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
+  data.powerMode = getPowerMode();
+  data.effectMode = getEffectMode();
   data.homingEnabled = (saveData.homingEnabled !== false);
   return data;
 }
@@ -7628,6 +7761,26 @@ saveGameData();
   const nextFps = Number(fpsSelect.value);
   if (!FPS_OPTIONS.includes(nextFps)) return;
   saveData.targetFps = nextFps;
+  lastRenderTs = 0;
+  lastTime = 0;
+  updateSettingsUI();
+  saveGameData();
+});
+
+(powerModeSelect && powerModeSelect.addEventListener) && powerModeSelect.addEventListener('change', () => {
+  const mode = String(powerModeSelect.value || 'balanced');
+  if (!POWER_MODE_OPTIONS.includes(mode)) return;
+  saveData.powerMode = mode;
+  lastRenderTs = 0;
+  lastTime = 0;
+  updateSettingsUI();
+  saveGameData();
+});
+
+(effectModeSelect && effectModeSelect.addEventListener) && effectModeSelect.addEventListener('change', () => {
+  const mode = String(effectModeSelect.value || 'lite');
+  if (!EFFECT_MODE_OPTIONS.includes(mode)) return;
+  saveData.effectMode = mode;
   lastRenderTs = 0;
   lastTime = 0;
   updateSettingsUI();
@@ -19216,6 +19369,8 @@ function gameLoop(timestamp) {
   lastTime = timestamp;
   trimPerformanceBuffers();
   ctx.imageSmoothingEnabled = false;
+  installCanvasShadowGuard();
+  updateEnergySaverClass();
 
   // 배경은 항상
   drawBackground();
@@ -19268,19 +19423,19 @@ function gameLoop(timestamp) {
     drawPet2();
     drawPlayer();
     drawPlayerHpBar();
-    drawParticles();
-    drawDamageTexts();
+    if (getEffectLevel() < 2 || shouldDrawHeavyFx(timestamp, 2)) drawParticles();
+    if (getEffectLevel() < 2) drawDamageTexts();
 
     ctx.restore();
 
-    drawGainMessages();
-    drawMultiKillFx();
+    if (getEffectLevel() < 2) drawGainMessages();
+    if (getEffectLevel() < 2 || shouldDrawHeavyFx(timestamp, 3)) drawMultiKillFx();
     drawSuddenQuestUI();
 
     // UI/오버레이(고정)
-    drawLevelUpEffect();
+    if (getEffectLevel() < 2) drawLevelUpEffect();
     drawEvolutionOverlay();
-    drawMaxLevelCelebrationOverlay();
+    if (getEffectLevel() < 2) drawMaxLevelCelebrationOverlay();
 
     // ✅ [v.79] 보너스 EXP/랭크 3초 연출
     drawStageClearSeqOverlay();
