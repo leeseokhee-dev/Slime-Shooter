@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.162.3 Bullet Visibility)</title>
+<title>Slime Shooter - Ultimate Evolution (v.164.3 Stage 1 Clear Tutorial Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1137,6 +1137,34 @@ body.tutorial-mode .meteor-skill,
 body.tutorial-mode .lightning-skill,
 body.tutorial-mode .quake-skill{
   display: none !important;
+}
+
+
+
+// ===== [v.164.1] 최초 1회 튜토리얼 표시 관리 =====
+const ONE_TIME_TUTORIAL_KEY = 'slimeShooterOneTimeTutorials';
+
+function getOneTimeTutorialFlags(){
+  try{
+    return JSON.parse(localStorage.getItem(ONE_TIME_TUTORIAL_KEY) || '{}');
+  }catch(e){
+    return {};
+  }
+}
+
+function hasSeenTutorial(id){
+  const flags = getOneTimeTutorialFlags();
+  return !!flags[id];
+}
+
+function markTutorialSeen(id){
+  const flags = getOneTimeTutorialFlags();
+  flags[id] = true;
+  localStorage.setItem(ONE_TIME_TUTORIAL_KEY, JSON.stringify(flags));
+}
+
+function shouldShowTutorial(id){
+  return !hasSeenTutorial(id);
 }
 
 
@@ -4930,8 +4958,8 @@ purchases: {}
 },
 
 // 누적 카운트(리셋 시 함께 초기화)
-dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
-weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
 multikill: { total: 0, best: 0, bonusExp: 0, achievements: {} }
 };
 const BASE_SAVE_DATA = deepClone(saveData);
@@ -5069,11 +5097,11 @@ function getStageKillTarget(stg) {
 
 
 // ✅ [v.161.2] 스테이지 모드 전용: 목표 처치 수별 초당 생성량
-// - 1~100: 5마리=2초당 1 / 10마리=2초당 2 / 20마리=2초당 4 / 30마리=2초당 5 / 60마리=2초당 7 / 120마리=2초당 9 / 240마리=2초당 12
-// - 101~200: 30마리=2초당 4 / 60마리=2초당 6 / 100마리=2초당 10 / 175마리=2초당 15 / 350마리=2초당 20
+// - 1~100: 5마리=1.2초당 1 / 10마리=1.2초당 2 / 20마리=1.2초당 4 / 30마리=1.2초당 5 / 60마리=1.2초당 7 / 120마리=1.2초당 10 / 240마리=1.2초당 15
+// - 101~200: 30마리=1.2초당 4 / 60마리=1.2초당 6 / 100마리=1.2초당 10 / 175마리=1.2초당 15 / 350마리=1.2초당 17
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  return 2000; // 2초 단위로 묶어서 생성
+  return 1200; // 1.2초 단위로 묶어서 생성
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -5086,15 +5114,15 @@ function getStageMonsterSpawnBatchSize(stg) {
     if (target <= 20) return 4;
     if (target <= 30) return 5;
     if (target <= 60) return 7;
-    if (target <= 120) return 9;
-    return 12;
+    if (target <= 120) return 10;
+    return 15;
   }
 
   if (target <= 30) return 4;
   if (target <= 60) return 6;
   if (target <= 100) return 10;
   if (target <= 175) return 15;
-  return 20;
+  return 17;
 }
 
 function checkStageKillClearNow() {
@@ -5542,6 +5570,30 @@ function applyIntroStepFocus() {
 let tutorialIndex = 0;
 let tutorialMessages = [];
 
+
+// ✅ [v.164.2] 모든 튜토리얼 최초 1회 표시 관리
+const ONE_TIME_TUTORIAL_KEY = 'ss_one_time_tutorial_seen_v164_3';
+function getTutorialSeenMap(){
+  try { return JSON.parse(localStorage.getItem(ONE_TIME_TUTORIAL_KEY) || '{}') || {}; }
+  catch(e) { return {}; }
+}
+function hasTutorialBeenSeen(id){
+  const map = getTutorialSeenMap();
+  return !!map[id];
+}
+function markTutorialAsSeen(id){
+  if (!id) return;
+  const map = getTutorialSeenMap();
+  map[id] = true;
+  try { localStorage.setItem(ONE_TIME_TUTORIAL_KEY, JSON.stringify(map)); } catch(e) {}
+}
+function runTutorialOnce(id, starter){
+  if (!id || hasTutorialBeenSeen(id)) return false;
+  markTutorialAsSeen(id);
+  if (typeof starter === 'function') starter();
+  return true;
+}
+
 // ✅ [v.93.3] 인게임 튜토리얼 흐름(논블로킹/클리어 후 안내)
 let tutorialFlow = 'none'; // none | ingame | waitClear | postClear
 let tutorialNonBlocking = false; // true면 게임 업데이트를 멈추지 않음
@@ -5613,6 +5665,8 @@ if (introAutoTimer) { clearTimeout(introAutoTimer); introAutoTimer = null; }
 }
 
 function startIntroTutorial() {
+  if (hasTutorialBeenSeen('intro_title')) return;
+  markTutorialAsSeen('intro_title');
   introTutorialActive = true;
   introStep = 0;
   if (introAutoTimer) { clearTimeout(introAutoTimer); introAutoTimer = null; }
@@ -5642,6 +5696,8 @@ function handleIntroTutorialTapAdvance() {
 }
 
 function beginIngameTutorial() {
+  if (hasTutorialBeenSeen('intro_ingame')) return;
+  markTutorialAsSeen('intro_ingame');
   // 타이틀 단계형 튜토리얼 종료 → 인게임 안내 시작
   stopIntroTutorial();
   hideFocusMask();
@@ -5666,10 +5722,16 @@ function beginIngameTutorial() {
 
 // ✅ [v.93.3] 1스테이지 클리어 후 튜토리얼(보너스 EXP + 랭크 설명)
 function maybeStartPostClearTutorial() {
-  if (tutorialFlow !== 'waitClear') return;
+  // ✅ [v.164.3] 1스테이지 클리어 안내는 인게임 튜토리얼 진행 여부와 분리
+  // - 기존에는 tutorialFlow가 waitClear일 때만 표시되어, 인게임 튜토리얼을 이미 봤거나 건너뛴 경우
+  //   "스테이지를 클리어했어요!" 메시지가 나오지 않는 문제가 있었음.
+  // - 이제 1스테이지 클리어 자체를 기준으로 최초 1회만 표시함.
+  if (hasTutorialBeenSeen('stage1_post_clear')) return;
   if (gameMode !== 'stage') return;
   if (Number(stage) !== 1) return; // 1스테이지만 안내
+  if (tutorialActive) return; // 다른 튜토리얼과 겹치지 않게 보호
 
+  markTutorialAsSeen('stage1_post_clear');
   tutorialFlow = 'postClear';
   tutorialNonBlocking = false;
 
@@ -5680,6 +5742,8 @@ function maybeStartPostClearTutorial() {
     "스테이지를 클리어하면 클리어 보너스 경험치와 랭크가 주어집니다.",
     "랭크는 총 5단계이며, S가 가장 높고 D가 가장 낮습니다.",
     "랭크에 따라 획득하는 경험치량도 달라집니다.",
+    "첫 클리어 이후에는 상점에서 아이템을 준비하고, 퀘스트에서 추가 성장 목표를 확인해보세요.",
+    "프로필에서는 누적 성장 정보와 최고 기록을 확인할 수 있으며, LV.100부터는 던전 모드에도 도전할 수 있습니다.",
     "자, 이제 슬라임 슈터의 세계에 푹 빠져보세요!"
   ];
 }
@@ -5705,6 +5769,8 @@ function resetTutorialLocalFlags() {
   try { localStorage.removeItem('ss_tutorial_shown'); } catch(e) {}
   try { localStorage.removeItem('ss_skill_notice_shown'); } catch(e) {}
   try { localStorage.removeItem('ss_boss_intro_shown'); } catch(e) {}
+  try { localStorage.removeItem('ss_one_time_tutorial_seen_v164_2'); } catch(e) {}
+  try { localStorage.removeItem('ss_one_time_tutorial_seen_v164_3'); } catch(e) {}
   // 메모리 상태도 리셋(중요)
   tutorialShown = false;
   skillNoticeShown = {};
@@ -6091,6 +6157,19 @@ function startTutorialMessages(messages) {
   tutorialMessages = Array.isArray(messages) ? messages.slice() : [];
 }
 
+function showContextTutorial(kind, messages) {
+  const tutorialId = 'context_' + String(kind || 'default');
+  if (hasTutorialBeenSeen(tutorialId)) return;
+  if (!Array.isArray(messages) || messages.length === 0) return;
+  if (tutorialActive) return;
+  markTutorialAsSeen(tutorialId);
+  tutorialFlow = 'context';
+  tutorialNonBlocking = false;
+  tutorialActive = true;
+  tutorialIndex = 0;
+  tutorialMessages = messages.slice();
+}
+
 function drawTutorialOverlay() {
   // ✅ HTML 오버레이로 표시 (스킬 버튼보다 위에 뜸)
   const overlay = tutorialOverlayDom;
@@ -6166,8 +6245,9 @@ function nextTutorialMessage() {
 function maybeShowFirstTutorial() {
   if (tutorialShown) return;
   if (Number(level) !== 1) return;
+  if (hasTutorialBeenSeen('intro_title')) return;
 
-  // ✅ [v.93.1] 타이틀 단계형 튜토리얼 시작
+  // ✅ [v.164.2] 타이틀 단계형 튜토리얼도 최초 1회만 시작
   startIntroTutorial();
 
   try { localStorage.setItem('ss_tutorial_shown', '1'); } catch(e) {}
@@ -6626,8 +6706,8 @@ if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
 // 누락/타입 보정
 function _fixStatsObj(o) {
-  if (!o) return { expOrbs:0, bullets:0, kills:0, bossKills:0, stageClears:0, bestRunScore:0, lasers:0, survivalSec:0, goldSpent:0 };
-  const keys = ['expOrbs','bullets','kills','bossKills','stageClears','bestRunScore','lasers','survivalSec','goldSpent'];
+  if (!o) return getDefaultQuestStatsObj();
+  const keys = ['expOrbs','bullets','kills','bossKills','stageClears','bestRunScore','lasers','survivalSec','goldSpent','goldEarned','skillUses','playTimeSec','multiKills','bestMultiKill','skillKills','suddenQuestSuccess'];
   for (const k of keys) {
     if (typeof o[k] !== 'number' || !isFinite(o[k])) o[k] = 0;
   }
@@ -7842,6 +7922,11 @@ function openQuestModal() {
 updateQuestUI();
 questModal.classList.remove('hidden');
 startQuestCountdown();
+showContextTutorial('quest', [
+  '퀘스트 화면입니다. 기본 퀘스트, 스킬 사용 퀘스트, 일일 퀘스트, 주간 퀘스트를 한곳에서 확인할 수 있습니다.',
+  '일일/주간 퀘스트에는 접속 시간 달성, 골드 획득하기, 스킬 일정 횟수 사용하기 같은 성장 목표가 추가되었습니다.',
+  '조건을 달성하면 [보상 받기] 버튼이 활성화되며, 보상 EXP는 즉시 적용됩니다.'
+]);
 }
 
 const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
@@ -7898,6 +7983,11 @@ function openShop() {
   renderShop();
   shopModal.classList.remove('hidden');
   startShopAutoRefresh();
+  showContextTutorial('shop', [
+    '상점 화면입니다. 회복 아이템, 경험치 팩, 성장에 필요한 소모품을 구매할 수 있습니다.',
+    '구매에 사용한 골드는 골드 사용 퀘스트에 반영되며, 아이템은 인벤토리와 퀵바에서 활용할 수 있습니다.',
+    '강한 스테이지에 도전하기 전에는 물약과 보조 아이템을 미리 준비해두면 안정적입니다.'
+  ]);
 }
 if (shopBtn) shopBtn.addEventListener('click', () => { initAudio(); openShop(); });
 inventoryBtn && inventoryBtn.addEventListener('click', () => { initAudio(); openInventoryModal(); });
@@ -8765,6 +8855,11 @@ function openProfile(isRefresh = false) {
   if (!isRefresh) {
     profileModal.classList.remove('hidden');
     startProfileAutoRefresh();
+    showContextTutorial('profile', [
+      '프로필 화면입니다. 누적 플레이 시간, 레벨, 경험치, 골드, 최고 스테이지 같은 성장 정보를 확인할 수 있습니다.',
+      '펫, 칭호, 누적 처치 수, 최고 기록도 함께 표시되어 현재 캐릭터의 성장 상태를 한눈에 볼 수 있습니다.',
+      '프로필은 열려 있는 동안 1초마다 자동으로 새로고침됩니다.'
+    ]);
   }
 }
 
@@ -9261,7 +9356,7 @@ function getQuestScale(lv, mode = 'daily') {
 // ✅ [v.156] 멀티킬 / 돌발 퀘스트 공통 상태 보정
 // ===============================
 function getDefaultQuestStatsObj() {
-  return { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 };
+  return { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 };
 }
 function ensureMultiKillPatchState() {
   if (!saveData.multikill || typeof saveData.multikill !== 'object') saveData.multikill = { total:0, best:0, bonusExp:0, achievements:{} };
@@ -9320,41 +9415,45 @@ function generateDailyQuests(lv) {
 
   const scoreGoal = Math.floor(randInt(5_000_000, 20_000_000) * mul);
   const scoreReward = Math.floor(15000 * mul);
-  const goldGoal = Math.floor(40000 * mul);
-  const goldReward = Math.floor(12000 * mul);
+  const goldEarnGoal = Math.floor(50000 * mul);
+  const goldEarnReward = Math.floor(16000 * mul);
+  const skillGoal = Math.max(20, Math.floor(60 * mul));
+  const playGoal = Math.max(300, Math.floor(900 * mul)); // 접속/플레이 15분 기준
 
   return [
+    { id:'d_playtime', type:'playTimeSec', title:'접속 시간 달성', target: playGoal, reward: Math.floor(18000 * mul), extra:{ unit:'sec' } },
+    { id:'d_gold_earn', type:'goldEarned', title:'골드 획득하기', target: goldEarnGoal, reward: goldEarnReward },
+    { id:'d_skill_use', type:'skillUses', title:'스킬 일정 횟수 사용하기', target: skillGoal, reward: Math.floor(22000 * mul) },
     { id:'d_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(300 * mul), reward: Math.floor(20000 * mul) },
     { id:'d_kills', type:'kills', title:'몬스터 처치의 달인', target: Math.floor(5000 * mul), reward: Math.floor(30000 * mul) },
     { id:'d_stage', type:'stageClears', title:'스테이지 클리어의 달인', target: Math.floor(30 * mul), reward: Math.floor(45000 * mul) },
-    { id:'d_laser', type:'lasers', title:'레이저 발사의 달인', target: Math.floor(120 * mul), reward: Math.floor(18000 * mul) },
-    { id:'d_gold', type:'goldSpent', title:'골드 사용하기', target: goldGoal, reward: goldReward },
     { id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
-    { id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: Math.floor(35000 * mul) },
-    { id:'d_best_multi', type:'bestMultiKill', title:'7킬 이상 멀티킬 달성', target: 7, reward: Math.floor(50000 * mul) }
+    { id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: Math.floor(35000 * mul) }
   ];
 }
 
 
-// 주간 8개
+// 주간 10개
 function generateWeeklyQuests(lv) {
   const mul = getQuestScale(lv, 'weekly');
 
   const scoreGoal = Math.floor(randInt(50_000_000, 200_000_000) * mul);
   const scoreReward = Math.floor(180000 * mul);
-  const goldGoal = Math.floor(500000 * mul);
-  const goldReward = Math.floor(220000 * mul);
+  const goldEarnGoal = Math.floor(700000 * mul);
+  const goldEarnReward = Math.floor(260000 * mul);
+  const skillGoal = Math.max(200, Math.floor(700 * mul));
+  const playGoal = Math.max(3600, Math.floor(9000 * mul)); // 접속/플레이 2시간 30분 기준
 
   return [
+    { id:'w_playtime', type:'playTimeSec', title:'주간 접속 시간 달성', target: playGoal, reward: Math.floor(240000 * mul), extra:{ unit:'sec' } },
+    { id:'w_gold_earn', type:'goldEarned', title:'주간 골드 획득하기', target: goldEarnGoal, reward: goldEarnReward },
+    { id:'w_skill_use', type:'skillUses', title:'주간 스킬 사용하기', target: skillGoal, reward: Math.floor(210000 * mul) },
     { id:'w_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(2000 * mul), reward: Math.floor(200000 * mul) },
     { id:'w_kills', type:'kills', title:'몬스터 킬러', target: Math.floor(30000 * mul), reward: Math.floor(120000 * mul) },
     { id:'w_boss', type:'bossKills', title:'보스 킬러', target: Math.floor(200 * mul), reward: Math.floor(500000 * mul) },
     { id:'w_stage', type:'stageClears', title:'스테이지 클리어의 신', target: Math.floor(150 * mul), reward: Math.floor(450000 * mul) },
-    { id:'w_laser', type:'lasers', title:'레이저 발사의 신', target: Math.floor(1000 * mul), reward: Math.floor(180000 * mul) },
     { id:'w_surv', type:'survivalSec', title:'생존의 신', target: Math.floor(10000 * mul), reward: Math.floor(115000 * mul) },
-    { id:'w_gold', type:'goldSpent', title:'골드 사용의 신', target: goldGoal, reward: goldReward },
     { id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
-    { id:'w_multikill', type:'multiKills', title:'멀티킬 100회 달성', target: Math.floor(100 * mul), reward: Math.floor(260000 * mul) },
     { id:'w_skill_kills', type:'skillKills', title:'범위형 스킬 처치 5,000마리', target: Math.floor(5000 * mul), reward: Math.floor(320000 * mul) }
   ];
 }
@@ -9413,6 +9512,18 @@ function addGoldSpentStat(amount) {
   const v = Math.max(0, Math.floor(Number(amount) || 0));
   if (v <= 0) return;
   addQuestStat('goldSpent', v);
+}
+
+function addGoldEarnedStat(amount) {
+  const v = Math.max(0, Math.floor(Number(amount) || 0));
+  if (v <= 0) return;
+  addQuestStat('goldEarned', v);
+}
+
+function formatQuestProgressValue(q, value) {
+  const v = Math.max(0, Math.floor(Number(value) || 0));
+  if (q && q.extra && q.extra.unit === 'sec') return formatPlayTime(v);
+  return formatNumber(v);
 }
 
 
@@ -9654,7 +9765,9 @@ function addSkillQuestCount(type, amount = 1) {
   if (!saveData.quests.skills || typeof saveData.quests.skills !== 'object') saveData.quests.skills = {};
   if (!saveData.quests.skills[type] || typeof saveData.quests.skills[type] !== 'object') saveData.quests.skills[type] = { count: 0, target: 10, tier: 1 };
   const q = saveData.quests.skills[type];
-  q.count = Math.max(0, Math.floor(Number(q.count) || 0) + Math.max(0, Math.floor(Number(amount) || 0)));
+  const addAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  q.count = Math.max(0, Math.floor(Number(q.count) || 0) + addAmount);
+  addQuestStat('skillUses', addAmount);
   if (gameMode === 'mission') {
     missionState.skillUses = Math.max(0, Math.floor(Number(missionState.skillUses) || 0) + Math.max(0, Math.floor(Number(amount) || 0)));
   }
@@ -9973,7 +10086,7 @@ function updateQuestUI() {
   // ===============================
   // ✅ 일일 퀘스트 (LV 60+)
   // ===============================
-  createQuestSectionTitle('🗓️ 일일 퀘스트 (LV.60+, 8개)');
+  createQuestSectionTitle('🗓️ 일일 퀘스트 (LV.60+, 8개 · 접속/골드/스킬 목표 추가)');
   // ⏳ 남은 시간(일일)
   const _dailyTimer = document.createElement('div');
   _dailyTimer.id = 'dailyQuestTimer';
@@ -10007,7 +10120,7 @@ function updateQuestUI() {
 
       createQuestItem(
         q.title,
-        `${q.title}: ${formatNumber(Math.floor(prog))} / ${formatNumber(Math.floor(q.target))}`,
+        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
         q.reward,
         canClaim,
         () => { claimQuest(saveData.dailyQuest, q); },
@@ -10028,7 +10141,7 @@ function updateQuestUI() {
   // ===============================
   // ✅ 주간 퀘스트 (LV 100+)
   // ===============================
-  createQuestSectionTitle('📅 주간 퀘스트 (LV.100+, 10개)', '#ffcc66');
+  createQuestSectionTitle('📅 주간 퀘스트 (LV.100+, 10개 · 접속/골드/스킬 목표 추가)', '#ffcc66');
   // ⏳ 남은 시간(주간)
   const _weeklyTimer = document.createElement('div');
   _weeklyTimer.id = 'weeklyQuestTimer';
@@ -10058,7 +10171,7 @@ function updateQuestUI() {
 
       createQuestItem(
         q.title,
-        `${q.title}: ${formatNumber(Math.floor(prog))} / ${formatNumber(Math.floor(q.target))}`,
+        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
         q.reward,
         canClaim,
         () => { claimQuest(saveData.weeklyQuest, q); },
@@ -10399,6 +10512,11 @@ if (modeDungeonBtn) modeDungeonBtn.addEventListener('click', () => {
   }
   modeModal.classList.add('hidden');
   openDungeonSelect();
+  showContextTutorial('dungeon', [
+    '던전 모드 화면입니다. LV.100부터 입장할 수 있으며, 하루 입장 횟수가 제한됩니다.',
+    '제한 시간 동안 많은 몬스터를 처치해 높은 경험치를 얻는 집중 전투 모드입니다.',
+    '던전 티어가 올라갈수록 적이 강해지는 대신 보상 기대치도 커집니다.'
+  ]);
 });
 
 if (closeDungeonBtn) closeDungeonBtn.addEventListener('click', () => {
@@ -11455,6 +11573,7 @@ function sellPetByUid(uid) {
   syncPetDexOwnedCounts();
   gold += price;
   saveData.goldEarned = (saveData.goldEarned || 0) + price;
+      addGoldEarnedStat(price);
   syncPlayerHealthToLevel({ keepRatio: true });
   saveGameDataDebounced();
   updateHUD();
@@ -12535,6 +12654,7 @@ function tryPickupGoldDrops() {
       gold += gained;
       stageRunGoldEarned = (stageRunGoldEarned || 0) + gained;
       saveData.goldEarned = (saveData.goldEarned || 0) + gained;
+      addGoldEarnedStat(gained);
       saveGameDataDebounced();
 
       const pickupType = it.type || 'gold';
@@ -12996,6 +13116,7 @@ function producePetReward(slot, petData) {
     gold += goldGain;
     stageRunGoldEarned = (stageRunGoldEarned || 0) + goldGain;
     saveData.goldEarned = (saveData.goldEarned || 0) + goldGain;
+      addGoldEarnedStat(goldGain);
     spawnDamageText(anchor.x, anchor.y - anchor.size - 16, `📦 골드+${formatNumber(goldGain)}`, '#ffd700');
   } else if (roll < 0.75) {
     const gemType = roll < 0.58 ? 'ruby' : (roll < 0.67 ? 'sapphire' : 'diamond');
@@ -13003,6 +13124,7 @@ function producePetReward(slot, petData) {
     gold += amount;
     stageRunGoldEarned = (stageRunGoldEarned || 0) + amount;
     saveData.goldEarned = (saveData.goldEarned || 0) + amount;
+      addGoldEarnedStat(amount);
     const gemLabel = gemType === 'ruby' ? '루비' : (gemType === 'sapphire' ? '사파이어' : '다이아');
     const gemColor = gemType === 'ruby' ? '#ff73b8' : (gemType === 'sapphire' ? '#5dff96' : '#59a8ff');
     spawnDamageText(anchor.x, anchor.y - anchor.size - 16, `💎 ${gemLabel}+${formatNumber(amount)}`, gemColor);
@@ -15548,6 +15670,7 @@ function updateItemPark(dt) {
         gold += petGold;
         itemParkState.goldGained += petGold;
         saveData.goldEarned = (saveData.goldEarned || 0) + petGold;
+      addGoldEarnedStat(petGold);
         spawnDamageText(it.x, it.y - 10, `${it.label}+${formatNumber(petGold)}`, it.color);
       }
       spawnExplosion(it.x, it.y, it.color, 6);
@@ -16544,6 +16667,8 @@ function update(dt, currentTime) {
   // ✅ 누적 플레이 시간(초)
   if (state === 'playing') {
     saveData.playTimeSec = (saveData.playTimeSec || 0) + (dt / 1000);
+    if (saveData.dailyStats && typeof saveData.dailyStats.playTimeSec === 'number') saveData.dailyStats.playTimeSec += (dt / 1000);
+    if (saveData.weeklyStats && typeof saveData.weeklyStats.playTimeSec === 'number') saveData.weeklyStats.playTimeSec += (dt / 1000);
     // 너무 자주 저장하지 않게 디바운스 사용
     saveGameDataDebounced();
     // ✅ [v.56] 만렙 축하 연출 업데이트
