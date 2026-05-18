@@ -2362,6 +2362,46 @@ body.title-mode #titleUI #dailyRewardBtn{
 #gameContainer.watch-ui #expWrapper{ height: 11px !important; }
 #gameContainer.watch-ui #expText{ font-size: 7px !important; padding: 0 1px !important; letter-spacing: -0.55px !important; }
 
+
+/* ===============================
+   ✅ [v.162.2] 플레이어/적 총알 시인성 강화
+   =============================== */
+.player-bullet{
+  filter:
+    drop-shadow(0 0 6px rgba(68,255,200,0.95))
+    drop-shadow(0 0 12px rgba(0,229,255,0.72));
+}
+
+.enemy-bullet{
+  filter:
+    drop-shadow(0 0 2px rgba(0,0,0,0.95))
+    drop-shadow(0 0 6px rgba(255,80,80,0.75));
+}
+
+.enemy-bullet.fire{
+  filter:
+    drop-shadow(0 0 8px rgba(255,120,0,0.95))
+    drop-shadow(0 0 2px rgba(0,0,0,0.95));
+}
+
+.enemy-bullet.dark{
+  filter:
+    drop-shadow(0 0 8px rgba(160,80,255,0.95))
+    drop-shadow(0 0 3px rgba(0,0,0,1));
+}
+
+.player-bullet.ice{
+  filter:
+    drop-shadow(0 0 8px rgba(120,220,255,0.95))
+    drop-shadow(0 0 14px rgba(0,229,255,0.78));
+}
+
+.player-bullet.lightning{
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,120,0.95))
+    drop-shadow(0 0 14px rgba(68,255,200,0.72));
+}
+
 </style>
 </head>
 <body>
@@ -2874,6 +2914,14 @@ body.title-mode #titleUI #dailyRewardBtn{
 </div>
 
 <script>
+
+// ===============================
+// ✅ [v.162.2] 총알 색상 가이드
+// 플레이어 탄: 청록/형광 계열 유지
+// 적 탄: 빨강/보라 계열 유지
+// 속성은 추가 효과만 적용
+// ===============================
+
 (() => {
 // ===== 캔버스 / 컨텍스트 =====
 const canvas = document.getElementById('gameCanvas');
