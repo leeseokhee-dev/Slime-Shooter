@@ -15020,7 +15020,7 @@ function spawnNextWave() {
 // - 101~200: 100스테이지 대비 '약 40% 느리게'(=60% 속도) 시작 → 200까지 완만히 상승
 let speedBase;
 if (stage <= 100) {
-  speedBase = 1.0 + stage * 0.07;
+  speedBase = 1.0 + stage * 0.045;
 } else {
   const speedAt100 = 1.0 + 100 * 0.07; // 8.0
   const slowBase = speedAt100 * 0.25;  // 2.0 (100스테이지 대비 75% 느리게)
