@@ -5069,11 +5069,11 @@ function getStageKillTarget(stg) {
 
 
 // ✅ [v.161.2] 스테이지 모드 전용: 목표 처치 수별 초당 생성량
-// - 1~100: 5마리=0.7초당 1 / 10마리=0.7초당 2 / 20마리=0.7초당 3 / 30마리=0.7초당 4 / 60마리=0.7초당 5 / 120마리=0.7초당 6 / 240마리=0.7초당 7
-// - 101~200: 30마리=0.7초당 3 / 60마리=0.7초당 4 / 100마리=0.7초당 5 / 175마리=0.7초당 6 / 350마리=0.7초당 7
+// - 1~100: 5마리=2초당 1 / 10마리=2초당 2 / 20마리=2초당 4 / 30마리=2초당 5 / 60마리=2초당 7 / 120마리=2초당 9 / 240마리=2초당 12
+// - 101~200: 30마리=2초당 4 / 60마리=2초당 6 / 100마리=2초당 10 / 175마리=2초당 15 / 350마리=2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  return 700; // 0.7초 단위로 묶어서 생성
+  return 2000; // 2초 단위로 묶어서 생성
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -5083,18 +5083,18 @@ function getStageMonsterSpawnBatchSize(stg) {
   if (stg <= 100) {
     if (target <= 5) return 1;
     if (target <= 10) return 2;
-    if (target <= 20) return 3;
-    if (target <= 30) return 4;
-    if (target <= 60) return 5;
-    if (target <= 120) return 6;
-    return 7;
+    if (target <= 20) return 4;
+    if (target <= 30) return 5;
+    if (target <= 60) return 7;
+    if (target <= 120) return 9;
+    return 12;
   }
 
-  if (target <= 30) return 3;
-  if (target <= 60) return 4;
-  if (target <= 100) return 5;
-  if (target <= 175) return 6;
-  return 7;
+  if (target <= 30) return 4;
+  if (target <= 60) return 6;
+  if (target <= 100) return 10;
+  if (target <= 175) return 15;
+  return 20;
 }
 
 function checkStageKillClearNow() {
@@ -15106,11 +15106,11 @@ if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
     // ✅ [v.161.2] 스테이지 모드: 목표 처치 수에 맞춘 초당 생성량을 한 번에 부채꼴로 생성
     if (gameMode === 'stage') enemyCount = getStageMonsterSpawnBatchSize(stage);
 
-    // ✅ [v.117 패치] 1웨이브 최대 제한(스테이지 모드는 최대 7마리, 무한/기타 모드 유지)
-    enemyCount = Math.min(enemyCount, (gameMode === 'stage') ? 7 : 5);
+    // ✅ [v.117 패치] 1웨이브 최대 제한(스테이지 모드는 최대 20마리, 무한/기타 모드 유지)
+    enemyCount = Math.min(enemyCount, (gameMode === 'stage') ? 20 : 5);
 
-    // ✅ [v.101/v.154.2] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 15마리)
-    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 15 : ((gameMode === 'mission') ? 55 : 70);
+    // ✅ [v.101/v.154.2] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 20마리)
+    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 20 : ((gameMode === 'mission') ? 55 : 70);
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
