@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.161.3 Stage 30 Monster Cap)</title>
+<title>Slime Shooter - Ultimate Evolution (v.161.2 Stage Fan Spawn)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4967,11 +4967,11 @@ function getStageKillTarget(stg) {
 
 
 // ✅ [v.161.2] 스테이지 모드 전용: 목표 처치 수별 초당 생성량
-// - 1~100: 5마리=초당 1 / 10마리=초당 2 / 20마리=초당 3 / 30마리=초당 4 / 60마리=초당 5 / 120마리=초당 6 / 240마리=초당 7
-// - 101~200: 30마리=초당 3 / 60마리=초당 4 / 100마리=초당 5 / 175마리=초당 6 / 350마리=초당 7
+// - 1~100: 5마리=0.7초당 1 / 10마리=0.7초당 2 / 20마리=0.7초당 3 / 30마리=0.7초당 4 / 60마리=0.7초당 5 / 120마리=0.7초당 6 / 240마리=0.7초당 7
+// - 101~200: 30마리=0.7초당 3 / 60마리=0.7초당 4 / 100마리=0.7초당 5 / 175마리=0.7초당 6 / 350마리=0.7초당 7
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  return 1000; // 1초 단위로 묶어서 생성
+  return 700; // 0.7초 단위로 묶어서 생성
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -14993,8 +14993,8 @@ if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
     // ✅ [v.117 패치] 1웨이브 최대 제한(스테이지 모드는 최대 7마리, 무한/기타 모드 유지)
     enemyCount = Math.min(enemyCount, (gameMode === 'stage') ? 7 : 5);
 
-    // ✅ [v.161.3] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 30마리)
-    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 30 : ((gameMode === 'mission') ? 55 : 70);
+    // ✅ [v.101/v.154.2] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 15마리)
+    const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 15 : ((gameMode === 'mission') ? 55 : 70);
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
