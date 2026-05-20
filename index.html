@@ -12469,9 +12469,9 @@ function spawnGoldDrop(x, y, amount) {
   goldDrops.push({
     x, y,
     type: dropType,
-    r: (dropType === 'gold') ? 16 : 19, // ✅ [v.165.1] 무한 모드 골드/보석 드랍 크기 약간 확대
+    r: (dropType === 'gold') ? 19 : 24, // ✅ [v.165.1] 무한 모드 골드/보석 드랍 크기 약간 확대
     vx: (Math.random() - 0.5) * 1.8,
-    vy: -(4.0 + Math.random() * 1.3), // ✅ [v.165.1] 몬스터 처치 시 더 위로 튀어오름
+    vy: -(4.0 + Math.random() * 2.2), // ✅ [v.165.1] 몬스터 처치 시 더 위로 튀어오름
     gravity: 0.23 + Math.random() * 0.04, // ✅ [v.165.1] 상승 후 낙하감 강화
     life: 9000,
     amount: finalAmount
@@ -12492,7 +12492,7 @@ function spawnInfiniteBossTreasureRain(x, y) {
 
   function pushTreasureDrop(type, amount, index, total) {
     const isGem = type && type !== 'gold';
-    const spread = isGem ? 150 : 190;
+    const spread = isGem ? 190 : 240;
     const arc = (index / Math.max(1, total - 1) - 0.5) * spread;
     goldDrops.push({
       x: baseX + arc + randRange(-18, 18),
