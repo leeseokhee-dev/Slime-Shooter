@@ -12498,9 +12498,9 @@ function spawnInfiniteBossTreasureRain(x, y) {
       x: baseX + arc + randRange(-18, 18),
       y: baseY + randRange(-36, 12),
       type,
-      r: isGem ? 19 : 16, // ✅ [v.165.1] 보스 보상 골드/보석 크기도 동일하게 확대
+      r: isGem ? 24 : 19, // ✅ [v.165.1] 보스 보상 골드/보석 크기도 동일하게 확대
       vx: randRange(-4.4, 4.4),
-      vy: -randRange(5.0, 9.0), // ✅ [v.165.1] 보스 보상도 더 높게 튀어오름
+      vy: -randRange(5.0, 15.0), // ✅ [v.165.1] 보스 보상도 더 높게 튀어오름
       gravity: 0.23 + Math.random() * 0.05, // ✅ [v.165.1] 상승 후 낙하감 강화
       life: 10500,
       amount: Math.max(1, Math.floor(amount || 1))
