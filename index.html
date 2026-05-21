@@ -2598,6 +2598,74 @@ body.title-mode #titleExitBtn{
   }
 }
 
+
+
+/* ===============================
+   ✅ [v.166.2] 꽉 찬 화면 + 게임 화면이 비치는 HUD
+   =============================== */
+body{
+  justify-content:flex-start !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  background:#050510;
+}
+#gameContainer.full-screen-ratio,
+#gameContainer{
+  height:100dvh;
+  max-height:100dvh;
+  padding:0 !important;
+  overflow:hidden;
+}
+#hud{
+  position:absolute !important;
+  top:calc(6px + env(safe-area-inset-top));
+  left:50%;
+  transform:translateX(-50%);
+  z-index:90;
+  margin-bottom:0 !important;
+  background:linear-gradient(180deg, rgba(4,9,20,0.58), rgba(4,9,20,0.34)) !important;
+  border:1px solid rgba(124,231,255,0.45) !important;
+  box-shadow:0 10px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+  backdrop-filter:blur(8px) saturate(130%);
+  -webkit-backdrop-filter:blur(8px) saturate(130%);
+}
+#hud::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.015));
+  pointer-events:none;
+}
+#settingsBar .ui-btn,
+#settingsBar select,
+#expWrapper{
+  background:linear-gradient(180deg, rgba(18,34,58,0.58), rgba(8,16,30,0.48)) !important;
+  backdrop-filter:blur(5px) saturate(130%);
+  -webkit-backdrop-filter:blur(5px) saturate(130%);
+}
+#gameCanvas{
+  border-radius:0 !important;
+  border-width:0 !important;
+  box-shadow:none !important;
+}
+#titleUI .overlay-content{
+  bottom:calc(clamp(20px, 4.5vh, 64px) + env(safe-area-inset-bottom)) !important;
+}
+#titleUI .big-btn,
+#titleUI #dailyRewardBtn,
+#titleUI #openQuestBtn,
+#titleUI #openNoticeBtn,
+#titleExitBtn{
+  background-color:rgba(5,16,28,0.48);
+  backdrop-filter:blur(6px) saturate(130%);
+  -webkit-backdrop-filter:blur(6px) saturate(130%);
+}
+@media (max-width: 430px) and (max-height: 760px){
+  #hud{ top:calc(3px + env(safe-area-inset-top)); }
+  #titleUI .overlay-content{ bottom:calc(8px + env(safe-area-inset-bottom)) !important; gap:8px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -3316,6 +3384,7 @@ function fitCanvasToViewport() {
   const vh = vp.height;
 
   let hudH = hud ? hud.getBoundingClientRect().height : 0;
+  const hudOverlayMode = true; // ✅ [v.166.2] HUD를 캔버스 위 유리판처럼 올려 게임 화면이 뒤에 비치게 함
   // ✅ [v.166.1] 꽉 찬 화면 비율 대응
   // 기존처럼 960x640 / 480x640 비율에 고정하지 않고,
   // HUD를 제외한 남은 화면을 캔버스가 그대로 채우도록 표시 크기와 내부 해상도를 함께 조정한다.
@@ -3331,7 +3400,7 @@ function fitCanvasToViewport() {
   }
 
   const minCanvasH = watchMode ? 96 : 180;
-  const availableH = Math.max(minCanvasH, vh - hudH - safeTop - safeBottom);
+  const availableH = Math.max(minCanvasH, vh - (hudOverlayMode ? 0 : hudH) - safeTop - safeBottom);
   const displayW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
   const displayH = availableH;
 
@@ -3446,31 +3515,33 @@ const LEVEL_RANK_COLORS = [
 ];
 
 const LEVEL_RANK_BASES = [
-  { name: '새싹', mark: 'sprout'  },
-  { name: '잎새', mark: 'leaf'    },
-  { name: '조준경', mark: 'scope'   },
-  { name: '수정', mark: 'crystal' },
-  { name: '방패', mark: 'shield'  },
-  { name: '검', mark: 'sword'   },
-  { name: '메달', mark: 'medal'   },
-  { name: '트로피', mark: 'trophy'  },
-  { name: '오라', mark: 'aura'    },
-  { name: '왕관', mark: 'crown'   },
-  { name: '은하', mark: 'galaxy'  },
-  { name: '불꽃', mark: 'flame'   },
-  { name: '물결', mark: 'water'   },
-  { name: '번개', mark: 'bolt'    },
-  { name: '보석', mark: 'diamond' },
-  { name: '기어', mark: 'gear'    },
-  { name: '날개', mark: 'wing'    },
-  { name: '달', mark: 'moon'      },
-  { name: '태양', mark: 'sun'     },
-  { name: '혜성', mark: 'comet'   },
-  { name: '닻', mark: 'anchor'    },
-  { name: '하트', mark: 'heart'   },
-  { name: '육각', mark: 'hex'     },
-  { name: '클로버', mark: 'clover'},
-  { name: '별', mark: 'star'      }
+  // ✅ [v.166.2] 슬라임 테마 25종 계급
+  // 캐릭터 얼굴/몸통이 아니라, 방울·점액·젤·핵·파동 같은 추상 문양으로 구성
+  { name: '점액 방울', mark: 'slimeDrop'      },
+  { name: '젤 코어',   mark: 'gelCore'        },
+  { name: '버블 막',   mark: 'bubbleMembrane' },
+  { name: '점액 고리', mark: 'slimeRing'      },
+  { name: '젤 파동',   mark: 'gelWave'        },
+  { name: '미끈 결정', mark: 'gelCrystal'     },
+  { name: '끈적 별핵', mark: 'stickyStar'     },
+  { name: '점액 방패', mark: 'slimeShield'    },
+  { name: '젤 소용돌이', mark: 'gelSpiral'    },
+  { name: '슬라임 오라', mark: 'slimeAura'    },
+  { name: '산성 방울', mark: 'acidDrop'       },
+  { name: '치유 점액', mark: 'healGel'        },
+  { name: '분열핵',    mark: 'splitCore'      },
+  { name: '탄성막',    mark: 'elasticFilm'    },
+  { name: '점액 왕관', mark: 'slimeCrown'     },
+  { name: '프리즘 젤', mark: 'prismGel'       },
+  { name: '젤리 리본', mark: 'jellyRibbon'    },
+  { name: '응축 점액', mark: 'condensedGel'   },
+  { name: '결정 방울', mark: 'crystalDrop'    },
+  { name: '슬라임 문장', mark: 'slimeCrest'   },
+  { name: '독성 점액', mark: 'toxicGel'       },
+  { name: '광휘 젤',   mark: 'luminousGel'    },
+  { name: '초월 점액', mark: 'ascendGel'      },
+  { name: '무지개 젤', mark: 'rainbowGel'     },
+  { name: '궁극 점액', mark: 'ultimateGel'    }
 ];
 
 const LEVEL_RANKS = Array.from({ length: 250 }, (_, i) => {
@@ -3783,6 +3854,118 @@ function drawLevelRankIcon(ctx, rank, x, y, size = 28, t = 0) {
     case 'star':
       ctx.fillStyle = c; ctx.strokeStyle = '#fff9c8'; star(7, size*0.18, size*0.45); ctx.fill(); ctx.stroke();
       break;
+    case 'slimeDrop':
+    case 'acidDrop':
+    case 'crystalDrop': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#f4fff8';
+      ctx.beginPath();
+      ctx.moveTo(0, -size*0.45);
+      ctx.bezierCurveTo(size*0.34, -size*0.15, size*0.32, size*0.38, 0, size*0.44);
+      ctx.bezierCurveTo(-size*0.32, size*0.38, -size*0.34, -size*0.15, 0, -size*0.45);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (rank.mark === 'acidDrop') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.82)'; ctx.lineWidth = size*0.045;
+        ctx.beginPath(); ctx.moveTo(-size*0.16, size*0.02); ctx.lineTo(size*0.16, size*0.02); ctx.moveTo(0, -size*0.14); ctx.lineTo(0, size*0.18); ctx.stroke();
+      } else if (rank.mark === 'crystalDrop') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = size*0.04;
+        ctx.beginPath(); ctx.moveTo(0,-size*0.38); ctx.lineTo(0,size*0.36); ctx.moveTo(-size*0.20,size*0.02); ctx.lineTo(size*0.20,size*0.02); ctx.stroke();
+      }
+      break;
+    }
+    case 'gelCore':
+    case 'splitCore':
+    case 'condensedGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#efffff';
+      ctx.beginPath(); ctx.arc(0,0,size*0.36,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.34)'; ctx.beginPath(); ctx.arc(-size*0.11,-size*0.12,size*0.12,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.78)'; ctx.lineWidth = size*0.04;
+      if (rank.mark === 'splitCore') {
+        ctx.beginPath(); ctx.moveTo(0,-size*0.34); ctx.lineTo(0,size*0.34); ctx.moveTo(-size*0.34,0); ctx.lineTo(size*0.34,0); ctx.stroke();
+      } else if (rank.mark === 'condensedGel') {
+        for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0,0,size*(0.16+i*0.08),0,Math.PI*2); ctx.stroke(); }
+      }
+      break;
+    }
+    case 'bubbleMembrane':
+    case 'elasticFilm': {
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
+      ctx.beginPath(); ctx.ellipse(0,0,size*0.38,size*0.30,0,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0,0,size*0.26,size*0.18,Math.PI/5,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(-size*0.16,-size*0.12,size*0.06,0,Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'slimeRing':
+    case 'slimeAura': {
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
+      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0,0,size*(0.20+i*0.11),0,Math.PI*2); ctx.stroke(); }
+      star(4, size*0.08, size*0.16, Math.PI/4); ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+      break;
+    }
+    case 'gelWave':
+    case 'jellyRibbon': {
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
+      for(let i=0;i<3;i++){
+        const yy = -size*0.18 + i*size*0.16;
+        ctx.beginPath(); ctx.moveTo(-size*0.40, yy); ctx.bezierCurveTo(-size*0.18, yy-size*0.13, size*0.18, yy+size*0.13, size*0.40, yy); ctx.stroke();
+      }
+      break;
+    }
+    case 'gelCrystal':
+    case 'prismGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
+      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.34,-size*0.08); ctx.lineTo(size*0.22,size*0.42); ctx.lineTo(-size*0.22,size*0.42); ctx.lineTo(-size*0.34,-size*0.08); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = size*0.035;
+      ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,size*0.38); ctx.moveTo(-size*0.30,-size*0.08); ctx.lineTo(size*0.30,-size*0.08); ctx.stroke();
+      break;
+    }
+    case 'stickyStar':
+    case 'luminousGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#fffbd6';
+      star(rank.mark === 'luminousGel' ? 10 : 6, size*0.18, size*0.43); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.78)'; ctx.beginPath(); ctx.arc(0,0,size*0.12,0,Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'slimeShield':
+    case 'slimeCrest': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#f3fff7'; shield(size*0.70, size*0.82); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.78)'; ctx.lineWidth = size*0.04;
+      ctx.beginPath(); ctx.arc(0,-size*0.04,size*0.18,0,Math.PI*2); ctx.stroke();
+      break;
+    }
+    case 'gelSpiral': {
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
+      ctx.beginPath();
+      for(let i=0;i<38;i++){ const a=i*0.35; const rr=size*0.012*i; const px=Math.cos(a)*rr, py=Math.sin(a)*rr; if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+      ctx.stroke();
+      break;
+    }
+    case 'healGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#ecfff1'; ctx.beginPath(); ctx.arc(0,0,size*0.34,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=size*0.075; ctx.beginPath(); ctx.moveTo(-size*0.22,0); ctx.lineTo(size*0.22,0); ctx.moveTo(0,-size*0.22); ctx.lineTo(0,size*0.22); ctx.stroke();
+      break;
+    }
+    case 'slimeCrown': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#fff6bd';
+      ctx.beginPath(); ctx.moveTo(-size*0.38,size*0.20); ctx.lineTo(-size*0.28,-size*0.18); ctx.lineTo(-size*0.10,size*0.02); ctx.lineTo(0,-size*0.32); ctx.lineTo(size*0.10,size*0.02); ctx.lineTo(size*0.28,-size*0.18); ctx.lineTo(size*0.38,size*0.20); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(-size*0.34, size*0.15, size*0.68, size*0.16, size*0.05); ctx.fill(); ctx.stroke();
+      break;
+    }
+    case 'toxicGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#efffea';
+      for(let i=0;i<3;i++){ const a=-Math.PI/2+i*Math.PI*2/3; ctx.beginPath(); ctx.ellipse(Math.cos(a)*size*0.13, Math.sin(a)*size*0.13, size*0.14, size*0.25, a, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle='rgba(0,0,0,0.40)'; ctx.beginPath(); ctx.arc(0,0,size*0.10,0,Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'ascendGel':
+    case 'rainbowGel':
+    case 'ultimateGel': {
+      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
+      star(rank.mark === 'ultimateGel' ? 9 : 7, size*0.20, size*0.45); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.82)'; ctx.lineWidth = size*0.04;
+      ctx.beginPath(); ctx.arc(0,0,size*0.24,0,Math.PI*2); ctx.stroke();
+      if (rank.mark === 'rainbowGel' || rank.mark === 'ultimateGel') { ctx.beginPath(); ctx.arc(0,0,size*0.35,Math.PI*0.15,Math.PI*0.85); ctx.stroke(); }
+      break;
+    }
     default:
       star(5, size*0.20, size*0.42); ctx.fill(); ctx.stroke();
   }
