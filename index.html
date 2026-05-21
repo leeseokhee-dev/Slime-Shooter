@@ -3582,9 +3582,9 @@ let height = canvas.height;
 const WATCH_CANVAS_W = 320;
 const WATCH_CANVAS_H = 320;
 const MOBILE_CANVAS_W = 480;
-const MOBILE_CANVAS_H = 640;
-const PHONE_LANDSCAPE_CANVAS_W = 640;
-const PHONE_LANDSCAPE_CANVAS_H = 360;
+const MOBILE_CANVAS_H = 320; // ✅ [v.167.8] 타이틀과 동일한 3:2 비율 유지
+const PHONE_LANDSCAPE_CANVAS_W = 960;
+const PHONE_LANDSCAPE_CANVAS_H = 640; // ✅ [v.167.8] 가로 모드도 타이틀과 동일한 3:2 비율 유지
 const DESKTOP_CANVAS_W = 960;
 const DESKTOP_CANVAS_H = 640;
 const DESKTOP_BREAKPOINT = 900;
@@ -3772,14 +3772,27 @@ function fitCanvasToViewport() {
 
   const minCanvasH = watchMode ? 96 : 180;
   const availableH = Math.max(minCanvasH, vh - (hudOverlayMode ? 0 : hudH) - safeTop - safeBottom);
-  const displayW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
-  const displayH = availableH;
+
+  // ✅ [v.167.8] 게임 화면 비율 고정
+  // 타이틀 화면과 동일하게 960:640(3:2) 계열 비율을 유지한다.
+  // 이전 방식은 displayH를 남은 화면 높이 전체로 잡고 내부 캔버스 높이까지 늘려
+  // 모바일에서 게임 화면이 세로로 길어지는 문제가 있었다.
+  const aspect = target.width / Math.max(1, target.height);
+  const maxDisplayW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
+  let displayW = maxDisplayW;
+  let displayH = displayW / aspect;
+  if (displayH > availableH) {
+    displayH = availableH;
+    displayW = displayH * aspect;
+  }
+  displayW = Math.max(watchMode ? 120 : 220, displayW);
+  displayH = displayW / aspect;
 
   const baseLogicalW = target.width;
-  const dynamicLogicalH = Math.max(220, Math.round(baseLogicalW * (displayH / Math.max(1, displayW))));
-  if (canvas.width !== baseLogicalW || canvas.height !== dynamicLogicalH) {
+  const baseLogicalH = target.height;
+  if (canvas.width !== baseLogicalW || canvas.height !== baseLogicalH) {
     canvas.width = baseLogicalW;
-    canvas.height = dynamicLogicalH;
+    canvas.height = baseLogicalH;
     width = canvas.width;
     height = canvas.height;
   }
