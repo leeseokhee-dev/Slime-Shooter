@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Slime Shooter - Ultimate Evolution (v.167.0 HUD Reflow & UI Safe Zone)</title>
+<title>Slime Shooter - Ultimate Evolution (v.167.2 Pause Fixed Canvas Top)</title>
 <!-- ✅ [v.166.3] iOS 홈 화면 실행 시 Safari 주소창 없이 앱처럼 보이도록 설정 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2851,13 +2851,15 @@ body{
 
 
 /* ===============================
-   ✅ [v.167.1] 실시간 전투 정보 가독성 강화
+   ✅ [v.167.4] 모든 모드 상단 정보 안전영역 통일
    - 캔버스 상단 정보 패널 2줄 표시
    - 무한 모드: 점수 / 보스 카운트 / 아이템 상태
    - 스테이지 모드: 몬스터 처치 수 실시간 표시
    =============================== */
 #pauseBtn{
-  transition: top .16s ease, transform .12s ease;
+  /* ✅ [v.167.3] 위치 보정 시 흔들림 방지: top 애니메이션 제거 */
+  transition: transform .12s ease;
+  will-change: auto;
 }
 #gameContainer.compact-ui #pauseBtn{ right:8px; }
 #gameContainer.ultra-compact-ui #pauseBtn{ right:7px; }
@@ -11046,12 +11048,29 @@ function updateInfiniteSuddenQuest(dt) {
   suddenQuest.interval = Math.max(0, (suddenQuest.interval || 90000) - dt);
   if (suddenQuest.interval <= 0) startSuddenQuest();
 }
+// ✅ [v.167.4] 모든 모드 공통 캔버스 상단 안전영역
+// HUD는 DOM 박스, 점수/시간/단계/수집 정보는 캔버스 내부 글자 영역으로 분리합니다.
+// 이 영역 아래부터 보스 체력바, 돌발 퀘스트, 전투 오브젝트 UI가 내려오게 해서 가림을 방지합니다.
+function getCanvasTopInfoMetrics(){
+  const small = width < 520;
+  const y = small ? 8 : 10;
+  const lineH = small ? 14 : 17;
+  let rows = 2;
+  if (gameMode === 'dungeon' || gameMode === 'itempark' || gameMode === 'mission' || gameMode === 'minigame') rows = 2;
+  if (gameMode === 'infinite') rows = 2;
+  const bottom = y + lineH * rows + (small ? 10 : 12);
+  return { y, lineH, rows, bottom, small };
+}
+function getCanvasTopInfoBottom(){
+  return getCanvasTopInfoMetrics().bottom;
+}
+function getBossHudY(){
+  return Math.max(getCanvasTopInfoBottom() + 8, width < 520 ? 46 : 54);
+}
 function getHudBottomCanvasYForSuddenQuest() {
-  // ✅ [v.167.0] 캔버스 내부 상단 UI 안전 영역
-  // HUD는 DOM 영역이고 캔버스는 그 아래에서 시작하므로, 여기서는 캔버스 안에서
-  // 점수 패널/보스 체력바와 겹치지 않는 Y값만 계산합니다.
   const hasBossHpBar = !!(boss && boss.hp > 0 && !boss._deadHandled);
-  const baseY = hasBossHpBar ? 112 : 56;
+  const bossBottom = hasBossHpBar ? (getBossHudY() + 40) : getCanvasTopInfoBottom();
+  const baseY = bossBottom + 8;
   return Math.max(10, Math.min(canvas.height - 76, baseY));
 }
 
@@ -11594,9 +11613,15 @@ questList.appendChild(div);
 
 
 function syncPauseButtonPosition() {
+  // ✅ [v.167.2] 일시정지 버튼은 HUD가 아니라 캔버스 기준으로 고정
+  // HUD 높이를 매번 따라가면 모바일에서 글자/정보 갱신 때 버튼이 위아래로 떨릴 수 있음
   if (!pauseBtn || !canvas) return;
-  const canvasTop = Number(canvas.offsetTop || 0);
-  pauseBtn.style.top = `${canvasTop + 8}px`;
+  const canvasTop = Math.round(Number(canvas.offsetTop || 0));
+  const targetTop = canvasTop + 8;
+  if (pauseBtn.dataset.fixedTop !== String(targetTop)) {
+    pauseBtn.style.top = `${targetTop}px`;
+    pauseBtn.dataset.fixedTop = String(targetTop);
+  }
   pauseBtn.style.right = '8px';
 }
 
@@ -19331,9 +19356,12 @@ function drawCanvasTopInfoPanel() {
   const blocked = (typeof anyBlockingModalOpen === 'function') ? anyBlockingModalOpen() : false;
   const margin = width < 520 ? 6 : 10;
   const x = margin;
-  const y = margin;
-  const w = width - margin * 2;
   const small = width < 520;
+  const m = getCanvasTopInfoMetrics();
+
+  // ✅ [v.167.4] 오른쪽 일시정지 버튼 자리까지 포함해서 모든 모드 공통으로 비워둡니다.
+  const pauseSafeW = small ? 68 : 78;
+  const w = width - margin * 2 - pauseSafeW;
 
   let leftText = '';
   let centerText = '';
@@ -19355,29 +19383,38 @@ function drawCanvasTopInfoPanel() {
 
     const itemParts = [];
     try {
-      if (isInfiniteItemEffectActive('magnet')) itemParts.push(`🧲 자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`✌️ 더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-      if (isInfiniteItemEffectActive('dash')) itemParts.push(`💨 하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`💯 점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
+      if (isInfiniteItemEffectActive('magnet')) itemParts.push(`자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
+      if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
+      if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
+      if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
     } catch(e) {}
-    subText = itemParts.length ? `사용 중: ${itemParts.join(' · ')}` : '아이템: 사용 중 없음';
+    subText = itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 사용 중 없음';
     subColor = itemParts.length ? '#7ce7ff' : '#aab8c8';
   } else if (gameMode === 'dungeon') {
+    const spawned = Math.max(0, Math.floor(dungeonState.spawned || 0));
     leftText = `던전 ${dungeonState.tier}단계`;
-    centerText = `남은 시간 ${formatMMSS(dungeonState.timeLeft || 0)}`;
-    rightText = `골드 ${formatNumber(gold)}`;
+    centerText = `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`;
+    rightText = `처치 ${formatNumber(spawned)}/${formatNumber(DUNGEON_TOTAL_MONSTERS)}`;
+    subText = `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))} · 골드 ${formatNumber(gold)}`;
+    subColor = '#cfefff';
   } else if (gameMode === 'mission') {
-    leftText = `미션 점수 ${formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))))}`;
+    leftText = `스테이지 ${stage}`;
     centerText = isMissionBonusStage(stage) ? `보너스 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage);
-    rightText = `골드 ${formatNumber(gold)}`;
+    rightText = `점수 ${formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))))}`;
+    subText = `골드 ${formatNumber(gold)}`;
+    subColor = '#baffd7';
   } else if (gameMode === 'itempark') {
-    leftText = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
-    centerText = `획득 EXP ${formatNumber(itemParkState.expGained || 0)}`;
-    rightText = `골드 ${formatNumber(gold)}`;
+    leftText = `아이템 파크`;
+    centerText = `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
+    rightText = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
+    subText = `획득 EXP ${formatNumber(itemParkState.expGained || 0)} · 골드 ${formatNumber(itemParkState.goldGained || 0)}`;
+    subColor = '#7ce7ff';
   } else if (gameMode === 'minigame') {
-    leftText = `점수 ${formatNumber(miniGameState.score || 0)}`;
-    centerText = `콤보 x${formatNumber(miniGameState.combo || 0)}`;
-    rightText = `골드 ${formatNumber(gold)}`;
+    leftText = `미니게임`;
+    centerText = `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`;
+    rightText = `점수 ${formatNumber(miniGameState.score || 0)}`;
+    subText = `콤보 x${formatNumber(miniGameState.combo || 0)} · 골드 ${formatNumber(gold)}`;
+    subColor = '#ffe08a';
   } else {
     const t = getStageKillTarget(stage);
     const k = Math.max(0, Math.floor(stageRunKillCount || 0));
@@ -19390,31 +19427,21 @@ function drawCanvasTopInfoPanel() {
     subColor = '#baffd7';
   }
 
-  const hasSub = !!subText;
-  const panelH = hasSub ? (small ? 48 : 54) : (small ? 36 : 42);
-
   ctx.save();
-  ctx.globalAlpha = blocked ? 0.55 : 0.97;
-  ctx.fillStyle = 'rgba(5,10,20,0.82)';
-  drawRoundRect(x, y, w, panelH, 12);
-  ctx.fill();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(68,255,184,0.46)';
-  ctx.stroke();
-
+  ctx.globalAlpha = blocked ? 0.55 : 0.98;
   ctx.textBaseline = 'middle';
-  ctx.font = fontStr(small ? 11 : 13, 'bold');
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(0,0,0,0.76)';
+  ctx.font = fontStr(small ? 12 : 14, 'bold');
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(0,0,0,0.84)';
 
-  const mainY = y + (hasSub ? (small ? 16 : 18) : panelH / 2);
+  const mainY = m.y + m.lineH * 0.72;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
-  ctx.strokeText(leftText, x + 12, mainY);
-  ctx.fillText(leftText, x + 12, mainY);
+  ctx.strokeText(leftText, x + 10, mainY);
+  ctx.fillText(leftText, x + 10, mainY);
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = (gameMode === 'infinite' && String(centerText).includes('보스')) ? '#fff4a8' : '#cfefff';
+  ctx.fillStyle = (String(centerText).includes('보스') || String(centerText).includes('남은')) ? '#fff4a8' : '#cfefff';
   const maxCenter = small ? 18 : 34;
   const shownCenter = String(centerText || '').length > maxCenter ? String(centerText).slice(0, maxCenter - 1) + '…' : String(centerText || '');
   ctx.strokeText(shownCenter, x + w / 2, mainY);
@@ -19422,16 +19449,16 @@ function drawCanvasTopInfoPanel() {
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#ffd86b';
-  ctx.strokeText(rightText, x + w - 12, mainY);
-  ctx.fillText(rightText, x + w - 12, mainY);
+  ctx.strokeText(rightText, x + w - 10, mainY);
+  ctx.fillText(rightText, x + w - 10, mainY);
 
-  if (hasSub) {
+  if (subText) {
     ctx.font = fontStr(small ? 10 : 12, 'bold');
     ctx.textAlign = 'center';
     ctx.fillStyle = subColor;
-    const maxSub = small ? 34 : 60;
+    const maxSub = small ? 38 : 70;
     const shownSub = String(subText || '').length > maxSub ? String(subText).slice(0, maxSub - 1) + '…' : String(subText || '');
-    const subY = y + panelH - (small ? 13 : 15);
+    const subY = m.y + m.lineH * 1.72;
     ctx.strokeText(shownSub, x + w / 2, subY);
     ctx.fillText(shownSub, x + w / 2, subY);
   }
@@ -20354,7 +20381,7 @@ ctx.scale(1 / b, b);
         const barWidth = Math.min(width - 34, 760);
         const barHeight = 34;
         const bx = (width - barWidth) / 2;
-        const by = 58; // ✅ [v.167.0] 캔버스 상단 정보 패널 아래에 고정
+        const by = getBossHudY(); // ✅ [v.167.4] 모든 모드 상단 정보 안전영역 아래에 고정
         const ratio = Math.max(0, Math.min(1, hp / Math.max(1, maxHp)));
         const hpPercent = (ratio * 100).toFixed(1);
 
@@ -21892,18 +21919,18 @@ function getInfiniteBossRemainSec() {
 
 
 function updatePauseButtonSafePosition() {
-  const btn = document.getElementById('pauseBtn');
-  const hud = document.getElementById('hud');
-  const container = document.getElementById('gameContainer');
-  if (!btn || !hud || !container) return;
+  // ✅ [v.167.3] HUD 높이 기준 보정 제거 → 캔버스 맨 위 고정
+  // 실제 버튼은 캔버스 내부 상단에만 붙고 HUD에는 가려지지 않음
   if (document.body.classList.contains('title-mode') || document.body.classList.contains('dead-mode') || document.body.classList.contains('tutorial-mode')) return;
-  const top = Math.max(52, Math.ceil(hud.offsetTop + hud.offsetHeight + 8));
-  btn.style.top = top + 'px';
+  syncPauseButtonPosition();
 }
 
 window.addEventListener('resize', () => { try { updatePauseButtonSafePosition(); } catch(e){} });
 
 function drawInfiniteBossCountdown() {
+  // ✅ [v.167.3] 보스 카운트는 drawCanvasTopInfoPanel()에서 점수와 함께 표시합니다.
+  // 중복으로 그리면 캔버스 상단 글자와 겹칠 수 있어 이 함수는 비활성화합니다.
+  return;
   if (gameMode !== 'infinite' || state !== 'playing') return;
   if (boss || (bossIntro && bossIntro.active) || bossSpawned || infiniteBossBonusShowing) return;
 
