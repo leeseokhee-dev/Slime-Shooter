@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.166.0 Rank & Full Canvas)</title>
+<title>Slime Shooter - Ultimate Evolution (v.165.1 Infinite Drop Size & Bounce)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2441,66 +2441,25 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 
 /* ===============================
-   ✅ [v.166.0] 계급 아이콘 + 플레이 화면 풀 캔버스 + 일시정지 설정 분리
+   ✅ [v.166] 계급표 + 드래곤 플라이트형 캔버스 확장
    =============================== */
-#gameContainer{ width:100vw !important; max-width:100vw !important; padding:0 !important; }
-#hud{ border-radius:0 0 10px 10px !important; margin-bottom:0 !important; width:100vw !important; max-width:100vw !important; }
-#gameCanvas{
-  width:100vw !important;
-  max-width:100vw !important;
-  height:calc(100dvh - var(--hud-height, 132px)) !important;
-  max-height:calc(100dvh - var(--hud-height, 132px)) !important;
-  border-radius:0 !important;
-  border-left:0 !important;
-  border-right:0 !important;
-  border-bottom:0 !important;
-  object-fit:fill !important;
-  aspect-ratio:auto !important;
-}
 body:not(.title-mode) #settingsBar{ display:none !important; }
-body.title-mode #settingsBar{ display:flex !important; }
-body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important; height:calc(100dvh - var(--hud-height, 132px)) !important; max-height:calc(100dvh - var(--hud-height, 132px)) !important; }
-#playerHudCompact{ gap:8px; align-items:center; }
-#rankIconBtn{
-  flex:0 0 auto;
-  width:32px;
-  height:32px;
-  padding:0;
-  border-radius:10px;
-  border:1px solid rgba(124,231,255,0.72);
-  background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(0,0,0,0.48));
-  box-shadow:0 0 12px rgba(68,255,184,0.26);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  overflow:hidden;
-}
-#rankIconBtn.rank-glow-2{ box-shadow:0 0 15px rgba(124,231,255,0.42), inset 0 0 10px rgba(255,255,255,0.10); }
-#rankIconBtn.rank-glow-3{ animation:rankBtnPulse 1.7s ease-in-out infinite; box-shadow:0 0 20px rgba(255,215,0,0.52), inset 0 0 14px rgba(255,255,255,0.14); }
-#rankIconBtn.rank-glow-4{ animation:rankBtnEpic 1.2s ease-in-out infinite; border-color:#ffd700; box-shadow:0 0 28px rgba(255,215,0,0.78), 0 0 18px rgba(255,80,220,0.35); }
-#rankIconBtn canvas{ width:28px; height:28px; display:block; }
-@keyframes rankBtnPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
-@keyframes rankBtnEpic{ 0%,100%{transform:scale(1) rotate(0deg); filter:brightness(1)} 50%{transform:scale(1.1) rotate(2deg); filter:brightness(1.35)} }
-#rankTableModal{ max-width:520px; width:min(94vw, 520px); z-index:185; border-color:#7ce7ff; }
-#rankTableBody{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; max-height:58vh; }
-.rank-cell{
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  padding:8px 4px; border-radius:12px;
-  background:rgba(255,255,255,0.055);
-  border:1px solid rgba(255,255,255,0.10);
-}
-.rank-cell.current{ border-color:#44ffb8; box-shadow:0 0 14px rgba(68,255,184,0.34); background:rgba(68,255,184,0.10); }
-.rank-cell canvas{ width:34px; height:34px; }
-.rank-cell span{ font-size:10px; color:#d8ebff; font-weight:900; }
-.pause-setting-row{ width:100%; display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
-.pause-setting-row .ui-btn{ min-height:38px; font-weight:900; }
-@media (max-width:520px){
-  #rankIconBtn{ width:30px; height:30px; }
-  #rankTableBody{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; }
-  .rank-cell canvas{ width:30px; height:30px; }
-  .pause-setting-row{ grid-template-columns:1fr; }
-}
+body:not(.title-mode) #gameContainer{ justify-content:flex-start !important; }
+body:not(.title-mode) #gameCanvas{ margin-top:0 !important; }
+#rankHudBtn{ display:inline-flex; align-items:center; justify-content:center; gap:4px; border:1px solid rgba(255,211,106,.42); background:rgba(0,0,0,.28); border-radius:999px; padding:2px 7px 2px 4px; color:#ffe8a3; font-weight:900; cursor:pointer; user-select:none; line-height:1; }
+#rankHudBtn canvas{ width:28px; height:28px; display:block; filter:drop-shadow(0 0 8px rgba(255,230,130,.28)); }
+#rankHudBtn.rank-glow-100{ animation:rankPulse100 1.8s ease-in-out infinite; }
+#rankHudBtn.rank-glow-150{ animation:rankPulse150 1.35s ease-in-out infinite; }
+#rankHudBtn.rank-glow-200{ border-width:2px; border-color:#ffd700; box-shadow:0 0 18px rgba(255,215,0,.42), inset 0 0 12px rgba(255,215,0,.18); animation:rankPulse200 1.05s ease-in-out infinite; }
+@keyframes rankPulse100{ 50%{ filter:brightness(1.25); transform:translateY(-1px); } }
+@keyframes rankPulse150{ 50%{ filter:brightness(1.45); transform:scale(1.04) rotate(-2deg); } }
+@keyframes rankPulse200{ 50%{ filter:brightness(1.7); transform:scale(1.07); box-shadow:0 0 28px rgba(255,215,0,.72), inset 0 0 18px rgba(255,215,0,.28); } }
+.rank-table-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(58px, 1fr)); gap:8px; max-height:55vh; overflow:auto; padding:4px; }
+.rank-cell{ border:1px solid rgba(255,255,255,.13); border-radius:12px; background:rgba(0,0,0,.22); padding:7px 4px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.rank-cell.current{ border-color:#ffd700; box-shadow:0 0 16px rgba(255,215,0,.35); background:rgba(255,215,0,.08); }
+.rank-cell canvas{ width:36px; height:36px; display:block; }
+.rank-cell .lv{ font-size:10px; font-weight:900; color:#dbe8ff; }
+#pauseQuickSettings .ui-btn{ min-width:0; font-size:12px; padding:8px 6px; }
 
 </style>
 </head>
@@ -2561,7 +2520,6 @@ body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important;
 
 
     <div id="playerHudCompact">
-        <button id="rankIconBtn" type="button" title="계급표 보기" aria-label="계급표 보기"></button>
         <span id="playerCompactText">LV. 1 PLAYER</span>
     </div>
 
@@ -2603,11 +2561,11 @@ body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important;
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
     <div style="font-size:28px; font-weight:900; color:#ffd36a; text-shadow:0 2px 8px rgba(0,0,0,0.45);">⏸ 일시정지</div>
-    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>여기서 핵심 설정을 바로 바꿀 수 있습니다.</div>
-    <div class="pause-setting-row">
-      <button id="pauseBgmToggleBtn" class="ui-btn" type="button">BGM</button>
-      <button id="pauseSfxToggleBtn" class="ui-btn" type="button">SFX</button>
-      <button id="pauseLowPowerToggleBtn" class="ui-btn" type="button">저사양</button>
+    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>다시 누르면 바로 이어집니다.</div>
+    <div id="pauseQuickSettings" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%; max-width:360px;">
+      <button id="pauseBgmBtn" class="ui-btn" type="button">BGM</button>
+      <button id="pauseSfxBtn" class="ui-btn" type="button">SFX</button>
+      <button id="pauseLowPowerBtn" class="ui-btn" type="button">저사양</button>
     </div>
     <button id="resumeBtn" class="ui-btn big-btn" style="width:100%; max-width:240px; border-color:#7cff7c; color:#dfffdc;">▶ 이어하기</button>
     <button id="pauseToTitleBtn" class="ui-btn" style="width:100%; max-width:240px;">타이틀로</button>
@@ -2839,6 +2797,16 @@ body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important;
   <button id="closeProfileBtn" class="close-btn">닫기</button>
 </div>
 
+<!-- 계급표 모달 -->
+<div id="rankTableModal" class="modal hidden" style="z-index: 174; border-color:#ffd36a; max-width:min(760px, 94vw);">
+  <div class="modal-header" style="color:#ffd36a;">🏅 계급표</div>
+  <div class="modal-body" style="gap:10px;">
+    <div style="font-size:12px; color:#cfd6ff; line-height:1.55;">1~250레벨까지 250개의 계급입니다. 25가지 슬라임 계급 형태와 10단계 색상이 조합되며, 현재 레벨 아이콘은 실제 플레이 화면에서 레벨이 높아질수록 빛과 애니메이션이 강해집니다.</div>
+    <div id="rankTableBody" class="rank-table-grid"></div>
+  </div>
+  <button id="closeRankTableBtn" class="close-btn">닫기</button>
+</div>
+
 <!-- 펫 도감 모달 -->
 <div id="petDexModal" class="modal hidden" style="z-index: 172; border-color:#9f8bff;">
   <div class="modal-header" style="color:#d9d2ff;">📚 펫 도감</div>
@@ -3019,14 +2987,6 @@ body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important;
   <button id="closeExpTableBtn" class="close-btn">닫기</button>
 </div>
 
-<!-- ✅ [v.166.0] 계급표 모달: 1~250레벨 / 25종 x 10색 -->
-<div id="rankTableModal" class="modal hidden">
-  <div class="modal-header" style="color:#dffbff;">🧬 슬라임 계급표</div>
-  <div style="font-size:12px; color:#cfefff; line-height:1.45; text-align:center; margin-bottom:4px;">25가지 슬라임 계급 × 10단계 색상으로 총 250레벨이 구성됩니다.</div>
-  <div id="rankTableBody" class="modal-body"></div>
-  <button id="closeRankTableBtn" class="close-btn">닫기</button>
-</div>
-
 <script>
 
 // ===============================
@@ -3168,164 +3128,6 @@ if (expWrapperEl) {
 
 const levelEl = document.getElementById('levelText');
 const playerCompactEl = document.getElementById('playerCompactText');
-
-// ===============================
-// ✅ [v.166.0] 직접 그리는 슬라임 계급 시스템
-// - 1~250레벨 = 25종류 × 10색상
-// - 표정 없음, 몸체/오라/문양/애니메이션으로 성장감 표현
-// ===============================
-const rankIconBtn = document.getElementById('rankIconBtn');
-const rankTableModal = document.getElementById('rankTableModal');
-const rankTableBody = document.getElementById('rankTableBody');
-const closeRankTableBtn = document.getElementById('closeRankTableBtn');
-const RANK_COLORS = [
-  {name:'빨강', main:'#ff4d57', sub:'#ff9aa0'},
-  {name:'주황', main:'#ff922e', sub:'#ffd19a'},
-  {name:'노랑', main:'#ffd83d', sub:'#fff2a0'},
-  {name:'연두', main:'#b6ff4d', sub:'#e4ff9a'},
-  {name:'초록', main:'#36e67a', sub:'#a4ffc4'},
-  {name:'하늘', main:'#4ddcff', sub:'#b7f4ff'},
-  {name:'파랑', main:'#4d88ff', sub:'#b5ccff'},
-  {name:'남색', main:'#3948d8', sub:'#a5adff'},
-  {name:'보라', main:'#a45cff', sub:'#d7b5ff'},
-  {name:'분홍', main:'#ff69c8', sub:'#ffc0e8'}
-];
-const RANK_TYPES = Array.from({length:25}, (_,i)=>({ idx:i, tier:i+1 }));
-function getRankInfoByLevel(lv){
-  const safeLv = clamp(Math.floor(Number(lv)||1), 1, 250);
-  const typeIndex = Math.floor((safeLv - 1) / 10);
-  const colorIndex = (safeLv - 1) % 10;
-  return { level:safeLv, typeIndex, colorIndex, color:RANK_COLORS[colorIndex], tier:typeIndex+1 };
-}
-function drawSlimeRankIcon(targetCanvas, lv, t=0){
-  if (!targetCanvas) return;
-  const c = targetCanvas;
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  const size = 64;
-  if (c.width !== size*dpr || c.height !== size*dpr){ c.width=size*dpr; c.height=size*dpr; }
-  c.style.width = c.style.width || '32px';
-  c.style.height = c.style.height || '32px';
-  const g = c.getContext('2d');
-  g.setTransform(dpr,0,0,dpr,0,0);
-  g.clearRect(0,0,size,size);
-  const info = getRankInfoByLevel(lv);
-  const {main, sub} = info.color;
-  const tier = info.tier;
-  const cx=32, cy=35;
-  const pulse = Math.sin(t/420) * Math.min(5, tier/7);
-  const aura = Math.max(0, tier-7);
-
-  if (aura>0){
-    g.save();
-    g.globalAlpha = Math.min(0.72, 0.14 + aura*0.025);
-    for(let i=0;i<Math.min(14, aura);i++){
-      const a = (Math.PI*2*i/Math.min(14,aura)) + t/900;
-      const r = 19 + tier*0.55 + Math.sin(t/300+i)*2;
-      g.fillStyle = i%2 ? main : sub;
-      g.beginPath();
-      g.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 1.5 + tier/18, 0, Math.PI*2);
-      g.fill();
-    }
-    g.restore();
-  }
-  if (tier>=20){
-    g.save();
-    g.strokeStyle = 'rgba(255,215,0,0.95)';
-    g.lineWidth = tier>=23 ? 5 : 3.2;
-    g.shadowColor = '#ffd700'; g.shadowBlur = 10;
-    g.beginPath(); g.arc(cx, cy, 27+pulse*0.16, 0, Math.PI*2); g.stroke();
-    g.restore();
-  }
-  // 뒤 장식: 왕관/날개/크리스털 느낌을 도형으로만 그림
-  if (tier>=6){
-    g.save();
-    g.fillStyle = sub; g.globalAlpha = 0.82;
-    for(let k=0;k<Math.min(5, Math.floor(tier/5)+1);k++){
-      const x = cx + (k-2)*7;
-      const h = 7 + (k%2)*5 + tier*0.28;
-      g.beginPath();
-      g.moveTo(x, 18-h*0.25);
-      g.lineTo(x-4, 25+h*0.25);
-      g.lineTo(x+4, 25+h*0.25);
-      g.closePath(); g.fill();
-    }
-    g.restore();
-  }
-  // 표정 없는 슬라임 몸체
-  g.save();
-  g.shadowColor = main; g.shadowBlur = tier>=12 ? 12 : 5;
-  const grad = g.createRadialGradient(23,24,5,32,36,28);
-  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.16, sub); grad.addColorStop(1, main);
-  g.fillStyle = grad;
-  g.beginPath();
-  const wobble = Math.sin(t/350)*Math.min(2.5, tier/10);
-  g.moveTo(15, 43);
-  g.bezierCurveTo(12, 31, 19, 27+wobble, 25, 22-tier*0.08);
-  g.bezierCurveTo(28, 13-tier*0.18, 36, 13+tier*0.05, 39, 22-tier*0.05);
-  g.bezierCurveTo(48, 25, 54, 33, 50, 44);
-  g.bezierCurveTo(44, 55, 22, 55, 15, 43);
-  g.closePath();
-  g.fill();
-  g.lineWidth = tier>=18 ? 3 : 2;
-  g.strokeStyle = tier>=20 ? '#ffd700' : 'rgba(255,255,255,0.75)';
-  g.stroke();
-  g.restore();
-  // 내부 문양: 표정 대신 계급별 문양
-  g.save();
-  g.globalAlpha = 0.85;
-  g.strokeStyle = 'rgba(255,255,255,0.86)';
-  g.lineWidth = 1.3 + Math.min(1.6, tier/18);
-  const pattern = info.typeIndex % 5;
-  if (pattern===0){ g.beginPath(); g.arc(cx, cy+2, 7+tier*0.08, 0, Math.PI*2); g.stroke(); }
-  if (pattern===1){ g.beginPath(); g.moveTo(cx,cy-8); g.lineTo(cx+8,cy+7); g.lineTo(cx-8,cy+7); g.closePath(); g.stroke(); }
-  if (pattern===2){ g.beginPath(); g.moveTo(cx-8,cy); g.lineTo(cx,cy-8); g.lineTo(cx+8,cy); g.lineTo(cx,cy+8); g.closePath(); g.stroke(); }
-  if (pattern===3){ for(let i=0;i<3;i++){ g.beginPath(); g.arc(cx, cy+1, 4+i*4, 0.2, Math.PI*1.25); g.stroke(); } }
-  if (pattern===4){ g.beginPath(); g.moveTo(cx-9,cy+5); g.bezierCurveTo(cx-2,cy-8,cx+2,cy+12,cx+9,cy-4); g.stroke(); }
-  if (tier>=10){
-    g.fillStyle='rgba(255,255,255,0.88)';
-    for(let i=0;i<Math.min(6,Math.floor(tier/4));i++){
-      const a=t/600+i*1.7; g.beginPath(); g.arc(cx+Math.cos(a)*13, cy+Math.sin(a)*10, 1.2, 0, Math.PI*2); g.fill();
-    }
-  }
-  g.restore();
-}
-let __rankAnimReq = 0;
-function updateRankIcon(){
-  if (!rankIconBtn) return;
-  let iconCanvas = rankIconBtn.querySelector('canvas');
-  if (!iconCanvas){ iconCanvas = document.createElement('canvas'); rankIconBtn.appendChild(iconCanvas); }
-  const info = getRankInfoByLevel(level || 1);
-  rankIconBtn.classList.toggle('rank-glow-2', info.tier >= 8 && info.tier < 15);
-  rankIconBtn.classList.toggle('rank-glow-3', info.tier >= 15 && info.tier < 20);
-  rankIconBtn.classList.toggle('rank-glow-4', info.tier >= 20);
-  drawSlimeRankIcon(iconCanvas, info.level, performance.now());
-}
-function animateRankIcon(){ updateRankIcon(); __rankAnimReq = requestAnimationFrame(animateRankIcon); }
-function openRankTableModal(){
-  if (!rankTableModal || !rankTableBody) return;
-  const curLv = clamp(level || 1, 1, 250);
-  const now = performance.now();
-  rankTableBody.innerHTML = '';
-  for(let lv=1; lv<=250; lv++){
-    const cell = document.createElement('div');
-    cell.className = 'rank-cell' + (lv === curLv ? ' current' : '');
-    const cv = document.createElement('canvas');
-    cv.style.width='34px'; cv.style.height='34px';
-    drawSlimeRankIcon(cv, lv, now + lv*7);
-    const label = document.createElement('span');
-    const info = getRankInfoByLevel(lv);
-    label.textContent = `LV.${lv} · ${info.color.name}`;
-    cell.appendChild(cv); cell.appendChild(label); rankTableBody.appendChild(cell);
-  }
-  rankTableModal.classList.remove('hidden');
-  const current = rankTableBody.querySelector('.rank-cell.current');
-  if (current) setTimeout(()=>current.scrollIntoView({block:'center'}), 30);
-}
-function closeRankTableModal(){ if (rankTableModal) rankTableModal.classList.add('hidden'); }
-rankIconBtn && rankIconBtn.addEventListener('click', openRankTableModal);
-closeRankTableBtn && closeRankTableBtn.addEventListener('click', closeRankTableModal);
-requestAnimationFrame(animateRankIcon);
-
 const stageEl = document.getElementById('stageText');
 const hotTimeEl = document.getElementById('hotTimeText');
 const goldEl = document.getElementById('goldText');
@@ -3390,16 +3192,26 @@ function fitCanvasToViewport() {
     hud.style.overflowY = '';
   }
   const aspect = target.width / target.height;
-  document.documentElement.style.setProperty('--hud-height', `${Math.ceil(hudH)}px`);
 
-  let w = Math.max(120, vw);
-  let h = Math.max(120, vh - hudH);
+  let w = Math.min(target.width, vw - sidePadding);
+  let h = w / aspect;
 
   const minCanvasH = watchMode ? 96 : 180;
   const availableH = Math.max(minCanvasH, vh - hudH - safeTop - safeBottom - 6);
-  // v.166.0: HUD를 제외한 남은 영역을 캔버스가 꽉 채우도록 한다.
-  w = Math.max(120, vw);
-  h = Math.max(minCanvasH, availableH);
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspect;
+  }
+
+  const minWidth = Math.min(vw - 4, watchMode ? 120 : 220);
+  if (w < minWidth) {
+    w = minWidth;
+    h = w / aspect;
+  }
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspect;
+  }
 
   canvas.style.width = `${Math.floor(w)}px`;
   canvas.style.height = `${Math.floor(h)}px`;
@@ -3469,6 +3281,12 @@ const quickLargePotionBtn = document.getElementById('quickLargePotionBtn');
 const quickAntidoteBtn = document.getElementById('quickAntidoteBtn');
 const quickExpBundleBtn = document.getElementById('quickExpBundleBtn');
 const profileBtn = document.getElementById('profileBtn');
+const rankTableModal = document.getElementById('rankTableModal');
+const rankTableBody = document.getElementById('rankTableBody');
+const closeRankTableBtn = document.getElementById('closeRankTableBtn');
+const pauseBgmBtn = document.getElementById('pauseBgmBtn');
+const pauseSfxBtn = document.getElementById('pauseSfxBtn');
+const pauseLowPowerBtn = document.getElementById('pauseLowPowerBtn');
 
 const skillGuideBtn = document.getElementById('skillGuideBtn');
 const skillGuideModal = document.getElementById('skillGuideModal');
@@ -3577,9 +3395,6 @@ const titleExitBtn = document.getElementById('titleExitBtn');
 const restartBtn = document.getElementById('restartBtn');
 const toTitleBtn = document.getElementById('toTitleBtn');
 const pauseBtn = document.getElementById('pauseBtn');
-const pauseBgmToggleBtn = document.getElementById('pauseBgmToggleBtn');
-const pauseSfxToggleBtn = document.getElementById('pauseSfxToggleBtn');
-const pauseLowPowerToggleBtn = document.getElementById('pauseLowPowerToggleBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseToTitleBtn = document.getElementById('pauseToTitleBtn');
@@ -10469,17 +10284,6 @@ function setPauseUI() {
     syncPauseButtonPosition();
   }
   if (pauseOverlay) pauseOverlay.classList.toggle('hidden', !isPaused);
-  syncPauseSettingButtons();
-}
-
-
-function syncPauseSettingButtons(){
-  if (pauseBgmToggleBtn) pauseBgmToggleBtn.textContent = bgmEnabled ? 'BGM 켜짐' : 'BGM 꺼짐';
-  if (pauseSfxToggleBtn) pauseSfxToggleBtn.textContent = sfxEnabled ? 'SFX 켜짐' : 'SFX 꺼짐';
-  if (pauseLowPowerToggleBtn) pauseLowPowerToggleBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF';
-  if (pauseBgmToggleBtn) pauseBgmToggleBtn.style.color = bgmEnabled ? '#ffffff' : '#9aa3b8';
-  if (pauseSfxToggleBtn) pauseSfxToggleBtn.style.color = sfxEnabled ? '#ffffff' : '#9aa3b8';
-  if (pauseLowPowerToggleBtn) pauseLowPowerToggleBtn.style.color = saveData.lowPower ? '#7cffd2' : '#ffffff';
 }
 
 function pauseGame() {
@@ -10595,9 +10399,6 @@ if (introTutorialActive && introStep === 1) {
 });
 if (titleExitBtn) titleExitBtn.addEventListener('click', exitGameFromTitle);
 pauseBtn && pauseBtn.addEventListener('click', togglePause);
-pauseBgmToggleBtn && pauseBgmToggleBtn.addEventListener('click', () => { bgmBtn && bgmBtn.click(); syncPauseSettingButtons(); });
-pauseSfxToggleBtn && pauseSfxToggleBtn.addEventListener('click', () => { sfxBtn && sfxBtn.click(); syncPauseSettingButtons(); });
-pauseLowPowerToggleBtn && pauseLowPowerToggleBtn.addEventListener('click', () => { lowPowerBtn && lowPowerBtn.click(); syncPauseSettingButtons(); fitCanvasToViewport(); });
 window.addEventListener('resize', syncPauseButtonPosition);
 window.addEventListener('orientationchange', syncPauseButtonPosition);
 document.addEventListener('visibilitychange', () => {
@@ -18114,7 +17915,6 @@ const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
 const compactPlayerText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
 if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
-try { updateRankIcon(); } catch(e) {}
 levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
@@ -20695,6 +20495,147 @@ drawEnemyShape = function(e) {
     stage = realStage;
   }
 };
+
+
+
+/* ===============================
+   ✅ [v.166] 250종 계급 / 계급표 / 확장형 플레이 화면 / 일시정지 설정
+   =============================== */
+const RANK_COLORS_250 = ['#ff4b4b','#ff9d2e','#ffe143','#9cff43','#30d86a','#45e4ff','#4286ff','#2d3fba','#a655ff','#ff72d2'];
+const RANK_KIND_COUNT_250 = 25;
+function getRankInfo250(lv){
+  const levelNum = Math.max(1, Math.min(250, Math.floor(Number(lv)||1)));
+  return { level: levelNum, kind: Math.floor((levelNum - 1) / 10), colorIndex: (levelNum - 1) % 10, color: RANK_COLORS_250[(levelNum - 1) % 10] };
+}
+function drawSlimeRankIcon(ctx2, lv, size=64, animated=false, tick=0){
+  if (!ctx2) return;
+  const info = getRankInfo250(lv);
+  const k = info.kind;
+  const c = info.color;
+  const cx = size/2, cy = size/2;
+  ctx2.clearRect(0,0,size,size);
+  ctx2.save();
+  const pulse = animated ? (Math.sin(tick/220)+1)/2 : 0.45;
+  if (lv >= 200) {
+    ctx2.shadowColor = 'rgba(255,215,0,.92)'; ctx2.shadowBlur = 12 + pulse*14;
+    ctx2.strokeStyle = '#ffd700'; ctx2.lineWidth = 5;
+    roundPoly(ctx2, cx, cy, size*.43, 8, -Math.PI/2); ctx2.stroke();
+  } else if (lv >= 150) { ctx2.shadowColor = c; ctx2.shadowBlur = 10 + pulse*10; }
+  else if (lv >= 100) { ctx2.shadowColor = c; ctx2.shadowBlur = 7 + pulse*6; }
+  const sides = 3 + (k % 6);
+  ctx2.globalAlpha = .22;
+  ctx2.fillStyle = c;
+  roundPoly(ctx2, cx, cy, size*(.38 + (k%4)*.018), sides, -Math.PI/2 + (animated ? tick/2600 : 0)); ctx2.fill();
+  ctx2.globalAlpha = 1;
+  ctx2.lineWidth = Math.max(2, size*.045);
+  ctx2.strokeStyle = lv >= 200 ? '#ffd700' : 'rgba(255,255,255,.76)';
+  ctx2.fillStyle = c;
+  drawRankSlimeShape(ctx2, cx, cy, size, k);
+  ctx2.fill(); ctx2.stroke();
+  ctx2.shadowBlur = 0;
+  ctx2.fillStyle = 'rgba(255,255,255,.36)';
+  ctx2.beginPath(); ctx2.ellipse(cx-size*.13, cy-size*.12, size*.105, size*.06, -0.55, 0, Math.PI*2); ctx2.fill();
+  ctx2.strokeStyle = 'rgba(255,255,255,.55)'; ctx2.lineWidth = Math.max(1, size*.018);
+  for(let i=0;i<Math.min(6, Math.floor(k/3)+1);i++){
+    const a = -Math.PI/2 + i*Math.PI*2/Math.max(3, Math.min(6, Math.floor(k/3)+1)) + (animated ? tick/1300 : 0);
+    ctx2.beginPath(); ctx2.moveTo(cx+Math.cos(a)*size*.23, cy+Math.sin(a)*size*.23); ctx2.lineTo(cx+Math.cos(a)*size*.34, cy+Math.sin(a)*size*.34); ctx2.stroke();
+  }
+  ctx2.restore();
+}
+function drawRankSlimeShape(g, cx, cy, s, k){
+  g.beginPath();
+  const spikes = k % 5;
+  if (k < 5) {
+    g.moveTo(cx, cy-s*.31); g.bezierCurveTo(cx+s*.34, cy-s*.27, cx+s*.38, cy+s*.13, cx+s*.20, cy+s*.26); g.quadraticCurveTo(cx, cy+s*.38, cx-s*.20, cy+s*.26); g.bezierCurveTo(cx-s*.38, cy+s*.13, cx-s*.34, cy-s*.27, cx, cy-s*.31);
+  } else if (k < 10) {
+    g.moveTo(cx-s*.30, cy+s*.21); g.quadraticCurveTo(cx-s*.37, cy-s*.04, cx-s*.13, cy-s*.27); g.quadraticCurveTo(cx, cy-s*.43, cx+s*.13, cy-s*.27); g.quadraticCurveTo(cx+s*.37, cy-s*.04, cx+s*.30, cy+s*.21); g.quadraticCurveTo(cx, cy+s*.38, cx-s*.30, cy+s*.21);
+  } else if (k < 15) {
+    g.moveTo(cx, cy-s*.40); g.quadraticCurveTo(cx+s*.16, cy-s*.24, cx+s*.31, cy-s*.16); g.quadraticCurveTo(cx+s*.42, cy+s*.12, cx+s*.20, cy+s*.29); g.quadraticCurveTo(cx, cy+s*.40, cx-s*.20, cy+s*.29); g.quadraticCurveTo(cx-s*.42, cy+s*.12, cx-s*.31, cy-s*.16); g.quadraticCurveTo(cx-s*.16, cy-s*.24, cx, cy-s*.40);
+  } else if (k < 20) {
+    g.moveTo(cx-s*.35, cy+s*.18); for(let i=0;i<spikes+3;i++){ const a=-Math.PI+i*Math.PI/(spikes+2); const r=i%2?s*.36:s*.43; g.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r); } g.quadraticCurveTo(cx+s*.37, cy+s*.18, cx+s*.20, cy+s*.31); g.quadraticCurveTo(cx, cy+s*.40, cx-s*.20, cy+s*.31); g.quadraticCurveTo(cx-s*.37, cy+s*.18, cx-s*.35, cy+s*.18);
+  } else {
+    const n=7+(k%5); for(let i=0;i<n*2;i++){ const a=-Math.PI/2+i*Math.PI/n; const r=(i%2? s*.31:s*.43); const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; if(i===0) g.moveTo(x,y); else g.lineTo(x,y); } g.closePath();
+  }
+}
+function roundPoly(g,cx,cy,r,n,rot){ g.beginPath(); for(let i=0;i<n;i++){ const a=rot+i*Math.PI*2/n; const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; if(i===0) g.moveTo(x,y); else g.lineTo(x,y); } g.closePath(); }
+function ensureRankHudButton(){
+  if (document.getElementById('rankHudBtn')) return document.getElementById('rankHudBtn');
+  const holder = playerCompactEl || levelEl;
+  if (!holder || !holder.parentNode) return null;
+  const btn = document.createElement('button'); btn.id='rankHudBtn'; btn.type='button'; btn.title='계급표 보기';
+  btn.innerHTML = '<canvas width="64" height="64" aria-hidden="true"></canvas><span class="rank-lv">LV.1</span>';
+  holder.parentNode.insertBefore(btn, holder);
+  btn.addEventListener('click', () => openRankTableModal());
+  return btn;
+}
+function refreshRankHudIcon(){
+  const btn = ensureRankHudButton(); if(!btn) return;
+  const lv = Math.max(1, Math.min(250, Math.floor(Number(level)||1)));
+  const cv = btn.querySelector('canvas');
+  drawSlimeRankIcon(cv && cv.getContext('2d'), lv, 64, true, performance.now());
+  const label = btn.querySelector('.rank-lv'); if(label) label.textContent = `LV.${lv}`;
+  btn.classList.toggle('rank-glow-100', lv >= 100 && lv < 150);
+  btn.classList.toggle('rank-glow-150', lv >= 150 && lv < 200);
+  btn.classList.toggle('rank-glow-200', lv >= 200);
+}
+function openRankTableModal(){
+  if(!rankTableModal || !rankTableBody) return;
+  const cur = Math.max(1, Math.min(250, Math.floor(Number(level)||1)));
+  rankTableBody.innerHTML = '';
+  for(let lv=1; lv<=250; lv++){
+    const cell = document.createElement('div'); cell.className = 'rank-cell' + (lv===cur ? ' current':'');
+    const cv = document.createElement('canvas'); cv.width=64; cv.height=64;
+    drawSlimeRankIcon(cv.getContext('2d'), lv, 64, false, 0);
+    const label = document.createElement('div'); label.className='lv'; label.textContent = `LV.${lv}`;
+    cell.appendChild(cv); cell.appendChild(label); rankTableBody.appendChild(cell);
+  }
+  rankTableModal.classList.remove('hidden');
+}
+if (closeRankTableBtn) closeRankTableBtn.addEventListener('click', ()=> rankTableModal && rankTableModal.classList.add('hidden'));
+
+const __origUpdateSettingsUI_v166 = updateSettingsUI;
+updateSettingsUI = function(){
+  __origUpdateSettingsUI_v166();
+  if (pauseBgmBtn) { pauseBgmBtn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF'; pauseBgmBtn.style.color = bgmEnabled ? '#fff' : '#888'; }
+  if (pauseSfxBtn) { pauseSfxBtn.textContent = sfxEnabled ? 'SFX ON' : 'SFX OFF'; pauseSfxBtn.style.color = sfxEnabled ? '#fff' : '#888'; }
+  if (pauseLowPowerBtn) { pauseLowPowerBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF'; pauseLowPowerBtn.style.color = saveData.lowPower ? '#ffd700' : '#fff'; }
+};
+if (pauseBgmBtn) pauseBgmBtn.addEventListener('click', ()=> bgmBtn && bgmBtn.click());
+if (pauseSfxBtn) pauseSfxBtn.addEventListener('click', ()=> sfxBtn && sfxBtn.click());
+if (pauseLowPowerBtn) pauseLowPowerBtn.addEventListener('click', ()=> lowPowerBtn && lowPowerBtn.click());
+
+const __origUpdateHUD_v166 = updateHUD;
+updateHUD = function(){ const r = __origUpdateHUD_v166(); refreshRankHudIcon(); return r; };
+
+const __origFitCanvasToViewport_v166 = fitCanvasToViewport;
+fitCanvasToViewport = function(){
+  applyResponsiveUiDensity();
+  const hud = document.getElementById('hud');
+  const container = document.getElementById('gameContainer');
+  const target = applyCanvasPreset();
+  const vp = getViewportSize();
+  if (state === 'title') return __origFitCanvasToViewport_v166();
+  const vw = vp.width, vh = vp.height;
+  const hudH = hud ? hud.getBoundingClientRect().height : 0;
+  const sidePadding = 4;
+  const bottomSafe = Math.max(2, Number(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')))||2);
+  const availableH = Math.max(180, vh - hudH - bottomSafe - 4);
+  const aspect = target.width / target.height;
+  let w = vw - sidePadding;
+  let h = availableH;
+  if (w / h > aspect) w = h * aspect; else h = w / aspect;
+  if (h > availableH) { h = availableH; w = h * aspect; }
+  canvas.style.width = `${Math.floor(w)}px`;
+  canvas.style.height = `${Math.floor(h)}px`;
+  const uiScale = Math.max(0.62, Math.min(1.12, Math.min(w / target.width, h / target.height)));
+  if (hud) { hud.style.width = `${Math.floor(w)}px`; hud.style.maxWidth = `${Math.floor(w)}px`; }
+  if (container) { container.style.width = `${Math.floor(w)}px`; container.style.maxWidth = `${Math.floor(w)}px`; container.style.setProperty('--canvas-scale', String(uiScale)); container.dataset.canvasMode = target.mode; }
+  document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
+  requestAnimationFrame(()=>syncPauseButtonPosition());
+};
+
+const __origGameLoop_v166 = gameLoop;
+gameLoop = function(t){ refreshRankHudIcon(); return __origGameLoop_v166(t); };
 
 loadGameData();
 updateHUD();
