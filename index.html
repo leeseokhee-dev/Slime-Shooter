@@ -20161,41 +20161,60 @@ ctx.scale(1 / b, b);
     ctx.restore();
 
     // Boss HUD (체력바 상단 표시)
-    // 요청 반영: 보스 등장 알림창/등장 연출 중에는 체력창을 숨기고,
-    // 보스가 목표 위치까지 완전히 내려온 뒤에만 표시합니다.
-    const bossFullyEntered = !bossIntro.active && y >= boss.targetY;
-    if (bossFullyEntered) {
-        // ✅ [v.166.7] 보스 HP바: HUD 바로 아래(캔버스 최상단)에 크게 고정 표시
-        const barWidth = Math.min(width - 80, 560);
-        const barHeight = 24;
+    // ✅ [v.166.8] 보스가 존재하면 무조건 HUD 바로 아래(캔버스 최상단)에 표시합니다.
+    // 이전 v.166.7은 `bossIntro.active` 또는 targetY 조건 때문에 실제 보스가 보이는데도
+    // 체력바가 숨겨지는 경우가 있어, 표시 조건을 보스 생존 여부 기준으로 단순화했습니다.
+    const bossHudVisible = boss && hp > 0 && !boss._deadHandled;
+    if (bossHudVisible) {
+        const barWidth = Math.min(width - 34, 760);
+        const barHeight = 34;
         const bx = (width - barWidth) / 2;
         const by = 8;
+        const ratio = Math.max(0, Math.min(1, hp / Math.max(1, maxHp)));
+        const hpPercent = (ratio * 100).toFixed(1);
+
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.72)';
-        roundRectPath(ctx, bx, by, barWidth, barHeight, 10);
+        // 전체 패널
+        ctx.globalAlpha = 0.98;
+        ctx.fillStyle = 'rgba(5,10,20,0.84)';
+        roundRectPath(ctx, bx, by, barWidth, barHeight, 9);
         ctx.fill();
-        const ratio = Math.max(0, hp / maxHp);
-        
-        // 체력바 색상: 보스 속성 반영
-        ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color; 
-        roundRectPath(ctx, bx + 3, by + 3, (barWidth - 6) * ratio, barHeight - 6, 8);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2;
-        roundRectPath(ctx, bx, by, barWidth, barHeight, 10);
+        ctx.strokeStyle = (evoStage === 6) ? 'rgba(255,70,90,0.96)' : 'rgba(255,255,255,0.88)';
+        ctx.lineWidth = 2;
+        roundRectPath(ctx, bx, by, barWidth, barHeight, 9);
         ctx.stroke();
-        drawElementBadge(bx + barWidth + 18, by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.9);
+
+        // 체력 게이지
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        roundRectPath(ctx, bx + 82, by + 7, barWidth - 96, barHeight - 14, 7);
+        ctx.fill();
+        const hpColor = (evoStage === 6) ? '#ff2f38' : (bossElementMeta.color || '#ff4444');
+        ctx.fillStyle = hpColor;
+        roundRectPath(ctx, bx + 82, by + 7, (barWidth - 96) * ratio, barHeight - 14, 7);
+        ctx.fill();
+
+        // 왼쪽 BOSS 라벨
+        ctx.fillStyle = (evoStage === 6) ? '#ff4343' : '#ff6666';
+        ctx.font = `bold 13px ${getUIFontFamily()}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BOSS', bx + 42, by + barHeight / 2);
 
         // [수정] 보스 타이틀 텍스트
         let title = "아기 슬라임";
         if(evoStage===2) title="어린이 슬라임";
         else if(evoStage===3) title="청소년 슬라임";
         else if(evoStage===4) title="왕 슬라임";
-        else if(evoStage===5) title="신 슬라임";   // 51~100
-        else if(evoStage===6) title="우주 슬라임"; // 101~200 (최종)
+        else if(evoStage===5) title="신 슬라임";
+        else if(evoStage===6) title="우주 슬라임";
 
-        ctx.fillStyle = '#ffffff'; ctx.font = `bold 13px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        const hpPercent = (ratio * 100).toFixed(1);
-        ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} (LV.${bLv}) HP: ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, width / 2, by + barHeight / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 13px ${getUIFontFamily()}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} LV.${bLv}  ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, bx + 82 + (barWidth - 96) / 2, by + barHeight / 2);
         ctx.restore();
     }
 }
