@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.165.6 Rank Preview Dex)</title>
+<title>Slime Shooter - Ultimate Evolution (v.165.8 Unique Rank Emblems)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -821,8 +821,9 @@ body.tutorial-mode #pauseBtn{
   cursor:pointer;
   border-radius:999px;
   transition: transform .15s ease, filter .15s ease;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.16));
 }
-#hudRankIconCanvas:active{ transform:scale(0.92); filter:brightness(1.25); }
+#hudRankIconCanvas:active{ transform:scale(0.92); filter:brightness(1.25) drop-shadow(0 0 10px rgba(255,255,255,0.28)); }
 #rankPreviewModal{
   z-index: 215;
   max-width: 560px;
@@ -3397,15 +3398,27 @@ const LEVEL_RANK_BASES = [
 
 const LEVEL_RANKS = Array.from({ length: 250 }, (_, i) => {
   const level = i + 1;
-  const base = LEVEL_RANK_BASES[Math.floor(i / LEVEL_RANK_COLORS.length)];
-  const palette = LEVEL_RANK_COLORS[i % LEVEL_RANK_COLORS.length];
+  const tier = Math.floor(i / LEVEL_RANK_COLORS.length) + 1;
+  const colorIndex = i % LEVEL_RANK_COLORS.length;
+  const base = LEVEL_RANK_BASES[tier - 1];
+  const palette = LEVEL_RANK_COLORS[colorIndex];
+
+  // ✅ [v.165.8] 250레벨 모두 고유 실루엣을 갖도록 레벨별 문양 패턴 부여
+  // 같은 기본 문양이어도 테두리, 광선, 점 배열, 내부 보조선이 전부 달라짐
+  const uniqueSeed = (level * 73 + tier * 19 + colorIndex * 37) % 997;
   return {
     level,
     name: `${palette.label} ${base.name}`,
     mark: base.mark,
     color: palette.color,
     colorName: palette.label,
-    tier: Math.floor(i / LEVEL_RANK_COLORS.length) + 1
+    tier,
+    colorIndex,
+    uniqueSeed,
+    frameType: uniqueSeed % 8,
+    pointCount: 3 + (uniqueSeed % 8),
+    notchCount: 4 + ((uniqueSeed >> 3) % 9),
+    glyphBits: level
   };
 });
 
@@ -3455,6 +3468,80 @@ function drawLevelRankIcon(ctx, rank, x, y, size = 28, t = 0) {
   ctx.lineWidth = Math.max(1.5, size * 0.075);
   ctx.strokeStyle = c;
   ctx.stroke();
+
+  // ✅ [v.165.8] 레벨별 고유 문양 프레임
+  // 1~250레벨이 색만 다른 중복으로 보이지 않도록 외곽 실루엣과 점 배열을 레벨별로 다르게 그림
+  const uniqueSeed = Number(rank.uniqueSeed || rank.level || 1);
+  const frameType = Number(rank.frameType || 0);
+  const pointCount = Math.max(3, Number(rank.pointCount || 5));
+  const notchCount = Math.max(4, Number(rank.notchCount || 6));
+  const glyphBits = Math.max(1, Number(rank.glyphBits || rank.level || 1));
+  const phase = (t || 0) / (rank.level >= 180 ? 900 : 1600);
+
+  ctx.save();
+  ctx.rotate((uniqueSeed % 360) * Math.PI / 180 + (rank.level >= 151 ? phase * 0.18 : 0));
+  ctx.globalAlpha = 0.86;
+  ctx.strokeStyle = 'rgba(255,255,255,0.58)';
+  ctx.fillStyle = c + '55';
+  ctx.lineWidth = Math.max(1, size * 0.032);
+
+  if (frameType === 0 || frameType === 4) {
+    // 다각 별 프레임
+    ctx.beginPath();
+    for (let i = 0; i < pointCount * 2; i++) {
+      const rr = (i % 2 === 0 ? r * 1.04 : r * (0.78 + (uniqueSeed % 5) * 0.018));
+      const a = -Math.PI / 2 + i * Math.PI / pointCount;
+      const px = Math.cos(a) * rr;
+      const py = Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  } else if (frameType === 1 || frameType === 5) {
+    // 꽃잎형 프레임
+    for (let i = 0; i < pointCount; i++) {
+      ctx.rotate(Math.PI * 2 / pointCount);
+      ctx.beginPath();
+      ctx.ellipse(0, -r * 0.88, r * 0.11, r * (0.20 + (uniqueSeed % 4) * 0.03), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  } else if (frameType === 2 || frameType === 6) {
+    // 방사형 톱니 프레임
+    for (let i = 0; i < notchCount; i++) {
+      const a = i * Math.PI * 2 / notchCount;
+      const inner = r * 0.78;
+      const outer = r * (0.98 + ((uniqueSeed + i) % 3) * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+      ctx.stroke();
+    }
+  } else {
+    // 궤도형 프레임
+    for (let i = 0; i < 2 + (uniqueSeed % 3); i++) {
+      ctx.save();
+      ctx.rotate(i * Math.PI / (2 + (uniqueSeed % 3)));
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * (0.94 - i * 0.06), r * (0.58 - i * 0.03), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // 고유 점 배열: 레벨 숫자를 비트 패턴처럼 링에 새겨 250개가 서로 다르게 보이도록 함
+  ctx.globalAlpha = 0.95;
+  for (let i = 0; i < 8; i++) {
+    const on = (glyphBits >> i) & 1;
+    const a = -Math.PI / 2 + i * Math.PI * 2 / 8;
+    const rr = r * (on ? 0.73 : 0.61);
+    const dotSize = size * (on ? 0.030 : 0.018);
+    ctx.fillStyle = on ? '#ffffff' : c + '88';
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, dotSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 
   function star(points, inner, outer, rot = -Math.PI / 2) {
     ctx.beginPath();
@@ -3578,13 +3665,88 @@ function setupHudRankIconCanvas() {
   hudCompact.insertBefore(canvas, hudCompact.firstChild);
 }
 
+let hudRankIconAnimId = null;
+
+function drawHudRankLiveEffects(ctx, rank, x, y, size, t) {
+  if (!ctx || !rank) return;
+  const c = rank.color || '#ffffff';
+  const tier = Math.max(1, Number(rank.tier || 1));
+  const lv = Math.max(1, Number(rank.level || 1));
+  const r = size / 2;
+  const time = t || performance.now();
+  const spin = time / 1050;
+  const pulse = 0.5 + 0.5 * Math.sin(time / 360);
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  // 계급 전체에 공통으로 들어가는 살아있는 광택 링
+  ctx.rotate(spin);
+  ctx.lineWidth = Math.max(1.2, size * 0.045);
+  ctx.strokeStyle = `rgba(255,255,255,${0.30 + pulse * 0.24})`;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.96, -0.62, 0.38);
+  ctx.stroke();
+
+  // 레벨 구간이 높을수록 작은 별빛이 많아짐
+  const sparkleCount = lv >= 201 ? 4 : lv >= 151 ? 3 : lv >= 76 ? 2 : 1;
+  for (let i = 0; i < sparkleCount; i++) {
+    const a = -spin * (1.15 + i * 0.18) + i * Math.PI * 2 / sparkleCount;
+    const rr = r * (0.78 + 0.10 * Math.sin(time / 520 + i));
+    const sx = Math.cos(a) * rr;
+    const sy = Math.sin(a) * rr;
+    const s = Math.max(1.6, size * (0.045 + i * 0.006));
+    const alpha = 0.45 + 0.45 * Math.sin(time / 260 + i * 1.7);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(a + time / 420);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = Math.max(1, size * 0.025);
+    ctx.beginPath();
+    ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
+    ctx.moveTo(0, -s); ctx.lineTo(0, s);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 200레벨 이후는 색상 오라를 한 겹 더 추가
+  if (lv >= 200) {
+    ctx.rotate(-spin * 1.7);
+    ctx.strokeStyle = c;
+    ctx.globalAlpha = 0.30 + pulse * 0.24;
+    ctx.lineWidth = Math.max(1.2, size * 0.04);
+    ctx.setLineDash([size * 0.16, size * 0.10]);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+
+function drawHudRankIconFrame(t) {
+  const canvas = document.getElementById('hudRankIconCanvas');
+  if (!canvas) {
+    hudRankIconAnimId = null;
+    return;
+  }
+  const ctx = canvas.getContext('2d');
+  const currentRank = getLevelRank(level || 1);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawLevelRankIcon(ctx, currentRank, canvas.width / 2, canvas.height / 2, 32, t);
+  drawHudRankLiveEffects(ctx, currentRank, canvas.width / 2, canvas.height / 2, 32, t);
+  hudRankIconAnimId = requestAnimationFrame(drawHudRankIconFrame);
+}
+
 function refreshHudRankIcon() {
   setupHudRankIconCanvas();
   const canvas = document.getElementById('hudRankIconCanvas');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawLevelRankIcon(ctx, getLevelRank(level || 1), canvas.width / 2, canvas.height / 2, 32, performance.now());
+  if (!hudRankIconAnimId) {
+    hudRankIconAnimId = requestAnimationFrame(drawHudRankIconFrame);
+  }
 }
 
 function getLevelRankLabel(lv) {
@@ -3603,11 +3765,12 @@ function maybeShowRankUpNotice(oldLv, newLv) {
   }
 }
 
-function getRankMarkKorean(mark) {
+function getRankMarkKorean(mark, rank) {
   const map = {
     sprout:'새싹', leaf:'잎새', scope:'조준', crystal:'수정', shield:'방패', sword:'검',
     medal:'메달', trophy:'트로피', aura:'오라', crown:'왕관', galaxy:'은하'
   };
+  if (rank && rank.level) return `${map[mark] || '문양'} · 고유 ${rank.level}번`;
   return map[mark] || '문양';
 }
 
@@ -3648,7 +3811,7 @@ function buildRankPreviewGrid() {
 
     const markEl = document.createElement('div');
     markEl.className = 'rank-preview-mark';
-    markEl.textContent = getRankMarkKorean(rank.mark);
+    markEl.textContent = getRankMarkKorean(rank.mark, rank);
 
     card.appendChild(iconCanvas);
     card.appendChild(lvEl);
