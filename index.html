@@ -3258,6 +3258,53 @@ function escapeHtml(s){
     .replaceAll("'","&#39;");
 }
 
+
+// ===== [v.165.3] 레벨별 계급 시스템 =====
+const LEVEL_RANKS = [
+  { level: 1,   name: '새싹 헌터',       icon: '🌱', color: '#b9ffcf' },
+  { level: 10,  name: '초급 헌터',       icon: '🟢', color: '#7cffb2' },
+  { level: 20,  name: '견습 슈터',       icon: '🔫', color: '#7ce7ff' },
+  { level: 30,  name: '정예 슈터',       icon: '💠', color: '#9fd7ff' },
+  { level: 50,  name: '베테랑 슈터',     icon: '🛡️', color: '#c6b8ff' },
+  { level: 70,  name: '마스터 헌터',     icon: '⚔️', color: '#ffd36a' },
+  { level: 100, name: '영웅 슬레이어',   icon: '🏅', color: '#ffdf7a' },
+  { level: 130, name: '챔피언 슬레이어', icon: '🏆', color: '#ffb86b' },
+  { level: 160, name: '초월자',          icon: '✨', color: '#ff91d8' },
+  { level: 200, name: '전설의 수호자',   icon: '👑', color: '#ffe76a' },
+  { level: 250, name: '신화의 지배자',   icon: '🌌', color: '#b7a6ff' }
+];
+
+function getLevelRank(lv) {
+  const n = Math.max(1, Math.floor(Number(lv) || 1));
+  let current = LEVEL_RANKS[0];
+  for (const r of LEVEL_RANKS) {
+    if (n >= r.level) current = r;
+    else break;
+  }
+  return current;
+}
+
+function getNextLevelRank(lv) {
+  const n = Math.max(1, Math.floor(Number(lv) || 1));
+  return LEVEL_RANKS.find(r => r.level > n) || null;
+}
+
+function getLevelRankLabel(lv) {
+  const r = getLevelRank(lv);
+  return `${r.icon} ${r.name}`;
+}
+
+function maybeShowRankUpNotice(oldLv, newLv) {
+  const before = getLevelRank(oldLv);
+  const after = getLevelRank(newLv);
+  if (!before || !after || before.name === after.name) return;
+  const msg = `계급 상승! ${after.icon} ${after.name}`;
+  try { showToast(msg, after.color || '#ffe76a', 2200); } catch(e) {}
+  if (typeof player !== 'undefined' && player) {
+    try { spawnDamageText(player.x, player.y - 54, msg, after.color || '#ffe76a'); } catch(e) {}
+  }
+}
+
 function renderSkillGuide() {
   const guide = (typeof SKILL_GUIDE_DATA === 'object' && SKILL_GUIDE_DATA) ? SKILL_GUIDE_DATA : [];
   const currentLevel = Number(level || 1);
@@ -4067,6 +4114,7 @@ function addExpDirect(amount) {
     level = Math.min(newLevel, MAX_LEVEL);
     syncPlayerHealthToLevel();
     maybeShowSkillUnlockNotice(oldLevel, level);
+    maybeShowRankUpNotice(oldLevel, level);
     startEvolutionAnimation(oldLevel, newLevel);
     SFX.levelUp();
     if (oldLevel < MAX_LEVEL && level === MAX_LEVEL) triggerMaxLevelCelebration();
@@ -8717,6 +8765,9 @@ function openProfile(isRefresh = false) {
   const groupedTitles = getGroupedTitlesForProfile();
   const rightPet = getEquippedPet('right');
   const petBonus = getPetBonusTotals();
+  const rankMeta = getLevelRank(curLv);
+  const nextRankMeta = getNextLevelRank(curLv);
+  const nextRankText = nextRankMeta ? `${nextRankMeta.icon} ${nextRankMeta.name}까지 LV.${formatNumber(nextRankMeta.level - curLv)} 남음` : '최고 계급 달성';
 
   profileBodyEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -8728,6 +8779,12 @@ function openProfile(isRefresh = false) {
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
         <div style="font-weight:900; color:#cfefff;">⭐ 누적 경험치 / 레벨</div>
         <div style="margin-top:2px; font-size:15px; font-weight:900;">LV.${formatNumber(curLv)} · ${formatNumber(totalExp)} EXP</div>
+      </div>
+      <div style="padding:12px 14px; border:1px solid ${rankMeta.color}88; border-radius:14px; background:linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.24)); box-shadow:0 0 18px ${rankMeta.color}22;">
+        <div style="font-weight:900; color:#cfefff;">🎖️ 현재 계급</div>
+        <div style="margin-top:5px; font-size:20px; font-weight:1000; color:${rankMeta.color};">${rankMeta.icon} ${rankMeta.name}</div>
+        <div style="margin-top:4px; font-size:12px; color:#d7e2ff;">${nextRankText}</div>
+        <div style="margin-top:8px; font-size:11px; color:#aebcff; line-height:1.45;">레벨이 오르면 계급도 자동 상승하며, 상단 HUD와 프로필에 함께 표시됩니다.</div>
       </div>
 
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
@@ -12977,6 +13034,7 @@ function addExp(amount, opts = {}) {
   if (newLevel > oldLevel) {
     level = Math.min(newLevel, MAX_LEVEL);
     syncPlayerHealthToLevel();
+    maybeShowRankUpNotice(oldLevel, level);
     startEvolutionAnimation(oldLevel, newLevel);
     SFX.levelUp();
         // ✅ [v.56] 만렙 도달 시 폭죽 + 사운드
@@ -17869,9 +17927,13 @@ __lastExpBarPercent = nextPercent;
 const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
-const compactPlayerText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
-if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
-levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
+const rankMeta = getLevelRank(level);
+const compactPlayerText = `LV.${level} ${rankMeta.icon} ${rankMeta.name} · ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
+if (playerCompactEl) {
+  playerCompactEl.textContent = compactPlayerText;
+  playerCompactEl.style.color = rankMeta.color || '#ffffff';
+}
+levelEl.textContent = `LV. ${level} · ${rankMeta.icon} ${rankMeta.name} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
