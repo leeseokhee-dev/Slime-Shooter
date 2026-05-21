@@ -2888,7 +2888,12 @@ body:not(.title-mode) #hudTop .hud-column:first-child:empty{
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
     <div style="font-size:28px; font-weight:900; color:#ffd36a; text-shadow:0 2px 8px rgba(0,0,0,0.45);">⏸ 일시정지</div>
-    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>다시 누르면 바로 이어집니다.</div>
+    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>사운드와 저사양 모드를 바로 조절할 수 있습니다.</div>
+    <div id="pauseSettingsPanel" style="width:100%; max-width:260px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <button id="pauseBgmBtn" class="ui-btn" type="button">BGM 켜짐</button>
+      <button id="pauseSfxBtn" class="ui-btn" type="button">SFX 켜짐</button>
+      <button id="pauseLowPowerBtn" class="ui-btn" type="button" style="grid-column:1 / -1;">저사양 OFF</button>
+    </div>
     <button id="resumeBtn" class="ui-btn big-btn" style="width:100%; max-width:240px; border-color:#7cff7c; color:#dfffdc;">▶ 이어하기</button>
     <button id="pauseToTitleBtn" class="ui-btn" style="width:100%; max-width:240px;">타이틀로</button>
   </div>
@@ -4589,6 +4594,9 @@ const pauseBtn = document.getElementById('pauseBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseToTitleBtn = document.getElementById('pauseToTitleBtn');
+const pauseBgmBtn = document.getElementById('pauseBgmBtn');
+const pauseSfxBtn = document.getElementById('pauseSfxBtn');
+const pauseLowPowerBtn = document.getElementById('pauseLowPowerBtn');
 const confirmOverlay = document.getElementById('confirmOverlay');
 const confirmTitleEl = document.getElementById('confirmTitle');
 const confirmMessageEl = document.getElementById('confirmMessage');
@@ -5546,7 +5554,7 @@ const TITLE_SLIME_PALETTE = [
 
 const BASE_PLAYER_SPEED = 3.0;
 const FIRE_INTERVAL = 150;
-const PLAYER_SIZE = 24;
+const PLAYER_SIZE = 27; // ✅ [v.166.7] 화면 확대에 맞춰 플레이어 크기 소폭 확대
 const BASE_PLAYER_DAMAGE = 5;
 const MAX_LEVEL = 250;
 const EVO_MILESTONES = [11, 31, 61, 101, 200];
@@ -5558,7 +5566,7 @@ let evoAnim = {
   fromStage: 1,
   toStage: 1
 };
-const PET_SCALE = 0.6;             // 플레이어 대비 60% 크기
+const PET_SCALE = 0.68;             // ✅ [v.166.7] 플레이어 대비 펫 크기 소폭 확대
 const PET_FIRE_INTERVAL = 200;     // 0.15초마다 발사 (ms)
 const PET_BULLET_SPEED = -6.5;     // 펫 탄속(원하시면 조절)
 const PET_BULLET_RADIUS = 2.5;     // 펫 탄 크기
@@ -8390,13 +8398,25 @@ function updateSettingsUI() {
     bgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
     bgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
   }
+  if (pauseBgmBtn) {
+    pauseBgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
+    pauseBgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
+  }
   if (sfxBtn) {
     sfxBtn.textContent = sfxEnabled ? "SFX 켜짐" : "SFX 꺼짐";
     sfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
   }
+  if (pauseSfxBtn) {
+    pauseSfxBtn.textContent = sfxEnabled ? "SFX 켜짐" : "SFX 꺼짐";
+    pauseSfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
+  }
   if (lowPowerBtn) {
     lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
     lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
+  }
+  if (pauseLowPowerBtn) {
+    pauseLowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
+    pauseLowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
   if (homingBtn) {
     if (level < 61) {
@@ -8595,6 +8615,17 @@ function handleCanvasSettingsInput(pos) {
   canvasSettingsOpen = false;
   syncTitleButtonsForCanvasSettings();
   return true;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
 function drawRoundRect(x, y, w, h, r) {
@@ -8984,45 +9015,40 @@ characterListEl && characterListEl.addEventListener('click', (e) => {
   else if (del) deleteCharacterById(del);
 });
 
-(bgmBtn && bgmBtn.addEventListener) && bgmBtn.addEventListener('click', () => {
-    bgmEnabled = !bgmEnabled;
-    updateSettingsUI();
-    
-    if (!bgmEnabled) {
-        if (currentBgm) currentBgm.pause();
-    } else {
-        // 켰을 때 현재 상황에 맞는 음악 재생
-        if (currentBgm) {
-            // ✅ 시즌 BGM 적용 위해 현재 상황 트랙으로 다시 선택
-            if (state === 'title') playBgmTrack('title');
-            else if (state === 'playing') {
-                if (boss && gameMode !== 'mission') playBgmTrack('boss');
-                else playBgmTrack(getModeBgmName());
-            }
-        }
-        else {
-            if (state === 'title') playBgmTrack('title');
-            else if (state === 'playing') {
-                if (boss && gameMode !== 'mission') playBgmTrack('boss');
-                else playBgmTrack(getModeBgmName());
-            }
-        }
+
+// ✅ [v.166.7] HUD/일시정지 메뉴 공용 설정 토글
+function toggleBgmSettingShared() {
+  bgmEnabled = !bgmEnabled;
+  updateSettingsUI();
+  if (!bgmEnabled) {
+    if (currentBgm) currentBgm.pause();
+  } else if (!isPaused) {
+    if (state === 'title') playBgmTrack('title');
+    else if (state === 'playing') {
+      if (boss && gameMode !== 'mission') playBgmTrack('boss');
+      else playBgmTrack(getModeBgmName());
     }
-    saveGameData();
-});
-
-(sfxBtn && sfxBtn.addEventListener) && sfxBtn.addEventListener('click', () => {
-sfxEnabled = !sfxEnabled;
-updateSettingsUI();
-saveGameData();
-});
-
-(lowPowerBtn && lowPowerBtn.addEventListener) && lowPowerBtn.addEventListener('click', () => {
+  }
+  saveGameData();
+}
+function toggleSfxSettingShared() {
+  sfxEnabled = !sfxEnabled;
+  updateSettingsUI();
+  saveGameData();
+}
+function toggleLowPowerSettingShared() {
   saveData.lowPower = !saveData.lowPower;
   updateSettingsUI();
   saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
-});
+}
+
+(bgmBtn && bgmBtn.addEventListener) && bgmBtn.addEventListener('click', toggleBgmSettingShared);
+(sfxBtn && sfxBtn.addEventListener) && sfxBtn.addEventListener('click', toggleSfxSettingShared);
+(lowPowerBtn && lowPowerBtn.addEventListener) && lowPowerBtn.addEventListener('click', toggleLowPowerSettingShared);
+(pauseBgmBtn && pauseBgmBtn.addEventListener) && pauseBgmBtn.addEventListener('click', toggleBgmSettingShared);
+(pauseSfxBtn && pauseSfxBtn.addEventListener) && pauseSfxBtn.addEventListener('click', toggleSfxSettingShared);
+(pauseLowPowerBtn && pauseLowPowerBtn.addEventListener) && pauseLowPowerBtn.addEventListener('click', toggleLowPowerSettingShared);
 
 (fpsSelect && fpsSelect.addEventListener) && fpsSelect.addEventListener('change', () => {
   const nextFps = Number(fpsSelect.value);
@@ -16161,7 +16187,7 @@ enemies = enemies.filter(e => e.hp > 0);
 function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
     const cfg = ENEMY_CONFIG[type] || { score: 50, baseHp: 40 };
     // ✅ [v.154.2] 무한 모드는 몬스터 크기를 살짝 키우되, 캔버스 좌우 밖으로 나가지 않게 보정
-    let size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale();
+    let size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale() * 1.12; // ✅ [v.166.7] 화면 확대에 맞춰 몬스터 크기 소폭 확대
     if (gameMode === 'infinite') {
         size = Math.min(size * 1.12, Math.min(width, height) * 0.075);
         x = clamp(x, size, width - size);
@@ -16322,10 +16348,10 @@ function createBoss() {
     return {
   x: width / 2,
   y: -140,                 // ✅ 화면 위에서 시작
-  targetY: 80,             // ✅ 여기까지 내려오면 등장 완료
+  targetY: 92,             // ✅ [v.166.7] 보스가 커진 만큼 목표 위치도 약간 아래로
   enterSpeed: 1.6,         // ✅ 내려오는 속도(원하면 1.2~2.4)
 
-  width: 100, height: 90,
+  width: 116, height: 104, // ✅ [v.166.7] 화면 확대에 맞춰 보스 크기 소폭 확대
   hp, maxHp: hp,
   element,
 
@@ -20139,16 +20165,25 @@ ctx.scale(1 / b, b);
     // 보스가 목표 위치까지 완전히 내려온 뒤에만 표시합니다.
     const bossFullyEntered = !bossIntro.active && y >= boss.targetY;
     if (bossFullyEntered) {
-        const barWidth = 260; const barHeight = 14; const bx = (width - barWidth) / 2; const by = 20;
+        // ✅ [v.166.7] 보스 HP바: HUD 바로 아래(캔버스 최상단)에 크게 고정 표시
+        const barWidth = Math.min(width - 80, 560);
+        const barHeight = 24;
+        const bx = (width - barWidth) / 2;
+        const by = 8;
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, barWidth, barHeight);
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        roundRectPath(ctx, bx, by, barWidth, barHeight, 10);
+        ctx.fill();
         const ratio = Math.max(0, hp / maxHp);
         
         // 체력바 색상: 보스 속성 반영
         ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color; 
-        ctx.fillRect(bx + 2, by + 2, (barWidth - 4) * ratio, barHeight - 4);
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(bx, by, barWidth, barHeight);
-        drawElementBadge(bx + barWidth + 18, by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.8);
+        roundRectPath(ctx, bx + 3, by + 3, (barWidth - 6) * ratio, barHeight - 6, 8);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2;
+        roundRectPath(ctx, bx, by, barWidth, barHeight, 10);
+        ctx.stroke();
+        drawElementBadge(bx + barWidth + 18, by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.9);
 
         // [수정] 보스 타이틀 텍스트
         let title = "아기 슬라임";
@@ -20158,7 +20193,7 @@ ctx.scale(1 / b, b);
         else if(evoStage===5) title="신 슬라임";   // 51~100
         else if(evoStage===6) title="우주 슬라임"; // 101~200 (최종)
 
-        ctx.fillStyle = '#ffffff'; ctx.font = `11px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff'; ctx.font = `bold 13px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const hpPercent = (ratio * 100).toFixed(1);
         ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} (LV.${bLv}) HP: ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, width / 2, by + barHeight / 2);
         ctx.restore();
