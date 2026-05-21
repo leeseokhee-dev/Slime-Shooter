@@ -3259,20 +3259,61 @@ function escapeHtml(s){
 }
 
 
-// ===== [v.165.3] 레벨별 계급 시스템 =====
-const LEVEL_RANKS = [
-  { level: 1,   name: '새싹 헌터',       mark: 'sprout',   color: '#b9ffcf' },
-  { level: 10,  name: '초급 헌터',       mark: 'leaf',     color: '#7cffb2' },
-  { level: 20,  name: '견습 슈터',       mark: 'scope',    color: '#7ce7ff' },
-  { level: 30,  name: '정예 슈터',       mark: 'crystal',  color: '#9fd7ff' },
-  { level: 50,  name: '베테랑 슈터',     mark: 'shield',   color: '#c6b8ff' },
-  { level: 70,  name: '마스터 헌터',     mark: 'sword',    color: '#ffd36a' },
-  { level: 100, name: '영웅 슬레이어',   mark: 'medal',    color: '#ffdf7a' },
-  { level: 130, name: '챔피언 슬레이어', mark: 'trophy',   color: '#ffb86b' },
-  { level: 160, name: '초월자',          mark: 'aura',     color: '#ff91d8' },
-  { level: 200, name: '전설의 수호자',   mark: 'crown',    color: '#ffe76a' },
-  { level: 250, name: '신화의 지배자',   mark: 'galaxy',   color: '#b7a6ff' }
+// ===== [v.165.5] 레벨별 계급 시스템: 1~250레벨 전용 250종 계급 =====
+const LEVEL_RANK_COLORS = [
+  { key: 'red',       label: '빨강', color: '#ff4b5c' },
+  { key: 'orange',    label: '주황', color: '#ff9f43' },
+  { key: 'yellow',    label: '노랑', color: '#ffe66d' },
+  { key: 'lime',      label: '연두', color: '#b8ff4d' },
+  { key: 'green',     label: '초록', color: '#44ff88' },
+  { key: 'sky',       label: '하늘', color: '#55ddff' },
+  { key: 'blue',      label: '파랑', color: '#4d7cff' },
+  { key: 'navy',      label: '남색', color: '#536dfe' },
+  { key: 'purple',    label: '보라', color: '#b56cff' },
+  { key: 'pink',      label: '분홍', color: '#ff7bd5' }
 ];
+
+const LEVEL_RANK_BASES = [
+  { name: '새싹 헌터',       mark: 'sprout'  },
+  { name: '초급 헌터',       mark: 'leaf'    },
+  { name: '견습 슈터',       mark: 'scope'   },
+  { name: '정예 슈터',       mark: 'crystal' },
+  { name: '베테랑 슈터',     mark: 'shield'  },
+  { name: '마스터 헌터',     mark: 'sword'   },
+  { name: '영웅 슬레이어',   mark: 'medal'   },
+  { name: '챔피언 슬레이어', mark: 'trophy'  },
+  { name: '초월자',          mark: 'aura'    },
+  { name: '전설의 수호자',   mark: 'crown'   },
+  { name: '신화의 지배자',   mark: 'galaxy'  },
+  { name: '별빛 추적자',     mark: 'scope'   },
+  { name: '달빛 수호자',     mark: 'shield'  },
+  { name: '태양 기사',       mark: 'sword'   },
+  { name: '폭풍 사냥꾼',     mark: 'aura'    },
+  { name: '수정 파수꾼',     mark: 'crystal' },
+  { name: '황금 지휘관',     mark: 'trophy'  },
+  { name: '왕관의 계승자',   mark: 'crown'   },
+  { name: '은하 방랑자',     mark: 'galaxy'  },
+  { name: '차원의 개척자',   mark: 'aura'    },
+  { name: '우주의 감시자',   mark: 'galaxy'  },
+  { name: '천공의 심판자',   mark: 'medal'   },
+  { name: '불멸의 용사',     mark: 'sword'   },
+  { name: '영원의 수호신',   mark: 'crown'   },
+  { name: '슬라임 슈터 레전드', mark: 'galaxy' }
+];
+
+const LEVEL_RANKS = Array.from({ length: 250 }, (_, i) => {
+  const level = i + 1;
+  const base = LEVEL_RANK_BASES[Math.floor(i / LEVEL_RANK_COLORS.length)];
+  const palette = LEVEL_RANK_COLORS[i % LEVEL_RANK_COLORS.length];
+  return {
+    level,
+    name: `${palette.label} ${base.name}`,
+    mark: base.mark,
+    color: palette.color,
+    colorName: palette.label,
+    tier: Math.floor(i / LEVEL_RANK_COLORS.length) + 1
+  };
+});
 
 function getLevelRank(lv) {
   const n = Math.max(1, Math.floor(Number(lv) || 1));
