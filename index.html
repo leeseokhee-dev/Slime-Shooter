@@ -11053,12 +11053,12 @@ function updateInfiniteSuddenQuest(dt) {
 // 이 영역 아래부터 보스 체력바, 돌발 퀘스트, 전투 오브젝트 UI가 내려오게 해서 가림을 방지합니다.
 function getCanvasTopInfoMetrics(){
   const small = width < 520;
+  // ✅ [v.167.5] 모든 모드 상단 정보가 HUD/일시정지 버튼에 가려지지 않도록
+  // 캔버스 최상단을 공통 안전영역으로 비워두고, 정보는 3줄로 고정 표시합니다.
   const y = small ? 8 : 10;
-  const lineH = small ? 14 : 17;
-  let rows = 2;
-  if (gameMode === 'dungeon' || gameMode === 'itempark' || gameMode === 'mission' || gameMode === 'minigame') rows = 2;
-  if (gameMode === 'infinite') rows = 2;
-  const bottom = y + lineH * rows + (small ? 10 : 12);
+  const lineH = small ? 15 : 18;
+  const rows = 3;
+  const bottom = y + lineH * rows + (small ? 12 : 14);
   return { y, lineH, rows, bottom, small };
 }
 function getCanvasTopInfoBottom(){
@@ -19359,15 +19359,20 @@ function drawCanvasTopInfoPanel() {
   const small = width < 520;
   const m = getCanvasTopInfoMetrics();
 
-  // ✅ [v.167.4] 오른쪽 일시정지 버튼 자리까지 포함해서 모든 모드 공통으로 비워둡니다.
-  const pauseSafeW = small ? 68 : 78;
-  const w = width - margin * 2 - pauseSafeW;
+  // ✅ [v.167.5] 오른쪽 일시정지 버튼 안전구역 확보
+  const pauseSafeW = small ? 74 : 86;
+  const w = Math.max(180, width - margin * 2 - pauseSafeW);
+  const panelH = m.bottom - m.y;
 
-  let leftText = '';
-  let centerText = '';
-  let rightText = '';
-  let subText = '';
-  let subColor = '#cfefff';
+  const earnedGold = Math.max(0, Math.floor(stageRunGoldEarned || 0));
+  const totalGold = Math.max(0, Math.floor(gold || 0));
+
+  let line1Left = '';
+  let line1Center = '';
+  let line1Right = '';
+  let line2 = '';
+  let line3 = '';
+  let line3Color = '#cfefff';
 
   if (gameMode === 'infinite') {
     const huntScore = Math.max(0, Math.floor(score || 0));
@@ -19377,9 +19382,10 @@ function drawCanvasTopInfoPanel() {
       ? '보스 출현!'
       : `보스 ${typeof getInfiniteBossRemainSec === 'function' ? getInfiniteBossRemainSec() : 0}초`;
 
-    leftText = `점수 ${formatNumber(totalScore)}`;
-    centerText = bossStatus;
-    rightText = `${formatNumber(Math.floor(infiniteDistance || 0))}m`;
+    line1Left = `총점 ${formatNumber(totalScore)}`;
+    line1Center = bossStatus;
+    line1Right = `${formatNumber(Math.floor(infiniteDistance || 0))}m`;
+    line2 = `사냥 ${formatNumber(huntScore)} · 거리 ${formatNumber(distScore)} · 획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
 
     const itemParts = [];
     try {
@@ -19388,80 +19394,110 @@ function drawCanvasTopInfoPanel() {
       if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
       if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
     } catch(e) {}
-    subText = itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 사용 중 없음';
-    subColor = itemParts.length ? '#7ce7ff' : '#aab8c8';
+    line3 = itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 사용 중 없음';
+    line3Color = itemParts.length ? '#7ce7ff' : '#aab8c8';
   } else if (gameMode === 'dungeon') {
     const spawned = Math.max(0, Math.floor(dungeonState.spawned || 0));
-    leftText = `던전 ${dungeonState.tier}단계`;
-    centerText = `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`;
-    rightText = `처치 ${formatNumber(spawned)}/${formatNumber(DUNGEON_TOTAL_MONSTERS)}`;
-    subText = `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))} · 골드 ${formatNumber(gold)}`;
-    subColor = '#cfefff';
+    line1Left = `던전 ${dungeonState.tier}단계`;
+    line1Center = `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`;
+    line1Right = `처치 ${formatNumber(spawned)}/${formatNumber(DUNGEON_TOTAL_MONSTERS)}`;
+    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
+    line3 = `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))}`;
   } else if (gameMode === 'mission') {
-    leftText = `스테이지 ${stage}`;
-    centerText = isMissionBonusStage(stage) ? `보너스 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage);
-    rightText = `점수 ${formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))))}`;
-    subText = `골드 ${formatNumber(gold)}`;
-    subColor = '#baffd7';
+    line1Left = `스테이지 ${stage}`;
+    line1Center = isMissionBonusStage(stage) ? `보너스 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage);
+    line1Right = `점수 ${formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))))}`;
+    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
+    line3 = `처치 ${formatNumber(stageRunKillCount || 0)} · 진행도 ${Math.min(100, Math.floor((Math.max(0, stageRunKillCount || 0) / Math.max(1, getStageKillTarget(stage))) * 100))}%`;
+    line3Color = '#baffd7';
   } else if (gameMode === 'itempark') {
-    leftText = `아이템 파크`;
-    centerText = `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
-    rightText = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
-    subText = `획득 EXP ${formatNumber(itemParkState.expGained || 0)} · 골드 ${formatNumber(itemParkState.goldGained || 0)}`;
-    subColor = '#7ce7ff';
+    line1Left = `아이템 파크`;
+    line1Center = `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
+    line1Right = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
+    line2 = `획득골드 ${formatNumber(itemParkState.goldGained || 0)} · 보유골드 ${formatNumber(totalGold)}`;
+    line3 = `획득 EXP ${formatNumber(itemParkState.expGained || 0)}`;
+    line3Color = '#7ce7ff';
   } else if (gameMode === 'minigame') {
-    leftText = `미니게임`;
-    centerText = `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`;
-    rightText = `점수 ${formatNumber(miniGameState.score || 0)}`;
-    subText = `콤보 x${formatNumber(miniGameState.combo || 0)} · 골드 ${formatNumber(gold)}`;
-    subColor = '#ffe08a';
+    line1Left = `미니게임`;
+    line1Center = `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`;
+    line1Right = `점수 ${formatNumber(miniGameState.score || 0)}`;
+    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
+    line3 = `콤보 x${formatNumber(miniGameState.combo || 0)}`;
+    line3Color = '#ffe08a';
   } else {
     const t = getStageKillTarget(stage);
     const k = Math.max(0, Math.floor(stageRunKillCount || 0));
-    leftText = `스테이지 ${stage}`;
-    centerText = isBossStage(stage)
+    line1Left = `스테이지 ${stage}`;
+    line1Center = isBossStage(stage)
       ? `몬스터 ${k}/${t} · 보스 ${Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)))}/1`
       : `몬스터 ${k}/${t}`;
-    rightText = `골드 ${formatNumber(gold)}`;
-    subText = `처치 진행도 ${Math.min(100, Math.floor((k / Math.max(1, t)) * 100))}%`;
-    subColor = '#baffd7';
+    line1Right = `보유골드 ${formatNumber(totalGold)}`;
+    line2 = `획득골드 ${formatNumber(earnedGold)} · 처치 진행도 ${Math.min(100, Math.floor((k / Math.max(1, t)) * 100))}%`;
+    line3 = `현재 처치 ${formatNumber(k)} / ${formatNumber(t)}`;
+    line3Color = '#baffd7';
+  }
+
+  function ellipsize(text, maxLen){
+    const str = String(text || '');
+    return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
   }
 
   ctx.save();
-  ctx.globalAlpha = blocked ? 0.55 : 0.98;
-  ctx.textBaseline = 'middle';
-  ctx.font = fontStr(small ? 12 : 14, 'bold');
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(0,0,0,0.84)';
+  ctx.globalAlpha = blocked ? 0.58 : 0.96;
 
-  const mainY = m.y + m.lineH * 0.72;
+  // ✅ 글자만 있으면 배경에 묻혀 안 보이는 경우가 있어 아주 얇은 반투명 캡슐을 추가합니다.
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
+  ctx.strokeStyle = 'rgba(124, 231, 255, 0.28)';
+  ctx.lineWidth = 1;
+  const r = small ? 8 : 10;
+  const px = x;
+  const py = m.y - 2;
+  const ph = panelH;
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(px, py, w, ph, r);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillRect(px, py, w, ph);
+    ctx.strokeRect(px, py, w, ph);
+  }
+
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(0,0,0,0.88)';
+
+  const y1 = m.y + m.lineH * 0.55;
+  ctx.font = fontStr(small ? 11 : 14, 'bold');
+
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
-  ctx.strokeText(leftText, x + 10, mainY);
-  ctx.fillText(leftText, x + 10, mainY);
+  ctx.strokeText(ellipsize(line1Left, small ? 9 : 16), x + 8, y1);
+  ctx.fillText(ellipsize(line1Left, small ? 9 : 16), x + 8, y1);
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = (String(centerText).includes('보스') || String(centerText).includes('남은')) ? '#fff4a8' : '#cfefff';
-  const maxCenter = small ? 18 : 34;
-  const shownCenter = String(centerText || '').length > maxCenter ? String(centerText).slice(0, maxCenter - 1) + '…' : String(centerText || '');
-  ctx.strokeText(shownCenter, x + w / 2, mainY);
-  ctx.fillText(shownCenter, x + w / 2, mainY);
+  ctx.fillStyle = (String(line1Center).includes('보스') || String(line1Center).includes('남은')) ? '#fff4a8' : '#cfefff';
+  ctx.strokeText(ellipsize(line1Center, small ? 18 : 32), x + w / 2, y1);
+  ctx.fillText(ellipsize(line1Center, small ? 18 : 32), x + w / 2, y1);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#ffd86b';
-  ctx.strokeText(rightText, x + w - 10, mainY);
-  ctx.fillText(rightText, x + w - 10, mainY);
+  ctx.strokeText(ellipsize(line1Right, small ? 10 : 18), x + w - 8, y1);
+  ctx.fillText(ellipsize(line1Right, small ? 10 : 18), x + w - 8, y1);
 
-  if (subText) {
-    ctx.font = fontStr(small ? 10 : 12, 'bold');
-    ctx.textAlign = 'center';
-    ctx.fillStyle = subColor;
-    const maxSub = small ? 38 : 70;
-    const shownSub = String(subText || '').length > maxSub ? String(subText).slice(0, maxSub - 1) + '…' : String(subText || '');
-    const subY = m.y + m.lineH * 1.72;
-    ctx.strokeText(shownSub, x + w / 2, subY);
-    ctx.fillText(shownSub, x + w / 2, subY);
-  }
+  ctx.font = fontStr(small ? 10 : 12, 'bold');
+  ctx.textAlign = 'center';
+
+  const y2 = m.y + m.lineH * 1.55;
+  ctx.fillStyle = '#ffe08a';
+  ctx.strokeText(ellipsize(line2, small ? 34 : 70), x + w / 2, y2);
+  ctx.fillText(ellipsize(line2, small ? 34 : 70), x + w / 2, y2);
+
+  const y3 = m.y + m.lineH * 2.55;
+  ctx.fillStyle = line3Color;
+  ctx.strokeText(ellipsize(line3, small ? 36 : 72), x + w / 2, y3);
+  ctx.fillText(ellipsize(line3, small ? 36 : 72), x + w / 2, y3);
+
   ctx.restore();
 }
 // ===== 그리기 =====
