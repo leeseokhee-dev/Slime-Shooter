@@ -3582,9 +3582,9 @@ let height = canvas.height;
 const WATCH_CANVAS_W = 320;
 const WATCH_CANVAS_H = 320;
 const MOBILE_CANVAS_W = 480;
-const MOBILE_CANVAS_H = 320; // ✅ [v.167.8] 타이틀과 동일한 3:2 비율 유지
-const PHONE_LANDSCAPE_CANVAS_W = 960;
-const PHONE_LANDSCAPE_CANVAS_H = 640; // ✅ [v.167.8] 가로 모드도 타이틀과 동일한 3:2 비율 유지
+const MOBILE_CANVAS_H = 640;
+const PHONE_LANDSCAPE_CANVAS_W = 640;
+const PHONE_LANDSCAPE_CANVAS_H = 360;
 const DESKTOP_CANVAS_W = 960;
 const DESKTOP_CANVAS_H = 640;
 const DESKTOP_BREAKPOINT = 900;
@@ -3609,15 +3609,15 @@ function getTargetCanvasSize() {
     return { width: WATCH_CANVAS_W, height: WATCH_CANVAS_H, mode: 'watch' };
   }
 
-  // 휴대폰 가로 모드: 세로 공간이 부족하므로 16:9에 가깝게 사용
-  if (vw > vh && vw < DESKTOP_BREAKPOINT) {
-    return { width: PHONE_LANDSCAPE_CANVAS_W, height: PHONE_LANDSCAPE_CANVAS_H, mode: 'phone-landscape' };
-  }
-
+  // ✅ [v.167.9] 타이틀/게임 화면 비율 통일
+  // 모바일 세로 화면에서도 게임 캔버스 자체는 타이틀과 같은 960:640(3:2) 비율을 유지한다.
+  // 이전 480:640 세로형 프리셋과 동적 높이 계산 때문에 게임 시작 후 화면이 세로로 길어지는 문제가 있었다.
   const isDesktopWide = vw >= DESKTOP_BREAKPOINT && vw > vh;
-  return isDesktopWide
-    ? { width: DESKTOP_CANVAS_W, height: DESKTOP_CANVAS_H, mode: 'desktop' }
-    : { width: MOBILE_CANVAS_W, height: MOBILE_CANVAS_H, mode: 'mobile' };
+  return {
+    width: DESKTOP_CANVAS_W,
+    height: DESKTOP_CANVAS_H,
+    mode: isDesktopWide ? 'desktop' : (vw > vh ? 'phone-landscape' : 'mobile')
+  };
 }
 
 function applyCanvasPreset() {
@@ -3755,10 +3755,6 @@ function fitCanvasToViewport() {
   const vh = vp.height;
 
   let hudH = hud ? hud.getBoundingClientRect().height : 0;
-  const hudOverlayMode = true; // ✅ [v.166.2] HUD를 캔버스 위 유리판처럼 올려 게임 화면이 뒤에 비치게 함
-  // ✅ [v.166.1] 꽉 찬 화면 비율 대응
-  // 기존처럼 960x640 / 480x640 비율에 고정하지 않고,
-  // HUD를 제외한 남은 화면을 캔버스가 그대로 채우도록 표시 크기와 내부 해상도를 함께 조정한다.
   const smallPortrait = vw <= 430 && vh <= 760 && vh > vw;
   if (smallPortrait && hud) {
     const hudLimit = Math.max(118, Math.floor(vh * 0.28));
@@ -3770,37 +3766,31 @@ function fitCanvasToViewport() {
     hud.style.overflowY = '';
   }
 
-  const minCanvasH = watchMode ? 96 : 180;
-  const availableH = Math.max(minCanvasH, vh - (hudOverlayMode ? 0 : hudH) - safeTop - safeBottom);
-
-  // ✅ [v.167.8] 게임 화면 비율 고정
-  // 타이틀 화면과 동일하게 960:640(3:2) 계열 비율을 유지한다.
-  // 이전 방식은 displayH를 남은 화면 높이 전체로 잡고 내부 캔버스 높이까지 늘려
-  // 모바일에서 게임 화면이 세로로 길어지는 문제가 있었다.
-  const aspect = target.width / Math.max(1, target.height);
-  const maxDisplayW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
-  let displayW = maxDisplayW;
-  let displayH = displayW / aspect;
-  if (displayH > availableH) {
-    displayH = availableH;
-    displayW = displayH * aspect;
+  // ✅ [v.167.9] 캔버스 표시 크기는 항상 내부 해상도 비율과 동일하게 맞춘다.
+  // 화면 높이를 그대로 displayH로 쓰지 않고, 960:640 비율을 유지한 채 HUD 아래 남는 공간 안에 맞춘다.
+  const targetRatio = target.width / Math.max(1, target.height);
+  const maxW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
+  const maxH = Math.max(watchMode ? 96 : 180, vh - hudH - safeTop - safeBottom);
+  let displayW = maxW;
+  let displayH = displayW / targetRatio;
+  if (displayH > maxH) {
+    displayH = maxH;
+    displayW = displayH * targetRatio;
   }
-  displayW = Math.max(watchMode ? 120 : 220, displayW);
-  displayH = displayW / aspect;
 
-  const baseLogicalW = target.width;
-  const baseLogicalH = target.height;
-  if (canvas.width !== baseLogicalW || canvas.height !== baseLogicalH) {
-    canvas.width = baseLogicalW;
-    canvas.height = baseLogicalH;
+  // 내부 해상도도 더 이상 화면 세로 길이에 맞춰 늘리지 않는다.
+  if (canvas.width !== target.width || canvas.height !== target.height) {
+    canvas.width = target.width;
+    canvas.height = target.height;
     width = canvas.width;
     height = canvas.height;
   }
 
   canvas.style.width = `${Math.floor(displayW)}px`;
   canvas.style.height = `${Math.floor(displayH)}px`;
-  canvas.style.maxWidth = '100vw';
+  canvas.style.maxWidth = `${Math.floor(displayW)}px`;
   canvas.style.maxHeight = `${Math.floor(displayH)}px`;
+  canvas.style.aspectRatio = `${target.width} / ${target.height}`;
 
   const uiScale = Math.max(0.58, Math.min(1.12, Math.min(displayW / target.width, displayH / target.height)));
 
@@ -3813,7 +3803,7 @@ function fitCanvasToViewport() {
     container.style.maxWidth = `${Math.floor(displayW)}px`;
     container.style.setProperty('--canvas-scale', String(uiScale));
     container.dataset.canvasMode = target.mode;
-    container.classList.toggle('full-screen-ratio', true);
+    container.classList.toggle('full-screen-ratio', false);
   }
   document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
 
