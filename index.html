@@ -2957,6 +2957,65 @@ body:not(.title-mode) #expRow{ order:2 !important; }
   body:not(.title-mode) #hudTop .hud-column span{ font-size:10px !important; }
 }
 
+
+
+/* ===============================
+   ✅ [v.167.7] 모바일 HUD 완전 통합 상태창
+   - 모든 모드의 점수/골드/시간/수집/보스/핫타임을 캔버스가 아닌 HUD 내부 DOM으로 표시
+   - 캔버스는 HUD 아래부터 시작하며, HUD와 캔버스 경계선을 고정
+   =============================== */
+#modeInfoHud{
+  order:3;
+  width:100%;
+  display:none;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:3px;
+  padding-top:3px;
+  border-top:1px solid rgba(255,255,255,0.14);
+}
+#modeInfoHud span{
+  min-width:0;
+  padding:3px 5px;
+  border-radius:7px;
+  background:linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.20));
+  border:1px solid rgba(124,231,255,0.22);
+  color:#f7fbff;
+  font-size:10.5px;
+  font-weight:900;
+  line-height:1.15;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-shadow:0 1px 3px rgba(0,0,0,0.88);
+}
+body:not(.title-mode) #modeInfoHud{ display:grid !important; }
+body.title-mode #modeInfoHud{ display:none !important; }
+body:not(.title-mode) #hudTop{ display:none !important; }
+body:not(.title-mode) #hud{
+  position:relative !important;
+  top:auto !important;
+  left:auto !important;
+  transform:none !important;
+  z-index:90 !important;
+  background:linear-gradient(180deg, rgba(4,9,20,0.82), rgba(4,9,20,0.64)) !important;
+  border-bottom:2px solid rgba(124,231,255,0.92) !important;
+}
+body:not(.title-mode) #gameCanvas{
+  height:calc(100dvh - var(--hud-real-height, 112px)) !important;
+  border-top:2px solid rgba(0,0,0,0.95) !important;
+}
+@media (max-width:520px){
+  body:not(.title-mode) #hud{ padding:4px 5px !important; gap:2px !important; }
+  #modeInfoHud{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2px; padding-top:2px; }
+  #modeInfoHud span{ font-size:9.5px; padding:2px 4px; border-radius:6px; }
+  body:not(.title-mode) #playerHudCompact{ min-height:21px !important; max-height:21px !important; }
+  body:not(.title-mode) #playerCompactText{ font-size:16px !important; line-height:21px !important; }
+  body:not(.title-mode) #expWrapper{ height:17px !important; }
+}
+@media (max-width:380px){
+  #modeInfoHud span{ font-size:9px; padding:2px 3px; }
+}
+
 </style>
 </head>
 <body>
@@ -3025,6 +3084,15 @@ body:not(.title-mode) #expRow{ order:2 !important; }
             <span id="expText">0 / 10 [0.00%]</span>
             <div id="expBarFill"></div>
         </div>
+    </div>
+
+    <div id="modeInfoHud" aria-label="게임 상태 정보">
+        <span id="modeInfo1">스테이지 1</span>
+        <span id="modeInfo2">점수 0</span>
+        <span id="modeInfo3">골드 0</span>
+        <span id="modeInfo4">핫타임 정보</span>
+        <span id="modeInfo5">진행 정보</span>
+        <span id="modeInfo6">모드 정보</span>
     </div>
 <input id="restoreFile" type="file" accept="application/json" style="display:none" />
 
@@ -3576,6 +3644,7 @@ const scoreEl = document.getElementById('scoreText');
 const highScoreEl = document.getElementById('highScoreText');
 const expEl = document.getElementById('expText');
 const expBarFillEl = document.getElementById('expBarFill');
+const modeInfoEls = [1,2,3,4,5,6].map(n => document.getElementById('modeInfo' + n));
 // ===============================
 // ✅ [v.50] EXP 바 클릭 → 경험치 레벨표 모달
 // - 필요 경험치 / 누적 경험치 표시
@@ -19302,6 +19371,96 @@ if (boss && !bossInvincible) {
 }
 }
 
+
+function updateModeInfoHudV1677() {
+  const els = (typeof modeInfoEls !== 'undefined') ? modeInfoEls : [];
+  if (!els || !els.length || !els[0]) return;
+
+  function setChip(i, text, color){
+    const el = els[i];
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = color || '#f7fbff';
+  }
+  const earnedGold = Math.max(0, Math.floor(
+    (gameMode === 'itempark' && typeof itemParkState !== 'undefined') ? (itemParkState.goldGained || 0) : (stageRunGoldEarned || 0)
+  ));
+  const totalGold = Math.max(0, Math.floor(gold || 0));
+
+  if (state === 'title') {
+    setChip(0, '타이틀', '#ffffff');
+    setChip(1, '설정 가능', '#cfefff');
+    setChip(2, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
+    setChip(3, ''); setChip(4, ''); setChip(5, '');
+  } else if (gameMode === 'infinite') {
+    const huntScore = Math.max(0, Math.floor(score || 0));
+    const distScore = (typeof getInfiniteDistanceScore === 'function') ? getInfiniteDistanceScore() : 0;
+    const totalScore = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : huntScore + distScore;
+    const bossText = (boss || (bossIntro && bossIntro.active) || bossSpawned)
+      ? '보스 출현!'
+      : `보스 ${typeof getInfiniteBossRemainSec === 'function' ? getInfiniteBossRemainSec() : 0}초`;
+    const itemParts = [];
+    try {
+      if (isInfiniteItemEffectActive('magnet')) itemParts.push(`자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
+      if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
+      if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
+      if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
+    } catch(e) {}
+    setChip(0, `총점 ${formatNumber(totalScore)}`, '#ffffff');
+    setChip(1, `사냥 ${formatNumber(huntScore)}`, '#cfefff');
+    setChip(2, `거리 ${formatNumber(distScore)}`, '#cfefff');
+    setChip(3, bossText, bossText.includes('출현') ? '#ffdf7a' : '#fff4a8');
+    setChip(4, `획득/보유 골드 ${formatNumber(earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
+    setChip(5, itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 없음', itemParts.length ? '#7ce7ff' : '#aab8c8');
+  } else if (gameMode === 'dungeon') {
+    setChip(0, `던전 ${dungeonState.tier || 1}단계`, '#ffffff');
+    setChip(1, `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`, '#fff4a8');
+    setChip(2, `처치 ${formatNumber(dungeonState.spawned || 0)} / ${formatNumber(DUNGEON_TOTAL_MONSTERS)}`, '#cfefff');
+    setChip(3, `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))}`, '#7dffb2');
+    setChip(4, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
+    setChip(5, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
+  } else if (gameMode === 'itempark') {
+    const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
+    setChip(0, '아이템 파크', '#ffffff');
+    setChip(1, `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`, '#fff4a8');
+    setChip(2, `수집 ${formatNumber(itemParkState.caught || 0)}개`, '#7ce7ff');
+    setChip(3, `획득 EXP ${formatNumber(itemParkState.expGained || 0)}`, '#7dffb2');
+    setChip(4, `골드 ${formatNumber(itemParkState.goldGained || earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
+    setChip(5, `남은 입장 ${left}회`, '#baffd7');
+  } else if (gameMode === 'minigame') {
+    const left = Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0));
+    setChip(0, `미니게임 ${getMiniGameTypeLabel(miniGameState.type)}`, '#ffffff');
+    setChip(1, `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`, '#fff4a8');
+    setChip(2, `점수 ${formatNumber(miniGameState.score || 0)}`, '#cfefff');
+    setChip(3, `콤보 x${formatNumber(miniGameState.combo || 0)}`, '#ffe08a');
+    setChip(4, `골드 ${formatNumber(earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
+    setChip(5, `남은 입장 ${left}회`, '#baffd7');
+  } else if (gameMode === 'mission') {
+    const missionScore = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
+    setChip(0, isMissionBonusStage(stage) ? `보너스 스테이지 ${stage}` : `미션 ${stage}`, '#ffffff');
+    setChip(1, isMissionBonusStage(stage) ? `남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage), '#fff4a8');
+    setChip(2, `점수 ${formatNumber(missionScore)}`, '#cfefff');
+    setChip(3, `처치 ${formatNumber(stageRunKillCount || 0)}`, '#baffd7');
+    setChip(4, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
+    setChip(5, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
+  } else {
+    const target = getStageKillTarget(stage);
+    const kills = Math.max(0, Math.floor(stageRunKillCount || 0));
+    const bossPart = isBossStage(stage) ? ` · 보스 ${Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)))}/1` : '';
+    setChip(0, `스테이지 ${stage}`, '#ffffff');
+    setChip(1, `몬스터 ${formatNumber(kills)} / ${formatNumber(target)}${bossPart}`, '#cfefff');
+    setChip(2, `진행도 ${Math.min(100, Math.floor(kills / Math.max(1, target) * 100))}%`, '#baffd7');
+    setChip(3, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
+    setChip(4, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
+    setChip(5, (typeof getHotMultiplier === 'function' && getHotMultiplier() > 1) ? `핫타임 EXP ${getHotMultiplier()}배` : '일반 EXP', (typeof getHotMultiplier === 'function' && getHotMultiplier() > 1) ? '#ffcc66' : '#aab8c8');
+  }
+
+  try {
+    const hud = document.getElementById('hud');
+    if (hud) document.documentElement.style.setProperty('--hud-real-height', Math.ceil(hud.getBoundingClientRect().height || 112) + 'px');
+  } catch(e) {}
+}
+
 function updateHUD() {
   try { updateConsumableQuickBar(); } catch(e){}
 scoreEl.textContent = '점수: ' + formatNumber(score);
@@ -19440,6 +19599,8 @@ if (hotTimeEl) {
     hotTimeEl.style.color = hotColor;
     }
   }
+
+  try { updateModeInfoHudV1677(); } catch(e) {}
 }
 
 
@@ -21253,7 +21414,7 @@ requestAnimationFrame(gameLoop);
     ctx.restore();
 
     drawGainMessages();
-    drawCanvasTopInfoPanel();
+    // v.167.7: 상단 정보는 HUD DOM에 통합되어 캔버스에 그리지 않습니다.
     drawMultiKillFx();
     drawSuddenQuestUI();
 
