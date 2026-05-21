@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.165.1 Infinite Drop Size & Bounce)</title>
+<title>Slime Shooter - Ultimate Evolution (v.165.4 Canvas Rank Emblems)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3261,17 +3261,17 @@ function escapeHtml(s){
 
 // ===== [v.165.3] 레벨별 계급 시스템 =====
 const LEVEL_RANKS = [
-  { level: 1,   name: '새싹 헌터',       icon: '🌱', color: '#b9ffcf' },
-  { level: 10,  name: '초급 헌터',       icon: '🟢', color: '#7cffb2' },
-  { level: 20,  name: '견습 슈터',       icon: '🔫', color: '#7ce7ff' },
-  { level: 30,  name: '정예 슈터',       icon: '💠', color: '#9fd7ff' },
-  { level: 50,  name: '베테랑 슈터',     icon: '🛡️', color: '#c6b8ff' },
-  { level: 70,  name: '마스터 헌터',     icon: '⚔️', color: '#ffd36a' },
-  { level: 100, name: '영웅 슬레이어',   icon: '🏅', color: '#ffdf7a' },
-  { level: 130, name: '챔피언 슬레이어', icon: '🏆', color: '#ffb86b' },
-  { level: 160, name: '초월자',          icon: '✨', color: '#ff91d8' },
-  { level: 200, name: '전설의 수호자',   icon: '👑', color: '#ffe76a' },
-  { level: 250, name: '신화의 지배자',   icon: '🌌', color: '#b7a6ff' }
+  { level: 1,   name: '새싹 헌터',       mark: 'sprout',   color: '#b9ffcf' },
+  { level: 10,  name: '초급 헌터',       mark: 'leaf',     color: '#7cffb2' },
+  { level: 20,  name: '견습 슈터',       mark: 'scope',    color: '#7ce7ff' },
+  { level: 30,  name: '정예 슈터',       mark: 'crystal',  color: '#9fd7ff' },
+  { level: 50,  name: '베테랑 슈터',     mark: 'shield',   color: '#c6b8ff' },
+  { level: 70,  name: '마스터 헌터',     mark: 'sword',    color: '#ffd36a' },
+  { level: 100, name: '영웅 슬레이어',   mark: 'medal',    color: '#ffdf7a' },
+  { level: 130, name: '챔피언 슬레이어', mark: 'trophy',   color: '#ffb86b' },
+  { level: 160, name: '초월자',          mark: 'aura',     color: '#ff91d8' },
+  { level: 200, name: '전설의 수호자',   mark: 'crown',    color: '#ffe76a' },
+  { level: 250, name: '신화의 지배자',   mark: 'galaxy',   color: '#b7a6ff' }
 ];
 
 function getLevelRank(lv) {
@@ -3289,16 +3289,176 @@ function getNextLevelRank(lv) {
   return LEVEL_RANKS.find(r => r.level > n) || null;
 }
 
+
+function drawLevelRankIcon(ctx, rank, x, y, size = 28, t = 0) {
+  if (!ctx || !rank) return;
+  const c = rank.color || '#ffffff';
+  const r = size / 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const glow = rank.level >= 160;
+  if (glow) {
+    const pulse = 0.65 + 0.35 * Math.sin((t || performance.now()) / 420);
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 10 + 8 * pulse;
+  } else {
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 5;
+  }
+
+  const ringGrad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.12, 0, 0, r);
+  ringGrad.addColorStop(0, 'rgba(255,255,255,0.48)');
+  ringGrad.addColorStop(0.52, c + '88');
+  ringGrad.addColorStop(1, 'rgba(0,0,0,0.78)');
+  ctx.fillStyle = ringGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.5, size * 0.075);
+  ctx.strokeStyle = c;
+  ctx.stroke();
+
+  function star(points, inner, outer, rot = -Math.PI / 2) {
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const rr = i % 2 ? inner : outer;
+      const a = rot + i * Math.PI / points;
+      const px = Math.cos(a) * rr;
+      const py = Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+  function shield(w, h) {
+    ctx.beginPath();
+    ctx.moveTo(0, -h * 0.55);
+    ctx.lineTo(w * 0.48, -h * 0.33);
+    ctx.lineTo(w * 0.38, h * 0.20);
+    ctx.quadraticCurveTo(0, h * 0.58, -w * 0.38, h * 0.20);
+    ctx.lineTo(-w * 0.48, -h * 0.33);
+    ctx.closePath();
+  }
+  function leaf(cx, cy, w, h, rot) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.48);
+    ctx.bezierCurveTo(-w * 0.65, h * 0.05, -w * 0.42, -h * 0.52, 0, -h * 0.50);
+    ctx.bezierCurveTo(w * 0.50, -h * 0.36, w * 0.58, h * 0.18, 0, h * 0.48);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.shadowBlur = glow ? ctx.shadowBlur : 0;
+  ctx.fillStyle = c;
+  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+  ctx.lineWidth = Math.max(1, size * 0.045);
+
+  switch (rank.mark) {
+    case 'sprout':
+      ctx.strokeStyle = '#eaffef';
+      leaf(-size*0.10, -size*0.04, size*0.33, size*0.44, -0.72);
+      leaf(size*0.13, -size*0.03, size*0.34, size*0.46, 0.70);
+      ctx.beginPath(); ctx.moveTo(0, size*0.31); ctx.quadraticCurveTo(-size*0.04, size*0.02, 0, -size*0.26); ctx.stroke();
+      break;
+    case 'leaf':
+      ctx.strokeStyle = '#ecfff1';
+      leaf(0, 0, size*0.52, size*0.70, 0.55);
+      ctx.beginPath(); ctx.moveTo(-size*0.17, size*0.22); ctx.lineTo(size*0.18, -size*0.24); ctx.stroke();
+      break;
+    case 'scope':
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
+      ctx.beginPath(); ctx.arc(0,0,size*0.28,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-size*0.42,0); ctx.lineTo(-size*0.18,0); ctx.moveTo(size*0.18,0); ctx.lineTo(size*0.42,0); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,-size*0.18); ctx.moveTo(0,size*0.18); ctx.lineTo(0,size*0.42); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0,0,size*0.055,0,Math.PI*2); ctx.fill();
+      break;
+    case 'crystal':
+      ctx.fillStyle = c; ctx.strokeStyle = '#eef8ff';
+      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.30,-size*0.12); ctx.lineTo(size*0.18,size*0.42); ctx.lineTo(-size*0.18,size*0.42); ctx.lineTo(-size*0.30,-size*0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,size*0.38); ctx.moveTo(-size*0.27,-size*0.10); ctx.lineTo(size*0.27,-size*0.10); ctx.stroke();
+      break;
+    case 'shield':
+      ctx.fillStyle = c; ctx.strokeStyle = '#f3f0ff'; shield(size*0.74, size*0.86); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'; shield(size*0.40, size*0.58); ctx.fill();
+      break;
+    case 'sword':
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.13;
+      ctx.beginPath(); ctx.moveTo(0,size*0.34); ctx.lineTo(0,-size*0.42); ctx.stroke();
+      ctx.lineWidth = size*0.08; ctx.strokeStyle = '#fff7c8'; ctx.beginPath(); ctx.moveTo(-size*0.24,size*0.08); ctx.lineTo(size*0.24,size*0.08); ctx.stroke();
+      star(4, size*0.10, size*0.20, Math.PI/4); ctx.fillStyle = '#ffeaa0'; ctx.fill();
+      break;
+    case 'medal':
+      ctx.fillStyle = c; ctx.strokeStyle = '#fff6cc'; star(5, size*0.22, size*0.42); ctx.fill(); ctx.stroke();
+      break;
+    case 'trophy':
+      ctx.fillStyle = c; ctx.strokeStyle = '#fff0c2';
+      ctx.beginPath(); ctx.roundRect(-size*0.24, -size*0.30, size*0.48, size*0.36, size*0.06); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-size*0.12,size*0.08); ctx.lineTo(size*0.12,size*0.08); ctx.lineTo(size*0.18,size*0.34); ctx.lineTo(-size*0.18,size*0.34); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-size*0.28,-size*0.16,size*0.13,Math.PI*0.5,Math.PI*1.5); ctx.arc(size*0.28,-size*0.16,size*0.13,-Math.PI*0.5,Math.PI*0.5); ctx.stroke();
+      break;
+    case 'aura':
+      ctx.save(); ctx.rotate((t || performance.now()) / 900);
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
+      for(let i=0;i<4;i++){ ctx.rotate(Math.PI/2); ctx.beginPath(); ctx.moveTo(0,-size*0.48); ctx.quadraticCurveTo(size*0.15,-size*0.18,0,-size*0.03); ctx.quadraticCurveTo(-size*0.15,-size*0.18,0,-size*0.48); ctx.stroke(); }
+      ctx.restore();
+      star(4, size*0.15, size*0.30, Math.PI/4); ctx.fillStyle = '#fff0ff'; ctx.fill();
+      break;
+    case 'crown':
+      ctx.fillStyle = c; ctx.strokeStyle = '#fff6bd';
+      ctx.beginPath(); ctx.moveTo(-size*0.38,size*0.18); ctx.lineTo(-size*0.30,-size*0.24); ctx.lineTo(-size*0.08,size*0.02); ctx.lineTo(0,-size*0.36); ctx.lineTo(size*0.08,size*0.02); ctx.lineTo(size*0.30,-size*0.24); ctx.lineTo(size*0.38,size*0.18); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(-size*0.34, size*0.15, size*0.68, size*0.16, size*0.04); ctx.fill(); ctx.stroke();
+      break;
+    case 'galaxy':
+      ctx.save(); ctx.rotate((t || performance.now()) / 1200);
+      ctx.strokeStyle = c; ctx.lineWidth = size*0.045;
+      for(let i=0;i<3;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.ellipse(0,0,size*0.46,size*0.14,0,0,Math.PI*2); ctx.stroke(); }
+      ctx.restore();
+      const grad = ctx.createRadialGradient(0,0,0,0,0,size*0.28); grad.addColorStop(0,'#ffffff'); grad.addColorStop(0.48,c); grad.addColorStop(1,'rgba(30,0,80,0.2)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0,0,size*0.20,0,Math.PI*2); ctx.fill();
+      break;
+    default:
+      star(5, size*0.20, size*0.42); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function setupHudRankIconCanvas() {
+  const hudCompact = document.getElementById('playerHudCompact');
+  if (!hudCompact || document.getElementById('hudRankIconCanvas')) return;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'hudRankIconCanvas';
+  canvas.width = 36;
+  canvas.height = 36;
+  canvas.style.width = '28px';
+  canvas.style.height = '28px';
+  canvas.style.flex = '0 0 28px';
+  canvas.style.marginRight = '7px';
+  canvas.style.display = 'block';
+  hudCompact.insertBefore(canvas, hudCompact.firstChild);
+}
+
+function refreshHudRankIcon() {
+  setupHudRankIconCanvas();
+  const canvas = document.getElementById('hudRankIconCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawLevelRankIcon(ctx, getLevelRank(level || 1), canvas.width / 2, canvas.height / 2, 32, performance.now());
+}
+
 function getLevelRankLabel(lv) {
   const r = getLevelRank(lv);
-  return `${r.icon} ${r.name}`;
+  return `${r.name}`;
 }
 
 function maybeShowRankUpNotice(oldLv, newLv) {
   const before = getLevelRank(oldLv);
   const after = getLevelRank(newLv);
   if (!before || !after || before.name === after.name) return;
-  const msg = `계급 상승! ${after.icon} ${after.name}`;
+  const msg = `계급 상승! ${after.name}`;
   try { showToast(msg, after.color || '#ffe76a', 2200); } catch(e) {}
   if (typeof player !== 'undefined' && player) {
     try { spawnDamageText(player.x, player.y - 54, msg, after.color || '#ffe76a'); } catch(e) {}
@@ -8767,7 +8927,7 @@ function openProfile(isRefresh = false) {
   const petBonus = getPetBonusTotals();
   const rankMeta = getLevelRank(curLv);
   const nextRankMeta = getNextLevelRank(curLv);
-  const nextRankText = nextRankMeta ? `${nextRankMeta.icon} ${nextRankMeta.name}까지 LV.${formatNumber(nextRankMeta.level - curLv)} 남음` : '최고 계급 달성';
+  const nextRankText = nextRankMeta ? `${nextRankMeta.name}까지 LV.${formatNumber(nextRankMeta.level - curLv)} 남음` : '최고 계급 달성';
 
   profileBodyEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -8781,8 +8941,8 @@ function openProfile(isRefresh = false) {
         <div style="margin-top:2px; font-size:15px; font-weight:900;">LV.${formatNumber(curLv)} · ${formatNumber(totalExp)} EXP</div>
       </div>
       <div style="padding:12px 14px; border:1px solid ${rankMeta.color}88; border-radius:14px; background:linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.24)); box-shadow:0 0 18px ${rankMeta.color}22;">
-        <div style="font-weight:900; color:#cfefff;">🎖️ 현재 계급</div>
-        <div style="margin-top:5px; font-size:20px; font-weight:1000; color:${rankMeta.color};">${rankMeta.icon} ${rankMeta.name}</div>
+        <div style="font-weight:900; color:#cfefff;">현재 계급</div>
+        <div style="margin-top:8px; display:flex; align-items:center; gap:10px;"><canvas id="profileRankIconCanvas" width="56" height="56" style="width:44px; height:44px; flex:0 0 44px;"></canvas><div style="font-size:20px; font-weight:1000; color:${rankMeta.color};">${rankMeta.name}</div></div>
         <div style="margin-top:4px; font-size:12px; color:#d7e2ff;">${nextRankText}</div>
         <div style="margin-top:8px; font-size:11px; color:#aebcff; line-height:1.45;">레벨이 오르면 계급도 자동 상승하며, 상단 HUD와 프로필에 함께 표시됩니다.</div>
       </div>
@@ -8880,6 +9040,13 @@ function openProfile(isRefresh = false) {
       </div>
     </div>
   `;
+
+  const profileRankCanvas = document.getElementById('profileRankIconCanvas');
+  if (profileRankCanvas) {
+    const prCtx = profileRankCanvas.getContext('2d');
+    prCtx.clearRect(0, 0, profileRankCanvas.width, profileRankCanvas.height);
+    drawLevelRankIcon(prCtx, rankMeta, profileRankCanvas.width / 2, profileRankCanvas.height / 2, 50, performance.now());
+  }
 
   profileBodyEl.querySelectorAll('[data-use-item]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -17928,12 +18095,13 @@ const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
 const rankMeta = getLevelRank(level);
-const compactPlayerText = `LV.${level} ${rankMeta.icon} ${rankMeta.name} · ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
+const compactPlayerText = `LV.${level} ${rankMeta.name} · ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
 if (playerCompactEl) {
   playerCompactEl.textContent = compactPlayerText;
   playerCompactEl.style.color = rankMeta.color || '#ffffff';
 }
-levelEl.textContent = `LV. ${level} · ${rankMeta.icon} ${rankMeta.name} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
+refreshHudRankIcon();
+levelEl.textContent = `LV. ${level} · ${rankMeta.name} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
@@ -19386,9 +19554,11 @@ function drawTitleScreen() {
     ctx.fillText(`🏆 최고 점수: ${formatNumber(saveData.highScore)}`, width/2, titleBaseY + (compactTitle ? 28 : 30));
 
     // 4. 레벨 및 누적 경험치 표시 (흰색/회색)
-    ctx.fillStyle = '#eeffff';
+    const titleRankMeta = getLevelRank(saveData.level || 1);
+    ctx.fillStyle = titleRankMeta.color || '#eeffff';
     ctx.font = fontStr(compactTitle ? 18 : 20, 'normal');
-    ctx.fillText(`현재 레벨: LV. ${saveData.level}`, width/2, levelBaseY);
+    ctx.fillText(`현재 레벨: LV. ${saveData.level} · ${titleRankMeta.name}`, width/2, levelBaseY);
+    drawLevelRankIcon(ctx, titleRankMeta, width/2 - Math.min(220, width*0.24), levelBaseY - 6, compactTitle ? 26 : 30, performance.now());
     
     ctx.fillStyle = '#aaaaaa';
     ctx.font = fontStr(compactTitle ? 14 : 16);
