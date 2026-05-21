@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Slime Shooter - Ultimate Evolution (v.166.5 Full Ratio Sudden Quest Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.166.6 Split HUD Mode)</title>
 <!-- ✅ [v.166.3] iOS 홈 화면 실행 시 Safari 주소창 없이 앱처럼 보이도록 설정 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2747,6 +2747,45 @@ body.title-mode #titleUI .overlay-content{
     width:min(82vw, 360px) !important;
     bottom:calc(6px + env(safe-area-inset-bottom)) !important;
   }
+}
+
+
+
+/* ===============================
+   ✅ [v.166.6] 타이틀 HUD / 플레이 HUD 분리
+   - 타이틀: 설정, 스킬 가이드 등 관리 버튼 표시
+   - 게임 중: 레벨/닉네임/계급, EXP, 스테이지·처치 현황만 표시
+   - 무한 모드: 사냥 점수 / 거리 점수만 추가 표시
+   =============================== */
+body:not(.title-mode) #settingsBar{
+  display:none !important;
+}
+body:not(.title-mode) #hotTimeText,
+body:not(.title-mode) #goldText,
+body:not(.title-mode) #hpText,
+body:not(.title-mode) #levelText{
+  display:none !important;
+}
+body:not(.title-mode) #hud{
+  gap:4px !important;
+}
+body:not(.title-mode) #hudTop{
+  margin-top:0 !important;
+  align-items:center !important;
+}
+body:not(.title-mode) #playerHudCompact{
+  order:1;
+  margin-bottom:0 !important;
+}
+body:not(.title-mode) #expRow{
+  order:2;
+  margin-top:0 !important;
+}
+body:not(.title-mode) #hudTop{
+  order:3;
+}
+body:not(.title-mode) #hudTop .hud-column:first-child:empty{
+  display:none !important;
 }
 
 </style>
@@ -17352,6 +17391,7 @@ blizzardFlakes = [];
 meteors = [];
 ctx.clearRect(0, 0, width, height); // 화면 클리어
 setPauseUI();
+updateHUD();
 }
 
 // 게임 오버 버튼 이벤트
@@ -21556,26 +21596,37 @@ drawBackground = function() {
   return __origDrawBackground();
 };
 
+function applySplitHudMode(){
+  const isPlayingHud = (state === 'playing');
+  const isInfiniteHud = isPlayingHud && gameMode === 'infinite';
+
+  if (scoreEl) {
+    scoreEl.style.display = isInfiniteHud ? '' : 'none';
+    if (isInfiniteHud) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
+  }
+  if (highScoreEl) {
+    highScoreEl.style.display = isInfiniteHud ? '' : 'none';
+    if (isInfiniteHud) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
+  }
+  if (hotTimeEl) hotTimeEl.style.display = isPlayingHud ? 'none' : '';
+  if (goldEl) goldEl.style.display = isPlayingHud ? 'none' : '';
+  if (hpEl) hpEl.style.display = 'none';
+  if (levelEl) levelEl.style.display = 'none';
+}
+
 const __origUpdateHUD = updateHUD;
 updateHUD = function() {
   __origUpdateHUD();
   refreshDailyRewardButton();
 
   if (gameMode === 'infinite') {
-    if (scoreEl) {
-      scoreEl.style.display = '';
-      scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
-    }
-    if (highScoreEl) {
-      highScoreEl.style.display = '';
-      highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
-    }
-
     const distText = `${formatNumber(Math.floor(infiniteDistance))}m`;
     if (stageEl) {
       stageEl.textContent = `거리: ${distText}`;
     }
   }
+
+  applySplitHudMode();
 };
 
 function getInfiniteBossRemainSec() {
