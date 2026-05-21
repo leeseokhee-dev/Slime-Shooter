@@ -3016,6 +3016,53 @@ body:not(.title-mode) #gameCanvas{
   #modeInfoHud span{ font-size:9px; padding:2px 3px; }
 }
 
+
+
+/* ===============================
+   ✅ [v.168.0] 모바일 전체 화면 채움 보정
+   - 타이틀/게임 모두 검은 빈 공간 없이 100dvh 사용
+   - 캔버스 원본 비율은 유지하고 화면은 cover 방식으로 채움
+   =============================== */
+html, body{
+  width:100% !important;
+  height:100% !important;
+  min-height:100dvh !important;
+  margin:0 !important;
+  overflow:hidden !important;
+  background:#050510 !important;
+}
+#gameContainer,
+#gameContainer.full-screen-ratio{
+  width:100vw !important;
+  max-width:100vw !important;
+  height:100dvh !important;
+  max-height:100dvh !important;
+  padding:0 !important;
+  margin:0 !important;
+  overflow:hidden !important;
+}
+#gameCanvas{
+  width:100vw !important;
+  height:100dvh !important;
+  min-width:100vw !important;
+  min-height:100dvh !important;
+  max-width:100vw !important;
+  max-height:100dvh !important;
+  aspect-ratio:auto !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  border:0 !important;
+  border-radius:0 !important;
+  margin:0 !important;
+  box-shadow:none !important;
+}
+body.title-mode #titleUI,
+body:not(.title-mode) #gameCanvas{
+  width:100vw !important;
+  height:100dvh !important;
+  min-height:100dvh !important;
+}
+
 </style>
 </head>
 <body>
@@ -3766,19 +3813,13 @@ function fitCanvasToViewport() {
     hud.style.overflowY = '';
   }
 
-  // ✅ [v.167.9] 캔버스 표시 크기는 항상 내부 해상도 비율과 동일하게 맞춘다.
-  // 화면 높이를 그대로 displayH로 쓰지 않고, 960:640 비율을 유지한 채 HUD 아래 남는 공간 안에 맞춘다.
-  const targetRatio = target.width / Math.max(1, target.height);
-  const maxW = Math.max(watchMode ? 120 : 220, vw - sidePadding);
-  const maxH = Math.max(watchMode ? 96 : 180, vh - hudH - safeTop - safeBottom);
-  let displayW = maxW;
-  let displayH = displayW / targetRatio;
-  if (displayH > maxH) {
-    displayH = maxH;
-    displayW = displayH * targetRatio;
-  }
+  // ✅ [v.168.0] 폰 화면 빈 공간 제거
+  // 캔버스 표시는 항상 100vw × 100dvh로 채우고, 실제 그림은 object-fit: cover로 비율을 유지합니다.
+  // 이전처럼 HUD 높이를 뺀 3:2 박스로 줄이지 않아서 타이틀/게임 화면 아래에 검은 빈 공간이 생기지 않습니다.
+  const displayW = Math.max(watchMode ? 120 : 220, vw);
+  const displayH = Math.max(watchMode ? 160 : 320, vh);
 
-  // 내부 해상도도 더 이상 화면 세로 길이에 맞춰 늘리지 않는다.
+  // 내부 게임 해상도는 960×640 계열을 유지해서 슬라임/배경이 세로로 찌그러지지 않게 합니다.
   if (canvas.width !== target.width || canvas.height !== target.height) {
     canvas.width = target.width;
     canvas.height = target.height;
@@ -3790,7 +3831,11 @@ function fitCanvasToViewport() {
   canvas.style.height = `${Math.floor(displayH)}px`;
   canvas.style.maxWidth = `${Math.floor(displayW)}px`;
   canvas.style.maxHeight = `${Math.floor(displayH)}px`;
-  canvas.style.aspectRatio = `${target.width} / ${target.height}`;
+  canvas.style.minWidth = `${Math.floor(displayW)}px`;
+  canvas.style.minHeight = `${Math.floor(displayH)}px`;
+  canvas.style.aspectRatio = 'auto';
+  canvas.style.objectFit = 'cover';
+  canvas.style.objectPosition = 'center center';
 
   const uiScale = Math.max(0.58, Math.min(1.12, Math.min(displayW / target.width, displayH / target.height)));
 
@@ -3801,9 +3846,11 @@ function fitCanvasToViewport() {
   if (container) {
     container.style.width = `${Math.floor(displayW)}px`;
     container.style.maxWidth = `${Math.floor(displayW)}px`;
+    container.style.height = `${Math.floor(displayH)}px`;
+    container.style.maxHeight = `${Math.floor(displayH)}px`;
     container.style.setProperty('--canvas-scale', String(uiScale));
     container.dataset.canvasMode = target.mode;
-    container.classList.toggle('full-screen-ratio', false);
+    container.classList.toggle('full-screen-ratio', true);
   }
   document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
 
