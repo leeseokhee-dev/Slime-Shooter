@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.165.4 Canvas Rank Emblems)</title>
+<title>Slime Shooter - Ultimate Evolution (v.165.6 Rank Preview Dex)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -812,6 +812,85 @@ body.tutorial-mode #pauseBtn{
 #confirmNoBtn{
   border-color:#7cff7c;
   color:#dcffdc;
+}
+
+/* ===============================
+   ✅ [v.165.6] 계급 아이콘 미리보기 모달
+   =============================== */
+#hudRankIconCanvas{
+  cursor:pointer;
+  border-radius:999px;
+  transition: transform .15s ease, filter .15s ease;
+}
+#hudRankIconCanvas:active{ transform:scale(0.92); filter:brightness(1.25); }
+#rankPreviewModal{
+  z-index: 215;
+  max-width: 560px;
+  border-color:#ff6b8a !important;
+  background: radial-gradient(circle at top, rgba(255,107,138,0.16), rgba(10,14,28,0.98) 48%, rgba(3,6,14,0.99));
+}
+#rankPreviewSummary{
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  font-size:12px;
+  line-height:1.55;
+  color:#eef4ff;
+}
+.rank-preview-grid{
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:8px;
+  padding:2px;
+}
+.rank-preview-card{
+  min-height:94px;
+  padding:7px 4px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+  border:1px solid rgba(255,255,255,0.12);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px;
+  text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);
+}
+.rank-preview-card.current{
+  border-color:#ffd36a;
+  box-shadow:0 0 18px rgba(255,211,106,0.26), inset 0 1px 0 rgba(255,255,255,0.18);
+  background:linear-gradient(180deg, rgba(255,211,106,0.18), rgba(255,255,255,0.04));
+}
+.rank-preview-card canvas{
+  width:38px;
+  height:38px;
+  flex:0 0 auto;
+}
+.rank-preview-level{
+  font-size:10px;
+  font-weight:1000;
+  color:#ffffff;
+  line-height:1;
+}
+.rank-preview-name{
+  font-size:9px;
+  font-weight:900;
+  line-height:1.18;
+  word-break:keep-all;
+  letter-spacing:-0.3px;
+}
+.rank-preview-mark{
+  font-size:8px;
+  color:#aebfff;
+  line-height:1;
+}
+@media (max-width: 520px){
+  #rankPreviewModal{ width:94%; max-height:86vh; padding:12px; }
+  .rank-preview-grid{ grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
+  .rank-preview-card{ min-height:88px; padding:6px 3px; }
+  .rank-preview-card canvas{ width:34px; height:34px; }
 }
 
 
@@ -2629,6 +2708,12 @@ body.title-mode #titleUI #dailyRewardBtn{
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(255,107,138,0.12); border:1px solid rgba(255,107,138,0.36); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#ff8aa2; margin-bottom:6px;">[v.165.6 계급 시스템 안내]</div>
+            <div>250레벨까지 대응되는 250종 계급 문양이 추가되었습니다.</div>
+            <div>상단 HUD의 계급 아이콘을 누르면 1~250레벨 전체 계급 아이콘을 미리 볼 수 있습니다.</div>
+            <div>현재 레벨의 계급은 계급 도감에서 금색 테두리로 강조 표시됩니다.</div>
+        </div>
         <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
             <div>멀티킬 시스템이 추가되었습니다. 번개, 눈보라처럼 동시 공격이 가능한 범위형 스킬로 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동됩니다.</div>
@@ -2660,6 +2745,15 @@ body.title-mode #titleUI #dailyRewardBtn{
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
     <button id="closeNoticeBtn" class="ui-btn">닫기</button>
+</div>
+
+<div id="rankPreviewModal" class="modal hidden">
+    <div class="modal-header" style="color:#ff8aa2;">🏅 계급 아이콘 미리보기</div>
+    <div id="rankPreviewBody" class="modal-body" style="max-height: 430px; gap:10px; padding-right:4px;">
+        <div id="rankPreviewSummary">상단 계급 아이콘을 누르면 1~250레벨 계급 문양을 한 번에 확인할 수 있습니다.</div>
+        <div id="rankPreviewGrid" class="rank-preview-grid"></div>
+    </div>
+    <button id="closeRankPreviewBtn" class="ui-btn">닫기</button>
 </div>
 
 <!-- 첫 시작 닉네임 입력 모달 -->
@@ -3478,6 +3572,9 @@ function setupHudRankIconCanvas() {
   canvas.style.flex = '0 0 28px';
   canvas.style.marginRight = '7px';
   canvas.style.display = 'block';
+  canvas.title = '계급 아이콘 미리보기';
+  canvas.setAttribute('aria-label', '계급 아이콘 미리보기');
+  canvas.addEventListener('click', openRankPreviewModal);
   hudCompact.insertBefore(canvas, hudCompact.firstChild);
 }
 
@@ -3504,6 +3601,81 @@ function maybeShowRankUpNotice(oldLv, newLv) {
   if (typeof player !== 'undefined' && player) {
     try { spawnDamageText(player.x, player.y - 54, msg, after.color || '#ffe76a'); } catch(e) {}
   }
+}
+
+function getRankMarkKorean(mark) {
+  const map = {
+    sprout:'새싹', leaf:'잎새', scope:'조준', crystal:'수정', shield:'방패', sword:'검',
+    medal:'메달', trophy:'트로피', aura:'오라', crown:'왕관', galaxy:'은하'
+  };
+  return map[mark] || '문양';
+}
+
+function buildRankPreviewGrid() {
+  const grid = document.getElementById('rankPreviewGrid');
+  const summary = document.getElementById('rankPreviewSummary');
+  if (!grid) return;
+  const currentLevel = Math.max(1, Math.min(250, Number(level || 1)));
+  const currentRank = getLevelRank(currentLevel);
+  if (summary && currentRank) {
+    summary.innerHTML = `현재 계급은 <b style="color:${currentRank.color}">LV.${currentLevel} ${currentRank.name}</b>입니다.<br>1~250레벨 계급을 모두 미리 볼 수 있고, 현재 레벨은 금색 테두리로 표시됩니다.`;
+  }
+  if (grid.dataset.built === '1') {
+    grid.querySelectorAll('.rank-preview-card.current').forEach(el => el.classList.remove('current'));
+    const currentCard = grid.querySelector(`[data-rank-level="${currentLevel}"]`);
+    if (currentCard) currentCard.classList.add('current');
+    return;
+  }
+  grid.innerHTML = '';
+  LEVEL_RANKS.forEach((rank) => {
+    const card = document.createElement('div');
+    card.className = 'rank-preview-card' + (rank.level === currentLevel ? ' current' : '');
+    card.dataset.rankLevel = String(rank.level);
+    card.title = `LV.${rank.level} ${rank.name}`;
+
+    const iconCanvas = document.createElement('canvas');
+    iconCanvas.width = 52;
+    iconCanvas.height = 52;
+
+    const lvEl = document.createElement('div');
+    lvEl.className = 'rank-preview-level';
+    lvEl.textContent = `LV.${rank.level}`;
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'rank-preview-name';
+    nameEl.style.color = rank.color || '#ffffff';
+    nameEl.textContent = rank.name;
+
+    const markEl = document.createElement('div');
+    markEl.className = 'rank-preview-mark';
+    markEl.textContent = getRankMarkKorean(rank.mark);
+
+    card.appendChild(iconCanvas);
+    card.appendChild(lvEl);
+    card.appendChild(nameEl);
+    card.appendChild(markEl);
+    grid.appendChild(card);
+
+    const ctx = iconCanvas.getContext('2d');
+    drawLevelRankIcon(ctx, rank, iconCanvas.width / 2, iconCanvas.height / 2, 44, performance.now());
+  });
+  grid.dataset.built = '1';
+}
+
+function openRankPreviewModal() {
+  const modal = document.getElementById('rankPreviewModal');
+  if (!modal) return;
+  buildRankPreviewGrid();
+  modal.classList.remove('hidden');
+  const currentCard = document.querySelector(`#rankPreviewGrid [data-rank-level="${Math.max(1, Math.min(250, Number(level || 1)))}"]`);
+  if (currentCard) {
+    setTimeout(() => currentCard.scrollIntoView({ block:'center', behavior:'smooth' }), 60);
+  }
+}
+
+function closeRankPreviewModal() {
+  const modal = document.getElementById('rankPreviewModal');
+  if (modal) modal.classList.add('hidden');
 }
 
 function renderSkillGuide() {
@@ -3612,6 +3784,8 @@ const confirmNoBtn = document.getElementById('confirmNoBtn');
 const noticeModal = document.getElementById('noticeModal');
 const noticeBody = document.getElementById('noticeBody');
 const closeNoticeBtn = document.getElementById('closeNoticeBtn');
+const rankPreviewModal = document.getElementById('rankPreviewModal');
+const closeRankPreviewBtn = document.getElementById('closeRankPreviewBtn');
 const questModal = document.getElementById('questModal');
 const questList = document.getElementById('questList');
 const closeQuestBtn = document.getElementById('closeQuestBtn');
@@ -8178,7 +8352,7 @@ showContextTutorial('quest', [
 ]);
 }
 
-const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
+const NOTICE_VERSION_KEY = 'ss_notice_seen_v165_6';
 
 function openNoticeModal() {
   if (!noticeModal) return;
@@ -8201,6 +8375,8 @@ function maybeShowNoticeOnTitle() {
 if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
 if (openNoticeBtn) openNoticeBtn.addEventListener('click', openNoticeModal);
 if (closeNoticeBtn) closeNoticeBtn.addEventListener('click', closeNoticeModalFn);
+if (closeRankPreviewBtn) closeRankPreviewBtn.addEventListener('click', closeRankPreviewModal);
+if (rankPreviewModal) rankPreviewModal.addEventListener('click', (e) => { if (e.target === rankPreviewModal) closeRankPreviewModal(); });
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
