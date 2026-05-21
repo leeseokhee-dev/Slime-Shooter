@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.166 Rank 250 Full Canvas Pause Settings)</title>
+<title>Slime Shooter - Ultimate Evolution (v.166.0 Rank & Full Canvas)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2441,138 +2441,65 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 
 /* ===============================
-   ✅ [v.166] 계급 250종 + 플레이 화면 확장 + 설정 버튼 분리
+   ✅ [v.166.0] 계급 아이콘 + 플레이 화면 풀 캔버스 + 일시정지 설정 분리
    =============================== */
-#rankBadgeIcon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:28px;
-  height:28px;
-  margin-right:6px;
-  border-radius:999px;
-  border:2px solid rgba(255,255,255,0.42);
-  background:radial-gradient(circle at 30% 25%, rgba(255,255,255,0.45), rgba(0,0,0,0.18) 62%, rgba(0,0,0,0.44));
-  box-shadow:0 0 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.42);
-  font-size:17px;
-  line-height:1;
-  vertical-align:middle;
-  flex:0 0 auto;
-  overflow:hidden;
-}
-#rankBadgeIcon canvas{
-  width:100%;
-  height:100%;
-  display:block;
-}
-#rankBadgeIcon.rank-100{ animation: rankPulse166 1.7s ease-in-out infinite; }
-#rankBadgeIcon.rank-150{ animation: rankFloat166 1.55s ease-in-out infinite; }
-#rankBadgeIcon.rank-200{ border-width:3px; box-shadow:0 0 18px rgba(255,215,0,0.52), inset 0 1px 0 rgba(255,255,255,0.55); animation: rankGoldPulse166 1.25s ease-in-out infinite; }
-#rankBadgeIcon.rank-240{ animation: rankMythPulse166 .95s ease-in-out infinite; }
-#rankBadgeIcon.rank-200::before,
-#rankBadgeIcon.rank-240::before{
-  content:"";
-  position:absolute;
-  inset:-8px;
-  border-radius:999px;
-  background:conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,215,0,.55), rgba(88,220,255,.35), rgba(255,120,200,.45), rgba(255,255,255,0));
-  animation: rankAuraSpin166 2.8s linear infinite;
-  pointer-events:none;
-  opacity:.72;
-}
-#rankBadgeIcon{ position:relative; }
-#rankBadgeIcon canvas{ position:relative; z-index:1; }
-@keyframes rankPulse166{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-@keyframes rankFloat166{ 0%,100%{transform:translateY(0) scale(1.04)} 50%{transform:translateY(-2px) scale(1.12)} }
-@keyframes rankGoldPulse166{ 0%,100%{transform:scale(1); filter:brightness(1)} 50%{transform:scale(1.11); filter:brightness(1.32)} }
-@keyframes rankMythPulse166{ 0%,100%{transform:scale(1.02) rotate(-2deg); filter:brightness(1.1)} 50%{transform:scale(1.18) rotate(2deg); filter:brightness(1.55)} }
-@keyframes rankAuraSpin166{ to{ transform:rotate(360deg); } }
-body:not(.title-mode) #settingsBar{ display:none !important; }
-body:not(.title-mode) #hud{ margin-bottom:0 !important; border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
-body:not(.title-mode) #gameContainer{ width:100vw !important; max-width:100vw !important; padding:0 !important; }
-body:not(.title-mode) #gameCanvas{
+#gameContainer{ width:100vw !important; max-width:100vw !important; padding:0 !important; }
+#hud{ border-radius:0 0 10px 10px !important; margin-bottom:0 !important; width:100vw !important; max-width:100vw !important; }
+#gameCanvas{
+  width:100vw !important;
+  max-width:100vw !important;
+  height:calc(100dvh - var(--hud-height, 132px)) !important;
+  max-height:calc(100dvh - var(--hud-height, 132px)) !important;
   border-radius:0 !important;
   border-left:0 !important;
   border-right:0 !important;
-  box-shadow:none !important;
+  border-bottom:0 !important;
+  object-fit:fill !important;
+  aspect-ratio:auto !important;
 }
+body:not(.title-mode) #settingsBar{ display:none !important; }
 body.title-mode #settingsBar{ display:flex !important; }
-#pauseSettingsRow{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap:8px;
-  width:100%;
-  max-width:260px;
-}
-#pauseSettingsRow .ui-btn{
-  min-height:38px;
-  font-size:12px;
-  font-weight:900;
-  border-color:rgba(124,231,255,0.46);
-}
-@media (max-width:520px){
-  #rankBadgeIcon{ width:23px; height:23px; font-size:14px; margin-right:4px; }
-  #pauseSettingsRow{ gap:6px; }
-  #pauseSettingsRow .ui-btn{ font-size:11px; padding:5px 3px; }
-}
-
-
-
-/* ===============================
-   ✅ [v.166.2] 계급표 모달 / 직접 그린 슬라임 계급 아이콘
-   =============================== */
-#rankTableModal{
-  z-index: 190;
-  max-width: min(560px, 94vw);
-  border-color: rgba(68,255,184,0.55);
-}
-#rankTableBody{
-  max-height: min(62dvh, 520px);
-  padding-right: 6px;
-}
-.rank-table-guide{
-  font-size:12px;
-  line-height:1.5;
-  color:#cfe6ff;
-  text-align:center;
-  margin-bottom:8px;
-}
-.rank-table-grid{
-  display:grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap:8px;
-}
-.rank-table-cell{
-  min-width:0;
-  padding:7px 4px 6px;
-  border-radius:12px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
-  border:1px solid rgba(255,255,255,0.12);
+body.title-mode #gameCanvas{ width:100vw !important; max-width:100vw !important; height:calc(100dvh - var(--hud-height, 132px)) !important; max-height:calc(100dvh - var(--hud-height, 132px)) !important; }
+#playerHudCompact{ gap:8px; align-items:center; }
+#rankIconBtn{
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  padding:0;
+  border-radius:10px;
+  border:1px solid rgba(124,231,255,0.72);
+  background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), rgba(0,0,0,0.48));
+  box-shadow:0 0 12px rgba(68,255,184,0.26);
   display:flex;
-  flex-direction:column;
   align-items:center;
-  gap:4px;
+  justify-content:center;
+  cursor:pointer;
+  overflow:hidden;
 }
-.rank-table-cell.current{
-  border-color:#ffd700;
-  box-shadow:0 0 14px rgba(255,215,0,0.35);
+#rankIconBtn.rank-glow-2{ box-shadow:0 0 15px rgba(124,231,255,0.42), inset 0 0 10px rgba(255,255,255,0.10); }
+#rankIconBtn.rank-glow-3{ animation:rankBtnPulse 1.7s ease-in-out infinite; box-shadow:0 0 20px rgba(255,215,0,0.52), inset 0 0 14px rgba(255,255,255,0.14); }
+#rankIconBtn.rank-glow-4{ animation:rankBtnEpic 1.2s ease-in-out infinite; border-color:#ffd700; box-shadow:0 0 28px rgba(255,215,0,0.78), 0 0 18px rgba(255,80,220,0.35); }
+#rankIconBtn canvas{ width:28px; height:28px; display:block; }
+@keyframes rankBtnPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+@keyframes rankBtnEpic{ 0%,100%{transform:scale(1) rotate(0deg); filter:brightness(1)} 50%{transform:scale(1.1) rotate(2deg); filter:brightness(1.35)} }
+#rankTableModal{ max-width:520px; width:min(94vw, 520px); z-index:185; border-color:#7ce7ff; }
+#rankTableBody{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; max-height:58vh; }
+.rank-cell{
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:8px 4px; border-radius:12px;
+  background:rgba(255,255,255,0.055);
+  border:1px solid rgba(255,255,255,0.10);
 }
-.rank-table-cell canvas{
-  width:42px;
-  height:42px;
-  display:block;
-}
-.rank-table-level{
-  font-size:10px;
-  font-weight:900;
-  color:#eef6ff;
-  line-height:1;
-}
-@media (max-width: 430px){
-  .rank-table-grid{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap:6px; }
-  .rank-table-cell{ padding:6px 3px 5px; }
-  .rank-table-cell canvas{ width:36px; height:36px; }
-  .rank-table-level{ font-size:9px; }
+.rank-cell.current{ border-color:#44ffb8; box-shadow:0 0 14px rgba(68,255,184,0.34); background:rgba(68,255,184,0.10); }
+.rank-cell canvas{ width:34px; height:34px; }
+.rank-cell span{ font-size:10px; color:#d8ebff; font-weight:900; }
+.pause-setting-row{ width:100%; display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.pause-setting-row .ui-btn{ min-height:38px; font-weight:900; }
+@media (max-width:520px){
+  #rankIconBtn{ width:30px; height:30px; }
+  #rankTableBody{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; }
+  .rank-cell canvas{ width:30px; height:30px; }
+  .pause-setting-row{ grid-template-columns:1fr; }
 }
 
 </style>
@@ -2634,6 +2561,7 @@ body.title-mode #settingsBar{ display:flex !important; }
 
 
     <div id="playerHudCompact">
+        <button id="rankIconBtn" type="button" title="계급표 보기" aria-label="계급표 보기"></button>
         <span id="playerCompactText">LV. 1 PLAYER</span>
     </div>
 
@@ -2675,11 +2603,11 @@ body.title-mode #settingsBar{ display:flex !important; }
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
     <div style="font-size:28px; font-weight:900; color:#ffd36a; text-shadow:0 2px 8px rgba(0,0,0,0.45);">⏸ 일시정지</div>
-    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>다시 누르면 바로 이어집니다.</div>
-    <div id="pauseSettingsRow">
-      <button id="pauseBgmBtn" class="ui-btn" type="button">BGM</button>
-      <button id="pauseSfxBtn" class="ui-btn" type="button">SFX</button>
-      <button id="pauseLowPowerBtn" class="ui-btn" type="button">저사양</button>
+    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>여기서 핵심 설정을 바로 바꿀 수 있습니다.</div>
+    <div class="pause-setting-row">
+      <button id="pauseBgmToggleBtn" class="ui-btn" type="button">BGM</button>
+      <button id="pauseSfxToggleBtn" class="ui-btn" type="button">SFX</button>
+      <button id="pauseLowPowerToggleBtn" class="ui-btn" type="button">저사양</button>
     </div>
     <button id="resumeBtn" class="ui-btn big-btn" style="width:100%; max-width:240px; border-color:#7cff7c; color:#dfffdc;">▶ 이어하기</button>
     <button id="pauseToTitleBtn" class="ui-btn" style="width:100%; max-width:240px;">타이틀로</button>
@@ -3091,10 +3019,10 @@ body.title-mode #settingsBar{ display:flex !important; }
   <button id="closeExpTableBtn" class="close-btn">닫기</button>
 </div>
 
-
-<!-- ✅ [v.166.2] 계급표 모달 (계급 아이콘 클릭) -->
+<!-- ✅ [v.166.0] 계급표 모달: 1~250레벨 / 25종 x 10색 -->
 <div id="rankTableModal" class="modal hidden">
-  <div class="modal-header" style="color:#aaffdf;">계급표</div>
+  <div class="modal-header" style="color:#dffbff;">🧬 슬라임 계급표</div>
+  <div style="font-size:12px; color:#cfefff; line-height:1.45; text-align:center; margin-bottom:4px;">25가지 슬라임 계급 × 10단계 색상으로 총 250레벨이 구성됩니다.</div>
   <div id="rankTableBody" class="modal-body"></div>
   <button id="closeRankTableBtn" class="close-btn">닫기</button>
 </div>
@@ -3144,17 +3072,6 @@ function getTargetCanvasSize() {
   // 애플워치/초소형 웹뷰: 정사각형 전장으로 UI를 최대한 단순화
   if (minSide <= 260 || maxSide <= 360) {
     return { width: WATCH_CANVAS_W, height: WATCH_CANVAS_H, mode: 'watch' };
-  }
-
-  // ✅ [v.166] 게임 중에는 HUD를 제외한 남은 공간을 드래곤 플라이트처럼 크게 사용
-  if (document.body && !document.body.classList.contains('title-mode')) {
-    const hud = document.getElementById('hud');
-    const hudH = hud ? Math.ceil(hud.getBoundingClientRect().height || 0) : 0;
-    const availableH = Math.max(260, vh - hudH - 2);
-    const aspect = Math.max(0.45, Math.min(2.2, vw / availableH));
-    const baseH = (vw > vh) ? 720 : 1280;
-    const baseW = Math.max(360, Math.round(baseH * aspect));
-    return { width: baseW, height: baseH, mode: (vw > vh ? 'full-landscape' : 'full-portrait') };
   }
 
   // 휴대폰 가로 모드: 세로 공간이 부족하므로 16:9에 가깝게 사용
@@ -3251,6 +3168,164 @@ if (expWrapperEl) {
 
 const levelEl = document.getElementById('levelText');
 const playerCompactEl = document.getElementById('playerCompactText');
+
+// ===============================
+// ✅ [v.166.0] 직접 그리는 슬라임 계급 시스템
+// - 1~250레벨 = 25종류 × 10색상
+// - 표정 없음, 몸체/오라/문양/애니메이션으로 성장감 표현
+// ===============================
+const rankIconBtn = document.getElementById('rankIconBtn');
+const rankTableModal = document.getElementById('rankTableModal');
+const rankTableBody = document.getElementById('rankTableBody');
+const closeRankTableBtn = document.getElementById('closeRankTableBtn');
+const RANK_COLORS = [
+  {name:'빨강', main:'#ff4d57', sub:'#ff9aa0'},
+  {name:'주황', main:'#ff922e', sub:'#ffd19a'},
+  {name:'노랑', main:'#ffd83d', sub:'#fff2a0'},
+  {name:'연두', main:'#b6ff4d', sub:'#e4ff9a'},
+  {name:'초록', main:'#36e67a', sub:'#a4ffc4'},
+  {name:'하늘', main:'#4ddcff', sub:'#b7f4ff'},
+  {name:'파랑', main:'#4d88ff', sub:'#b5ccff'},
+  {name:'남색', main:'#3948d8', sub:'#a5adff'},
+  {name:'보라', main:'#a45cff', sub:'#d7b5ff'},
+  {name:'분홍', main:'#ff69c8', sub:'#ffc0e8'}
+];
+const RANK_TYPES = Array.from({length:25}, (_,i)=>({ idx:i, tier:i+1 }));
+function getRankInfoByLevel(lv){
+  const safeLv = clamp(Math.floor(Number(lv)||1), 1, 250);
+  const typeIndex = Math.floor((safeLv - 1) / 10);
+  const colorIndex = (safeLv - 1) % 10;
+  return { level:safeLv, typeIndex, colorIndex, color:RANK_COLORS[colorIndex], tier:typeIndex+1 };
+}
+function drawSlimeRankIcon(targetCanvas, lv, t=0){
+  if (!targetCanvas) return;
+  const c = targetCanvas;
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const size = 64;
+  if (c.width !== size*dpr || c.height !== size*dpr){ c.width=size*dpr; c.height=size*dpr; }
+  c.style.width = c.style.width || '32px';
+  c.style.height = c.style.height || '32px';
+  const g = c.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,size,size);
+  const info = getRankInfoByLevel(lv);
+  const {main, sub} = info.color;
+  const tier = info.tier;
+  const cx=32, cy=35;
+  const pulse = Math.sin(t/420) * Math.min(5, tier/7);
+  const aura = Math.max(0, tier-7);
+
+  if (aura>0){
+    g.save();
+    g.globalAlpha = Math.min(0.72, 0.14 + aura*0.025);
+    for(let i=0;i<Math.min(14, aura);i++){
+      const a = (Math.PI*2*i/Math.min(14,aura)) + t/900;
+      const r = 19 + tier*0.55 + Math.sin(t/300+i)*2;
+      g.fillStyle = i%2 ? main : sub;
+      g.beginPath();
+      g.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 1.5 + tier/18, 0, Math.PI*2);
+      g.fill();
+    }
+    g.restore();
+  }
+  if (tier>=20){
+    g.save();
+    g.strokeStyle = 'rgba(255,215,0,0.95)';
+    g.lineWidth = tier>=23 ? 5 : 3.2;
+    g.shadowColor = '#ffd700'; g.shadowBlur = 10;
+    g.beginPath(); g.arc(cx, cy, 27+pulse*0.16, 0, Math.PI*2); g.stroke();
+    g.restore();
+  }
+  // 뒤 장식: 왕관/날개/크리스털 느낌을 도형으로만 그림
+  if (tier>=6){
+    g.save();
+    g.fillStyle = sub; g.globalAlpha = 0.82;
+    for(let k=0;k<Math.min(5, Math.floor(tier/5)+1);k++){
+      const x = cx + (k-2)*7;
+      const h = 7 + (k%2)*5 + tier*0.28;
+      g.beginPath();
+      g.moveTo(x, 18-h*0.25);
+      g.lineTo(x-4, 25+h*0.25);
+      g.lineTo(x+4, 25+h*0.25);
+      g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+  // 표정 없는 슬라임 몸체
+  g.save();
+  g.shadowColor = main; g.shadowBlur = tier>=12 ? 12 : 5;
+  const grad = g.createRadialGradient(23,24,5,32,36,28);
+  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.16, sub); grad.addColorStop(1, main);
+  g.fillStyle = grad;
+  g.beginPath();
+  const wobble = Math.sin(t/350)*Math.min(2.5, tier/10);
+  g.moveTo(15, 43);
+  g.bezierCurveTo(12, 31, 19, 27+wobble, 25, 22-tier*0.08);
+  g.bezierCurveTo(28, 13-tier*0.18, 36, 13+tier*0.05, 39, 22-tier*0.05);
+  g.bezierCurveTo(48, 25, 54, 33, 50, 44);
+  g.bezierCurveTo(44, 55, 22, 55, 15, 43);
+  g.closePath();
+  g.fill();
+  g.lineWidth = tier>=18 ? 3 : 2;
+  g.strokeStyle = tier>=20 ? '#ffd700' : 'rgba(255,255,255,0.75)';
+  g.stroke();
+  g.restore();
+  // 내부 문양: 표정 대신 계급별 문양
+  g.save();
+  g.globalAlpha = 0.85;
+  g.strokeStyle = 'rgba(255,255,255,0.86)';
+  g.lineWidth = 1.3 + Math.min(1.6, tier/18);
+  const pattern = info.typeIndex % 5;
+  if (pattern===0){ g.beginPath(); g.arc(cx, cy+2, 7+tier*0.08, 0, Math.PI*2); g.stroke(); }
+  if (pattern===1){ g.beginPath(); g.moveTo(cx,cy-8); g.lineTo(cx+8,cy+7); g.lineTo(cx-8,cy+7); g.closePath(); g.stroke(); }
+  if (pattern===2){ g.beginPath(); g.moveTo(cx-8,cy); g.lineTo(cx,cy-8); g.lineTo(cx+8,cy); g.lineTo(cx,cy+8); g.closePath(); g.stroke(); }
+  if (pattern===3){ for(let i=0;i<3;i++){ g.beginPath(); g.arc(cx, cy+1, 4+i*4, 0.2, Math.PI*1.25); g.stroke(); } }
+  if (pattern===4){ g.beginPath(); g.moveTo(cx-9,cy+5); g.bezierCurveTo(cx-2,cy-8,cx+2,cy+12,cx+9,cy-4); g.stroke(); }
+  if (tier>=10){
+    g.fillStyle='rgba(255,255,255,0.88)';
+    for(let i=0;i<Math.min(6,Math.floor(tier/4));i++){
+      const a=t/600+i*1.7; g.beginPath(); g.arc(cx+Math.cos(a)*13, cy+Math.sin(a)*10, 1.2, 0, Math.PI*2); g.fill();
+    }
+  }
+  g.restore();
+}
+let __rankAnimReq = 0;
+function updateRankIcon(){
+  if (!rankIconBtn) return;
+  let iconCanvas = rankIconBtn.querySelector('canvas');
+  if (!iconCanvas){ iconCanvas = document.createElement('canvas'); rankIconBtn.appendChild(iconCanvas); }
+  const info = getRankInfoByLevel(level || 1);
+  rankIconBtn.classList.toggle('rank-glow-2', info.tier >= 8 && info.tier < 15);
+  rankIconBtn.classList.toggle('rank-glow-3', info.tier >= 15 && info.tier < 20);
+  rankIconBtn.classList.toggle('rank-glow-4', info.tier >= 20);
+  drawSlimeRankIcon(iconCanvas, info.level, performance.now());
+}
+function animateRankIcon(){ updateRankIcon(); __rankAnimReq = requestAnimationFrame(animateRankIcon); }
+function openRankTableModal(){
+  if (!rankTableModal || !rankTableBody) return;
+  const curLv = clamp(level || 1, 1, 250);
+  const now = performance.now();
+  rankTableBody.innerHTML = '';
+  for(let lv=1; lv<=250; lv++){
+    const cell = document.createElement('div');
+    cell.className = 'rank-cell' + (lv === curLv ? ' current' : '');
+    const cv = document.createElement('canvas');
+    cv.style.width='34px'; cv.style.height='34px';
+    drawSlimeRankIcon(cv, lv, now + lv*7);
+    const label = document.createElement('span');
+    const info = getRankInfoByLevel(lv);
+    label.textContent = `LV.${lv} · ${info.color.name}`;
+    cell.appendChild(cv); cell.appendChild(label); rankTableBody.appendChild(cell);
+  }
+  rankTableModal.classList.remove('hidden');
+  const current = rankTableBody.querySelector('.rank-cell.current');
+  if (current) setTimeout(()=>current.scrollIntoView({block:'center'}), 30);
+}
+function closeRankTableModal(){ if (rankTableModal) rankTableModal.classList.add('hidden'); }
+rankIconBtn && rankIconBtn.addEventListener('click', openRankTableModal);
+closeRankTableBtn && closeRankTableBtn.addEventListener('click', closeRankTableModal);
+requestAnimationFrame(animateRankIcon);
+
 const stageEl = document.getElementById('stageText');
 const hotTimeEl = document.getElementById('hotTimeText');
 const goldEl = document.getElementById('goldText');
@@ -3291,43 +3366,19 @@ function fitCanvasToViewport() {
   const hud = document.getElementById('hud');
   const container = document.getElementById('gameContainer');
   const target = applyCanvasPreset();
+
   const vp = getViewportSize();
   const watchMode = target.mode === 'watch';
-  const inTitle = document.body.classList.contains('title-mode');
-
-  const vw = vp.width;
-  const vh = vp.height;
-  let hudH = hud ? hud.getBoundingClientRect().height : 0;
-
-  if (!inTitle && !watchMode) {
-    // ✅ 게임 중: HUD 아래 남은 영역을 거의 전부 캔버스로 사용
-    const availableH = Math.max(220, vh - hudH - 1);
-    const w = Math.max(240, vw);
-    const h = availableH;
-    canvas.style.width = `${Math.floor(w)}px`;
-    canvas.style.height = `${Math.floor(h)}px`;
-    const uiScale = Math.max(0.62, Math.min(1.08, Math.min(w / target.width, h / target.height)));
-    if (hud) {
-      hud.style.width = `${Math.floor(w)}px`;
-      hud.style.maxWidth = `${Math.floor(w)}px`;
-      hud.style.maxHeight = '';
-      hud.style.overflowY = '';
-    }
-    if (container) {
-      container.style.width = `${Math.floor(w)}px`;
-      container.style.maxWidth = `${Math.floor(w)}px`;
-      container.style.setProperty('--canvas-scale', String(uiScale));
-      container.dataset.canvasMode = target.mode;
-    }
-    document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
-    requestAnimationFrame(() => syncPauseButtonPosition());
-    return;
-  }
-
   const safeTop = watchMode ? 2 : 8;
   const safeBottom = watchMode ? 2 : 10;
   const sidePadding = watchMode ? 4 : 14;
 
+  const vw = vp.width;
+  const vh = vp.height;
+
+  let hudH = hud ? hud.getBoundingClientRect().height : 0;
+  // ✅ [v.157.8] iPhone 8/SE처럼 세로 공간이 짧은 기기에서는
+  // HUD가 커져서 캔버스를 거의 밀어내는 악순환을 막는다.
   const smallPortrait = vw <= 430 && vh <= 740 && vh > vw;
   if (smallPortrait && hud) {
     const hudLimit = Math.max(150, Math.floor(vh * 0.38));
@@ -3339,26 +3390,16 @@ function fitCanvasToViewport() {
     hud.style.overflowY = '';
   }
   const aspect = target.width / target.height;
+  document.documentElement.style.setProperty('--hud-height', `${Math.ceil(hudH)}px`);
 
-  let w = Math.min(target.width, vw - sidePadding);
-  let h = w / aspect;
+  let w = Math.max(120, vw);
+  let h = Math.max(120, vh - hudH);
 
   const minCanvasH = watchMode ? 96 : 180;
   const availableH = Math.max(minCanvasH, vh - hudH - safeTop - safeBottom - 6);
-  if (h > availableH) {
-    h = availableH;
-    w = h * aspect;
-  }
-
-  const minWidth = Math.min(vw - 4, watchMode ? 120 : 220);
-  if (w < minWidth) {
-    w = minWidth;
-    h = w / aspect;
-  }
-  if (h > availableH) {
-    h = availableH;
-    w = h * aspect;
-  }
+  // v.166.0: HUD를 제외한 남은 영역을 캔버스가 꽉 채우도록 한다.
+  w = Math.max(120, vw);
+  h = Math.max(minCanvasH, availableH);
 
   canvas.style.width = `${Math.floor(w)}px`;
   canvas.style.height = `${Math.floor(h)}px`;
@@ -3536,12 +3577,12 @@ const titleExitBtn = document.getElementById('titleExitBtn');
 const restartBtn = document.getElementById('restartBtn');
 const toTitleBtn = document.getElementById('toTitleBtn');
 const pauseBtn = document.getElementById('pauseBtn');
+const pauseBgmToggleBtn = document.getElementById('pauseBgmToggleBtn');
+const pauseSfxToggleBtn = document.getElementById('pauseSfxToggleBtn');
+const pauseLowPowerToggleBtn = document.getElementById('pauseLowPowerToggleBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseToTitleBtn = document.getElementById('pauseToTitleBtn');
-const pauseBgmBtn = document.getElementById('pauseBgmBtn');
-const pauseSfxBtn = document.getElementById('pauseSfxBtn');
-const pauseLowPowerBtn = document.getElementById('pauseLowPowerBtn');
 const confirmOverlay = document.getElementById('confirmOverlay');
 const confirmTitleEl = document.getElementById('confirmTitle');
 const confirmMessageEl = document.getElementById('confirmMessage');
@@ -7348,7 +7389,6 @@ function updateSettingsUI() {
     lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
     lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
-  syncPauseSettingsButtons166();
   if (homingBtn) {
     if (level < 61) {
       homingBtn.textContent = "유도탄 LV.61";
@@ -7420,24 +7460,6 @@ function toggleLowPowerFromCanvas() {
   updateSettingsUI();
   requestAnimationFrame(() => fitCanvasToViewport());
 }
-
-function syncPauseSettingsButtons166() {
-  if (pauseBgmBtn) {
-    pauseBgmBtn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF';
-    pauseBgmBtn.style.color = bgmEnabled ? '#ffffff' : '#888888';
-  }
-  if (pauseSfxBtn) {
-    pauseSfxBtn.textContent = sfxEnabled ? 'SFX ON' : 'SFX OFF';
-    pauseSfxBtn.style.color = sfxEnabled ? '#ffffff' : '#888888';
-  }
-  if (pauseLowPowerBtn) {
-    pauseLowPowerBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF';
-    pauseLowPowerBtn.style.color = saveData.lowPower ? '#ffd700' : '#ffffff';
-  }
-}
-if (pauseBgmBtn) pauseBgmBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleBgmFromCanvas(); });
-if (pauseSfxBtn) pauseSfxBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleSfxFromCanvas(); });
-if (pauseLowPowerBtn) pauseLowPowerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleLowPowerFromCanvas(); });
 
 
 
@@ -10432,8 +10454,8 @@ questList.appendChild(div);
 function syncPauseButtonPosition() {
   if (!pauseBtn || !canvas) return;
   const canvasTop = Number(canvas.offsetTop || 0);
-  pauseBtn.style.top = `${canvasTop + 10}px`;
-  pauseBtn.style.right = '10px';
+  pauseBtn.style.top = `${canvasTop + 8}px`;
+  pauseBtn.style.right = '8px';
 }
 
 function setPauseUI() {
@@ -10447,6 +10469,17 @@ function setPauseUI() {
     syncPauseButtonPosition();
   }
   if (pauseOverlay) pauseOverlay.classList.toggle('hidden', !isPaused);
+  syncPauseSettingButtons();
+}
+
+
+function syncPauseSettingButtons(){
+  if (pauseBgmToggleBtn) pauseBgmToggleBtn.textContent = bgmEnabled ? 'BGM 켜짐' : 'BGM 꺼짐';
+  if (pauseSfxToggleBtn) pauseSfxToggleBtn.textContent = sfxEnabled ? 'SFX 켜짐' : 'SFX 꺼짐';
+  if (pauseLowPowerToggleBtn) pauseLowPowerToggleBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF';
+  if (pauseBgmToggleBtn) pauseBgmToggleBtn.style.color = bgmEnabled ? '#ffffff' : '#9aa3b8';
+  if (pauseSfxToggleBtn) pauseSfxToggleBtn.style.color = sfxEnabled ? '#ffffff' : '#9aa3b8';
+  if (pauseLowPowerToggleBtn) pauseLowPowerToggleBtn.style.color = saveData.lowPower ? '#7cffd2' : '#ffffff';
 }
 
 function pauseGame() {
@@ -10562,6 +10595,9 @@ if (introTutorialActive && introStep === 1) {
 });
 if (titleExitBtn) titleExitBtn.addEventListener('click', exitGameFromTitle);
 pauseBtn && pauseBtn.addEventListener('click', togglePause);
+pauseBgmToggleBtn && pauseBgmToggleBtn.addEventListener('click', () => { bgmBtn && bgmBtn.click(); syncPauseSettingButtons(); });
+pauseSfxToggleBtn && pauseSfxToggleBtn.addEventListener('click', () => { sfxBtn && sfxBtn.click(); syncPauseSettingButtons(); });
+pauseLowPowerToggleBtn && pauseLowPowerToggleBtn.addEventListener('click', () => { lowPowerBtn && lowPowerBtn.click(); syncPauseSettingButtons(); fitCanvasToViewport(); });
 window.addEventListener('resize', syncPauseButtonPosition);
 window.addEventListener('orientationchange', syncPauseButtonPosition);
 document.addEventListener('visibilitychange', () => {
@@ -18018,208 +18054,6 @@ if (boss && !bossInvincible) {
 }
 }
 
-
-// ===============================
-// ✅ [v.166.1] 1~250레벨 250개 계급 / 직접 그린 슬라임 문양 25종 × 10색
-// ===============================
-const RANK_COLOR_STEPS_166 = [
-  { name:'빨강', color:'#ff4d5f', sub:'#ffb3bd', dark:'#931d2d', glow:'rgba(255,77,95,0.55)' },
-  { name:'주황', color:'#ff9b36', sub:'#ffd0a1', dark:'#9b4b08', glow:'rgba(255,155,54,0.55)' },
-  { name:'노랑', color:'#ffe45c', sub:'#fff5ae', dark:'#9d7d00', glow:'rgba(255,228,92,0.55)' },
-  { name:'연두', color:'#b7ff5c', sub:'#e1ffae', dark:'#4d8f05', glow:'rgba(183,255,92,0.55)' },
-  { name:'초록', color:'#44ff88', sub:'#b6ffd0', dark:'#088b3c', glow:'rgba(68,255,136,0.55)' },
-  { name:'하늘', color:'#58dcff', sub:'#b9f2ff', dark:'#087c9c', glow:'rgba(88,220,255,0.55)' },
-  { name:'파랑', color:'#4f86ff', sub:'#b9ceff', dark:'#123d9e', glow:'rgba(79,134,255,0.55)' },
-  { name:'남색', color:'#3445d9', sub:'#aeb6ff', dark:'#151d77', glow:'rgba(52,69,217,0.55)' },
-  { name:'보라', color:'#a65cff', sub:'#ddbdff', dark:'#59219f', glow:'rgba(166,92,255,0.55)' },
-  { name:'분홍', color:'#ff78c8', sub:'#ffc5e8', dark:'#9c2a6f', glow:'rgba(255,120,200,0.55)' }
-];
-const RANK_TYPE_STEPS_166 = [
-  { name:'새싹 슬라임', shape:'sprout' }, { name:'물방울 슬라임', shape:'drop' }, { name:'말랑 슬라임', shape:'basic' },
-  { name:'점프 슬라임', shape:'jump' }, { name:'방울 슬라임', shape:'foam' }, { name:'젤리 슬라임', shape:'jelly' },
-  { name:'버블 슬라임', shape:'bubble' }, { name:'스파크 슬라임', shape:'spark' }, { name:'스톤 슬라임', shape:'stone' },
-  { name:'포이즌 슬라임', shape:'poison' }, { name:'아이스 슬라임', shape:'ice' }, { name:'파이어 슬라임', shape:'fire' },
-  { name:'번개 슬라임', shape:'thunder' }, { name:'메탈 슬라임', shape:'metal' }, { name:'크리스탈 슬라임', shape:'crystal' },
-  { name:'킹 슬라임', shape:'king' }, { name:'가디언 슬라임', shape:'guardian' }, { name:'마법 슬라임', shape:'magic' },
-  { name:'드래곤 슬라임', shape:'dragon' }, { name:'별빛 슬라임', shape:'star' }, { name:'은하 슬라임', shape:'galaxy' },
-  { name:'초월 슬라임', shape:'transcend' }, { name:'신화 슬라임', shape:'myth' }, { name:'우주 슬라임', shape:'cosmic' },
-  { name:'궁극 슬라임', shape:'ultimate' }
-];
-function getSlimeRank166(lv) {
-  const n = Math.max(1, Math.min(250, Math.floor(Number(lv) || 1)));
-  const typeIndex = Math.floor((n - 1) / 10);
-  const colorIndex = (n - 1) % 10;
-  const type = RANK_TYPE_STEPS_166[typeIndex] || RANK_TYPE_STEPS_166[0];
-  const color = RANK_COLOR_STEPS_166[colorIndex] || RANK_COLOR_STEPS_166[0];
-  return { level:n, typeIndex, colorIndex, name:`${color.name} ${type.name}`, shape:type.shape, color:color.color, sub:color.sub, dark:color.dark, glow:color.glow, tier:typeIndex + 1 };
-}
-function ensureRankBadgeIcon166() {
-  if (!playerCompactEl) return null;
-  let el = document.getElementById('rankBadgeIcon');
-  if (!el) {
-    el = document.createElement('span');
-    el.id = 'rankBadgeIcon';
-    const cv = document.createElement('canvas');
-    cv.width = 64; cv.height = 64;
-    el.appendChild(cv);
-    playerCompactEl.parentNode.insertBefore(el, playerCompactEl);
-  } else if (!el.querySelector('canvas')) {
-    el.textContent = '';
-    const cv = document.createElement('canvas');
-    cv.width = 64; cv.height = 64;
-    el.appendChild(cv);
-  }
-  return el;
-}
-function drawRoundSlime166(g, c, opts={}){
-  const baseY = opts.baseY ?? 46, topY = opts.topY ?? 16;
-  const grad = g.createRadialGradient(23, 20, 4, 33, 34, 31);
-  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.12, c.sub); grad.addColorStop(0.55, c.color); grad.addColorStop(1, c.dark);
-  g.fillStyle = grad; g.strokeStyle = opts.stroke || 'rgba(255,255,255,0.82)'; g.lineWidth = opts.lineWidth || 3;
-  g.beginPath();
-  g.moveTo(11, baseY);
-  g.bezierCurveTo(8, 32, 16, topY, 32, topY);
-  g.bezierCurveTo(48, topY, 56, 32, 53, baseY);
-  g.bezierCurveTo(45, 54, 20, 54, 11, baseY);
-  g.closePath(); g.fill(); g.stroke();
-  g.fillStyle='rgba(255,255,255,0.52)'; g.beginPath(); g.ellipse(24,25,7,4.5,-0.5,0,Math.PI*2); g.fill();
-  // ✅ [v.166.3] 계급 슬라임은 표정 없이 문양과 오라만 표시
-  // 얼굴/입 표현은 제거하고, 레벨이 높아질수록 외곽 장식과 빛 효과로 강함을 표현합니다.
-}
-function poly166(g, pts, fill, stroke='rgba(255,255,255,0.86)', lw=2){ g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.fillStyle=fill; g.fill(); g.strokeStyle=stroke; g.lineWidth=lw; g.stroke(); }
-function drawRankSlimeIcon166(canvas, rank){
-  const g = canvas.getContext('2d'), w=64, h=64, c=rank;
-  g.clearRect(0,0,w,h); g.save();
-  const tier = Math.max(1, Math.min(25, rank.tier || 1));
-  // 낮은 레벨은 작고 말랑한 문양, 높은 레벨은 링/광채/장식이 늘어나는 직접 그린 계급 아이콘
-  if (tier >= 6) {
-    g.save();
-    g.globalAlpha = Math.min(0.18 + tier * 0.018, 0.62);
-    g.strokeStyle = c.sub;
-    g.lineWidth = tier >= 20 ? 3 : (tier >= 12 ? 2 : 1.2);
-    g.beginPath();
-    g.arc(32,32, Math.min(18 + tier * 0.22, 25), 0, Math.PI*2);
-    g.stroke();
-    g.restore();
-  }
-  if (tier >= 16) {
-    g.save();
-    g.translate(32,32);
-    g.globalAlpha = tier >= 22 ? 0.72 : 0.46;
-    g.strokeStyle = tier >= 23 ? '#fff4a8' : c.sub;
-    g.lineWidth = tier >= 22 ? 2.4 : 1.6;
-    for (let i=0;i<8;i++){
-      g.rotate(Math.PI/4);
-      g.beginPath();
-      g.moveTo(0,-23);
-      g.lineTo(0,-29);
-      g.stroke();
-    }
-    g.restore();
-  }
-  g.shadowColor = c.glow; g.shadowBlur = rank.level >= 220 ? 18 : (rank.level >= 200 ? 13 : (rank.level >= 100 ? 8 : 5));
-  const s = c.shape;
-  if (s==='drop') { drawRoundSlime166(g,c,{topY:7,baseY:48}); poly166(g,[[32,5],[25,18],[39,18]],c.sub,'rgba(255,255,255,.65)',1.5); }
-  else if (s==='sprout') { drawRoundSlime166(g,c); g.fillStyle='#72ff8f'; g.strokeStyle='#185c26'; g.lineWidth=2; g.beginPath(); g.ellipse(26,12,5,9,-0.65,0,Math.PI*2); g.ellipse(38,12,5,9,0.65,0,Math.PI*2); g.fill(); g.stroke(); }
-  else if (s==='jump') { drawRoundSlime166(g,c,{baseY:42}); g.strokeStyle=c.sub; g.lineWidth=3; g.beginPath(); g.arc(32,53,13,0.05*Math.PI,0.95*Math.PI); g.stroke(); }
-  else if (s==='foam') { drawRoundSlime166(g,c); for(const [x,y,r] of [[17,18,4],[45,17,3],[50,29,3],[13,31,2.5]]){g.beginPath();g.fillStyle='rgba(255,255,255,.55)';g.arc(x,y,r,0,Math.PI*2);g.fill();} }
-  else if (s==='jelly') { drawRoundSlime166(g,c,{baseY:47}); g.fillStyle='rgba(255,255,255,.35)'; for(let x=18;x<=46;x+=7){g.beginPath();g.arc(x,48,3.2,0,Math.PI*2);g.fill();} }
-  else if (s==='bubble') { drawRoundSlime166(g,c); g.strokeStyle='rgba(220,255,255,.85)'; g.lineWidth=2; for(const [x,y,r] of [[20,22,6],[43,24,5],[33,16,4]]){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.stroke();} }
-  else if (s==='spark') { drawRoundSlime166(g,c); g.fillStyle='#fff7a8'; poly166(g,[[32,8],[36,25],[52,25],[39,34],[43,52],[32,40],[21,52],[25,34],[12,25],[28,25]],'#fff28a','rgba(255,255,255,.9)',1.2); }
-  else if (s==='stone') { drawRoundSlime166(g,c,{stroke:'rgba(210,210,210,.85)'}); g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=2; [[18,29,14,8],[34,20,12,9],[41,38,10,8]].forEach(a=>{g.beginPath();g.ellipse(...a,0,0,Math.PI*2);g.stroke();}); }
-  else if (s==='poison') { drawRoundSlime166(g,c); g.fillStyle='rgba(90,255,70,.8)'; for(const [x,y] of [[20,24],[44,26],[33,19]]){g.beginPath();g.arc(x,y,3,0,Math.PI*2);g.fill();} g.strokeStyle='#1d4d13'; g.beginPath();g.moveTo(24,41);g.lineTo(40,41);g.moveTo(26,38);g.lineTo(38,44);g.moveTo(38,38);g.lineTo(26,44);g.stroke(); }
-  else if (s==='ice') { drawRoundSlime166(g,c); poly166(g,[[32,8],[38,20],[32,32],[26,20]],'rgba(225,255,255,.75)','rgba(255,255,255,.95)',1.5); }
-  else if (s==='fire') { drawRoundSlime166(g,c); poly166(g,[[32,6],[42,23],[36,22],[43,40],[29,30],[24,45],[21,25],[26,27]],'#ffec6e','rgba(255,255,255,.7)',1.4); }
-  else if (s==='thunder') { drawRoundSlime166(g,c); poly166(g,[[35,8],[23,33],[33,31],[28,54],[44,25],[34,27]],'#fff36d','rgba(255,255,255,.85)',1.5); }
-  else if (s==='metal') { drawRoundSlime166(g,c,{stroke:'#e5f0ff'}); g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(19,20,26,6); g.fillRect(16,30,32,5); }
-  else if (s==='crystal') { drawRoundSlime166(g,c); poly166(g,[[32,8],[47,24],[42,49],[22,49],[17,24]],'rgba(230,255,255,.62)','rgba(255,255,255,.95)',2); }
-  else if (s==='king') { drawRoundSlime166(g,c); poly166(g,[[18,18],[24,8],[32,18],[40,8],[46,18],[44,25],[20,25]],'#ffd84d','#fff3a5',1.5); }
-  else if (s==='guardian') { drawRoundSlime166(g,c); poly166(g,[[32,18],[45,24],[42,43],[32,51],[22,43],[19,24]],'rgba(255,255,255,.38)','rgba(255,255,255,.9)',2); }
-  else if (s==='magic') { drawRoundSlime166(g,c); g.strokeStyle='#fff0ff'; g.lineWidth=2; g.beginPath(); g.arc(32,31,16,0,Math.PI*2); g.stroke(); poly166(g,[[32,12],[36,28],[52,32],[36,36],[32,52],[28,36],[12,32],[28,28]],'rgba(255,255,255,.25)','rgba(255,255,255,.7)',1); }
-  else if (s==='dragon') { drawRoundSlime166(g,c); poly166(g,[[16,25],[5,16],[10,33]],c.dark,'rgba(255,255,255,.7)',1.5); poly166(g,[[48,25],[59,16],[54,33]],c.dark,'rgba(255,255,255,.7)',1.5); g.fillStyle=c.sub; g.fillRect(29,9,3,10); g.fillRect(34,9,3,10); }
-  else if (s==='star') { drawRoundSlime166(g,c); poly166(g,[[32,8],[37,24],[54,24],[40,34],[45,51],[32,41],[19,51],[24,34],[10,24],[27,24]],'#fff59a','rgba(255,255,255,.9)',1.5); }
-  else if (s==='galaxy') { drawRoundSlime166(g,c,{noFace:true}); g.strokeStyle='rgba(255,255,255,.8)'; g.lineWidth=2; g.beginPath(); g.ellipse(32,34,23,9,-0.25,0,Math.PI*2); g.stroke(); for(const [x,y] of [[23,28],[38,23],[45,39],[28,44]]){g.fillStyle='#fff';g.fillRect(x,y,2,2);} }
-  else if (s==='transcend') { drawRoundSlime166(g,c); g.strokeStyle='rgba(255,255,255,.9)'; g.lineWidth=2; for(let r of [14,22]){g.beginPath();g.arc(32,32,r,0,Math.PI*2);g.stroke();} }
-  else if (s==='myth') { drawRoundSlime166(g,c); poly166(g,[[32,5],[50,18],[44,45],[32,57],[20,45],[14,18]],'rgba(255,230,120,.34)','rgba(255,236,150,.9)',2.2); }
-  else if (s==='cosmic') { drawRoundSlime166(g,c,{noFace:true}); g.strokeStyle='rgba(255,255,255,.86)'; g.lineWidth=2; g.beginPath(); g.ellipse(32,32,24,8,0.35,0,Math.PI*2); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.arc(32,32,5,0,Math.PI*2); g.fill(); }
-  else if (s==='ultimate') { drawRoundSlime166(g,c); const grad=g.createLinearGradient(12,12,52,52); ['#ff4d5f','#ffe45c','#44ff88','#58dcff','#a65cff','#ff78c8'].forEach((cc,i)=>grad.addColorStop(i/5,cc)); g.strokeStyle=grad; g.lineWidth=4; g.beginPath(); g.arc(32,32,24,0,Math.PI*2); g.stroke(); }
-  else { drawRoundSlime166(g,c); }
-  g.restore();
-}
-function updateRankBadgeIcon166(rank) {
-  const el = ensureRankBadgeIcon166();
-  if (!el || !rank) return;
-  const cv = el.querySelector('canvas');
-  if (cv) drawRankSlimeIcon166(cv, rank);
-  el.title = `LV.${rank.level} 계급표 열기`;
-  el.style.borderColor = rank.level >= 200 ? '#ffd700' : rank.color;
-  el.style.boxShadow = `0 0 ${rank.level >= 200 ? 20 : 12}px ${rank.glow}, inset 0 1px 0 rgba(255,255,255,0.45)`;
-  el.style.background = `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.28), rgba(0,0,0,0.36) 100%)`;
-  el.classList.toggle('rank-100', rank.level >= 100 && rank.level < 150);
-  el.classList.toggle('rank-150', rank.level >= 150 && rank.level < 200);
-  el.classList.toggle('rank-200', rank.level >= 200 && rank.level < 240);
-  el.classList.toggle('rank-240', rank.level >= 240);
-}
-
-function buildRankTable166(){
-  const body = document.getElementById('rankTableBody');
-  if (!body) return;
-  body.innerHTML = '';
-
-  const guide = document.createElement('div');
-  guide.className = 'rank-table-guide';
-  guide.innerHTML = '1~250레벨 계급 아이콘입니다.<br>25단계 슬라임 문양과 10가지 색상 단계가 순서대로 표시됩니다.';
-  body.appendChild(guide);
-
-  const grid = document.createElement('div');
-  grid.className = 'rank-table-grid';
-  const curLv = Math.max(1, Math.min(250, Math.floor(Number(level) || 1)));
-  for (let lv = 1; lv <= 250; lv++) {
-    const rank = getSlimeRank166(lv);
-    const cell = document.createElement('div');
-    cell.className = 'rank-table-cell' + (lv === curLv ? ' current' : '');
-    cell.title = `LV.${lv}`;
-
-    const cv = document.createElement('canvas');
-    cv.width = 64;
-    cv.height = 64;
-    drawRankSlimeIcon166(cv, rank);
-
-    const lvText = document.createElement('div');
-    lvText.className = 'rank-table-level';
-    lvText.textContent = `LV.${lv}`;
-
-    cell.appendChild(cv);
-    cell.appendChild(lvText);
-    grid.appendChild(cell);
-  }
-  body.appendChild(grid);
-}
-function openRankTable166(){
-  buildRankTable166();
-  const modal = document.getElementById('rankTableModal');
-  if (modal) modal.classList.remove('hidden');
-}
-function closeRankTable166(){
-  const modal = document.getElementById('rankTableModal');
-  if (modal) modal.classList.add('hidden');
-}
-function bindRankTableControls166(){
-  const badge = ensureRankBadgeIcon166();
-  if (badge && !badge.dataset.rankTableBound) {
-    badge.dataset.rankTableBound = '1';
-    badge.setAttribute('role','button');
-    badge.setAttribute('aria-label','계급표 열기');
-    badge.addEventListener('click', openRankTable166);
-    badge.addEventListener('touchend', (e) => { e.preventDefault(); openRankTable166(); }, { passive:false });
-  }
-  const closeBtn = document.getElementById('closeRankTableBtn');
-  if (closeBtn && !closeBtn.dataset.rankTableBound) {
-    closeBtn.dataset.rankTableBound = '1';
-    closeBtn.addEventListener('click', closeRankTable166);
-  }
-}
-
 function updateHUD() {
   try { updateConsumableQuickBar(); } catch(e){}
 scoreEl.textContent = '점수: ' + formatNumber(score);
@@ -18278,11 +18112,9 @@ __lastExpBarPercent = nextPercent;
 const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
-const rankInfo166 = getSlimeRank166(level);
-updateRankBadgeIcon166(rankInfo166);
-bindRankTableControls166();
-const compactPlayerText = `LV.${level} · ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
+const compactPlayerText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
 if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
+try { updateRankIcon(); } catch(e) {}
 levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
