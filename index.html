@@ -3187,180 +3187,281 @@ const pauseLowPowerBtn = document.getElementById('pauseLowPowerBtn');
 
 const RANK_COLORS = ['#ff4b4b','#ff8a22','#ffd83d','#a8ff3d','#35df65','#41dfff','#4078ff','#263cbe','#9c45ff','#ff62c7'];
 const RANK_ACCENTS = ['#fff1f1','#fff0dc','#fff8c9','#efffce','#d6ffe0','#d9fbff','#dbe6ff','#d8ddff','#efdfff','#ffe0f4'];
+
+// ✅ v.165.6 진화형 계급: 1~250레벨 / 25구간 / 2각형→25각형 / 100Lv 발광 / 200Lv 황금 테두리
 function getRankInfo(lv){
   const safeLv = Math.max(1, Math.min(250, Number(lv)||1));
-  const type = Math.floor((safeLv-1)/10);     // 0~24
-  const colorStep = (safeLv-1) % 10;          // 0~9
-  return { lv:safeLv, type, colorStep, main:RANK_COLORS[colorStep], accent:RANK_ACCENTS[colorStep] };
+  const type = Math.floor((safeLv-1)/10);     // 0~24, 10레벨마다 형태 진화
+  const colorStep = (safeLv-1) % 10;          // 0~9, 빨강~분홍
+  const sides = Math.min(25, type + 2);       // 1~10=2각형, 101~110=12각형, 241~250=25각형
+  const luminous = safeLv >= 100;
+  const golden = safeLv >= 200;
+  const finalTier = safeLv >= 241;
+  return {
+    lv:safeLv,
+    type,
+    tier:type+1,
+    colorStep,
+    sides,
+    main:RANK_COLORS[colorStep],
+    accent:RANK_ACCENTS[colorStep],
+    luminous,
+    golden,
+    finalTier
+  };
 }
+
 function drawRankIconToCanvas(c, lv, preview=false){
   if(!c) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const size = preview ? 96 : 82;
-  c.width = size*dpr; c.height = size*dpr; c.style.width = preview?'46px':'32px'; c.style.height = preview?'46px':'32px';
-  const ctx2=c.getContext('2d'); ctx2.setTransform(dpr,0,0,dpr,0,0); ctx2.clearRect(0,0,size,size);
-  const x=size/2, y=size/2;
-  const r=getRankInfo(lv), tier=r.type+1;
-  const now = Date.now()/1000;
-  const animPower = preview ? 0 : Math.min(1, Math.max(0.16, tier/25));
-  const pulse = preview ? 0.45 : (0.5 + 0.5*Math.sin(now*(2.1 + tier*0.035)));
-  const spin = preview ? 0 : now*(0.42 + tier*0.018);
-  const detail = Math.min(1, tier/25);
-  const sides = 3 + (tier % 6);
-  const outer = 15 + Math.min(13, tier*0.58) + (!preview ? pulse*1.3*animPower : 0);
-  const inner = 7 + Math.min(9, tier*0.30);
+  const size = preview ? 104 : 88;
+  c.width = size*dpr;
+  c.height = size*dpr;
+  c.style.width = preview ? '48px' : '34px';
+  c.style.height = preview ? '48px' : '34px';
 
-  function pathPoly(n, rad, innerRad, rot=0){
+  const ctx2 = c.getContext('2d');
+  ctx2.setTransform(dpr,0,0,dpr,0,0);
+  ctx2.clearRect(0,0,size,size);
+
+  const x=size/2, y=size/2;
+  const r=getRankInfo(lv);
+  const tier=r.tier;
+  const now=Date.now()/1000;
+  const animPower = preview ? 0.25 : Math.min(1, Math.max(0.18, tier/25));
+  const pulse = preview ? 0.55 : (0.5 + 0.5*Math.sin(now*(2.2 + tier*0.045)));
+  const slowPulse = preview ? 0.5 : (0.5 + 0.5*Math.sin(now*(1.05 + tier*0.018)));
+  const spin = preview ? 0 : now*(0.38 + tier*0.018);
+  const reverseSpin = preview ? 0 : -now*(0.28 + tier*0.014);
+  const outer = 13 + Math.min(19, tier*0.73) + (!preview ? pulse*1.5*animPower : 0);
+  const inner = Math.max(4, outer * (0.34 + Math.min(0.18, tier*0.006)));
+
+  function polygonPath(n, rad, rot=0, jag=0){
     ctx2.beginPath();
-    for(let i=0;i<n*2;i++){
-      const a=rot-Math.PI/2+i*Math.PI/n;
-      const rr=i%2?innerRad:rad;
-      ctx2.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+    if(n <= 2){
+      // 2각형은 막대기/렌즈형 다이아몬드 느낌으로 시작
+      const w = rad * 1.16;
+      const h = Math.max(3.8, rad * (0.19 + tier*0.003));
+      ctx2.moveTo(Math.cos(rot)*w - Math.sin(rot)*0, Math.sin(rot)*w + Math.cos(rot)*0);
+      ctx2.lineTo(Math.cos(rot+Math.PI/2)*h, Math.sin(rot+Math.PI/2)*h);
+      ctx2.lineTo(-Math.cos(rot)*w, -Math.sin(rot)*w);
+      ctx2.lineTo(-Math.cos(rot+Math.PI/2)*h, -Math.sin(rot+Math.PI/2)*h);
+      ctx2.closePath();
+      return;
+    }
+    for(let i=0;i<n;i++){
+      const wobble = jag ? (1 + Math.sin(i*1.71 + tier)*jag) : 1;
+      const a=rot-Math.PI/2+i*Math.PI*2/n;
+      const px=Math.cos(a)*rad*wobble;
+      const py=Math.sin(a)*rad*wobble;
+      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
+    }
+    ctx2.closePath();
+  }
+  function starPath(points, rad, innerRad, rot=0){
+    ctx2.beginPath();
+    for(let i=0;i<points*2;i++){
+      const a=rot-Math.PI/2+i*Math.PI/points;
+      const rr=i%2 ? innerRad : rad;
+      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
+      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
     }
     ctx2.closePath();
   }
   function diamond(cx,cy,w,h,fill,stroke){
-    ctx2.beginPath(); ctx2.moveTo(cx,cy-h/2); ctx2.lineTo(cx+w/2,cy); ctx2.lineTo(cx,cy+h/2); ctx2.lineTo(cx-w/2,cy); ctx2.closePath();
+    ctx2.beginPath();
+    ctx2.moveTo(cx,cy-h/2); ctx2.lineTo(cx+w/2,cy); ctx2.lineTo(cx,cy+h/2); ctx2.lineTo(cx-w/2,cy); ctx2.closePath();
     ctx2.fillStyle=fill; ctx2.fill();
     if(stroke){ ctx2.lineWidth=1; ctx2.strokeStyle=stroke; ctx2.stroke(); }
   }
-  function star(cx,cy,rad,fill){
-    ctx2.save(); ctx2.translate(cx,cy); ctx2.rotate(preview?0:spin*.9);
-    ctx2.beginPath();
-    for(let i=0;i<8;i++){
-      const a=-Math.PI/2+i*Math.PI/4, rr=i%2?rad*.38:rad;
-      ctx2.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
-    }
-    ctx2.closePath(); ctx2.fillStyle=fill; ctx2.fill(); ctx2.restore();
+  function drawTinySpark(cx,cy,rad,fill,rot=0){
+    ctx2.save(); ctx2.translate(cx,cy); ctx2.rotate(rot);
+    starPath(4, rad, rad*.36, 0);
+    ctx2.fillStyle=fill; ctx2.fill();
+    ctx2.restore();
   }
 
-  ctx2.save(); ctx2.translate(x,y);
-  const auraGrad=ctx2.createRadialGradient(0,0,4,0,0,42);
-  auraGrad.addColorStop(0, r.accent);
-  auraGrad.addColorStop(.40, r.main+'55');
-  auraGrad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx2.globalAlpha = preview ? .36 : .34 + pulse*.26;
-  ctx2.fillStyle=auraGrad; ctx2.beginPath(); ctx2.arc(0,0,38+pulse*3*animPower,0,Math.PI*2); ctx2.fill();
-  ctx2.globalAlpha = 1;
+  ctx2.save();
+  ctx2.translate(x,y);
 
-  if(tier>=6){
-    const ringCount = tier>=20 ? 4 : tier>=14 ? 3 : 2;
+  // 100레벨 이후: 확실한 발광 오라
+  const baseAura=ctx2.createRadialGradient(0,0,2,0,0,44);
+  baseAura.addColorStop(0, r.finalTier ? '#fff7bd' : r.accent);
+  baseAura.addColorStop(.30, r.golden ? 'rgba(255,216,107,.52)' : r.main+'5d');
+  baseAura.addColorStop(.72, r.luminous ? r.main+'22' : r.main+'12');
+  baseAura.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx2.globalAlpha = r.luminous ? (preview ? .52 : .54 + pulse*.30) : (preview ? .25 : .22 + pulse*.12);
+  ctx2.fillStyle=baseAura;
+  ctx2.beginPath();
+  ctx2.arc(0,0,34 + tier*.34 + pulse*4*animPower,0,Math.PI*2);
+  ctx2.fill();
+  ctx2.globalAlpha=1;
+
+  // 100레벨 이후: 빛 입자 / 200레벨 이후: 황금 입자 / 241 이후: 초월 입자
+  if(r.luminous){
+    const sparkCount = r.finalTier ? 18 : r.golden ? 14 : 9;
+    for(let i=0;i<sparkCount;i++){
+      const a=spin*(i%2?.55:-.42)+i*Math.PI*2/sparkCount;
+      const rr=28+(i%4)*3+slowPulse*5*animPower;
+      ctx2.globalAlpha = preview ? .42 : .42 + Math.sin(now*2.4+i)*.18;
+      drawTinySpark(Math.cos(a)*rr, Math.sin(a)*rr, 1.3 + (i%3)*.45 + (r.finalTier?0.8:0), i%2 ? r.accent : (r.golden?'#ffe78a':'#ffffff'), a);
+    }
+    ctx2.globalAlpha=1;
+  }
+
+  // 회전 링: 100레벨 이후부터 본격, 200레벨부터 금색 이중링
+  if(tier>=8 || r.luminous){
+    const ringCount = r.finalTier ? 5 : r.golden ? 4 : r.luminous ? 3 : 2;
     for(let i=0;i<ringCount;i++){
-      ctx2.save(); ctx2.rotate(spin*(i%2?-1:1) + i*.92);
-      ctx2.globalAlpha = preview ? .28 : .24 + pulse*.22;
-      ctx2.lineWidth = 1.2 + i*.55;
-      ctx2.strokeStyle = i%2 ? r.accent : (tier>=20?'#ffd86b':r.main);
-      ctx2.setLineDash(i%2 ? [7,5] : [15,7]);
-      ctx2.beginPath(); ctx2.arc(0,0,23+i*4+pulse*1.6,0,Math.PI*2); ctx2.stroke();
+      ctx2.save();
+      ctx2.rotate((i%2?reverseSpin:spin) + i*.66);
+      ctx2.globalAlpha = preview ? .34 : .30 + pulse*.28;
+      ctx2.lineWidth = 1 + i*.42 + (r.golden && i===0 ? 1.0 : 0);
+      ctx2.strokeStyle = r.golden ? (i%2?'#fff1a6':'#ffd86b') : (i%2?r.accent:r.main);
+      ctx2.setLineDash(i%2 ? [5,4] : [12,7]);
+      ctx2.beginPath();
+      ctx2.arc(0,0,22+i*4+pulse*1.5,0,Math.PI*2);
+      ctx2.stroke();
       ctx2.restore();
     }
+    ctx2.setLineDash([]);
   }
 
-  if(tier>=10){
-    for(let i=0;i<Math.min(12, 4+Math.floor(tier/2));i++){
-      const a=spin*(i%2?-.55:.7)+i*Math.PI*2/Math.min(12, 4+Math.floor(tier/2));
-      const rr=29+(i%3)*3+Math.sin(now*2+i)*1.2*animPower;
-      star(Math.cos(a)*rr, Math.sin(a)*rr, 1.6+(tier>=20?1.2:0), i%2?r.accent:'#fff');
-    }
-  }
-
-  ctx2.rotate((preview?0:Math.sin(now*1.4)*0.06*animPower) + tier*.018);
-  ctx2.shadowColor = tier>=20 ? '#ffd86b' : r.main;
-  ctx2.shadowBlur = 8 + tier*.55 + (!preview?pulse*14*animPower:0);
-
-  // 뒤쪽 날개/월계수 장식: 10단계 이후부터 계급장 느낌 강화
-  const wingPairs = tier>=18 ? 4 : tier>=12 ? 3 : tier>=6 ? 2 : tier>=3 ? 1 : 0;
+  // 뒤쪽 장식: 낮은 단계는 단순, 높은 단계는 날개/월계수 확장
+  const wingPairs = tier>=22 ? 5 : tier>=18 ? 4 : tier>=13 ? 3 : tier>=8 ? 2 : tier>=4 ? 1 : 0;
   for(let side of [-1,1]){
     for(let i=0;i<wingPairs;i++){
       ctx2.save();
       ctx2.scale(side,1);
-      ctx2.rotate((-0.72 - i*.14) + (!preview?Math.sin(now*2+i)*.025:0));
-      ctx2.globalAlpha=.52+i*.08;
+      ctx2.rotate((-0.78 - i*.12) + (!preview?Math.sin(now*2+i)*.025:0));
+      ctx2.globalAlpha=.46+i*.075;
       ctx2.beginPath();
-      ctx2.ellipse(outer*.62+i*4, -outer*.12-i*3, 7+i*1.3, 3.2+i*.55, 0, 0, Math.PI*2);
-      ctx2.fillStyle=i%2?r.accent:r.main; ctx2.fill();
-      ctx2.lineWidth=.8; ctx2.strokeStyle='rgba(255,255,255,.55)'; ctx2.stroke();
+      ctx2.ellipse(outer*.56+i*3.2, -outer*.10-i*2.9, 6.5+i*1.25, 2.8+i*.55, 0, 0, Math.PI*2);
+      ctx2.fillStyle=r.golden && i%2===0 ? '#ffd86b' : (i%2?r.accent:r.main);
+      ctx2.fill();
+      ctx2.lineWidth=.7;
+      ctx2.strokeStyle='rgba(255,255,255,.55)';
+      ctx2.stroke();
       ctx2.restore();
     }
   }
 
-  // 메인 도형
-  const grad=ctx2.createRadialGradient(-8,-10,2,0,0,outer+10);
-  grad.addColorStop(0,'#ffffff'); grad.addColorStop(.18,r.accent); grad.addColorStop(.58,r.main); grad.addColorStop(1,'#111827');
-  pathPoly(sides, outer, Math.max(5, inner), tier*.19 + (!preview ? spin*.12 : 0));
+  // 메인 각형: 레벨 구간별로 실제 각형 수 증가
+  ctx2.save();
+  ctx2.rotate((preview?0:Math.sin(now*1.4)*0.035*animPower) + tier*.015 + (r.luminous?spin*.035:0));
+  ctx2.shadowColor = r.golden ? '#ffd86b' : r.main;
+  ctx2.shadowBlur = (r.luminous ? 13 : 6) + tier*.35 + (!preview?pulse*(r.finalTier?18:r.golden?13:9)*animPower:0);
+  const grad=ctx2.createRadialGradient(-outer*.35,-outer*.38,2,0,0,outer+8);
+  grad.addColorStop(0,'#ffffff');
+  grad.addColorStop(.18,r.accent);
+  grad.addColorStop(.58,r.main);
+  grad.addColorStop(1,r.golden?'#5a3505':'#101827');
+  polygonPath(r.sides, outer, tier*.08, r.sides>=15 ? .018 : 0);
   ctx2.fillStyle=grad; ctx2.fill();
-  ctx2.lineWidth=2.1+(tier>=15?.8:0)+(tier>=20?.9:0);
-  ctx2.strokeStyle=tier>=20?'#ffd86b':'rgba(255,255,255,.92)'; ctx2.stroke();
+  ctx2.lineWidth = r.golden ? 3.3 : r.luminous ? 2.5 : 1.8;
+  ctx2.strokeStyle = r.golden ? '#ffd86b' : 'rgba(255,255,255,.9)';
+  ctx2.stroke();
 
-  // 안쪽 도형 레이어: 타입마다 확실히 다른 문양
-  ctx2.shadowBlur = 0;
-  ctx2.save(); ctx2.rotate(-tier*.11 + (!preview?spin*.05:0));
-  ctx2.globalAlpha=.72;
-  pathPoly(3 + ((tier+2)%5), outer*.62, Math.max(4, inner*.52), -tier*.07);
-  ctx2.fillStyle='rgba(0,0,0,.20)'; ctx2.fill();
-  ctx2.lineWidth=1; ctx2.strokeStyle='rgba(255,255,255,.46)'; ctx2.stroke();
-  ctx2.restore();
-
-  // 세공선 / 방사형 라인
-  const lineCount = 3 + Math.min(12, Math.floor(tier/2));
-  for(let i=0;i<lineCount;i++){
-    const a=i*Math.PI*2/lineCount + tier*.04 + (!preview?spin*.04:0);
-    const len1=5+tier*.12, len2=outer*.82;
-    ctx2.beginPath(); ctx2.moveTo(Math.cos(a)*len1, Math.sin(a)*len1); ctx2.lineTo(Math.cos(a)*len2, Math.sin(a)*len2);
-    ctx2.lineWidth = .7 + (i%3===0?.45:0);
-    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,.58)' : 'rgba(0,0,0,.22)';
+  // 200레벨 이후: 굵은 황금 테두리 한 번 더
+  if(r.golden){
+    ctx2.shadowBlur = preview ? 3 : 9 + pulse*9;
+    ctx2.strokeStyle = r.finalTier ? '#fff1a6' : '#ffd86b';
+    ctx2.lineWidth = r.finalTier ? 2.2 : 1.7;
+    polygonPath(r.sides, outer+4+pulse*1.1, -tier*.05 + reverseSpin*.03, 0);
     ctx2.stroke();
   }
 
-  // 타입별 보석 배치: 25종이 서로 다르게 보이도록 개수/위치 변화
-  const gemCount = 1 + (tier % 5) + (tier>=15?1:0) + (tier>=22?1:0);
-  for(let i=0;i<gemCount;i++){
-    const a=-Math.PI/2 + i*Math.PI*2/gemCount + (tier%4)*.18;
-    const rr=7 + (i%2)*5 + Math.min(8,tier*.22);
-    const gw=3.2 + (tier>=12?1:0) + (i%2)*.5;
-    diamond(Math.cos(a)*rr, Math.sin(a)*rr, gw, gw*1.45, i%2?r.accent:'#fff7bd', 'rgba(0,0,0,.32)');
+  // 내부 각형 레이어: 같은 외곽이라도 문양이 다르게 보이도록 누적
+  ctx2.shadowBlur=0;
+  const innerLayers = tier>=20 ? 4 : tier>=14 ? 3 : tier>=7 ? 2 : 1;
+  for(let j=0;j<innerLayers;j++){
+    ctx2.save();
+    ctx2.rotate((j%2?reverseSpin:spin)*(preview?0:.035+j*.012) + j*.34 + tier*.035);
+    ctx2.globalAlpha = .62 - j*.08;
+    const rr = outer*(.68 - j*.11);
+    const n = Math.max(3, Math.min(25, r.sides - j*2));
+    polygonPath(n, rr, j*.13, 0);
+    ctx2.fillStyle = j%2 ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.18)';
+    ctx2.fill();
+    ctx2.lineWidth = .8 + j*.18;
+    ctx2.strokeStyle = j%2 ? 'rgba(255,255,255,.45)' : (r.golden?'rgba(255,216,107,.55)':'rgba(255,255,255,.30)');
+    ctx2.stroke();
+    ctx2.restore();
   }
 
-  // 왕관/검/방패 느낌의 상단 장식 단계별 추가
-  if(tier>=4){
+  // 방사형 세공선: 각형 수에 맞춰 더 복잡해짐
+  const lineCount = Math.min(25, Math.max(2, r.sides));
+  for(let i=0;i<lineCount;i++){
+    const a=i*Math.PI*2/lineCount + (!preview?spin*.018:0);
+    const len1=4 + Math.min(7,tier*.18);
+    const len2=outer*(.72 + (i%2)*.12);
+    ctx2.beginPath();
+    ctx2.moveTo(Math.cos(a)*len1, Math.sin(a)*len1);
+    ctx2.lineTo(Math.cos(a)*len2, Math.sin(a)*len2);
+    ctx2.lineWidth = .62 + (i%5===0?.55:0);
+    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,.56)' : 'rgba(0,0,0,.26)';
+    ctx2.stroke();
+  }
+
+  // 보석 배치: 단계가 올라갈수록 수 증가
+  const gemCount = Math.min(12, 1 + Math.floor(tier/3) + (r.luminous?1:0) + (r.golden?2:0));
+  for(let i=0;i<gemCount;i++){
+    const a=-Math.PI/2 + i*Math.PI*2/gemCount + (tier%5)*.08 + (!preview?reverseSpin*.025:0);
+    const rr=outer*(.30 + (i%2)*.20);
+    const gw=3.0 + Math.min(2.2,tier*.07) + (r.finalTier?0.8:0);
+    diamond(Math.cos(a)*rr, Math.sin(a)*rr, gw, gw*1.45, i%2?r.accent:(r.golden?'#fff1a6':'#fff'), 'rgba(0,0,0,.38)');
+  }
+
+  // 상단 장식: 150 이상 왕관, 241 이상 최종 왕관
+  if(tier>=10){
     ctx2.save();
     ctx2.rotate(!preview?Math.sin(now*2.2)*.025:0);
-    ctx2.beginPath(); ctx2.moveTo(0,-outer-10); ctx2.lineTo(4,-outer-3); ctx2.lineTo(0,-outer-5); ctx2.lineTo(-4,-outer-3); ctx2.closePath();
-    ctx2.fillStyle=tier>=18?'#ffd86b':r.accent; ctx2.fill(); ctx2.strokeStyle='rgba(255,255,255,.72)'; ctx2.lineWidth=1; ctx2.stroke();
+    const crownY=-outer-8;
+    ctx2.beginPath();
+    ctx2.moveTo(-9,crownY+6);
+    ctx2.lineTo(-5,crownY-1);
+    ctx2.lineTo(0,crownY+4);
+    ctx2.lineTo(5,crownY-1);
+    ctx2.lineTo(9,crownY+6);
+    ctx2.lineTo(9,crownY+10);
+    ctx2.lineTo(-9,crownY+10);
+    ctx2.closePath();
+    ctx2.fillStyle=r.golden?'#ffd86b':r.accent;
+    ctx2.fill();
+    ctx2.lineWidth=1;
+    ctx2.strokeStyle='rgba(255,255,255,.72)';
+    ctx2.stroke();
     ctx2.restore();
   }
-  if(tier>=8){
-    for(let side of [-1,1]){
-      ctx2.save(); ctx2.scale(side,1); ctx2.rotate(.55);
-      ctx2.beginPath(); ctx2.roundRect ? ctx2.roundRect(outer*.35, outer*.08, 4, 15, 2) : ctx2.rect(outer*.35, outer*.08, 4, 15);
-      ctx2.fillStyle='rgba(255,255,255,.62)'; ctx2.fill();
+
+  // 중앙 코어
+  ctx2.shadowColor = r.golden ? '#fff1a6' : r.accent;
+  ctx2.shadowBlur = (r.luminous?8:4) + (!preview?pulse*(r.finalTier?14:9)*animPower:0);
+  const core=5.2+Math.min(8,tier*.23)+(!preview?pulse*.9:0);
+  diamond(0,0,core*1.22,core*1.55,r.golden?'#fff2a6':'#ffffff','rgba(0,0,0,.42)');
+  ctx2.beginPath();
+  ctx2.arc(0,0,core*.45,0,Math.PI*2);
+  ctx2.fillStyle=r.finalTier?'#fff7bd':r.main;
+  ctx2.fill();
+
+  // 241~250 최종 초월형: 25각형 + 황금 + 빛 효과가 확실히 보이도록 마무리
+  if(r.finalTier){
+    ctx2.shadowBlur=0;
+    ctx2.globalAlpha=.92;
+    for(let k=0;k<3;k++){
+      ctx2.save();
+      ctx2.rotate((k%2?reverseSpin:spin)*(.06+k*.018));
+      ctx2.lineWidth=1.4+k*.65;
+      ctx2.strokeStyle=k===0?'#fff7bd':(k===1?'#ffd86b':'rgba(255,255,255,.62)');
+      ctx2.setLineDash(k===2?[4,5]:[]);
+      polygonPath(25, outer+8+k*4+Math.sin(now*2+k)*1.4, k*.15, 0);
+      ctx2.stroke();
       ctx2.restore();
     }
-  }
-  if(tier>=16){
-    ctx2.save();
-    ctx2.globalAlpha=.78;
-    ctx2.strokeStyle='#fff3aa'; ctx2.lineWidth=1.5;
-    ctx2.beginPath(); ctx2.arc(0,0,outer*.92,Math.PI*.1,Math.PI*.9); ctx2.stroke();
-    ctx2.beginPath(); ctx2.arc(0,0,outer*.92,Math.PI*1.1,Math.PI*1.9); ctx2.stroke();
-    ctx2.restore();
+    ctx2.setLineDash([]);
   }
 
-  // 중앙 핵 보석
-  ctx2.shadowColor=tier>=18?'#fff3aa':r.accent; ctx2.shadowBlur=6 + (!preview?pulse*10*animPower:0);
-  const core=5.5+Math.min(7,tier*.24)+(!preview?pulse*.9:0);
-  diamond(0,0,core*1.25,core*1.55,tier>=18?'#fff7b0':'#ffffff','rgba(0,0,0,.42)');
-  ctx2.beginPath(); ctx2.arc(0,0,core*.48,0,Math.PI*2); ctx2.fillStyle=r.main; ctx2.fill();
-
-  // 200레벨대는 황금 이중 테두리로 확실히 웅장하게
-  if(tier>=20){
-    ctx2.shadowBlur=0;
-    ctx2.globalAlpha=.9;
-    ctx2.lineWidth=2.3; ctx2.strokeStyle='#ffd86b'; ctx2.setLineDash([]);
-    ctx2.beginPath(); ctx2.arc(0,0,outer+6+pulse*1.2,0,Math.PI*2); ctx2.stroke();
-    ctx2.lineWidth=1.1; ctx2.strokeStyle='#fff7bd'; ctx2.setLineDash([3,4]);
-    ctx2.beginPath(); ctx2.arc(0,0,outer+11-pulse*.8,0,Math.PI*2); ctx2.stroke();
-  }
+  ctx2.restore();
   ctx2.restore();
 }
 
