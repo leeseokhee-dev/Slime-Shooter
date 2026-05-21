@@ -2,17 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Slime Shooter - Ultimate Evolution (v.167.2 Pause Fixed Canvas Top)</title>
-<!-- ✅ [v.166.3] iOS 홈 화면 실행 시 Safari 주소창 없이 앱처럼 보이도록 설정 -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Slime Shooter">
-<meta name="application-name" content="Slime Shooter">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#050510">
-<meta name="format-detection" content="telephone=no">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Slime Shooter - Ultimate Evolution (v.166 Rank 250 Full Canvas Pause Settings)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -34,29 +25,6 @@ padding: 0;
   --player-compact-font: 22px;
   --exp-label-font: 16px;
   --exp-text-font: 15px;
-}
-
-
-
-/* ✅ [v.166.3] iOS 홈 화면 실행 보정 */
-html, body{
-  width:100%;
-  min-height:100%;
-  overscroll-behavior:none;
-}
-@supports (height: 100dvh){
-  body{ min-height:100dvh; }
-}
-@media all and (display-mode: standalone){
-  body{
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-  #gameContainer{
-    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  }
 }
 
 body {
@@ -665,8 +633,7 @@ body.dead-mode #consumableQuickBar{
 }
 #pauseBtn{
     position:absolute;
-    /* ✅ [v.167.1] HUD와 겹치지 않도록 기본 위치를 아래로 내림 */
-    top: 74px;
+    top: 0;
     right: 8px;
     z-index: 120;
     width: 42px;
@@ -845,67 +812,6 @@ body.tutorial-mode #pauseBtn{
 #confirmNoBtn{
   border-color:#7cff7c;
   color:#dcffdc;
-}
-
-/* ===============================
-   ✅ [v.165.6] 계급 아이콘 미리보기 모달
-   =============================== */
-#hudRankIconCanvas{
-  cursor:pointer;
-  border-radius:999px;
-  transition: transform .15s ease, filter .15s ease;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,0.16));
-}
-#hudRankIconCanvas:active{ transform:scale(0.92); filter:brightness(1.25) drop-shadow(0 0 10px rgba(255,255,255,0.28)); }
-#rankPreviewModal{
-  z-index: 215;
-  max-width: 520px;
-  border-color:#ff6b8a !important;
-  background: radial-gradient(circle at top, rgba(255,107,138,0.16), rgba(10,14,28,0.98) 48%, rgba(3,6,14,0.99));
-}
-#rankPreviewSummary{
-  display:none !important;
-}
-.rank-preview-grid{
-  display:grid;
-  grid-template-columns:repeat(5, minmax(0, 1fr));
-  gap:8px;
-  padding:2px;
-}
-.rank-preview-card{
-  min-height:58px;
-  padding:8px 4px;
-  border-radius:12px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
-  border:1px solid rgba(255,255,255,0.12);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  gap:0;
-  text-align:center;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);
-}
-.rank-preview-card.current{
-  border-color:#ffd36a;
-  box-shadow:0 0 18px rgba(255,211,106,0.26), inset 0 1px 0 rgba(255,255,255,0.18);
-  background:linear-gradient(180deg, rgba(255,211,106,0.18), rgba(255,255,255,0.04));
-}
-.rank-preview-card canvas{
-  width:42px;
-  height:42px;
-  flex:0 0 auto;
-}
-.rank-preview-level,
-.rank-preview-name,
-.rank-preview-mark{
-  display:none !important;
-}
-@media (max-width: 520px){
-  #rankPreviewModal{ width:94%; max-height:86vh; padding:12px; }
-  .rank-preview-grid{ grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
-  .rank-preview-card{ min-height:52px; padding:6px 3px; }
-  .rank-preview-card canvas{ width:38px; height:38px; }
 }
 
 
@@ -2535,532 +2441,138 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 
 /* ===============================
-   ✅ [v.166.1] 꽉 찬 화면 비율 + 타이틀 버튼 하단 이동
-   - 캔버스는 JS에서 HUD 제외 영역을 가득 채움
-   - 시작 버튼/하단 4개 버튼은 글자가 가려지지 않게 조금 아래쪽으로 정렬
+   ✅ [v.166] 계급 250종 + 플레이 화면 확장 + 설정 버튼 분리
    =============================== */
-html, body{
+#rankBadgeIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  margin-right:6px;
+  border-radius:999px;
+  border:2px solid rgba(255,255,255,0.42);
+  background:radial-gradient(circle at 30% 25%, rgba(255,255,255,0.45), rgba(0,0,0,0.18) 62%, rgba(0,0,0,0.44));
+  box-shadow:0 0 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.42);
+  font-size:17px;
+  line-height:1;
+  vertical-align:middle;
+  flex:0 0 auto;
+  overflow:hidden;
+}
+#rankBadgeIcon canvas{
   width:100%;
   height:100%;
-  min-height:100dvh;
+  display:block;
 }
-body{
-  justify-content:flex-start !important;
-  padding-left:0 !important;
-  padding-right:0 !important;
-}
-#gameContainer.full-screen-ratio{
-  width:100vw !important;
-  max-width:100vw !important;
-  padding:0 !important;
-}
-#gameContainer.full-screen-ratio #hud{
-  border-radius:0 0 8px 8px !important;
-  margin-bottom:0 !important;
-}
-#gameContainer.full-screen-ratio #gameCanvas{
-  border-radius:0 !important;
-  border-left-width:0 !important;
-  border-right-width:0 !important;
-  margin:0 !important;
-  object-fit:fill !important;
-}
-body.title-mode #titleUI .overlay-content{
-  bottom:max(8px, env(safe-area-inset-bottom)) !important;
-  transform:translateX(-50%) translateY(10px) !important;
-  width:min(72vw, 420px) !important;
-  max-width:420px !important;
-  gap:8px !important;
-}
-body.title-mode #titleUI #startBtn,
-body.title-mode #titleUI #dailyRewardBtn,
-body.title-mode #titleUI #openNoticeBtn,
-body.title-mode #titleUI #openQuestBtn,
-body.title-mode #titleExitBtn{
-  max-width:420px !important;
-  min-height:42px !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:clip !important;
-}
-@media (max-width:520px){
-  body.title-mode #titleUI .overlay-content{
-    width:min(82vw, 360px) !important;
-    bottom:max(6px, env(safe-area-inset-bottom)) !important;
-    transform:translateX(-50%) translateY(8px) !important;
-    gap:6px !important;
-  }
-  body.title-mode #titleUI #startBtn,
-  body.title-mode #titleUI #dailyRewardBtn,
-  body.title-mode #titleUI #openNoticeBtn,
-  body.title-mode #titleUI #openQuestBtn,
-  body.title-mode #titleExitBtn{
-    height:36px !important;
-    min-height:36px !important;
-    font-size:13px !important;
-    line-height:1 !important;
-    padding:4px 8px !important;
-  }
-  body.title-mode #titleUI #startBtn{
-    height:42px !important;
-    min-height:42px !important;
-    font-size:15px !important;
-  }
-}
-@media (max-width:380px) and (max-height:700px){
-  body.title-mode #titleUI .overlay-content{
-    width:min(84vw, 330px) !important;
-    bottom:max(4px, env(safe-area-inset-bottom)) !important;
-    transform:translateX(-50%) translateY(6px) !important;
-    gap:4px !important;
-  }
-  body.title-mode #titleUI #startBtn,
-  body.title-mode #titleUI #dailyRewardBtn,
-  body.title-mode #titleUI #openNoticeBtn,
-  body.title-mode #titleUI #openQuestBtn,
-  body.title-mode #titleExitBtn{
-    height:30px !important;
-    min-height:30px !important;
-    font-size:11px !important;
-    padding:3px 6px !important;
-  }
-  body.title-mode #titleUI #startBtn{
-    height:35px !important;
-    min-height:35px !important;
-    font-size:13px !important;
-  }
-}
-
-
-
-/* ===============================
-   ✅ [v.166.2] 꽉 찬 화면 + 게임 화면이 비치는 HUD
-   =============================== */
-body{
-  justify-content:flex-start !important;
-  padding-top:0 !important;
-  padding-bottom:0 !important;
-  background:#050510;
-}
-#gameContainer.full-screen-ratio,
-#gameContainer{
-  height:100dvh;
-  max-height:100dvh;
-  padding:0 !important;
-  overflow:hidden;
-}
-#hud{
-  position:absolute !important;
-  top:calc(6px + env(safe-area-inset-top));
-  left:50%;
-  transform:translateX(-50%);
-  z-index:90;
-  margin-bottom:0 !important;
-  background:linear-gradient(180deg, rgba(4,9,20,0.58), rgba(4,9,20,0.34)) !important;
-  border:1px solid rgba(124,231,255,0.45) !important;
-  box-shadow:0 10px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.10) !important;
-  backdrop-filter:blur(8px) saturate(130%);
-  -webkit-backdrop-filter:blur(8px) saturate(130%);
-}
-#hud::before{
-  content:'';
+#rankBadgeIcon.rank-100{ animation: rankPulse166 1.7s ease-in-out infinite; }
+#rankBadgeIcon.rank-150{ animation: rankFloat166 1.55s ease-in-out infinite; }
+#rankBadgeIcon.rank-200{ border-width:3px; box-shadow:0 0 18px rgba(255,215,0,0.52), inset 0 1px 0 rgba(255,255,255,0.55); animation: rankGoldPulse166 1.25s ease-in-out infinite; }
+#rankBadgeIcon.rank-240{ animation: rankMythPulse166 .95s ease-in-out infinite; }
+#rankBadgeIcon.rank-200::before,
+#rankBadgeIcon.rank-240::before{
+  content:"";
   position:absolute;
-  inset:0;
-  border-radius:inherit;
-  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.015));
+  inset:-8px;
+  border-radius:999px;
+  background:conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,215,0,.55), rgba(88,220,255,.35), rgba(255,120,200,.45), rgba(255,255,255,0));
+  animation: rankAuraSpin166 2.8s linear infinite;
   pointer-events:none;
+  opacity:.72;
 }
-#settingsBar .ui-btn,
-#settingsBar select,
-#expWrapper{
-  background:linear-gradient(180deg, rgba(18,34,58,0.58), rgba(8,16,30,0.48)) !important;
-  backdrop-filter:blur(5px) saturate(130%);
-  -webkit-backdrop-filter:blur(5px) saturate(130%);
-}
-#gameCanvas{
-  border-radius:0 !important;
-  border-width:0 !important;
-  box-shadow:none !important;
-}
-#titleUI .overlay-content{
-  bottom:calc(clamp(20px, 4.5vh, 64px) + env(safe-area-inset-bottom)) !important;
-}
-#titleUI .big-btn,
-#titleUI #dailyRewardBtn,
-#titleUI #openQuestBtn,
-#titleUI #openNoticeBtn,
-#titleExitBtn{
-  background-color:rgba(5,16,28,0.48);
-  backdrop-filter:blur(6px) saturate(130%);
-  -webkit-backdrop-filter:blur(6px) saturate(130%);
-}
-@media (max-width: 430px) and (max-height: 760px){
-  #hud{ top:calc(3px + env(safe-area-inset-top)); }
-  #titleUI .overlay-content{ bottom:calc(8px + env(safe-area-inset-bottom)) !important; gap:8px !important; }
-}
-
-
-/* ===============================
-   ✅ [v.166.5] 최종 꽉 찬 화면 보정 + HUD 아래 돌발 퀘스트 공간 확보
-   - 타이틀/게임 화면 모두 실제 표시 영역을 100dvh로 채움
-   - HUD는 캔버스 위 유리판 유지
-   - 돌발 퀘스트는 JS에서 HUD 하단 좌표를 읽어 바로 아래에 표시
-   =============================== */
-html, body{
-  width:100% !important;
-  height:100% !important;
-  min-height:100dvh !important;
-  margin:0 !important;
-  overflow:hidden !important;
-  background:#050510 !important;
-}
-#gameContainer,
-#gameContainer.full-screen-ratio{
-  width:100vw !important;
-  height:100dvh !important;
-  max-width:100vw !important;
-  max-height:100dvh !important;
-  padding:0 !important;
-  margin:0 !important;
-  overflow:hidden !important;
-}
-#gameCanvas{
-  display:block !important;
-  width:100vw;
-  height:100dvh;
-  margin:0 !important;
-  border:0 !important;
-  border-radius:0 !important;
-}
-#hud{
-  pointer-events:auto;
-  border-radius:0 0 10px 10px !important;
-}
-body.title-mode #titleUI,
+#rankBadgeIcon{ position:relative; }
+#rankBadgeIcon canvas{ position:relative; z-index:1; }
+@keyframes rankPulse166{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+@keyframes rankFloat166{ 0%,100%{transform:translateY(0) scale(1.04)} 50%{transform:translateY(-2px) scale(1.12)} }
+@keyframes rankGoldPulse166{ 0%,100%{transform:scale(1); filter:brightness(1)} 50%{transform:scale(1.11); filter:brightness(1.32)} }
+@keyframes rankMythPulse166{ 0%,100%{transform:scale(1.02) rotate(-2deg); filter:brightness(1.1)} 50%{transform:scale(1.18) rotate(2deg); filter:brightness(1.55)} }
+@keyframes rankAuraSpin166{ to{ transform:rotate(360deg); } }
+body:not(.title-mode) #settingsBar{ display:none !important; }
+body:not(.title-mode) #hud{ margin-bottom:0 !important; border-radius:0 !important; border-left:0 !important; border-right:0 !important; }
+body:not(.title-mode) #gameContainer{ width:100vw !important; max-width:100vw !important; padding:0 !important; }
 body:not(.title-mode) #gameCanvas{
-  min-height:100dvh;
-}
-body.title-mode #titleUI .overlay-content{
-  bottom:calc(clamp(10px, 2.2vh, 32px) + env(safe-area-inset-bottom)) !important;
-}
-@media (max-width:430px){
-  body.title-mode #titleUI .overlay-content{
-    width:min(82vw, 360px) !important;
-    bottom:calc(6px + env(safe-area-inset-bottom)) !important;
-  }
-}
-
-
-
-/* ===============================
-   ✅ [v.166.6] 타이틀 HUD / 플레이 HUD 분리
-   - 타이틀: 설정, 스킬 가이드 등 관리 버튼 표시
-   - 게임 중: 레벨/닉네임/계급, EXP, 스테이지·처치 현황만 표시
-   - 무한 모드: 사냥 점수 / 거리 점수만 추가 표시
-   =============================== */
-body:not(.title-mode) #settingsBar{
-  display:none !important;
-}
-body:not(.title-mode) #hotTimeText,
-body:not(.title-mode) #goldText,
-body:not(.title-mode) #hpText,
-body:not(.title-mode) #levelText{
-  display:none !important;
-}
-body:not(.title-mode) #hud{
-  gap:4px !important;
-}
-body:not(.title-mode) #hudTop{
-  margin-top:0 !important;
-  align-items:center !important;
-}
-body:not(.title-mode) #playerHudCompact{
-  order:1;
-  margin-bottom:0 !important;
-}
-body:not(.title-mode) #expRow{
-  order:2;
-  margin-top:0 !important;
-}
-body:not(.title-mode) #hudTop{
-  order:3;
-}
-body:not(.title-mode) #hudTop .hud-column:first-child:empty{
-  display:none !important;
-}
-
-
-
-/* ===============================
-   ✅ [v.166.9] HUD 상단 빈틈 제거 + 상단 고정
-   - 게임 화면 맨 위에 HUD가 바로 붙도록 body/gameContainer 상단 여백 제거
-   - HUD 상단 모서리를 직각 처리해 위쪽 배경 틈이 보이지 않게 조정
-   =============================== */
-html, body{
-  margin:0 !important;
-  padding-top:0 !important;
-}
-body{
-  justify-content:flex-start !important;
-}
-#gameContainer{
-  padding-top:0 !important;
-}
-#hud{
-  margin-top:0 !important;
-  border-top-left-radius:0 !important;
-  border-top-right-radius:0 !important;
-}
-@media all and (display-mode: standalone){
-  body{
-    padding-top:0 !important;
-  }
-}
-
-
-/* ===============================
-   ✅ [v.167.0] HUD 재배치
-   - 계급/레벨/닉네임/펫/EXP 바를 HUD 박스 맨 위로 고정
-   - 점수/골드/진행 정보는 HUD 밖, 캔버스 내부 상단 패널로 표시
-   =============================== */
-#hud{
-  gap:4px;
-  padding-top:6px;
-}
-#playerHudCompact{
-  order:1;
-  margin-bottom:0 !important;
-}
-#expRow{
-  order:2;
-  margin-top:2px !important;
-}
-#settingsBar{
-  order:3;
-  margin-top:2px;
-}
-#hudTop{
-  order:4;
-  display:none !important;
-}
-#gameContainer.compact-ui #hudTop,
-#gameContainer.ultra-compact-ui #hudTop,
-#gameContainer.watch-ui #hudTop{
-  display:none !important;
-}
-
-
-/* ===============================
-   ✅ [v.167.4] 모든 모드 상단 정보 안전영역 통일
-   - 캔버스 상단 정보 패널 2줄 표시
-   - 무한 모드: 점수 / 보스 카운트 / 아이템 상태
-   - 스테이지 모드: 몬스터 처치 수 실시간 표시
-   =============================== */
-#pauseBtn{
-  /* ✅ [v.167.3] 위치 보정 시 흔들림 방지: top 애니메이션 제거 */
-  transition: transform .12s ease;
-  will-change: auto;
-}
-#gameContainer.compact-ui #pauseBtn{ right:8px; }
-#gameContainer.ultra-compact-ui #pauseBtn{ right:7px; }
-
-
-
-/* ===============================
-   ✅ [v.167.6] 모든 모드 정보 HUD 바 통합 + 풀 화면 캔버스 경계
-   - 점수/거리/보스/던전/스테이지/아이템 파크/획득 골드/보유 골드를 HUD 안에 표시
-   - 캔버스 상단 정보 패널은 제거하고, HUD와 캔버스 사이에 선명한 경계 적용
-   =============================== */
-html, body{
-  width:100% !important;
-  height:100% !important;
-  min-height:100dvh !important;
-  overflow:hidden !important;
-}
-#gameContainer{
-  width:100vw !important;
-  height:100dvh !important;
-  max-width:100vw !important;
-  max-height:100dvh !important;
-  padding:0 !important;
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:stretch !important;
-  justify-content:flex-start !important;
-}
-#hud{
-  width:100vw !important;
-  max-width:100vw !important;
-  flex:0 0 auto !important;
-  margin:0 !important;
   border-radius:0 !important;
   border-left:0 !important;
   border-right:0 !important;
-  border-top:0 !important;
-  border-bottom:2px solid rgba(124,231,255,0.82) !important;
-  box-shadow:0 2px 0 rgba(255,255,255,0.14), 0 8px 22px rgba(0,0,0,0.40) !important;
-}
-#gameCanvas{
-  width:100vw !important;
-  height:calc(100dvh - var(--hud-real-height, 96px)) !important;
-  max-width:100vw !important;
-  flex:1 1 auto !important;
-  aspect-ratio:auto !important;
-  border-radius:0 !important;
-  border-left:0 !important;
-  border-right:0 !important;
-  border-bottom:0 !important;
-  border-top:2px solid rgba(0,0,0,0.88) !important;
   box-shadow:none !important;
 }
-body:not(.title-mode) #hudTop{
-  display:flex !important;
-  order:3 !important;
-  width:100% !important;
-  gap:8px !important;
-  align-items:flex-start !important;
-  justify-content:space-between !important;
-  padding-top:2px !important;
-  border-top:1px solid rgba(255,255,255,0.12) !important;
-}
-body:not(.title-mode) #hudTop .hud-column{
-  min-width:0 !important;
-  flex:1 1 50% !important;
-  gap:2px !important;
-}
-body:not(.title-mode) #hudTop .hud-column span{
-  display:block !important;
-  font-size:11px !important;
-  line-height:1.18 !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  text-shadow:0 1px 3px rgba(0,0,0,0.86) !important;
-}
-body:not(.title-mode) #scoreText,
-body:not(.title-mode) #highScoreText,
-body:not(.title-mode) #hotTimeText,
-body:not(.title-mode) #goldText,
-body:not(.title-mode) #stageText,
-body:not(.title-mode) #hpText{
-  display:block !important;
-}
-body:not(.title-mode) #levelText{ display:none !important; }
-body:not(.title-mode) #playerHudCompact{ order:1 !important; }
-body:not(.title-mode) #expRow{ order:2 !important; }
-@media (max-width:520px){
-  body:not(.title-mode) #hud{ padding:5px 7px !important; gap:3px !important; }
-  body:not(.title-mode) #playerHudCompact{ min-height:22px !important; max-height:22px !important; }
-  body:not(.title-mode) #playerCompactText{ font-size:17px !important; line-height:22px !important; }
-  body:not(.title-mode) #expWrapper{ height:18px !important; }
-  body:not(.title-mode) #hudTop{ gap:6px !important; }
-  body:not(.title-mode) #hudTop .hud-column span{ font-size:10px !important; }
-}
-
-
-
-/* ===============================
-   ✅ [v.167.7] 모바일 HUD 완전 통합 상태창
-   - 모든 모드의 점수/골드/시간/수집/보스/핫타임을 캔버스가 아닌 HUD 내부 DOM으로 표시
-   - 캔버스는 HUD 아래부터 시작하며, HUD와 캔버스 경계선을 고정
-   =============================== */
-#modeInfoHud{
-  order:3;
+body.title-mode #settingsBar{ display:flex !important; }
+#pauseSettingsRow{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:8px;
   width:100%;
-  display:none;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:3px;
-  padding-top:3px;
-  border-top:1px solid rgba(255,255,255,0.14);
+  max-width:260px;
 }
-#modeInfoHud span{
-  min-width:0;
-  padding:3px 5px;
-  border-radius:7px;
-  background:linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.20));
-  border:1px solid rgba(124,231,255,0.22);
-  color:#f7fbff;
-  font-size:10.5px;
+#pauseSettingsRow .ui-btn{
+  min-height:38px;
+  font-size:12px;
   font-weight:900;
-  line-height:1.15;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  text-shadow:0 1px 3px rgba(0,0,0,0.88);
-}
-body:not(.title-mode) #modeInfoHud{ display:grid !important; }
-body.title-mode #modeInfoHud{ display:none !important; }
-body:not(.title-mode) #hudTop{ display:none !important; }
-body:not(.title-mode) #hud{
-  position:relative !important;
-  top:auto !important;
-  left:auto !important;
-  transform:none !important;
-  z-index:90 !important;
-  background:linear-gradient(180deg, rgba(4,9,20,0.82), rgba(4,9,20,0.64)) !important;
-  border-bottom:2px solid rgba(124,231,255,0.92) !important;
-}
-body:not(.title-mode) #gameCanvas{
-  height:calc(100dvh - var(--hud-real-height, 112px)) !important;
-  border-top:2px solid rgba(0,0,0,0.95) !important;
+  border-color:rgba(124,231,255,0.46);
 }
 @media (max-width:520px){
-  body:not(.title-mode) #hud{ padding:4px 5px !important; gap:2px !important; }
-  #modeInfoHud{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2px; padding-top:2px; }
-  #modeInfoHud span{ font-size:9.5px; padding:2px 4px; border-radius:6px; }
-  body:not(.title-mode) #playerHudCompact{ min-height:21px !important; max-height:21px !important; }
-  body:not(.title-mode) #playerCompactText{ font-size:16px !important; line-height:21px !important; }
-  body:not(.title-mode) #expWrapper{ height:17px !important; }
-}
-@media (max-width:380px){
-  #modeInfoHud span{ font-size:9px; padding:2px 3px; }
+  #rankBadgeIcon{ width:23px; height:23px; font-size:14px; margin-right:4px; }
+  #pauseSettingsRow{ gap:6px; }
+  #pauseSettingsRow .ui-btn{ font-size:11px; padding:5px 3px; }
 }
 
 
 
 /* ===============================
-   ✅ [v.168.0] 모바일 전체 화면 채움 보정
-   - 타이틀/게임 모두 검은 빈 공간 없이 100dvh 사용
-   - 캔버스 원본 비율은 유지하고 화면은 cover 방식으로 채움
+   ✅ [v.166.2] 계급표 모달 / 직접 그린 슬라임 계급 아이콘
    =============================== */
-html, body{
-  width:100% !important;
-  height:100% !important;
-  min-height:100dvh !important;
-  margin:0 !important;
-  overflow:hidden !important;
-  background:#050510 !important;
+#rankTableModal{
+  z-index: 190;
+  max-width: min(560px, 94vw);
+  border-color: rgba(68,255,184,0.55);
 }
-#gameContainer,
-#gameContainer.full-screen-ratio{
-  width:100vw !important;
-  max-width:100vw !important;
-  height:100dvh !important;
-  max-height:100dvh !important;
-  padding:0 !important;
-  margin:0 !important;
-  overflow:hidden !important;
+#rankTableBody{
+  max-height: min(62dvh, 520px);
+  padding-right: 6px;
 }
-#gameCanvas{
-  width:100vw !important;
-  height:100dvh !important;
-  min-width:100vw !important;
-  min-height:100dvh !important;
-  max-width:100vw !important;
-  max-height:100dvh !important;
-  aspect-ratio:auto !important;
-  object-fit:cover !important;
-  object-position:center center !important;
-  border:0 !important;
-  border-radius:0 !important;
-  margin:0 !important;
-  box-shadow:none !important;
+.rank-table-guide{
+  font-size:12px;
+  line-height:1.5;
+  color:#cfe6ff;
+  text-align:center;
+  margin-bottom:8px;
 }
-body.title-mode #titleUI,
-body:not(.title-mode) #gameCanvas{
-  width:100vw !important;
-  height:100dvh !important;
-  min-height:100dvh !important;
+.rank-table-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap:8px;
+}
+.rank-table-cell{
+  min-width:0;
+  padding:7px 4px 6px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+  border:1px solid rgba(255,255,255,0.12);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.rank-table-cell.current{
+  border-color:#ffd700;
+  box-shadow:0 0 14px rgba(255,215,0,0.35);
+}
+.rank-table-cell canvas{
+  width:42px;
+  height:42px;
+  display:block;
+}
+.rank-table-level{
+  font-size:10px;
+  font-weight:900;
+  color:#eef6ff;
+  line-height:1;
+}
+@media (max-width: 430px){
+  .rank-table-grid{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap:6px; }
+  .rank-table-cell{ padding:6px 3px 5px; }
+  .rank-table-cell canvas{ width:36px; height:36px; }
+  .rank-table-level{ font-size:9px; }
 }
 
 </style>
@@ -3132,15 +2644,6 @@ body:not(.title-mode) #gameCanvas{
             <div id="expBarFill"></div>
         </div>
     </div>
-
-    <div id="modeInfoHud" aria-label="게임 상태 정보">
-        <span id="modeInfo1">스테이지 1</span>
-        <span id="modeInfo2">점수 0</span>
-        <span id="modeInfo3">골드 0</span>
-        <span id="modeInfo4">핫타임 정보</span>
-        <span id="modeInfo5">진행 정보</span>
-        <span id="modeInfo6">모드 정보</span>
-    </div>
 <input id="restoreFile" type="file" accept="application/json" style="display:none" />
 
 <!-- 복원 미리보기 모달 (백업/복원 기능) -->
@@ -3172,11 +2675,11 @@ body:not(.title-mode) #gameCanvas{
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
     <div style="font-size:28px; font-weight:900; color:#ffd36a; text-shadow:0 2px 8px rgba(0,0,0,0.45);">⏸ 일시정지</div>
-    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>사운드와 저사양 모드를 바로 조절할 수 있습니다.</div>
-    <div id="pauseSettingsPanel" style="width:100%; max-width:260px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-      <button id="pauseBgmBtn" class="ui-btn" type="button">BGM 켜짐</button>
-      <button id="pauseSfxBtn" class="ui-btn" type="button">SFX 켜짐</button>
-      <button id="pauseLowPowerBtn" class="ui-btn" type="button" style="grid-column:1 / -1;">저사양 OFF</button>
+    <div style="font-size:14px; color:#eef4ff; line-height:1.55; text-align:center;">게임이 잠시 멈췄습니다.<br>다시 누르면 바로 이어집니다.</div>
+    <div id="pauseSettingsRow">
+      <button id="pauseBgmBtn" class="ui-btn" type="button">BGM</button>
+      <button id="pauseSfxBtn" class="ui-btn" type="button">SFX</button>
+      <button id="pauseLowPowerBtn" class="ui-btn" type="button">저사양</button>
     </div>
     <button id="resumeBtn" class="ui-btn big-btn" style="width:100%; max-width:240px; border-color:#7cff7c; color:#dfffdc;">▶ 이어하기</button>
     <button id="pauseToTitleBtn" class="ui-btn" style="width:100%; max-width:240px;">타이틀로</button>
@@ -3268,18 +2771,6 @@ body:not(.title-mode) #gameCanvas{
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
-        <div style="background:rgba(68,255,184,0.10); border:1px solid rgba(68,255,184,0.30); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#8fffd3; margin-bottom:6px;">[v.167.0 HUD 재배치]</div>
-            <div>계급, 레벨, 닉네임, 펫, 경험치바는 HUD 박스 맨 위에 표시됩니다.</div>
-            <div>점수, 획득/보유 골드, 진행 정보는 HUD 밖의 캔버스 내부 상단 패널로 이동했습니다.</div>
-            <div>무한 모드 돌발 퀘스트와 보스 체력바는 이 상단 패널 아래에 배치되어 겹침을 줄였습니다.</div>
-        </div>
-        <div style="background:rgba(255,107,138,0.12); border:1px solid rgba(255,107,138,0.36); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#ff8aa2; margin-bottom:6px;">[v.165.6 계급 시스템 안내]</div>
-            <div>250레벨까지 대응되는 250종 계급 문양이 추가되었습니다.</div>
-            <div>상단 HUD의 계급 아이콘을 누르면 1~250레벨 전체 계급 아이콘을 미리 볼 수 있습니다.</div>
-            <div>현재 레벨의 계급은 계급 도감에서 금색 테두리로 강조 표시됩니다.</div>
-        </div>
         <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
             <div>멀티킬 시스템이 추가되었습니다. 번개, 눈보라처럼 동시 공격이 가능한 범위형 스킬로 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동됩니다.</div>
@@ -3311,15 +2802,6 @@ body:not(.title-mode) #gameCanvas{
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
     <button id="closeNoticeBtn" class="ui-btn">닫기</button>
-</div>
-
-<div id="rankPreviewModal" class="modal hidden">
-    <div class="modal-header" style="color:#ff8aa2;">🏅 계급 아이콘 미리보기</div>
-    <div id="rankPreviewBody" class="modal-body" style="max-height: 430px; gap:10px; padding-right:4px;">
-        <div id="rankPreviewSummary">상단 계급 아이콘을 누르면 1~250레벨 계급 문양을 한 번에 확인할 수 있습니다.</div>
-        <div id="rankPreviewGrid" class="rank-preview-grid"></div>
-    </div>
-    <button id="closeRankPreviewBtn" class="ui-btn">닫기</button>
 </div>
 
 <!-- 첫 시작 닉네임 입력 모달 -->
@@ -3609,6 +3091,14 @@ body:not(.title-mode) #gameCanvas{
   <button id="closeExpTableBtn" class="close-btn">닫기</button>
 </div>
 
+
+<!-- ✅ [v.166.2] 계급표 모달 (계급 아이콘 클릭) -->
+<div id="rankTableModal" class="modal hidden">
+  <div class="modal-header" style="color:#aaffdf;">계급표</div>
+  <div id="rankTableBody" class="modal-body"></div>
+  <button id="closeRankTableBtn" class="close-btn">닫기</button>
+</div>
+
 <script>
 
 // ===============================
@@ -3656,15 +3146,26 @@ function getTargetCanvasSize() {
     return { width: WATCH_CANVAS_W, height: WATCH_CANVAS_H, mode: 'watch' };
   }
 
-  // ✅ [v.167.9] 타이틀/게임 화면 비율 통일
-  // 모바일 세로 화면에서도 게임 캔버스 자체는 타이틀과 같은 960:640(3:2) 비율을 유지한다.
-  // 이전 480:640 세로형 프리셋과 동적 높이 계산 때문에 게임 시작 후 화면이 세로로 길어지는 문제가 있었다.
+  // ✅ [v.166] 게임 중에는 HUD를 제외한 남은 공간을 드래곤 플라이트처럼 크게 사용
+  if (document.body && !document.body.classList.contains('title-mode')) {
+    const hud = document.getElementById('hud');
+    const hudH = hud ? Math.ceil(hud.getBoundingClientRect().height || 0) : 0;
+    const availableH = Math.max(260, vh - hudH - 2);
+    const aspect = Math.max(0.45, Math.min(2.2, vw / availableH));
+    const baseH = (vw > vh) ? 720 : 1280;
+    const baseW = Math.max(360, Math.round(baseH * aspect));
+    return { width: baseW, height: baseH, mode: (vw > vh ? 'full-landscape' : 'full-portrait') };
+  }
+
+  // 휴대폰 가로 모드: 세로 공간이 부족하므로 16:9에 가깝게 사용
+  if (vw > vh && vw < DESKTOP_BREAKPOINT) {
+    return { width: PHONE_LANDSCAPE_CANVAS_W, height: PHONE_LANDSCAPE_CANVAS_H, mode: 'phone-landscape' };
+  }
+
   const isDesktopWide = vw >= DESKTOP_BREAKPOINT && vw > vh;
-  return {
-    width: DESKTOP_CANVAS_W,
-    height: DESKTOP_CANVAS_H,
-    mode: isDesktopWide ? 'desktop' : (vw > vh ? 'phone-landscape' : 'mobile')
-  };
+  return isDesktopWide
+    ? { width: DESKTOP_CANVAS_W, height: DESKTOP_CANVAS_H, mode: 'desktop' }
+    : { width: MOBILE_CANVAS_W, height: MOBILE_CANVAS_H, mode: 'mobile' };
 }
 
 function applyCanvasPreset() {
@@ -3691,7 +3192,6 @@ const scoreEl = document.getElementById('scoreText');
 const highScoreEl = document.getElementById('highScoreText');
 const expEl = document.getElementById('expText');
 const expBarFillEl = document.getElementById('expBarFill');
-const modeInfoEls = [1,2,3,4,5,6].map(n => document.getElementById('modeInfo' + n));
 // ===============================
 // ✅ [v.50] EXP 바 클릭 → 경험치 레벨표 모달
 // - 필요 경험치 / 누적 경험치 표시
@@ -3791,20 +3291,46 @@ function fitCanvasToViewport() {
   const hud = document.getElementById('hud');
   const container = document.getElementById('gameContainer');
   const target = applyCanvasPreset();
-
   const vp = getViewportSize();
   const watchMode = target.mode === 'watch';
-  const safeTop = watchMode ? 2 : 4;
-  const safeBottom = watchMode ? 2 : 4;
-  const sidePadding = watchMode ? 2 : 0;
+  const inTitle = document.body.classList.contains('title-mode');
 
   const vw = vp.width;
   const vh = vp.height;
-
   let hudH = hud ? hud.getBoundingClientRect().height : 0;
-  const smallPortrait = vw <= 430 && vh <= 760 && vh > vw;
+
+  if (!inTitle && !watchMode) {
+    // ✅ 게임 중: HUD 아래 남은 영역을 거의 전부 캔버스로 사용
+    const availableH = Math.max(220, vh - hudH - 1);
+    const w = Math.max(240, vw);
+    const h = availableH;
+    canvas.style.width = `${Math.floor(w)}px`;
+    canvas.style.height = `${Math.floor(h)}px`;
+    const uiScale = Math.max(0.62, Math.min(1.08, Math.min(w / target.width, h / target.height)));
+    if (hud) {
+      hud.style.width = `${Math.floor(w)}px`;
+      hud.style.maxWidth = `${Math.floor(w)}px`;
+      hud.style.maxHeight = '';
+      hud.style.overflowY = '';
+    }
+    if (container) {
+      container.style.width = `${Math.floor(w)}px`;
+      container.style.maxWidth = `${Math.floor(w)}px`;
+      container.style.setProperty('--canvas-scale', String(uiScale));
+      container.dataset.canvasMode = target.mode;
+    }
+    document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
+    requestAnimationFrame(() => syncPauseButtonPosition());
+    return;
+  }
+
+  const safeTop = watchMode ? 2 : 8;
+  const safeBottom = watchMode ? 2 : 10;
+  const sidePadding = watchMode ? 4 : 14;
+
+  const smallPortrait = vw <= 430 && vh <= 740 && vh > vw;
   if (smallPortrait && hud) {
-    const hudLimit = Math.max(118, Math.floor(vh * 0.28));
+    const hudLimit = Math.max(150, Math.floor(vh * 0.38));
     hud.style.maxHeight = `${hudLimit}px`;
     hud.style.overflowY = hudH > hudLimit ? 'auto' : 'hidden';
     hudH = Math.min(hudH, hudLimit);
@@ -3812,45 +3338,42 @@ function fitCanvasToViewport() {
     hud.style.maxHeight = '';
     hud.style.overflowY = '';
   }
+  const aspect = target.width / target.height;
 
-  // ✅ [v.168.0] 폰 화면 빈 공간 제거
-  // 캔버스 표시는 항상 100vw × 100dvh로 채우고, 실제 그림은 object-fit: cover로 비율을 유지합니다.
-  // 이전처럼 HUD 높이를 뺀 3:2 박스로 줄이지 않아서 타이틀/게임 화면 아래에 검은 빈 공간이 생기지 않습니다.
-  const displayW = Math.max(watchMode ? 120 : 220, vw);
-  const displayH = Math.max(watchMode ? 160 : 320, vh);
+  let w = Math.min(target.width, vw - sidePadding);
+  let h = w / aspect;
 
-  // 내부 게임 해상도는 960×640 계열을 유지해서 슬라임/배경이 세로로 찌그러지지 않게 합니다.
-  if (canvas.width !== target.width || canvas.height !== target.height) {
-    canvas.width = target.width;
-    canvas.height = target.height;
-    width = canvas.width;
-    height = canvas.height;
+  const minCanvasH = watchMode ? 96 : 180;
+  const availableH = Math.max(minCanvasH, vh - hudH - safeTop - safeBottom - 6);
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspect;
   }
 
-  canvas.style.width = `${Math.floor(displayW)}px`;
-  canvas.style.height = `${Math.floor(displayH)}px`;
-  canvas.style.maxWidth = `${Math.floor(displayW)}px`;
-  canvas.style.maxHeight = `${Math.floor(displayH)}px`;
-  canvas.style.minWidth = `${Math.floor(displayW)}px`;
-  canvas.style.minHeight = `${Math.floor(displayH)}px`;
-  canvas.style.aspectRatio = 'auto';
-  canvas.style.objectFit = 'cover';
-  canvas.style.objectPosition = 'center center';
+  const minWidth = Math.min(vw - 4, watchMode ? 120 : 220);
+  if (w < minWidth) {
+    w = minWidth;
+    h = w / aspect;
+  }
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspect;
+  }
 
-  const uiScale = Math.max(0.58, Math.min(1.12, Math.min(displayW / target.width, displayH / target.height)));
+  canvas.style.width = `${Math.floor(w)}px`;
+  canvas.style.height = `${Math.floor(h)}px`;
+
+  const uiScale = Math.max(0.58, Math.min(1, Math.min(w / target.width, h / target.height)));
 
   if (hud) {
-    hud.style.width = `${Math.floor(displayW)}px`;
-    hud.style.maxWidth = `${Math.floor(displayW)}px`;
+    hud.style.width = `${Math.floor(w)}px`;
+    hud.style.maxWidth = `${Math.floor(w)}px`;
   }
   if (container) {
-    container.style.width = `${Math.floor(displayW)}px`;
-    container.style.maxWidth = `${Math.floor(displayW)}px`;
-    container.style.height = `${Math.floor(displayH)}px`;
-    container.style.maxHeight = `${Math.floor(displayH)}px`;
+    container.style.width = `${Math.floor(w)}px`;
+    container.style.maxWidth = `${Math.floor(w)}px`;
     container.style.setProperty('--canvas-scale', String(uiScale));
     container.dataset.canvasMode = target.mode;
-    container.classList.toggle('full-screen-ratio', true);
   }
   document.documentElement.style.setProperty('--canvas-scale', String(uiScale));
 
@@ -3918,878 +3441,6 @@ function escapeHtml(s){
     .replaceAll('>','&gt;')
     .replaceAll('"','&quot;')
     .replaceAll("'","&#39;");
-}
-
-
-// ===== [v.165.5] 레벨별 계급 시스템: 1~250레벨 전용 250종 계급 =====
-const LEVEL_RANK_COLORS = [
-  { key: 'red',       label: '빨강', color: '#ff4b5c' },
-  { key: 'orange',    label: '주황', color: '#ff9f43' },
-  { key: 'yellow',    label: '노랑', color: '#ffe66d' },
-  { key: 'lime',      label: '연두', color: '#b8ff4d' },
-  { key: 'green',     label: '초록', color: '#44ff88' },
-  { key: 'sky',       label: '하늘', color: '#55ddff' },
-  { key: 'blue',      label: '파랑', color: '#4d7cff' },
-  { key: 'navy',      label: '남색', color: '#536dfe' },
-  { key: 'purple',    label: '보라', color: '#b56cff' },
-  { key: 'pink',      label: '분홍', color: '#ff7bd5' }
-];
-
-const LEVEL_RANK_BASES = [
-  // ✅ [v.166.4] 슬라임 성장형 25종 계급
-  // 1레벨은 초심자 느낌의 씨앗/새싹 문양, 이후 10레벨 단위로 점점 복잡하고 강한 실루엣으로 성장
-  // 캐릭터 얼굴/몸통이 아니라 추상 계급장 문양만 사용
-  { name: '초심 점액씨앗', mark: 'rookieSeed'       }, // LV.1~10
-  { name: '작은 점액방울', mark: 'tinyDrop'         },
-  { name: '이중 젤핵',     mark: 'doubleCore'       },
-  { name: '방울막',        mark: 'bubbleFilm'       },
-  { name: '점액 고리',     mark: 'slimeOrbit'       },
-  { name: '물결 젤',       mark: 'waveGel'          },
-  { name: '미끈 결정',     mark: 'slickCrystal'     },
-  { name: '끈적 별핵',     mark: 'stickyStarCore'   },
-  { name: '점액 방패',     mark: 'gelShield'        },
-  { name: '젤 소용돌이',   mark: 'spiralGel'        },
-  { name: '산성 방울',     mark: 'acidRuneDrop'     },
-  { name: '치유 점액',     mark: 'healCrossGel'     },
-  { name: '분열핵',        mark: 'splitGemCore'     },
-  { name: '탄성막',        mark: 'elasticMembrane'  },
-  { name: '점액 왕관',     mark: 'slimeCrownRune'   },
-  { name: '프리즘 젤',     mark: 'prismShardGel'    },
-  { name: '젤리 리본',     mark: 'jellyRibbonRune'  },
-  { name: '응축 점액',     mark: 'condensedOrb'     },
-  { name: '결정 방울',     mark: 'crystalRuneDrop'  },
-  { name: '슬라임 문장',   mark: 'slimeCrestRune'   },
-  { name: '독성 점액',     mark: 'toxicTriGel'      },
-  { name: '광휘 젤',       mark: 'luminousStarGel'  },
-  { name: '초월 점액',     mark: 'ascendRuneGel'    },
-  { name: '무지개 젤',     mark: 'rainbowHaloGel'   },
-  { name: '궁극 점액',     mark: 'ultimateNebulaGel'}
-];
-
-const LEVEL_RANKS = Array.from({ length: 250 }, (_, i) => {
-  const level = i + 1;
-  const tier = Math.floor(i / LEVEL_RANK_COLORS.length) + 1;
-  const colorIndex = i % LEVEL_RANK_COLORS.length;
-  const base = LEVEL_RANK_BASES[tier - 1];
-  const palette = LEVEL_RANK_COLORS[colorIndex];
-
-  // ✅ [v.165.8] 250레벨 모두 고유 실루엣을 갖도록 레벨별 문양 패턴 부여
-  // 같은 기본 문양이어도 테두리, 광선, 점 배열, 내부 보조선이 전부 달라짐
-  const uniqueSeed = (level * 73 + tier * 19 + colorIndex * 37) % 997;
-  return {
-    level,
-    name: `${palette.label} ${base.name}`, // 내부 접근성/알림용 이름, 화면 표시는 아이콘만 사용
-    mark: base.mark,
-    color: palette.color,
-    colorName: palette.label,
-    tier,
-    colorIndex,
-    uniqueSeed,
-    frameType: uniqueSeed % 8,
-    pointCount: 3 + (uniqueSeed % 8),
-    notchCount: 4 + ((uniqueSeed >> 3) % 9),
-    glyphBits: level
-  };
-});
-
-function getLevelRank(lv) {
-  const n = Math.max(1, Math.floor(Number(lv) || 1));
-  let current = LEVEL_RANKS[0];
-  for (const r of LEVEL_RANKS) {
-    if (n >= r.level) current = r;
-    else break;
-  }
-  return current;
-}
-
-function getNextLevelRank(lv) {
-  const n = Math.max(1, Math.floor(Number(lv) || 1));
-  return LEVEL_RANKS.find(r => r.level > n) || null;
-}
-
-
-function drawLevelRankIcon(ctx, rank, x, y, size = 28, t = 0) {
-  if (!ctx || !rank) return;
-  const c = rank.color || '#ffffff';
-  const r = size / 2;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  const glow = rank.level >= 160;
-  if (glow) {
-    const pulse = 0.65 + 0.35 * Math.sin((t || performance.now()) / 420);
-    ctx.shadowColor = c;
-    ctx.shadowBlur = 10 + 8 * pulse;
-  } else {
-    ctx.shadowColor = c;
-    ctx.shadowBlur = 5;
-  }
-
-  const ringGrad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.12, 0, 0, r);
-  ringGrad.addColorStop(0, 'rgba(255,255,255,0.48)');
-  ringGrad.addColorStop(0.52, c + '88');
-  ringGrad.addColorStop(1, 'rgba(0,0,0,0.78)');
-  ctx.fillStyle = ringGrad;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.lineWidth = Math.max(1.5, size * 0.075);
-  ctx.strokeStyle = c;
-  ctx.stroke();
-
-  // ✅ [v.165.8] 레벨별 고유 문양 프레임
-  // 1~250레벨이 색만 다른 중복으로 보이지 않도록 외곽 실루엣과 점 배열을 레벨별로 다르게 그림
-  const uniqueSeed = Number(rank.uniqueSeed || rank.level || 1);
-  const frameType = Number(rank.frameType || 0);
-  const pointCount = Math.max(3, Number(rank.pointCount || 5));
-  const notchCount = Math.max(4, Number(rank.notchCount || 6));
-  const glyphBits = Math.max(1, Number(rank.glyphBits || rank.level || 1));
-  const phase = (t || 0) / (rank.level >= 180 ? 900 : 1600);
-
-  ctx.save();
-  ctx.rotate((uniqueSeed % 360) * Math.PI / 180 + (rank.level >= 151 ? phase * 0.18 : 0));
-  ctx.globalAlpha = 0.86;
-  ctx.strokeStyle = 'rgba(255,255,255,0.58)';
-  ctx.fillStyle = c + '55';
-  ctx.lineWidth = Math.max(1, size * 0.032);
-
-  if (frameType === 0 || frameType === 4) {
-    // 다각 별 프레임
-    ctx.beginPath();
-    for (let i = 0; i < pointCount * 2; i++) {
-      const rr = (i % 2 === 0 ? r * 1.04 : r * (0.78 + (uniqueSeed % 5) * 0.018));
-      const a = -Math.PI / 2 + i * Math.PI / pointCount;
-      const px = Math.cos(a) * rr;
-      const py = Math.sin(a) * rr;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.stroke();
-  } else if (frameType === 1 || frameType === 5) {
-    // 꽃잎형 프레임
-    for (let i = 0; i < pointCount; i++) {
-      ctx.rotate(Math.PI * 2 / pointCount);
-      ctx.beginPath();
-      ctx.ellipse(0, -r * 0.88, r * 0.11, r * (0.20 + (uniqueSeed % 4) * 0.03), 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-  } else if (frameType === 2 || frameType === 6) {
-    // 방사형 톱니 프레임
-    for (let i = 0; i < notchCount; i++) {
-      const a = i * Math.PI * 2 / notchCount;
-      const inner = r * 0.78;
-      const outer = r * (0.98 + ((uniqueSeed + i) % 3) * 0.04);
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
-      ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
-      ctx.stroke();
-    }
-  } else {
-    // 궤도형 프레임
-    for (let i = 0; i < 2 + (uniqueSeed % 3); i++) {
-      ctx.save();
-      ctx.rotate(i * Math.PI / (2 + (uniqueSeed % 3)));
-      ctx.beginPath();
-      ctx.ellipse(0, 0, r * (0.94 - i * 0.06), r * (0.58 - i * 0.03), 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  // 고유 점 배열: 레벨 숫자를 비트 패턴처럼 링에 새겨 250개가 서로 다르게 보이도록 함
-  ctx.globalAlpha = 0.95;
-  for (let i = 0; i < 8; i++) {
-    const on = (glyphBits >> i) & 1;
-    const a = -Math.PI / 2 + i * Math.PI * 2 / 8;
-    const rr = r * (on ? 0.73 : 0.61);
-    const dotSize = size * (on ? 0.030 : 0.018);
-    ctx.fillStyle = on ? '#ffffff' : c + '88';
-    ctx.beginPath();
-    ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, dotSize, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  function star(points, inner, outer, rot = -Math.PI / 2) {
-    ctx.beginPath();
-    for (let i = 0; i < points * 2; i++) {
-      const rr = i % 2 ? inner : outer;
-      const a = rot + i * Math.PI / points;
-      const px = Math.cos(a) * rr;
-      const py = Math.sin(a) * rr;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-  }
-  function shield(w, h) {
-    ctx.beginPath();
-    ctx.moveTo(0, -h * 0.55);
-    ctx.lineTo(w * 0.48, -h * 0.33);
-    ctx.lineTo(w * 0.38, h * 0.20);
-    ctx.quadraticCurveTo(0, h * 0.58, -w * 0.38, h * 0.20);
-    ctx.lineTo(-w * 0.48, -h * 0.33);
-    ctx.closePath();
-  }
-  function leaf(cx, cy, w, h, rot) {
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
-    ctx.beginPath();
-    ctx.moveTo(0, h * 0.48);
-    ctx.bezierCurveTo(-w * 0.65, h * 0.05, -w * 0.42, -h * 0.52, 0, -h * 0.50);
-    ctx.bezierCurveTo(w * 0.50, -h * 0.36, w * 0.58, h * 0.18, 0, h * 0.48);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    ctx.restore();
-  }
-
-  ctx.shadowBlur = glow ? ctx.shadowBlur : 0;
-  ctx.fillStyle = c;
-  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
-  ctx.lineWidth = Math.max(1, size * 0.045);
-
-  switch (rank.mark) {
-    case 'sprout':
-      ctx.strokeStyle = '#eaffef';
-      leaf(-size*0.10, -size*0.04, size*0.33, size*0.44, -0.72);
-      leaf(size*0.13, -size*0.03, size*0.34, size*0.46, 0.70);
-      ctx.beginPath(); ctx.moveTo(0, size*0.31); ctx.quadraticCurveTo(-size*0.04, size*0.02, 0, -size*0.26); ctx.stroke();
-      break;
-    case 'leaf':
-      ctx.strokeStyle = '#ecfff1';
-      leaf(0, 0, size*0.52, size*0.70, 0.55);
-      ctx.beginPath(); ctx.moveTo(-size*0.17, size*0.22); ctx.lineTo(size*0.18, -size*0.24); ctx.stroke();
-      break;
-    case 'scope':
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      ctx.beginPath(); ctx.arc(0,0,size*0.28,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-size*0.42,0); ctx.lineTo(-size*0.18,0); ctx.moveTo(size*0.18,0); ctx.lineTo(size*0.42,0); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,-size*0.18); ctx.moveTo(0,size*0.18); ctx.lineTo(0,size*0.42); ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0,0,size*0.055,0,Math.PI*2); ctx.fill();
-      break;
-    case 'crystal':
-      ctx.fillStyle = c; ctx.strokeStyle = '#eef8ff';
-      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.30,-size*0.12); ctx.lineTo(size*0.18,size*0.42); ctx.lineTo(-size*0.18,size*0.42); ctx.lineTo(-size*0.30,-size*0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,size*0.38); ctx.moveTo(-size*0.27,-size*0.10); ctx.lineTo(size*0.27,-size*0.10); ctx.stroke();
-      break;
-    case 'shield':
-      ctx.fillStyle = c; ctx.strokeStyle = '#f3f0ff'; shield(size*0.74, size*0.86); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.22)'; shield(size*0.40, size*0.58); ctx.fill();
-      break;
-    case 'sword':
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.13;
-      ctx.beginPath(); ctx.moveTo(0,size*0.34); ctx.lineTo(0,-size*0.42); ctx.stroke();
-      ctx.lineWidth = size*0.08; ctx.strokeStyle = '#fff7c8'; ctx.beginPath(); ctx.moveTo(-size*0.24,size*0.08); ctx.lineTo(size*0.24,size*0.08); ctx.stroke();
-      star(4, size*0.10, size*0.20, Math.PI/4); ctx.fillStyle = '#ffeaa0'; ctx.fill();
-      break;
-    case 'medal':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff6cc'; star(5, size*0.22, size*0.42); ctx.fill(); ctx.stroke();
-      break;
-    case 'trophy':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff0c2';
-      ctx.beginPath(); ctx.roundRect(-size*0.24, -size*0.30, size*0.48, size*0.36, size*0.06); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-size*0.12,size*0.08); ctx.lineTo(size*0.12,size*0.08); ctx.lineTo(size*0.18,size*0.34); ctx.lineTo(-size*0.18,size*0.34); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(-size*0.28,-size*0.16,size*0.13,Math.PI*0.5,Math.PI*1.5); ctx.arc(size*0.28,-size*0.16,size*0.13,-Math.PI*0.5,Math.PI*0.5); ctx.stroke();
-      break;
-    case 'aura':
-      ctx.save(); ctx.rotate((t || performance.now()) / 900);
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      for(let i=0;i<4;i++){ ctx.rotate(Math.PI/2); ctx.beginPath(); ctx.moveTo(0,-size*0.48); ctx.quadraticCurveTo(size*0.15,-size*0.18,0,-size*0.03); ctx.quadraticCurveTo(-size*0.15,-size*0.18,0,-size*0.48); ctx.stroke(); }
-      ctx.restore();
-      star(4, size*0.15, size*0.30, Math.PI/4); ctx.fillStyle = '#fff0ff'; ctx.fill();
-      break;
-    case 'crown':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff6bd';
-      ctx.beginPath(); ctx.moveTo(-size*0.38,size*0.18); ctx.lineTo(-size*0.30,-size*0.24); ctx.lineTo(-size*0.08,size*0.02); ctx.lineTo(0,-size*0.36); ctx.lineTo(size*0.08,size*0.02); ctx.lineTo(size*0.30,-size*0.24); ctx.lineTo(size*0.38,size*0.18); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.roundRect(-size*0.34, size*0.15, size*0.68, size*0.16, size*0.04); ctx.fill(); ctx.stroke();
-      break;
-    case 'galaxy':
-      ctx.save(); ctx.rotate((t || performance.now()) / 1200);
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.045;
-      for(let i=0;i<3;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.ellipse(0,0,size*0.46,size*0.14,0,0,Math.PI*2); ctx.stroke(); }
-      ctx.restore();
-      const grad = ctx.createRadialGradient(0,0,0,0,0,size*0.28); grad.addColorStop(0,'#ffffff'); grad.addColorStop(0.48,c); grad.addColorStop(1,'rgba(30,0,80,0.2)');
-      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0,0,size*0.20,0,Math.PI*2); ctx.fill();
-      break;
-    case 'flame':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff0d0';
-      ctx.beginPath();
-      ctx.moveTo(0, -size*0.46);
-      ctx.bezierCurveTo(size*0.30, -size*0.18, size*0.20, size*0.20, 0, size*0.40);
-      ctx.bezierCurveTo(-size*0.24, size*0.14, -size*0.28, -size*0.12, 0, -size*0.46);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      break;
-    case 'water':
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
-      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0, -size*0.08 + i*size*0.14, size*(0.18+i*0.06), Math.PI*0.12, Math.PI*0.88); ctx.stroke(); }
-      break;
-    case 'bolt':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fffad0';
-      ctx.beginPath(); ctx.moveTo(size*0.08,-size*0.48); ctx.lineTo(-size*0.22,size*0.02); ctx.lineTo(size*0.02,size*0.02); ctx.lineTo(-size*0.08,size*0.48); ctx.lineTo(size*0.28,-size*0.10); ctx.lineTo(size*0.05,-size*0.10); ctx.closePath(); ctx.fill(); ctx.stroke();
-      break;
-    case 'diamond':
-      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.40,0); ctx.lineTo(0,size*0.46); ctx.lineTo(-size*0.40,0); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-size*0.24,0); ctx.lineTo(0,-size*0.46); ctx.lineTo(size*0.24,0); ctx.lineTo(0,size*0.46); ctx.stroke();
-      break;
-    case 'gear':
-      ctx.fillStyle = c; ctx.strokeStyle = '#eef8ff';
-      star(8, size*0.30, size*0.46); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(0,0,size*0.16,0,Math.PI*2); ctx.fill();
-      break;
-    case 'wing':
-      ctx.fillStyle = c; ctx.strokeStyle = '#f3fbff';
-      ctx.beginPath(); ctx.moveTo(-size*0.05,size*0.30); ctx.quadraticCurveTo(-size*0.50,0,-size*0.22,-size*0.42); ctx.quadraticCurveTo(size*0.02,-size*0.18,-size*0.05,size*0.30); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(size*0.05,size*0.30); ctx.quadraticCurveTo(size*0.50,0,size*0.22,-size*0.42); ctx.quadraticCurveTo(-size*0.02,-size*0.18,size*0.05,size*0.30); ctx.fill(); ctx.stroke();
-      break;
-    case 'moon':
-      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,size*0.38,Math.PI*0.35,Math.PI*1.65); ctx.quadraticCurveTo(size*0.28,0,0,size*0.38); ctx.fill();
-      ctx.strokeStyle = '#fffbe8'; ctx.stroke();
-      break;
-    case 'sun':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff3b0';
-      star(12, size*0.26, size*0.46); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff7c0'; ctx.beginPath(); ctx.arc(0,0,size*0.18,0,Math.PI*2); ctx.fill();
-      break;
-    case 'comet':
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      ctx.beginPath(); ctx.moveTo(-size*0.46,size*0.18); ctx.quadraticCurveTo(-size*0.08,-size*0.08,size*0.30,-size*0.18); ctx.stroke();
-      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(size*0.20,-size*0.10,size*0.20,0,Math.PI*2); ctx.fill();
-      break;
-    case 'anchor':
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
-      ctx.beginPath(); ctx.arc(0,-size*0.30,size*0.10,0,Math.PI*2); ctx.moveTo(0,-size*0.20); ctx.lineTo(0,size*0.36); ctx.moveTo(-size*0.26,-size*0.02); ctx.lineTo(size*0.26,-size*0.02); ctx.moveTo(-size*0.34,size*0.16); ctx.quadraticCurveTo(-size*0.18,size*0.40,0,size*0.36); ctx.quadraticCurveTo(size*0.18,size*0.40,size*0.34,size*0.16); ctx.stroke();
-      break;
-    case 'heart':
-      ctx.fillStyle = c; ctx.strokeStyle = '#ffeefa';
-      ctx.beginPath(); ctx.moveTo(0,size*0.36); ctx.bezierCurveTo(-size*0.48,0,-size*0.34,-size*0.40,0,-size*0.18); ctx.bezierCurveTo(size*0.34,-size*0.40,size*0.48,0,0,size*0.36); ctx.fill(); ctx.stroke();
-      break;
-    case 'hex':
-      ctx.fillStyle = c; ctx.strokeStyle = '#f4f8ff';
-      ctx.beginPath(); for(let i=0;i<6;i++){ const a=-Math.PI/2+i*Math.PI*2/6; const px=Math.cos(a)*size*0.42, py=Math.sin(a)*size*0.42; if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0,0,size*0.19,0,Math.PI*2); ctx.stroke();
-      break;
-    case 'clover':
-      ctx.fillStyle = c; ctx.strokeStyle = '#f1fff4';
-      for(let i=0;i<4;i++){ const a=i*Math.PI/2+Math.PI/4; ctx.beginPath(); ctx.ellipse(Math.cos(a)*size*0.17, Math.sin(a)*size*0.17, size*0.16, size*0.22, a, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
-      break;
-    case 'star':
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff9c8'; star(7, size*0.18, size*0.45); ctx.fill(); ctx.stroke();
-      break;
-    case 'rookieSeed': {
-      // 초심자: 작은 씨앗 + 새싹, 가장 단순하고 부드러운 문양
-      ctx.fillStyle = c; ctx.strokeStyle = '#effff3';
-      ctx.beginPath(); ctx.ellipse(0, size*0.10, size*0.24, size*0.32, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.86)'; ctx.lineWidth = size*0.045;
-      ctx.beginPath(); ctx.moveTo(0, size*0.02); ctx.quadraticCurveTo(-size*0.04, -size*0.18, 0, -size*0.32); ctx.stroke();
-      leaf(-size*0.08, -size*0.24, size*0.18, size*0.25, -0.65);
-      leaf(size*0.09, -size*0.24, size*0.18, size*0.25, 0.65);
-      break;
-    }
-    case 'tinyDrop': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#f4fff8';
-      ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.bezierCurveTo(size*0.25,-size*0.12,size*0.28,size*0.34,0,size*0.42); ctx.bezierCurveTo(-size*0.28,size*0.34,-size*0.25,-size*0.12,0,-size*0.42); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(-size*0.10,-size*0.10,size*0.07,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'doubleCore': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#efffff';
-      ctx.beginPath(); ctx.arc(-size*0.10,0,size*0.25,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(size*0.14,0,size*0.25,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.38)'; ctx.beginPath(); ctx.arc(0,-size*0.08,size*0.10,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'bubbleFilm': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.065;
-      ctx.beginPath(); ctx.ellipse(0,0,size*0.40,size*0.30,0,0,Math.PI*2); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.78)'; ctx.lineWidth=size*0.035;
-      ctx.beginPath(); ctx.arc(-size*0.18,-size*0.12,size*0.08,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(size*0.18,size*0.10,size*0.06,0,Math.PI*2); ctx.stroke();
-      break;
-    }
-    case 'slimeOrbit': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.055;
-      for(let i=0;i<2;i++){ ctx.save(); ctx.rotate(i*Math.PI/2.7); ctx.beginPath(); ctx.ellipse(0,0,size*0.43,size*0.17,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
-      ctx.fillStyle=c; ctx.beginPath(); ctx.arc(0,0,size*0.12,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'waveGel': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      for(let i=0;i<3;i++){ const yy=-size*0.18+i*size*0.17; ctx.beginPath(); ctx.moveTo(-size*0.42,yy); ctx.bezierCurveTo(-size*0.20,yy-size*0.12,size*0.20,yy+size*0.12,size*0.42,yy); ctx.stroke(); }
-      ctx.fillStyle='rgba(255,255,255,0.68)'; ctx.beginPath(); ctx.arc(size*0.32,-size*0.22,size*0.035,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'slickCrystal': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.31,-size*0.10); ctx.lineTo(size*0.20,size*0.42); ctx.lineTo(-size*0.20,size*0.42); ctx.lineTo(-size*0.31,-size*0.10); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.76)'; ctx.lineWidth=size*0.035; ctx.beginPath(); ctx.moveTo(0,-size*0.40); ctx.lineTo(0,size*0.36); ctx.moveTo(-size*0.26,-size*0.08); ctx.lineTo(size*0.26,-size*0.08); ctx.stroke();
-      break;
-    }
-    case 'stickyStarCore': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#fffbd6'; star(6, size*0.17, size*0.42); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.82)'; ctx.beginPath(); ctx.arc(0,0,size*0.11,0,Math.PI*2); ctx.fill();
-      for(let i=0;i<6;i++){ const a=i*Math.PI*2/6; ctx.beginPath(); ctx.arc(Math.cos(a)*size*0.27, Math.sin(a)*size*0.27, size*0.035,0,Math.PI*2); ctx.fill(); }
-      break;
-    }
-    case 'gelShield': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#f3fff7'; shield(size*0.70, size*0.82); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.78)'; ctx.lineWidth=size*0.04; ctx.beginPath(); ctx.moveTo(0,-size*0.28); ctx.lineTo(0,size*0.30); ctx.moveTo(-size*0.18,-size*0.04); ctx.lineTo(size*0.18,-size*0.04); ctx.stroke();
-      break;
-    }
-    case 'spiralGel': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07; ctx.beginPath();
-      for(let i=0;i<44;i++){ const a=i*0.34; const rr=size*0.0105*i; const px=Math.cos(a)*rr, py=Math.sin(a)*rr; if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.arc(0,0,size*0.055,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'acidRuneDrop': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#efffea'; ctx.beginPath(); ctx.moveTo(0,-size*0.45); ctx.bezierCurveTo(size*0.32,-size*0.14,size*0.30,size*0.38,0,size*0.43); ctx.bezierCurveTo(-size*0.30,size*0.38,-size*0.32,-size*0.14,0,-size*0.45); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=size*0.045; ctx.beginPath(); ctx.moveTo(-size*0.16,0); ctx.lineTo(size*0.16,0); ctx.moveTo(0,-size*0.16); ctx.lineTo(0,size*0.18); ctx.stroke();
-      break;
-    }
-    case 'healCrossGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#ecfff1'; ctx.beginPath(); ctx.roundRect(-size*0.31,-size*0.31,size*0.62,size*0.62,size*0.18); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='#ffffff'; ctx.lineWidth=size*0.08; ctx.beginPath(); ctx.moveTo(-size*0.22,0); ctx.lineTo(size*0.22,0); ctx.moveTo(0,-size*0.22); ctx.lineTo(0,size*0.22); ctx.stroke();
-      break;
-    }
-    case 'splitGemCore': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(size*0.34,0); ctx.lineTo(0,size*0.42); ctx.lineTo(-size*0.34,0); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.86)'; ctx.lineWidth=size*0.04; ctx.beginPath(); ctx.moveTo(0,-size*0.40); ctx.lineTo(0,size*0.40); ctx.moveTo(-size*0.30,0); ctx.lineTo(size*0.30,0); ctx.stroke();
-      break;
-    }
-    case 'elasticMembrane': {
-      ctx.strokeStyle=c; ctx.lineWidth=size*0.055;
-      ctx.beginPath(); ctx.ellipse(0,0,size*0.43,size*0.26,Math.PI/7,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(0,0,size*0.43,size*0.26,-Math.PI/7,0,Math.PI*2); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.42)'; ctx.beginPath(); ctx.arc(-size*0.18,-size*0.12,size*0.055,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'slimeCrownRune': {
-      ctx.fillStyle=c; ctx.strokeStyle='#fff6bd'; ctx.beginPath(); ctx.moveTo(-size*0.39,size*0.20); ctx.lineTo(-size*0.30,-size*0.20); ctx.lineTo(-size*0.10,size*0.03); ctx.lineTo(0,-size*0.36); ctx.lineTo(size*0.10,size*0.03); ctx.lineTo(size*0.30,-size*0.20); ctx.lineTo(size*0.39,size*0.20); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.roundRect(-size*0.35,size*0.16,size*0.70,size*0.15,size*0.04); ctx.fill(); ctx.stroke();
-      break;
-    }
-    case 'prismShardGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.38,-size*0.02); ctx.lineTo(size*0.12,size*0.44); ctx.lineTo(-size*0.34,size*0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=size*0.035; ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(size*0.10,size*0.40); ctx.moveTo(-size*0.28,size*0.10); ctx.lineTo(size*0.32,-size*0.02); ctx.stroke();
-      break;
-    }
-    case 'jellyRibbonRune': {
-      ctx.strokeStyle=c; ctx.lineWidth=size*0.075;
-      ctx.beginPath(); ctx.moveTo(-size*0.44,-size*0.10); ctx.bezierCurveTo(-size*0.18,-size*0.38,size*0.18,size*0.38,size*0.44,size*0.10); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-size*0.44,size*0.14); ctx.bezierCurveTo(-size*0.18,-size*0.14,size*0.18,size*0.62,size*0.44,size*0.22); ctx.stroke();
-      break;
-    }
-    case 'condensedOrb': {
-      ctx.fillStyle=c; ctx.strokeStyle='#efffff'; ctx.beginPath(); ctx.arc(0,0,size*0.36,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.76)'; ctx.lineWidth=size*0.035; for(let i=0;i<4;i++){ ctx.beginPath(); ctx.arc(0,0,size*(0.11+i*0.075),0,Math.PI*2); ctx.stroke(); }
-      break;
-    }
-    case 'crystalRuneDrop': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; ctx.beginPath(); ctx.moveTo(0,-size*0.45); ctx.lineTo(size*0.30,-size*0.07); ctx.lineTo(size*0.20,size*0.42); ctx.lineTo(0,size*0.32); ctx.lineTo(-size*0.20,size*0.42); ctx.lineTo(-size*0.30,-size*0.07); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.82)'; ctx.lineWidth=size*0.035; ctx.beginPath(); ctx.moveTo(0,-size*0.40); ctx.lineTo(0,size*0.30); ctx.moveTo(-size*0.20,0); ctx.lineTo(size*0.20,0); ctx.stroke();
-      break;
-    }
-    case 'slimeCrestRune': {
-      ctx.fillStyle=c; ctx.strokeStyle='#f3fff7'; shield(size*0.74,size*0.86); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.22)'; star(5,size*0.10,size*0.23); ctx.fill(); ctx.stroke();
-      break;
-    }
-    case 'toxicTriGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#efffea'; for(let i=0;i<3;i++){ const a=-Math.PI/2+i*Math.PI*2/3; ctx.beginPath(); ctx.ellipse(Math.cos(a)*size*0.13,Math.sin(a)*size*0.13,size*0.14,size*0.25,a,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
-      ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.beginPath(); ctx.arc(0,0,size*0.105,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'luminousStarGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#fffbd6'; star(10,size*0.16,size*0.44); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.88)'; ctx.beginPath(); ctx.arc(0,0,size*0.12,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'ascendRuneGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; star(7,size*0.19,size*0.43); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.84)'; ctx.lineWidth=size*0.04; ctx.beginPath(); ctx.moveTo(0,size*0.26); ctx.lineTo(0,-size*0.28); ctx.moveTo(0,-size*0.28); ctx.lineTo(-size*0.13,-size*0.10); ctx.moveTo(0,-size*0.28); ctx.lineTo(size*0.13,-size*0.10); ctx.stroke();
-      break;
-    }
-    case 'rainbowHaloGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; star(8,size*0.18,size*0.42); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,0.86)'; ctx.lineWidth=size*0.045; ctx.beginPath(); ctx.arc(0,0,size*0.35,Math.PI*0.12,Math.PI*0.88); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0,0,size*0.24,0,Math.PI*2); ctx.stroke();
-      break;
-    }
-    case 'ultimateNebulaGel': {
-      ctx.fillStyle=c; ctx.strokeStyle='#ffffff'; star(9,size*0.19,size*0.46); ctx.fill(); ctx.stroke();
-      ctx.save(); ctx.rotate((t || performance.now())/900); ctx.strokeStyle='rgba(255,255,255,0.86)'; ctx.lineWidth=size*0.035; for(let i=0;i<3;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.ellipse(0,0,size*0.43,size*0.13,0,0,Math.PI*2); ctx.stroke(); } ctx.restore();
-      ctx.fillStyle='rgba(255,255,255,0.90)'; ctx.beginPath(); ctx.arc(0,0,size*0.09,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'slimeDrop':
-    case 'acidDrop':
-    case 'crystalDrop': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#f4fff8';
-      ctx.beginPath();
-      ctx.moveTo(0, -size*0.45);
-      ctx.bezierCurveTo(size*0.34, -size*0.15, size*0.32, size*0.38, 0, size*0.44);
-      ctx.bezierCurveTo(-size*0.32, size*0.38, -size*0.34, -size*0.15, 0, -size*0.45);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      if (rank.mark === 'acidDrop') {
-        ctx.strokeStyle = 'rgba(255,255,255,0.82)'; ctx.lineWidth = size*0.045;
-        ctx.beginPath(); ctx.moveTo(-size*0.16, size*0.02); ctx.lineTo(size*0.16, size*0.02); ctx.moveTo(0, -size*0.14); ctx.lineTo(0, size*0.18); ctx.stroke();
-      } else if (rank.mark === 'crystalDrop') {
-        ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = size*0.04;
-        ctx.beginPath(); ctx.moveTo(0,-size*0.38); ctx.lineTo(0,size*0.36); ctx.moveTo(-size*0.20,size*0.02); ctx.lineTo(size*0.20,size*0.02); ctx.stroke();
-      }
-      break;
-    }
-    case 'gelCore':
-    case 'splitCore':
-    case 'condensedGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#efffff';
-      ctx.beginPath(); ctx.arc(0,0,size*0.36,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.34)'; ctx.beginPath(); ctx.arc(-size*0.11,-size*0.12,size*0.12,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.78)'; ctx.lineWidth = size*0.04;
-      if (rank.mark === 'splitCore') {
-        ctx.beginPath(); ctx.moveTo(0,-size*0.34); ctx.lineTo(0,size*0.34); ctx.moveTo(-size*0.34,0); ctx.lineTo(size*0.34,0); ctx.stroke();
-      } else if (rank.mark === 'condensedGel') {
-        for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0,0,size*(0.16+i*0.08),0,Math.PI*2); ctx.stroke(); }
-      }
-      break;
-    }
-    case 'bubbleMembrane':
-    case 'elasticFilm': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
-      ctx.beginPath(); ctx.ellipse(0,0,size*0.38,size*0.30,0,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(0,0,size*0.26,size*0.18,Math.PI/5,0,Math.PI*2); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(-size*0.16,-size*0.12,size*0.06,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'slimeRing':
-    case 'slimeAura': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(0,0,size*(0.20+i*0.11),0,Math.PI*2); ctx.stroke(); }
-      star(4, size*0.08, size*0.16, Math.PI/4); ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
-      break;
-    }
-    case 'gelWave':
-    case 'jellyRibbon': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.075;
-      for(let i=0;i<3;i++){
-        const yy = -size*0.18 + i*size*0.16;
-        ctx.beginPath(); ctx.moveTo(-size*0.40, yy); ctx.bezierCurveTo(-size*0.18, yy-size*0.13, size*0.18, yy+size*0.13, size*0.40, yy); ctx.stroke();
-      }
-      break;
-    }
-    case 'gelCrystal':
-    case 'prismGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(0,-size*0.46); ctx.lineTo(size*0.34,-size*0.08); ctx.lineTo(size*0.22,size*0.42); ctx.lineTo(-size*0.22,size*0.42); ctx.lineTo(-size*0.34,-size*0.08); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = size*0.035;
-      ctx.beginPath(); ctx.moveTo(0,-size*0.42); ctx.lineTo(0,size*0.38); ctx.moveTo(-size*0.30,-size*0.08); ctx.lineTo(size*0.30,-size*0.08); ctx.stroke();
-      break;
-    }
-    case 'stickyStar':
-    case 'luminousGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#fffbd6';
-      star(rank.mark === 'luminousGel' ? 10 : 6, size*0.18, size*0.43); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.78)'; ctx.beginPath(); ctx.arc(0,0,size*0.12,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'slimeShield':
-    case 'slimeCrest': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#f3fff7'; shield(size*0.70, size*0.82); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.78)'; ctx.lineWidth = size*0.04;
-      ctx.beginPath(); ctx.arc(0,-size*0.04,size*0.18,0,Math.PI*2); ctx.stroke();
-      break;
-    }
-    case 'gelSpiral': {
-      ctx.strokeStyle = c; ctx.lineWidth = size*0.07;
-      ctx.beginPath();
-      for(let i=0;i<38;i++){ const a=i*0.35; const rr=size*0.012*i; const px=Math.cos(a)*rr, py=Math.sin(a)*rr; if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
-      ctx.stroke();
-      break;
-    }
-    case 'healGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#ecfff1'; ctx.beginPath(); ctx.arc(0,0,size*0.34,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='#ffffff'; ctx.lineWidth=size*0.075; ctx.beginPath(); ctx.moveTo(-size*0.22,0); ctx.lineTo(size*0.22,0); ctx.moveTo(0,-size*0.22); ctx.lineTo(0,size*0.22); ctx.stroke();
-      break;
-    }
-    case 'slimeCrown': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#fff6bd';
-      ctx.beginPath(); ctx.moveTo(-size*0.38,size*0.20); ctx.lineTo(-size*0.28,-size*0.18); ctx.lineTo(-size*0.10,size*0.02); ctx.lineTo(0,-size*0.32); ctx.lineTo(size*0.10,size*0.02); ctx.lineTo(size*0.28,-size*0.18); ctx.lineTo(size*0.38,size*0.20); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.roundRect(-size*0.34, size*0.15, size*0.68, size*0.16, size*0.05); ctx.fill(); ctx.stroke();
-      break;
-    }
-    case 'toxicGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#efffea';
-      for(let i=0;i<3;i++){ const a=-Math.PI/2+i*Math.PI*2/3; ctx.beginPath(); ctx.ellipse(Math.cos(a)*size*0.13, Math.sin(a)*size*0.13, size*0.14, size*0.25, a, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
-      ctx.fillStyle='rgba(0,0,0,0.40)'; ctx.beginPath(); ctx.arc(0,0,size*0.10,0,Math.PI*2); ctx.fill();
-      break;
-    }
-    case 'ascendGel':
-    case 'rainbowGel':
-    case 'ultimateGel': {
-      ctx.fillStyle = c; ctx.strokeStyle = '#ffffff';
-      star(rank.mark === 'ultimateGel' ? 9 : 7, size*0.20, size*0.45); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.82)'; ctx.lineWidth = size*0.04;
-      ctx.beginPath(); ctx.arc(0,0,size*0.24,0,Math.PI*2); ctx.stroke();
-      if (rank.mark === 'rainbowGel' || rank.mark === 'ultimateGel') { ctx.beginPath(); ctx.arc(0,0,size*0.35,Math.PI*0.15,Math.PI*0.85); ctx.stroke(); }
-      break;
-    }
-    default:
-      star(5, size*0.20, size*0.42); ctx.fill(); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function setupHudRankIconCanvas() {
-  const hudCompact = document.getElementById('playerHudCompact');
-  if (!hudCompact || document.getElementById('hudRankIconCanvas')) return;
-  const canvas = document.createElement('canvas');
-  canvas.id = 'hudRankIconCanvas';
-  canvas.width = 36;
-  canvas.height = 36;
-  canvas.style.width = '28px';
-  canvas.style.height = '28px';
-  canvas.style.flex = '0 0 28px';
-  canvas.style.marginRight = '7px';
-  canvas.style.display = 'block';
-  canvas.title = '계급 아이콘 미리보기';
-  canvas.setAttribute('aria-label', '계급 아이콘 미리보기');
-  canvas.addEventListener('click', openRankPreviewModal);
-  hudCompact.insertBefore(canvas, hudCompact.firstChild);
-}
-
-let hudRankIconAnimId = null;
-
-function drawHudRankLiveEffects(ctx, rank, x, y, size, t) {
-  if (!ctx || !rank) return;
-  const c = rank.color || '#ffffff';
-  const tier = Math.max(1, Number(rank.tier || 1));
-  const lv = Math.max(1, Number(rank.level || 1));
-  const r = size / 2;
-  const time = t || performance.now();
-
-  // ✅ [v.166.0] 실제 HUD 계급 아이콘 전용 레벨대별 애니메이션
-  // - 미리보기 도감은 drawLevelRankIcon(..., t=0)만 사용하므로 정적 유지
-  // - 100레벨 이상: 반짝임/광택 강화
-  // - 200레벨 이상: 굵은 황금 테두리 + 황금 오라 추가
-  const isTripleLevel = lv >= 100;
-  const isGoldLevel = lv >= 200;
-  const spinSpeed = isGoldLevel ? 620 : isTripleLevel ? 780 : 1050;
-  const spin = time / spinSpeed;
-  const pulse = 0.5 + 0.5 * Math.sin(time / (isTripleLevel ? 240 : 360));
-  const shimmer = 0.5 + 0.5 * Math.sin(time / 130);
-
-  ctx.save();
-  ctx.translate(x, y);
-
-  // 공통 광택 링: 100레벨 이상부터 더 빠르고 선명하게 회전
-  ctx.save();
-  ctx.rotate(spin);
-  ctx.lineWidth = Math.max(1.2, size * (isTripleLevel ? 0.060 : 0.045));
-  ctx.strokeStyle = `rgba(255,255,255,${isTripleLevel ? 0.46 + pulse * 0.34 : 0.30 + pulse * 0.24})`;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.96, -0.62, 0.38);
-  ctx.stroke();
-  ctx.restore();
-
-  // 100레벨 이상: 십자 광택이 아이콘 위를 스치듯 지나감
-  if (isTripleLevel) {
-    ctx.save();
-    ctx.rotate(-spin * 1.35);
-    ctx.globalAlpha = 0.28 + shimmer * 0.34;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = Math.max(1, size * 0.032);
-    ctx.beginPath();
-    ctx.moveTo(-r * 1.05, 0);
-    ctx.lineTo(r * 1.05, 0);
-    ctx.moveTo(0, -r * 1.05);
-    ctx.lineTo(0, r * 1.05);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // 레벨 구간이 높을수록 작은 별빛이 많아지고 빠르게 점멸
-  const sparkleCount = lv >= 220 ? 7 : lv >= 200 ? 6 : lv >= 150 ? 5 : lv >= 100 ? 4 : lv >= 76 ? 2 : 1;
-  for (let i = 0; i < sparkleCount; i++) {
-    const a = -spin * (1.20 + i * 0.18) + i * Math.PI * 2 / sparkleCount;
-    const rr = r * (0.74 + 0.16 * Math.sin(time / 460 + i));
-    const sx = Math.cos(a) * rr;
-    const sy = Math.sin(a) * rr;
-    const s = Math.max(1.6, size * (isTripleLevel ? 0.060 + i * 0.004 : 0.045 + i * 0.006));
-    const alpha = isTripleLevel ? 0.52 + 0.48 * Math.sin(time / 180 + i * 1.7) : 0.45 + 0.45 * Math.sin(time / 260 + i * 1.7);
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.rotate(a + time / (isTripleLevel ? 260 : 420));
-    ctx.strokeStyle = `rgba(255,255,255,${Math.max(0.18, Math.min(1, alpha))})`;
-    ctx.lineWidth = Math.max(1, size * 0.026);
-    ctx.beginPath();
-    ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
-    ctx.moveTo(0, -s); ctx.lineTo(0, s);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // 200레벨 이상: 굵은 황금 테두리. 멀리서 봐도 고레벨임이 바로 보이도록 가장 바깥에 크게 표시
-  if (isGoldLevel) {
-    ctx.save();
-    ctx.shadowColor = '#ffd700';
-    ctx.shadowBlur = 12 + pulse * 10;
-    ctx.lineWidth = Math.max(3.4, size * 0.145);
-    ctx.strokeStyle = `rgba(255,215,0,${0.82 + pulse * 0.18})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.lineWidth = Math.max(1.2, size * 0.045);
-    ctx.strokeStyle = `rgba(255,255,255,${0.45 + pulse * 0.25})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.91, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    // 황금 점선 오라: 굵은 테두리 바깥에서 회전
-    ctx.save();
-    ctx.rotate(-spin * 1.8);
-    ctx.strokeStyle = '#ffe76a';
-    ctx.globalAlpha = 0.34 + pulse * 0.30;
-    ctx.lineWidth = Math.max(1.4, size * 0.045);
-    ctx.setLineDash([size * 0.15, size * 0.09]);
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.24, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  } else if (lv >= 150) {
-    // 150~199레벨: 색상 오라만 추가, 황금 테두리는 아직 사용하지 않음
-    ctx.save();
-    ctx.rotate(-spin * 1.55);
-    ctx.strokeStyle = c;
-    ctx.globalAlpha = 0.28 + pulse * 0.24;
-    ctx.lineWidth = Math.max(1.2, size * 0.04);
-    ctx.setLineDash([size * 0.16, size * 0.10]);
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-function drawHudRankIconFrame(t) {
-  const canvas = document.getElementById('hudRankIconCanvas');
-  if (!canvas) {
-    hudRankIconAnimId = null;
-    return;
-  }
-  const ctx = canvas.getContext('2d');
-  const currentRank = getLevelRank(level || 1);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawLevelRankIcon(ctx, currentRank, canvas.width / 2, canvas.height / 2, 32, t);
-  drawHudRankLiveEffects(ctx, currentRank, canvas.width / 2, canvas.height / 2, 32, t);
-  hudRankIconAnimId = requestAnimationFrame(drawHudRankIconFrame);
-}
-
-function refreshHudRankIcon() {
-  setupHudRankIconCanvas();
-  const canvas = document.getElementById('hudRankIconCanvas');
-  if (!canvas) return;
-  if (!hudRankIconAnimId) {
-    hudRankIconAnimId = requestAnimationFrame(drawHudRankIconFrame);
-  }
-}
-
-function getLevelRankLabel(lv) {
-  const r = getLevelRank(lv);
-  return `${r.name}`;
-}
-
-function maybeShowRankUpNotice(oldLv, newLv) {
-  const before = getLevelRank(oldLv);
-  const after = getLevelRank(newLv);
-  if (!before || !after || before.name === after.name) return;
-  const msg = `계급 상승!`;
-  try { showToast(msg, after.color || '#ffe76a', 2200); } catch(e) {}
-  if (typeof player !== 'undefined' && player) {
-    try { spawnDamageText(player.x, player.y - 54, msg, after.color || '#ffe76a'); } catch(e) {}
-  }
-}
-
-function getRankMarkKorean(mark, rank) {
-  const map = {
-    sprout:'새싹', leaf:'잎새', scope:'조준', crystal:'수정', shield:'방패', sword:'검',
-    medal:'메달', trophy:'트로피', aura:'오라', crown:'왕관', galaxy:'은하',
-    flame:'불꽃', water:'물결', bolt:'번개', diamond:'보석', gear:'기어', wing:'날개',
-    moon:'달', sun:'태양', comet:'혜성', anchor:'닻', heart:'하트', hex:'육각', clover:'클로버', star:'별'
-  };
-  if (rank && rank.level) return `${map[mark] || '문양'} · 고유 ${rank.level}번`;
-  return map[mark] || '문양';
-}
-
-function buildRankPreviewGrid() {
-  const grid = document.getElementById('rankPreviewGrid');
-  const summary = document.getElementById('rankPreviewSummary');
-  if (!grid) return;
-  const currentLevel = Math.max(1, Math.min(250, Number(level || 1)));
-  const currentRank = getLevelRank(currentLevel);
-  if (summary && currentRank) {
-    summary.innerHTML = '';
-  }
-  if (grid.dataset.built === '1') {
-    grid.querySelectorAll('.rank-preview-card.current').forEach(el => el.classList.remove('current'));
-    const currentCard = grid.querySelector(`[data-rank-level="${currentLevel}"]`);
-    if (currentCard) currentCard.classList.add('current');
-    return;
-  }
-  grid.innerHTML = '';
-  LEVEL_RANKS.forEach((rank) => {
-    const card = document.createElement('div');
-    card.className = 'rank-preview-card' + (rank.level === currentLevel ? ' current' : '');
-    card.dataset.rankLevel = String(rank.level);
-    card.title = `LV.${rank.level} ${rank.name}`;
-
-    const iconCanvas = document.createElement('canvas');
-    iconCanvas.width = 60;
-    iconCanvas.height = 60;
-
-    const lvEl = document.createElement('div');
-    lvEl.className = 'rank-preview-level';
-    lvEl.textContent = `LV.${rank.level}`;
-
-    const nameEl = document.createElement('div');
-    nameEl.className = 'rank-preview-name';
-    nameEl.style.color = rank.color || '#ffffff';
-    nameEl.textContent = rank.name;
-
-    const markEl = document.createElement('div');
-    markEl.className = 'rank-preview-mark';
-    markEl.textContent = getRankMarkKorean(rank.mark, rank);
-
-    // ✅ [v.165.9] 계급 도감은 글자 없이 아이콘만 표시
-    card.appendChild(iconCanvas);
-    grid.appendChild(card);
-
-    const ctx = iconCanvas.getContext('2d');
-    drawLevelRankIcon(ctx, rank, iconCanvas.width / 2, iconCanvas.height / 2, 50, 0);
-  });
-  grid.dataset.built = '1';
-}
-
-function openRankPreviewModal() {
-  const modal = document.getElementById('rankPreviewModal');
-  if (!modal) return;
-  buildRankPreviewGrid();
-  modal.classList.remove('hidden');
-  const currentCard = document.querySelector(`#rankPreviewGrid [data-rank-level="${Math.max(1, Math.min(250, Number(level || 1)))}"]`);
-  if (currentCard) {
-    setTimeout(() => currentCard.scrollIntoView({ block:'center', behavior:'smooth' }), 60);
-  }
-}
-
-function closeRankPreviewModal() {
-  const modal = document.getElementById('rankPreviewModal');
-  if (modal) modal.classList.add('hidden');
 }
 
 function renderSkillGuide() {
@@ -4901,8 +3552,6 @@ const confirmNoBtn = document.getElementById('confirmNoBtn');
 const noticeModal = document.getElementById('noticeModal');
 const noticeBody = document.getElementById('noticeBody');
 const closeNoticeBtn = document.getElementById('closeNoticeBtn');
-const rankPreviewModal = document.getElementById('rankPreviewModal');
-const closeRankPreviewBtn = document.getElementById('closeRankPreviewBtn');
 const questModal = document.getElementById('questModal');
 const questList = document.getElementById('questList');
 const closeQuestBtn = document.getElementById('closeQuestBtn');
@@ -5606,7 +4255,6 @@ function addExpDirect(amount) {
     level = Math.min(newLevel, MAX_LEVEL);
     syncPlayerHealthToLevel();
     maybeShowSkillUnlockNotice(oldLevel, level);
-    maybeShowRankUpNotice(oldLevel, level);
     startEvolutionAnimation(oldLevel, newLevel);
     SFX.levelUp();
     if (oldLevel < MAX_LEVEL && level === MAX_LEVEL) triggerMaxLevelCelebration();
@@ -5848,7 +4496,7 @@ const TITLE_SLIME_PALETTE = [
 
 const BASE_PLAYER_SPEED = 3.0;
 const FIRE_INTERVAL = 150;
-const PLAYER_SIZE = 27; // ✅ [v.166.7] 화면 확대에 맞춰 플레이어 크기 소폭 확대
+const PLAYER_SIZE = 24;
 const BASE_PLAYER_DAMAGE = 5;
 const MAX_LEVEL = 250;
 const EVO_MILESTONES = [11, 31, 61, 101, 200];
@@ -5860,7 +4508,7 @@ let evoAnim = {
   fromStage: 1,
   toStage: 1
 };
-const PET_SCALE = 0.68;             // ✅ [v.166.7] 플레이어 대비 펫 크기 소폭 확대
+const PET_SCALE = 0.6;             // 플레이어 대비 60% 크기
 const PET_FIRE_INTERVAL = 200;     // 0.15초마다 발사 (ms)
 const PET_BULLET_SPEED = -6.5;     // 펫 탄속(원하시면 조절)
 const PET_BULLET_RADIUS = 2.5;     // 펫 탄 크기
@@ -7965,9 +6613,9 @@ const EXP_ITEM_DROP_CHANCE = 0.10;
 // ✅ 보스 처치 EXP 구슬 드랍 확률(요청: 10%)
 const BOSS_EXP_ITEM_DROP_CHANCE = 0.10;
 const EXP_ITEM_GRADES = {
-  low:  { label: '하', mult: 1.00, color: '#44ffb8', r: 12 },
-  mid:  { label: '중', mult: 3.00, color: '#66aaff', r: 14 },
-  high: { label: '상', mult: 5.00, color: '#ffd700', r: 16 }
+  low:  { label: '하', mult: 1.00, color: '#44ffb8', r: 10 },
+  mid:  { label: '중', mult: 3.00, color: '#66aaff', r: 12 },
+  high: { label: '상', mult: 5.00, color: '#ffd700', r: 14 }
 };
 
 function rollExpGrade() {
@@ -8118,7 +6766,7 @@ function drawExpItems() {
       ctx.globalAlpha = 1;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = fontStr(11, 'bold');
+      ctx.font = fontStr(10, 'bold');
       ctx.lineWidth = 1.6;
       ctx.strokeStyle = 'rgba(0,0,0,0.72)';
       ctx.fillStyle = '#ffffff';
@@ -8692,26 +7340,15 @@ function updateSettingsUI() {
     bgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
     bgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
   }
-  if (pauseBgmBtn) {
-    pauseBgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
-    pauseBgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
-  }
   if (sfxBtn) {
     sfxBtn.textContent = sfxEnabled ? "SFX 켜짐" : "SFX 꺼짐";
     sfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
-  }
-  if (pauseSfxBtn) {
-    pauseSfxBtn.textContent = sfxEnabled ? "SFX 켜짐" : "SFX 꺼짐";
-    pauseSfxBtn.style.color = sfxEnabled ? "#fff" : "#888";
   }
   if (lowPowerBtn) {
     lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
     lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
-  if (pauseLowPowerBtn) {
-    pauseLowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
-    pauseLowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
-  }
+  syncPauseSettingsButtons166();
   if (homingBtn) {
     if (level < 61) {
       homingBtn.textContent = "유도탄 LV.61";
@@ -8783,6 +7420,24 @@ function toggleLowPowerFromCanvas() {
   updateSettingsUI();
   requestAnimationFrame(() => fitCanvasToViewport());
 }
+
+function syncPauseSettingsButtons166() {
+  if (pauseBgmBtn) {
+    pauseBgmBtn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF';
+    pauseBgmBtn.style.color = bgmEnabled ? '#ffffff' : '#888888';
+  }
+  if (pauseSfxBtn) {
+    pauseSfxBtn.textContent = sfxEnabled ? 'SFX ON' : 'SFX OFF';
+    pauseSfxBtn.style.color = sfxEnabled ? '#ffffff' : '#888888';
+  }
+  if (pauseLowPowerBtn) {
+    pauseLowPowerBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF';
+    pauseLowPowerBtn.style.color = saveData.lowPower ? '#ffd700' : '#ffffff';
+  }
+}
+if (pauseBgmBtn) pauseBgmBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleBgmFromCanvas(); });
+if (pauseSfxBtn) pauseSfxBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleSfxFromCanvas(); });
+if (pauseLowPowerBtn) pauseLowPowerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleLowPowerFromCanvas(); });
 
 
 
@@ -8909,17 +7564,6 @@ function handleCanvasSettingsInput(pos) {
   canvasSettingsOpen = false;
   syncTitleButtonsForCanvasSettings();
   return true;
-}
-
-function roundRectPath(ctx, x, y, w, h, r) {
-  const rr = Math.min(r, w/2, h/2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
 }
 
 function drawRoundRect(x, y, w, h, r) {
@@ -9309,40 +7953,45 @@ characterListEl && characterListEl.addEventListener('click', (e) => {
   else if (del) deleteCharacterById(del);
 });
 
-
-// ✅ [v.166.7] HUD/일시정지 메뉴 공용 설정 토글
-function toggleBgmSettingShared() {
-  bgmEnabled = !bgmEnabled;
-  updateSettingsUI();
-  if (!bgmEnabled) {
-    if (currentBgm) currentBgm.pause();
-  } else if (!isPaused) {
-    if (state === 'title') playBgmTrack('title');
-    else if (state === 'playing') {
-      if (boss && gameMode !== 'mission') playBgmTrack('boss');
-      else playBgmTrack(getModeBgmName());
+(bgmBtn && bgmBtn.addEventListener) && bgmBtn.addEventListener('click', () => {
+    bgmEnabled = !bgmEnabled;
+    updateSettingsUI();
+    
+    if (!bgmEnabled) {
+        if (currentBgm) currentBgm.pause();
+    } else {
+        // 켰을 때 현재 상황에 맞는 음악 재생
+        if (currentBgm) {
+            // ✅ 시즌 BGM 적용 위해 현재 상황 트랙으로 다시 선택
+            if (state === 'title') playBgmTrack('title');
+            else if (state === 'playing') {
+                if (boss && gameMode !== 'mission') playBgmTrack('boss');
+                else playBgmTrack(getModeBgmName());
+            }
+        }
+        else {
+            if (state === 'title') playBgmTrack('title');
+            else if (state === 'playing') {
+                if (boss && gameMode !== 'mission') playBgmTrack('boss');
+                else playBgmTrack(getModeBgmName());
+            }
+        }
     }
-  }
-  saveGameData();
-}
-function toggleSfxSettingShared() {
-  sfxEnabled = !sfxEnabled;
-  updateSettingsUI();
-  saveGameData();
-}
-function toggleLowPowerSettingShared() {
+    saveGameData();
+});
+
+(sfxBtn && sfxBtn.addEventListener) && sfxBtn.addEventListener('click', () => {
+sfxEnabled = !sfxEnabled;
+updateSettingsUI();
+saveGameData();
+});
+
+(lowPowerBtn && lowPowerBtn.addEventListener) && lowPowerBtn.addEventListener('click', () => {
   saveData.lowPower = !saveData.lowPower;
   updateSettingsUI();
   saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
-}
-
-(bgmBtn && bgmBtn.addEventListener) && bgmBtn.addEventListener('click', toggleBgmSettingShared);
-(sfxBtn && sfxBtn.addEventListener) && sfxBtn.addEventListener('click', toggleSfxSettingShared);
-(lowPowerBtn && lowPowerBtn.addEventListener) && lowPowerBtn.addEventListener('click', toggleLowPowerSettingShared);
-(pauseBgmBtn && pauseBgmBtn.addEventListener) && pauseBgmBtn.addEventListener('click', toggleBgmSettingShared);
-(pauseSfxBtn && pauseSfxBtn.addEventListener) && pauseSfxBtn.addEventListener('click', toggleSfxSettingShared);
-(pauseLowPowerBtn && pauseLowPowerBtn.addEventListener) && pauseLowPowerBtn.addEventListener('click', toggleLowPowerSettingShared);
+});
 
 (fpsSelect && fpsSelect.addEventListener) && fpsSelect.addEventListener('change', () => {
   const nextFps = Number(fpsSelect.value);
@@ -9487,7 +8136,7 @@ showContextTutorial('quest', [
 ]);
 }
 
-const NOTICE_VERSION_KEY = 'ss_notice_seen_v165_6';
+const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
 
 function openNoticeModal() {
   if (!noticeModal) return;
@@ -9510,8 +8159,6 @@ function maybeShowNoticeOnTitle() {
 if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
 if (openNoticeBtn) openNoticeBtn.addEventListener('click', openNoticeModal);
 if (closeNoticeBtn) closeNoticeBtn.addEventListener('click', closeNoticeModalFn);
-if (closeRankPreviewBtn) closeRankPreviewBtn.addEventListener('click', closeRankPreviewModal);
-if (rankPreviewModal) rankPreviewModal.addEventListener('click', (e) => { if (e.target === rankPreviewModal) closeRankPreviewModal(); });
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
@@ -10277,9 +8924,6 @@ function openProfile(isRefresh = false) {
   const groupedTitles = getGroupedTitlesForProfile();
   const rightPet = getEquippedPet('right');
   const petBonus = getPetBonusTotals();
-  const rankMeta = getLevelRank(curLv);
-  const nextRankMeta = getNextLevelRank(curLv);
-  const nextRankText = nextRankMeta ? `${nextRankMeta.name}까지 LV.${formatNumber(nextRankMeta.level - curLv)} 남음` : '최고 계급 달성';
 
   profileBodyEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -10291,12 +8935,6 @@ function openProfile(isRefresh = false) {
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
         <div style="font-weight:900; color:#cfefff;">⭐ 누적 경험치 / 레벨</div>
         <div style="margin-top:2px; font-size:15px; font-weight:900;">LV.${formatNumber(curLv)} · ${formatNumber(totalExp)} EXP</div>
-      </div>
-      <div style="padding:12px 14px; border:1px solid ${rankMeta.color}88; border-radius:14px; background:linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.24)); box-shadow:0 0 18px ${rankMeta.color}22;">
-        <div style="font-weight:900; color:#cfefff;">현재 계급</div>
-        <div style="margin-top:8px; display:flex; align-items:center; gap:10px;"><canvas id="profileRankIconCanvas" width="56" height="56" style="width:44px; height:44px; flex:0 0 44px;"></canvas><div style="font-size:20px; font-weight:1000; color:${rankMeta.color};">${rankMeta.name}</div></div>
-        <div style="margin-top:4px; font-size:12px; color:#d7e2ff;">${nextRankText}</div>
-        <div style="margin-top:8px; font-size:11px; color:#aebcff; line-height:1.45;">레벨이 오르면 계급도 자동 상승하며, 상단 HUD와 프로필에 함께 표시됩니다.</div>
       </div>
 
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
@@ -10392,13 +9030,6 @@ function openProfile(isRefresh = false) {
       </div>
     </div>
   `;
-
-  const profileRankCanvas = document.getElementById('profileRankIconCanvas');
-  if (profileRankCanvas) {
-    const prCtx = profileRankCanvas.getContext('2d');
-    prCtx.clearRect(0, 0, profileRankCanvas.width, profileRankCanvas.height);
-    drawLevelRankIcon(prCtx, rankMeta, profileRankCanvas.width / 2, profileRankCanvas.height / 2, 50, performance.now());
-  }
 
   profileBodyEl.querySelectorAll('[data-use-item]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -11260,39 +9891,13 @@ function updateInfiniteSuddenQuest(dt) {
   suddenQuest.interval = Math.max(0, (suddenQuest.interval || 90000) - dt);
   if (suddenQuest.interval <= 0) startSuddenQuest();
 }
-// ✅ [v.167.4] 모든 모드 공통 캔버스 상단 안전영역
-// HUD는 DOM 박스, 점수/시간/단계/수집 정보는 캔버스 내부 글자 영역으로 분리합니다.
-// 이 영역 아래부터 보스 체력바, 돌발 퀘스트, 전투 오브젝트 UI가 내려오게 해서 가림을 방지합니다.
-function getCanvasTopInfoMetrics(){
-  const small = width < 520;
-  // ✅ [v.167.5] 모든 모드 상단 정보가 HUD/일시정지 버튼에 가려지지 않도록
-  // 캔버스 최상단을 공통 안전영역으로 비워두고, 정보는 3줄로 고정 표시합니다.
-  const y = small ? 8 : 10;
-  const lineH = small ? 15 : 18;
-  const rows = 3;
-  const bottom = y + lineH * rows + (small ? 12 : 14);
-  return { y, lineH, rows, bottom, small };
-}
-function getCanvasTopInfoBottom(){
-  return getCanvasTopInfoMetrics().bottom;
-}
-function getBossHudY(){
-  return Math.max(getCanvasTopInfoBottom() + 8, width < 520 ? 46 : 54);
-}
-function getHudBottomCanvasYForSuddenQuest() {
-  const hasBossHpBar = !!(boss && boss.hp > 0 && !boss._deadHandled);
-  const bossBottom = hasBossHpBar ? (getBossHudY() + 40) : getCanvasTopInfoBottom();
-  const baseY = bossBottom + 8;
-  return Math.max(10, Math.min(canvas.height - 76, baseY));
-}
-
 function drawSuddenQuestUI() {
   if (gameMode !== 'infinite' || !suddenQuest || !suddenQuest.active) return;
   const remain = Math.max(0, suddenQuest.timer || 0);
   const pct = Math.max(0, Math.min(1, remain / Math.max(1, suddenQuest.duration || 1)));
   const x = width / 2;
-  const y = getHudBottomCanvasYForSuddenQuest();
-  const w = Math.min(520, Math.max(260, width - 48));
+  const y = 76;
+  const w = Math.min(520, width - 80);
   const h = 58;
   ctx.save();
   ctx.translate(x - w/2, y);
@@ -11825,16 +10430,10 @@ questList.appendChild(div);
 
 
 function syncPauseButtonPosition() {
-  // ✅ [v.167.2] 일시정지 버튼은 HUD가 아니라 캔버스 기준으로 고정
-  // HUD 높이를 매번 따라가면 모바일에서 글자/정보 갱신 때 버튼이 위아래로 떨릴 수 있음
   if (!pauseBtn || !canvas) return;
-  const canvasTop = Math.round(Number(canvas.offsetTop || 0));
-  const targetTop = canvasTop + 8;
-  if (pauseBtn.dataset.fixedTop !== String(targetTop)) {
-    pauseBtn.style.top = `${targetTop}px`;
-    pauseBtn.dataset.fixedTop = String(targetTop);
-  }
-  pauseBtn.style.right = '8px';
+  const canvasTop = Number(canvas.offsetTop || 0);
+  pauseBtn.style.top = `${canvasTop + 10}px`;
+  pauseBtn.style.right = '10px';
 }
 
 function setPauseUI() {
@@ -14208,7 +12807,7 @@ function drawGoldDrops() {
       ctx.globalAlpha = blocked ? 0.55 : 0.98;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = fontStr(11, 'bold'); // ✅ [v.165.1] 보석 라벨 크기 보정
+      ctx.font = fontStr(10, 'bold'); // ✅ [v.165.1] 보석 라벨 크기 보정
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = 'rgba(0,0,0,0.72)';
       ctx.fillStyle = '#ffffff';
@@ -14585,7 +13184,6 @@ function addExp(amount, opts = {}) {
   if (newLevel > oldLevel) {
     level = Math.min(newLevel, MAX_LEVEL);
     syncPlayerHealthToLevel();
-    maybeShowRankUpNotice(oldLevel, level);
     startEvolutionAnimation(oldLevel, newLevel);
     SFX.levelUp();
         // ✅ [v.56] 만렙 도달 시 폭죽 + 사운드
@@ -16496,7 +15094,7 @@ enemies = enemies.filter(e => e.hp > 0);
 function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
     const cfg = ENEMY_CONFIG[type] || { score: 50, baseHp: 40 };
     // ✅ [v.154.2] 무한 모드는 몬스터 크기를 살짝 키우되, 캔버스 좌우 밖으로 나가지 않게 보정
-    let size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale() * 1.12; // ✅ [v.166.7] 화면 확대에 맞춰 몬스터 크기 소폭 확대
+    let size = (18 + (cfg.score / 100) * 1.0) * getPcMonsterScale();
     if (gameMode === 'infinite') {
         size = Math.min(size * 1.12, Math.min(width, height) * 0.075);
         x = clamp(x, size, width - size);
@@ -16657,10 +15255,10 @@ function createBoss() {
     return {
   x: width / 2,
   y: -140,                 // ✅ 화면 위에서 시작
-  targetY: 118,            // ✅ [v.166.9] 보스 등장 후 정착 위치를 더 아래로 조정
+  targetY: 80,             // ✅ 여기까지 내려오면 등장 완료
   enterSpeed: 1.6,         // ✅ 내려오는 속도(원하면 1.2~2.4)
 
-  width: 116, height: 104, // ✅ [v.166.7] 화면 확대에 맞춰 보스 크기 소폭 확대
+  width: 100, height: 90,
   hp, maxHp: hp,
   element,
 
@@ -17726,7 +16324,6 @@ blizzardFlakes = [];
 meteors = [];
 ctx.clearRect(0, 0, width, height); // 화면 클리어
 setPauseUI();
-updateHUD();
 }
 
 // 게임 오버 버튼 이벤트
@@ -19422,93 +18019,205 @@ if (boss && !bossInvincible) {
 }
 
 
-function updateModeInfoHudV1677() {
-  const els = (typeof modeInfoEls !== 'undefined') ? modeInfoEls : [];
-  if (!els || !els.length || !els[0]) return;
-
-  function setChip(i, text, color){
-    const el = els[i];
-    if (!el) return;
-    el.textContent = text || '';
-    el.style.color = color || '#f7fbff';
+// ===============================
+// ✅ [v.166.1] 1~250레벨 250개 계급 / 직접 그린 슬라임 문양 25종 × 10색
+// ===============================
+const RANK_COLOR_STEPS_166 = [
+  { name:'빨강', color:'#ff4d5f', sub:'#ffb3bd', dark:'#931d2d', glow:'rgba(255,77,95,0.55)' },
+  { name:'주황', color:'#ff9b36', sub:'#ffd0a1', dark:'#9b4b08', glow:'rgba(255,155,54,0.55)' },
+  { name:'노랑', color:'#ffe45c', sub:'#fff5ae', dark:'#9d7d00', glow:'rgba(255,228,92,0.55)' },
+  { name:'연두', color:'#b7ff5c', sub:'#e1ffae', dark:'#4d8f05', glow:'rgba(183,255,92,0.55)' },
+  { name:'초록', color:'#44ff88', sub:'#b6ffd0', dark:'#088b3c', glow:'rgba(68,255,136,0.55)' },
+  { name:'하늘', color:'#58dcff', sub:'#b9f2ff', dark:'#087c9c', glow:'rgba(88,220,255,0.55)' },
+  { name:'파랑', color:'#4f86ff', sub:'#b9ceff', dark:'#123d9e', glow:'rgba(79,134,255,0.55)' },
+  { name:'남색', color:'#3445d9', sub:'#aeb6ff', dark:'#151d77', glow:'rgba(52,69,217,0.55)' },
+  { name:'보라', color:'#a65cff', sub:'#ddbdff', dark:'#59219f', glow:'rgba(166,92,255,0.55)' },
+  { name:'분홍', color:'#ff78c8', sub:'#ffc5e8', dark:'#9c2a6f', glow:'rgba(255,120,200,0.55)' }
+];
+const RANK_TYPE_STEPS_166 = [
+  { name:'새싹 슬라임', shape:'sprout' }, { name:'물방울 슬라임', shape:'drop' }, { name:'말랑 슬라임', shape:'basic' },
+  { name:'점프 슬라임', shape:'jump' }, { name:'방울 슬라임', shape:'foam' }, { name:'젤리 슬라임', shape:'jelly' },
+  { name:'버블 슬라임', shape:'bubble' }, { name:'스파크 슬라임', shape:'spark' }, { name:'스톤 슬라임', shape:'stone' },
+  { name:'포이즌 슬라임', shape:'poison' }, { name:'아이스 슬라임', shape:'ice' }, { name:'파이어 슬라임', shape:'fire' },
+  { name:'번개 슬라임', shape:'thunder' }, { name:'메탈 슬라임', shape:'metal' }, { name:'크리스탈 슬라임', shape:'crystal' },
+  { name:'킹 슬라임', shape:'king' }, { name:'가디언 슬라임', shape:'guardian' }, { name:'마법 슬라임', shape:'magic' },
+  { name:'드래곤 슬라임', shape:'dragon' }, { name:'별빛 슬라임', shape:'star' }, { name:'은하 슬라임', shape:'galaxy' },
+  { name:'초월 슬라임', shape:'transcend' }, { name:'신화 슬라임', shape:'myth' }, { name:'우주 슬라임', shape:'cosmic' },
+  { name:'궁극 슬라임', shape:'ultimate' }
+];
+function getSlimeRank166(lv) {
+  const n = Math.max(1, Math.min(250, Math.floor(Number(lv) || 1)));
+  const typeIndex = Math.floor((n - 1) / 10);
+  const colorIndex = (n - 1) % 10;
+  const type = RANK_TYPE_STEPS_166[typeIndex] || RANK_TYPE_STEPS_166[0];
+  const color = RANK_COLOR_STEPS_166[colorIndex] || RANK_COLOR_STEPS_166[0];
+  return { level:n, typeIndex, colorIndex, name:`${color.name} ${type.name}`, shape:type.shape, color:color.color, sub:color.sub, dark:color.dark, glow:color.glow, tier:typeIndex + 1 };
+}
+function ensureRankBadgeIcon166() {
+  if (!playerCompactEl) return null;
+  let el = document.getElementById('rankBadgeIcon');
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'rankBadgeIcon';
+    const cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    el.appendChild(cv);
+    playerCompactEl.parentNode.insertBefore(el, playerCompactEl);
+  } else if (!el.querySelector('canvas')) {
+    el.textContent = '';
+    const cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    el.appendChild(cv);
   }
-  const earnedGold = Math.max(0, Math.floor(
-    (gameMode === 'itempark' && typeof itemParkState !== 'undefined') ? (itemParkState.goldGained || 0) : (stageRunGoldEarned || 0)
-  ));
-  const totalGold = Math.max(0, Math.floor(gold || 0));
-
-  if (state === 'title') {
-    setChip(0, '타이틀', '#ffffff');
-    setChip(1, '설정 가능', '#cfefff');
-    setChip(2, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
-    setChip(3, ''); setChip(4, ''); setChip(5, '');
-  } else if (gameMode === 'infinite') {
-    const huntScore = Math.max(0, Math.floor(score || 0));
-    const distScore = (typeof getInfiniteDistanceScore === 'function') ? getInfiniteDistanceScore() : 0;
-    const totalScore = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : huntScore + distScore;
-    const bossText = (boss || (bossIntro && bossIntro.active) || bossSpawned)
-      ? '보스 출현!'
-      : `보스 ${typeof getInfiniteBossRemainSec === 'function' ? getInfiniteBossRemainSec() : 0}초`;
-    const itemParts = [];
-    try {
-      if (isInfiniteItemEffectActive('magnet')) itemParts.push(`자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-      if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
-    } catch(e) {}
-    setChip(0, `총점 ${formatNumber(totalScore)}`, '#ffffff');
-    setChip(1, `사냥 ${formatNumber(huntScore)}`, '#cfefff');
-    setChip(2, `거리 ${formatNumber(distScore)}`, '#cfefff');
-    setChip(3, bossText, bossText.includes('출현') ? '#ffdf7a' : '#fff4a8');
-    setChip(4, `획득/보유 골드 ${formatNumber(earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
-    setChip(5, itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 없음', itemParts.length ? '#7ce7ff' : '#aab8c8');
-  } else if (gameMode === 'dungeon') {
-    setChip(0, `던전 ${dungeonState.tier || 1}단계`, '#ffffff');
-    setChip(1, `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`, '#fff4a8');
-    setChip(2, `처치 ${formatNumber(dungeonState.spawned || 0)} / ${formatNumber(DUNGEON_TOTAL_MONSTERS)}`, '#cfefff');
-    setChip(3, `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))}`, '#7dffb2');
-    setChip(4, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
-    setChip(5, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
-  } else if (gameMode === 'itempark') {
-    const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
-    setChip(0, '아이템 파크', '#ffffff');
-    setChip(1, `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`, '#fff4a8');
-    setChip(2, `수집 ${formatNumber(itemParkState.caught || 0)}개`, '#7ce7ff');
-    setChip(3, `획득 EXP ${formatNumber(itemParkState.expGained || 0)}`, '#7dffb2');
-    setChip(4, `골드 ${formatNumber(itemParkState.goldGained || earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
-    setChip(5, `남은 입장 ${left}회`, '#baffd7');
-  } else if (gameMode === 'minigame') {
-    const left = Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0));
-    setChip(0, `미니게임 ${getMiniGameTypeLabel(miniGameState.type)}`, '#ffffff');
-    setChip(1, `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`, '#fff4a8');
-    setChip(2, `점수 ${formatNumber(miniGameState.score || 0)}`, '#cfefff');
-    setChip(3, `콤보 x${formatNumber(miniGameState.combo || 0)}`, '#ffe08a');
-    setChip(4, `골드 ${formatNumber(earnedGold)} / ${formatNumber(totalGold)}`, '#ffd700');
-    setChip(5, `남은 입장 ${left}회`, '#baffd7');
-  } else if (gameMode === 'mission') {
-    const missionScore = Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)));
-    setChip(0, isMissionBonusStage(stage) ? `보너스 스테이지 ${stage}` : `미션 ${stage}`, '#ffffff');
-    setChip(1, isMissionBonusStage(stage) ? `남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage), '#fff4a8');
-    setChip(2, `점수 ${formatNumber(missionScore)}`, '#cfefff');
-    setChip(3, `처치 ${formatNumber(stageRunKillCount || 0)}`, '#baffd7');
-    setChip(4, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
-    setChip(5, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
-  } else {
-    const target = getStageKillTarget(stage);
-    const kills = Math.max(0, Math.floor(stageRunKillCount || 0));
-    const bossPart = isBossStage(stage) ? ` · 보스 ${Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)))}/1` : '';
-    setChip(0, `스테이지 ${stage}`, '#ffffff');
-    setChip(1, `몬스터 ${formatNumber(kills)} / ${formatNumber(target)}${bossPart}`, '#cfefff');
-    setChip(2, `진행도 ${Math.min(100, Math.floor(kills / Math.max(1, target) * 100))}%`, '#baffd7');
-    setChip(3, `획득 골드 ${formatNumber(earnedGold)}`, '#ffd86b');
-    setChip(4, `보유 골드 ${formatNumber(totalGold)}`, '#ffd700');
-    setChip(5, (typeof getHotMultiplier === 'function' && getHotMultiplier() > 1) ? `핫타임 EXP ${getHotMultiplier()}배` : '일반 EXP', (typeof getHotMultiplier === 'function' && getHotMultiplier() > 1) ? '#ffcc66' : '#aab8c8');
+  return el;
+}
+function drawRoundSlime166(g, c, opts={}){
+  const baseY = opts.baseY ?? 46, topY = opts.topY ?? 16;
+  const grad = g.createRadialGradient(23, 20, 4, 33, 34, 31);
+  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.12, c.sub); grad.addColorStop(0.55, c.color); grad.addColorStop(1, c.dark);
+  g.fillStyle = grad; g.strokeStyle = opts.stroke || 'rgba(255,255,255,0.82)'; g.lineWidth = opts.lineWidth || 3;
+  g.beginPath();
+  g.moveTo(11, baseY);
+  g.bezierCurveTo(8, 32, 16, topY, 32, topY);
+  g.bezierCurveTo(48, topY, 56, 32, 53, baseY);
+  g.bezierCurveTo(45, 54, 20, 54, 11, baseY);
+  g.closePath(); g.fill(); g.stroke();
+  g.fillStyle='rgba(255,255,255,0.52)'; g.beginPath(); g.ellipse(24,25,7,4.5,-0.5,0,Math.PI*2); g.fill();
+  // ✅ [v.166.3] 계급 슬라임은 표정 없이 문양과 오라만 표시
+  // 얼굴/입 표현은 제거하고, 레벨이 높아질수록 외곽 장식과 빛 효과로 강함을 표현합니다.
+}
+function poly166(g, pts, fill, stroke='rgba(255,255,255,0.86)', lw=2){ g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.fillStyle=fill; g.fill(); g.strokeStyle=stroke; g.lineWidth=lw; g.stroke(); }
+function drawRankSlimeIcon166(canvas, rank){
+  const g = canvas.getContext('2d'), w=64, h=64, c=rank;
+  g.clearRect(0,0,w,h); g.save();
+  const tier = Math.max(1, Math.min(25, rank.tier || 1));
+  // 낮은 레벨은 작고 말랑한 문양, 높은 레벨은 링/광채/장식이 늘어나는 직접 그린 계급 아이콘
+  if (tier >= 6) {
+    g.save();
+    g.globalAlpha = Math.min(0.18 + tier * 0.018, 0.62);
+    g.strokeStyle = c.sub;
+    g.lineWidth = tier >= 20 ? 3 : (tier >= 12 ? 2 : 1.2);
+    g.beginPath();
+    g.arc(32,32, Math.min(18 + tier * 0.22, 25), 0, Math.PI*2);
+    g.stroke();
+    g.restore();
   }
+  if (tier >= 16) {
+    g.save();
+    g.translate(32,32);
+    g.globalAlpha = tier >= 22 ? 0.72 : 0.46;
+    g.strokeStyle = tier >= 23 ? '#fff4a8' : c.sub;
+    g.lineWidth = tier >= 22 ? 2.4 : 1.6;
+    for (let i=0;i<8;i++){
+      g.rotate(Math.PI/4);
+      g.beginPath();
+      g.moveTo(0,-23);
+      g.lineTo(0,-29);
+      g.stroke();
+    }
+    g.restore();
+  }
+  g.shadowColor = c.glow; g.shadowBlur = rank.level >= 220 ? 18 : (rank.level >= 200 ? 13 : (rank.level >= 100 ? 8 : 5));
+  const s = c.shape;
+  if (s==='drop') { drawRoundSlime166(g,c,{topY:7,baseY:48}); poly166(g,[[32,5],[25,18],[39,18]],c.sub,'rgba(255,255,255,.65)',1.5); }
+  else if (s==='sprout') { drawRoundSlime166(g,c); g.fillStyle='#72ff8f'; g.strokeStyle='#185c26'; g.lineWidth=2; g.beginPath(); g.ellipse(26,12,5,9,-0.65,0,Math.PI*2); g.ellipse(38,12,5,9,0.65,0,Math.PI*2); g.fill(); g.stroke(); }
+  else if (s==='jump') { drawRoundSlime166(g,c,{baseY:42}); g.strokeStyle=c.sub; g.lineWidth=3; g.beginPath(); g.arc(32,53,13,0.05*Math.PI,0.95*Math.PI); g.stroke(); }
+  else if (s==='foam') { drawRoundSlime166(g,c); for(const [x,y,r] of [[17,18,4],[45,17,3],[50,29,3],[13,31,2.5]]){g.beginPath();g.fillStyle='rgba(255,255,255,.55)';g.arc(x,y,r,0,Math.PI*2);g.fill();} }
+  else if (s==='jelly') { drawRoundSlime166(g,c,{baseY:47}); g.fillStyle='rgba(255,255,255,.35)'; for(let x=18;x<=46;x+=7){g.beginPath();g.arc(x,48,3.2,0,Math.PI*2);g.fill();} }
+  else if (s==='bubble') { drawRoundSlime166(g,c); g.strokeStyle='rgba(220,255,255,.85)'; g.lineWidth=2; for(const [x,y,r] of [[20,22,6],[43,24,5],[33,16,4]]){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.stroke();} }
+  else if (s==='spark') { drawRoundSlime166(g,c); g.fillStyle='#fff7a8'; poly166(g,[[32,8],[36,25],[52,25],[39,34],[43,52],[32,40],[21,52],[25,34],[12,25],[28,25]],'#fff28a','rgba(255,255,255,.9)',1.2); }
+  else if (s==='stone') { drawRoundSlime166(g,c,{stroke:'rgba(210,210,210,.85)'}); g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=2; [[18,29,14,8],[34,20,12,9],[41,38,10,8]].forEach(a=>{g.beginPath();g.ellipse(...a,0,0,Math.PI*2);g.stroke();}); }
+  else if (s==='poison') { drawRoundSlime166(g,c); g.fillStyle='rgba(90,255,70,.8)'; for(const [x,y] of [[20,24],[44,26],[33,19]]){g.beginPath();g.arc(x,y,3,0,Math.PI*2);g.fill();} g.strokeStyle='#1d4d13'; g.beginPath();g.moveTo(24,41);g.lineTo(40,41);g.moveTo(26,38);g.lineTo(38,44);g.moveTo(38,38);g.lineTo(26,44);g.stroke(); }
+  else if (s==='ice') { drawRoundSlime166(g,c); poly166(g,[[32,8],[38,20],[32,32],[26,20]],'rgba(225,255,255,.75)','rgba(255,255,255,.95)',1.5); }
+  else if (s==='fire') { drawRoundSlime166(g,c); poly166(g,[[32,6],[42,23],[36,22],[43,40],[29,30],[24,45],[21,25],[26,27]],'#ffec6e','rgba(255,255,255,.7)',1.4); }
+  else if (s==='thunder') { drawRoundSlime166(g,c); poly166(g,[[35,8],[23,33],[33,31],[28,54],[44,25],[34,27]],'#fff36d','rgba(255,255,255,.85)',1.5); }
+  else if (s==='metal') { drawRoundSlime166(g,c,{stroke:'#e5f0ff'}); g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(19,20,26,6); g.fillRect(16,30,32,5); }
+  else if (s==='crystal') { drawRoundSlime166(g,c); poly166(g,[[32,8],[47,24],[42,49],[22,49],[17,24]],'rgba(230,255,255,.62)','rgba(255,255,255,.95)',2); }
+  else if (s==='king') { drawRoundSlime166(g,c); poly166(g,[[18,18],[24,8],[32,18],[40,8],[46,18],[44,25],[20,25]],'#ffd84d','#fff3a5',1.5); }
+  else if (s==='guardian') { drawRoundSlime166(g,c); poly166(g,[[32,18],[45,24],[42,43],[32,51],[22,43],[19,24]],'rgba(255,255,255,.38)','rgba(255,255,255,.9)',2); }
+  else if (s==='magic') { drawRoundSlime166(g,c); g.strokeStyle='#fff0ff'; g.lineWidth=2; g.beginPath(); g.arc(32,31,16,0,Math.PI*2); g.stroke(); poly166(g,[[32,12],[36,28],[52,32],[36,36],[32,52],[28,36],[12,32],[28,28]],'rgba(255,255,255,.25)','rgba(255,255,255,.7)',1); }
+  else if (s==='dragon') { drawRoundSlime166(g,c); poly166(g,[[16,25],[5,16],[10,33]],c.dark,'rgba(255,255,255,.7)',1.5); poly166(g,[[48,25],[59,16],[54,33]],c.dark,'rgba(255,255,255,.7)',1.5); g.fillStyle=c.sub; g.fillRect(29,9,3,10); g.fillRect(34,9,3,10); }
+  else if (s==='star') { drawRoundSlime166(g,c); poly166(g,[[32,8],[37,24],[54,24],[40,34],[45,51],[32,41],[19,51],[24,34],[10,24],[27,24]],'#fff59a','rgba(255,255,255,.9)',1.5); }
+  else if (s==='galaxy') { drawRoundSlime166(g,c,{noFace:true}); g.strokeStyle='rgba(255,255,255,.8)'; g.lineWidth=2; g.beginPath(); g.ellipse(32,34,23,9,-0.25,0,Math.PI*2); g.stroke(); for(const [x,y] of [[23,28],[38,23],[45,39],[28,44]]){g.fillStyle='#fff';g.fillRect(x,y,2,2);} }
+  else if (s==='transcend') { drawRoundSlime166(g,c); g.strokeStyle='rgba(255,255,255,.9)'; g.lineWidth=2; for(let r of [14,22]){g.beginPath();g.arc(32,32,r,0,Math.PI*2);g.stroke();} }
+  else if (s==='myth') { drawRoundSlime166(g,c); poly166(g,[[32,5],[50,18],[44,45],[32,57],[20,45],[14,18]],'rgba(255,230,120,.34)','rgba(255,236,150,.9)',2.2); }
+  else if (s==='cosmic') { drawRoundSlime166(g,c,{noFace:true}); g.strokeStyle='rgba(255,255,255,.86)'; g.lineWidth=2; g.beginPath(); g.ellipse(32,32,24,8,0.35,0,Math.PI*2); g.stroke(); g.fillStyle='#fff'; g.beginPath(); g.arc(32,32,5,0,Math.PI*2); g.fill(); }
+  else if (s==='ultimate') { drawRoundSlime166(g,c); const grad=g.createLinearGradient(12,12,52,52); ['#ff4d5f','#ffe45c','#44ff88','#58dcff','#a65cff','#ff78c8'].forEach((cc,i)=>grad.addColorStop(i/5,cc)); g.strokeStyle=grad; g.lineWidth=4; g.beginPath(); g.arc(32,32,24,0,Math.PI*2); g.stroke(); }
+  else { drawRoundSlime166(g,c); }
+  g.restore();
+}
+function updateRankBadgeIcon166(rank) {
+  const el = ensureRankBadgeIcon166();
+  if (!el || !rank) return;
+  const cv = el.querySelector('canvas');
+  if (cv) drawRankSlimeIcon166(cv, rank);
+  el.title = `LV.${rank.level} 계급표 열기`;
+  el.style.borderColor = rank.level >= 200 ? '#ffd700' : rank.color;
+  el.style.boxShadow = `0 0 ${rank.level >= 200 ? 20 : 12}px ${rank.glow}, inset 0 1px 0 rgba(255,255,255,0.45)`;
+  el.style.background = `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.28), rgba(0,0,0,0.36) 100%)`;
+  el.classList.toggle('rank-100', rank.level >= 100 && rank.level < 150);
+  el.classList.toggle('rank-150', rank.level >= 150 && rank.level < 200);
+  el.classList.toggle('rank-200', rank.level >= 200 && rank.level < 240);
+  el.classList.toggle('rank-240', rank.level >= 240);
+}
 
-  try {
-    const hud = document.getElementById('hud');
-    if (hud) document.documentElement.style.setProperty('--hud-real-height', Math.ceil(hud.getBoundingClientRect().height || 112) + 'px');
-  } catch(e) {}
+function buildRankTable166(){
+  const body = document.getElementById('rankTableBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  const guide = document.createElement('div');
+  guide.className = 'rank-table-guide';
+  guide.innerHTML = '1~250레벨 계급 아이콘입니다.<br>25단계 슬라임 문양과 10가지 색상 단계가 순서대로 표시됩니다.';
+  body.appendChild(guide);
+
+  const grid = document.createElement('div');
+  grid.className = 'rank-table-grid';
+  const curLv = Math.max(1, Math.min(250, Math.floor(Number(level) || 1)));
+  for (let lv = 1; lv <= 250; lv++) {
+    const rank = getSlimeRank166(lv);
+    const cell = document.createElement('div');
+    cell.className = 'rank-table-cell' + (lv === curLv ? ' current' : '');
+    cell.title = `LV.${lv}`;
+
+    const cv = document.createElement('canvas');
+    cv.width = 64;
+    cv.height = 64;
+    drawRankSlimeIcon166(cv, rank);
+
+    const lvText = document.createElement('div');
+    lvText.className = 'rank-table-level';
+    lvText.textContent = `LV.${lv}`;
+
+    cell.appendChild(cv);
+    cell.appendChild(lvText);
+    grid.appendChild(cell);
+  }
+  body.appendChild(grid);
+}
+function openRankTable166(){
+  buildRankTable166();
+  const modal = document.getElementById('rankTableModal');
+  if (modal) modal.classList.remove('hidden');
+}
+function closeRankTable166(){
+  const modal = document.getElementById('rankTableModal');
+  if (modal) modal.classList.add('hidden');
+}
+function bindRankTableControls166(){
+  const badge = ensureRankBadgeIcon166();
+  if (badge && !badge.dataset.rankTableBound) {
+    badge.dataset.rankTableBound = '1';
+    badge.setAttribute('role','button');
+    badge.setAttribute('aria-label','계급표 열기');
+    badge.addEventListener('click', openRankTable166);
+    badge.addEventListener('touchend', (e) => { e.preventDefault(); openRankTable166(); }, { passive:false });
+  }
+  const closeBtn = document.getElementById('closeRankTableBtn');
+  if (closeBtn && !closeBtn.dataset.rankTableBound) {
+    closeBtn.dataset.rankTableBound = '1';
+    closeBtn.addEventListener('click', closeRankTable166);
+  }
 }
 
 function updateHUD() {
@@ -19569,13 +18278,11 @@ __lastExpBarPercent = nextPercent;
 const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
-const rankMeta = getLevelRank(level);
+const rankInfo166 = getSlimeRank166(level);
+updateRankBadgeIcon166(rankInfo166);
+bindRankTableControls166();
 const compactPlayerText = `LV.${level} · ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
-if (playerCompactEl) {
-  playerCompactEl.textContent = compactPlayerText;
-  playerCompactEl.style.color = rankMeta.color || '#ffffff';
-}
-refreshHudRankIcon();
+if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
 levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
@@ -19649,161 +18356,8 @@ if (hotTimeEl) {
     hotTimeEl.style.color = hotColor;
     }
   }
-
-  try { updateModeInfoHudV1677(); } catch(e) {}
 }
 
-
-// ===== [v.167.0] HUD 밖 / 캔버스 안 상단 정보 패널 =====
-function drawCanvasTopInfoPanel() {
-  if (state === 'title') return;
-  const blocked = (typeof anyBlockingModalOpen === 'function') ? anyBlockingModalOpen() : false;
-  const margin = width < 520 ? 6 : 10;
-  const x = margin;
-  const small = width < 520;
-  const m = getCanvasTopInfoMetrics();
-
-  // ✅ [v.167.5] 오른쪽 일시정지 버튼 안전구역 확보
-  const pauseSafeW = small ? 74 : 86;
-  const w = Math.max(180, width - margin * 2 - pauseSafeW);
-  const panelH = m.bottom - m.y;
-
-  const earnedGold = Math.max(0, Math.floor(stageRunGoldEarned || 0));
-  const totalGold = Math.max(0, Math.floor(gold || 0));
-
-  let line1Left = '';
-  let line1Center = '';
-  let line1Right = '';
-  let line2 = '';
-  let line3 = '';
-  let line3Color = '#cfefff';
-
-  if (gameMode === 'infinite') {
-    const huntScore = Math.max(0, Math.floor(score || 0));
-    const distScore = (typeof getInfiniteDistanceScore === 'function') ? getInfiniteDistanceScore() : 0;
-    const totalScore = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : huntScore + distScore;
-    const bossStatus = (boss || (bossIntro && bossIntro.active) || bossSpawned)
-      ? '보스 출현!'
-      : `보스 ${typeof getInfiniteBossRemainSec === 'function' ? getInfiniteBossRemainSec() : 0}초`;
-
-    line1Left = `총점 ${formatNumber(totalScore)}`;
-    line1Center = bossStatus;
-    line1Right = `${formatNumber(Math.floor(infiniteDistance || 0))}m`;
-    line2 = `사냥 ${formatNumber(huntScore)} · 거리 ${formatNumber(distScore)} · 획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
-
-    const itemParts = [];
-    try {
-      if (isInfiniteItemEffectActive('magnet')) itemParts.push(`자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-      if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-      if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
-    } catch(e) {}
-    line3 = itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 사용 중 없음';
-    line3Color = itemParts.length ? '#7ce7ff' : '#aab8c8';
-  } else if (gameMode === 'dungeon') {
-    const spawned = Math.max(0, Math.floor(dungeonState.spawned || 0));
-    line1Left = `던전 ${dungeonState.tier}단계`;
-    line1Center = `남은 ${formatMMSS(dungeonState.timeLeft || 0)}`;
-    line1Right = `처치 ${formatNumber(spawned)}/${formatNumber(DUNGEON_TOTAL_MONSTERS)}`;
-    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
-    line3 = `획득 EXP ${formatNumber(Math.max(0, exp - (dungeonState.runStartExp || 0)))}`;
-  } else if (gameMode === 'mission') {
-    line1Left = `스테이지 ${stage}`;
-    line1Center = isMissionBonusStage(stage) ? `보너스 ${formatMMSS(missionState.bonusTimeLeft || 0)}` : getMissionProgressText(stage);
-    line1Right = `점수 ${formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0))))}`;
-    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
-    line3 = `처치 ${formatNumber(stageRunKillCount || 0)} · 진행도 ${Math.min(100, Math.floor((Math.max(0, stageRunKillCount || 0) / Math.max(1, getStageKillTarget(stage))) * 100))}%`;
-    line3Color = '#baffd7';
-  } else if (gameMode === 'itempark') {
-    line1Left = `아이템 파크`;
-    line1Center = `남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
-    line1Right = `수집 ${formatNumber(itemParkState.caught || 0)}개`;
-    line2 = `획득골드 ${formatNumber(itemParkState.goldGained || 0)} · 보유골드 ${formatNumber(totalGold)}`;
-    line3 = `획득 EXP ${formatNumber(itemParkState.expGained || 0)}`;
-    line3Color = '#7ce7ff';
-  } else if (gameMode === 'minigame') {
-    line1Left = `미니게임`;
-    line1Center = `남은 ${formatMMSS(miniGameState.timeLeft || 0)}`;
-    line1Right = `점수 ${formatNumber(miniGameState.score || 0)}`;
-    line2 = `획득골드 ${formatNumber(earnedGold)} · 보유골드 ${formatNumber(totalGold)}`;
-    line3 = `콤보 x${formatNumber(miniGameState.combo || 0)}`;
-    line3Color = '#ffe08a';
-  } else {
-    const t = getStageKillTarget(stage);
-    const k = Math.max(0, Math.floor(stageRunKillCount || 0));
-    line1Left = `스테이지 ${stage}`;
-    line1Center = isBossStage(stage)
-      ? `몬스터 ${k}/${t} · 보스 ${Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)))}/1`
-      : `몬스터 ${k}/${t}`;
-    line1Right = `보유골드 ${formatNumber(totalGold)}`;
-    line2 = `획득골드 ${formatNumber(earnedGold)} · 처치 진행도 ${Math.min(100, Math.floor((k / Math.max(1, t)) * 100))}%`;
-    line3 = `현재 처치 ${formatNumber(k)} / ${formatNumber(t)}`;
-    line3Color = '#baffd7';
-  }
-
-  function ellipsize(text, maxLen){
-    const str = String(text || '');
-    return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
-  }
-
-  ctx.save();
-  ctx.globalAlpha = blocked ? 0.58 : 0.96;
-
-  // ✅ 글자만 있으면 배경에 묻혀 안 보이는 경우가 있어 아주 얇은 반투명 캡슐을 추가합니다.
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
-  ctx.strokeStyle = 'rgba(124, 231, 255, 0.28)';
-  ctx.lineWidth = 1;
-  const r = small ? 8 : 10;
-  const px = x;
-  const py = m.y - 2;
-  const ph = panelH;
-  if (ctx.roundRect) {
-    ctx.beginPath();
-    ctx.roundRect(px, py, w, ph, r);
-    ctx.fill();
-    ctx.stroke();
-  } else {
-    ctx.fillRect(px, py, w, ph);
-    ctx.strokeRect(px, py, w, ph);
-  }
-
-  ctx.textBaseline = 'middle';
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(0,0,0,0.88)';
-
-  const y1 = m.y + m.lineH * 0.55;
-  ctx.font = fontStr(small ? 11 : 14, 'bold');
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(ellipsize(line1Left, small ? 9 : 16), x + 8, y1);
-  ctx.fillText(ellipsize(line1Left, small ? 9 : 16), x + 8, y1);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = (String(line1Center).includes('보스') || String(line1Center).includes('남은')) ? '#fff4a8' : '#cfefff';
-  ctx.strokeText(ellipsize(line1Center, small ? 18 : 32), x + w / 2, y1);
-  ctx.fillText(ellipsize(line1Center, small ? 18 : 32), x + w / 2, y1);
-
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#ffd86b';
-  ctx.strokeText(ellipsize(line1Right, small ? 10 : 18), x + w - 8, y1);
-  ctx.fillText(ellipsize(line1Right, small ? 10 : 18), x + w - 8, y1);
-
-  ctx.font = fontStr(small ? 10 : 12, 'bold');
-  ctx.textAlign = 'center';
-
-  const y2 = m.y + m.lineH * 1.55;
-  ctx.fillStyle = '#ffe08a';
-  ctx.strokeText(ellipsize(line2, small ? 34 : 70), x + w / 2, y2);
-  ctx.fillText(ellipsize(line2, small ? 34 : 70), x + w / 2, y2);
-
-  const y3 = m.y + m.lineH * 2.55;
-  ctx.fillStyle = line3Color;
-  ctx.strokeText(ellipsize(line3, small ? 36 : 72), x + w / 2, y3);
-  ctx.fillText(ellipsize(line3, small ? 36 : 72), x + w / 2, y3);
-
-  ctx.restore();
-}
 // ===== 그리기 =====
 function drawBackground() {
   const img = getStageBackgroundImage(stage, state);
@@ -20142,7 +18696,7 @@ ctx.strokeRect(bx, by, barWidth, barHeight);
 
 ctx.textAlign = 'center';
 ctx.textBaseline = 'top';
-ctx.font = fontStr(11, 'bold');
+ctx.font = fontStr(10, 'bold');
 ctx.lineWidth = 1.6;
 ctx.strokeStyle = 'rgba(0,0,0,0.68)';
 ctx.fillStyle = '#ffffff';
@@ -20713,60 +19267,32 @@ ctx.scale(1 / b, b);
     ctx.restore();
 
     // Boss HUD (체력바 상단 표시)
-    // ✅ [v.166.8] 보스가 존재하면 무조건 HUD 바로 아래(캔버스 최상단)에 표시합니다.
-    // 이전 v.166.7은 `bossIntro.active` 또는 targetY 조건 때문에 실제 보스가 보이는데도
-    // 체력바가 숨겨지는 경우가 있어, 표시 조건을 보스 생존 여부 기준으로 단순화했습니다.
-    const bossHudVisible = boss && hp > 0 && !boss._deadHandled;
-    if (bossHudVisible) {
-        const barWidth = Math.min(width - 34, 760);
-        const barHeight = 34;
-        const bx = (width - barWidth) / 2;
-        const by = getBossHudY(); // ✅ [v.167.4] 모든 모드 상단 정보 안전영역 아래에 고정
-        const ratio = Math.max(0, Math.min(1, hp / Math.max(1, maxHp)));
-        const hpPercent = (ratio * 100).toFixed(1);
-
+    // 요청 반영: 보스 등장 알림창/등장 연출 중에는 체력창을 숨기고,
+    // 보스가 목표 위치까지 완전히 내려온 뒤에만 표시합니다.
+    const bossFullyEntered = !bossIntro.active && y >= boss.targetY;
+    if (bossFullyEntered) {
+        const barWidth = 260; const barHeight = 14; const bx = (width - barWidth) / 2; const by = 20;
         ctx.save();
-        // 전체 패널
-        ctx.globalAlpha = 0.98;
-        ctx.fillStyle = 'rgba(5,10,20,0.84)';
-        roundRectPath(ctx, bx, by, barWidth, barHeight, 9);
-        ctx.fill();
-        ctx.strokeStyle = (evoStage === 6) ? 'rgba(255,70,90,0.96)' : 'rgba(255,255,255,0.88)';
-        ctx.lineWidth = 2;
-        roundRectPath(ctx, bx, by, barWidth, barHeight, 9);
-        ctx.stroke();
-
-        // 체력 게이지
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        roundRectPath(ctx, bx + 82, by + 7, barWidth - 96, barHeight - 14, 7);
-        ctx.fill();
-        const hpColor = (evoStage === 6) ? '#ff2f38' : (bossElementMeta.color || '#ff4444');
-        ctx.fillStyle = hpColor;
-        roundRectPath(ctx, bx + 82, by + 7, (barWidth - 96) * ratio, barHeight - 14, 7);
-        ctx.fill();
-
-        // 왼쪽 BOSS 라벨
-        ctx.fillStyle = (evoStage === 6) ? '#ff4343' : '#ff6666';
-        ctx.font = `bold 13px ${getUIFontFamily()}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('BOSS', bx + 42, by + barHeight / 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, barWidth, barHeight);
+        const ratio = Math.max(0, hp / maxHp);
+        
+        // 체력바 색상: 보스 속성 반영
+        ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color; 
+        ctx.fillRect(bx + 2, by + 2, (barWidth - 4) * ratio, barHeight - 4);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(bx, by, barWidth, barHeight);
+        drawElementBadge(bx + barWidth + 18, by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.8);
 
         // [수정] 보스 타이틀 텍스트
         let title = "아기 슬라임";
         if(evoStage===2) title="어린이 슬라임";
         else if(evoStage===3) title="청소년 슬라임";
         else if(evoStage===4) title="왕 슬라임";
-        else if(evoStage===5) title="신 슬라임";
-        else if(evoStage===6) title="우주 슬라임";
+        else if(evoStage===5) title="신 슬라임";   // 51~100
+        else if(evoStage===6) title="우주 슬라임"; // 101~200 (최종)
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold 13px ${getUIFontFamily()}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.shadowBlur = 4;
-        ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} LV.${bLv}  ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, bx + 82 + (barWidth - 96) / 2, by + barHeight / 2);
+        ctx.fillStyle = '#ffffff'; ctx.font = `11px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const hpPercent = (ratio * 100).toFixed(1);
+        ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} (LV.${bLv}) HP: ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, width / 2, by + barHeight / 2);
         ctx.restore();
     }
 }
@@ -21210,11 +19736,9 @@ function drawTitleScreen() {
     ctx.fillText(`🏆 최고 점수: ${formatNumber(saveData.highScore)}`, width/2, titleBaseY + (compactTitle ? 28 : 30));
 
     // 4. 레벨 및 누적 경험치 표시 (흰색/회색)
-    const titleRankMeta = getLevelRank(saveData.level || 1);
-    ctx.fillStyle = titleRankMeta.color || '#eeffff';
+    ctx.fillStyle = '#eeffff';
     ctx.font = fontStr(compactTitle ? 18 : 20, 'normal');
-    ctx.fillText(`현재 레벨: LV. ${saveData.level} · ${titleRankMeta.name}`, width/2, levelBaseY);
-    drawLevelRankIcon(ctx, titleRankMeta, width/2 - Math.min(220, width*0.24), levelBaseY - 6, compactTitle ? 26 : 30, performance.now());
+    ctx.fillText(`현재 레벨: LV. ${saveData.level}`, width/2, levelBaseY);
     
     ctx.fillStyle = '#aaaaaa';
     ctx.font = fontStr(compactTitle ? 14 : 16);
@@ -21464,7 +19988,6 @@ requestAnimationFrame(gameLoop);
     ctx.restore();
 
     drawGainMessages();
-    // v.167.7: 상단 정보는 HUD DOM에 통합되어 캔버스에 그리지 않습니다.
     drawMultiKillFx();
     drawSuddenQuestUI();
 
@@ -22203,53 +20726,26 @@ drawBackground = function() {
   return __origDrawBackground();
 };
 
-function applySplitHudMode(){
-  const isPlayingHud = (state === 'playing');
-  const isInfiniteHud = isPlayingHud && gameMode === 'infinite';
-
-  if (scoreEl) {
-    scoreEl.style.display = isInfiniteHud ? '' : 'none';
-    if (isInfiniteHud) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
-  }
-  if (highScoreEl) {
-    highScoreEl.style.display = isInfiniteHud ? '' : 'none';
-    if (isInfiniteHud) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
-  }
-  // ✅ [v.167.1] 플레이 중에도 실시간 정보가 캔버스 패널과 함께 보조 표시되도록 유지
-  if (hotTimeEl) hotTimeEl.style.display = (isPlayingHud && gameMode === 'infinite') ? '' : (isPlayingHud ? 'none' : '');
-  if (goldEl) goldEl.style.display = isPlayingHud ? 'none' : '';
-  if (hpEl) hpEl.style.display = 'none';
-  if (levelEl) levelEl.style.display = 'none';
-}
-
 const __origUpdateHUD = updateHUD;
 updateHUD = function() {
   __origUpdateHUD();
   refreshDailyRewardButton();
 
   if (gameMode === 'infinite') {
-    const distText = `${formatNumber(Math.floor(infiniteDistance || 0))}m`;
-    const bossText = (boss || (bossIntro && bossIntro.active) || bossSpawned)
-      ? '보스 출현!'
-      : `보스 ${getInfiniteBossRemainSec()}초`;
-    if (stageEl) {
-      stageEl.textContent = `${bossText} · 거리 ${distText}`;
+    if (scoreEl) {
+      scoreEl.style.display = '';
+      scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
     }
-    if (hotTimeEl) {
-      const parts = [];
-      try {
-        if (isInfiniteItemEffectActive('magnet')) parts.push(`🧲 자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-        if (isInfiniteItemEffectActive('doubleShot')) parts.push(`✌️ 더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-        if (isInfiniteItemEffectActive('dash')) parts.push(`💨 하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-        if (isInfiniteItemEffectActive('doubleScore')) parts.push(`💯 점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
-      } catch(e) {}
-      hotTimeEl.textContent = parts.length ? `아이템 사용 중 · ${parts.join(' · ')}` : '아이템 사용 중 없음';
-      hotTimeEl.style.color = parts.length ? '#7ce7ff' : '#aab8c8';
+    if (highScoreEl) {
+      highScoreEl.style.display = '';
+      highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
+    }
+
+    const distText = `${formatNumber(Math.floor(infiniteDistance))}m`;
+    if (stageEl) {
+      stageEl.textContent = `거리: ${distText}`;
     }
   }
-
-  applySplitHudMode();
-  try { updatePauseButtonSafePosition(); } catch(e) {}
 };
 
 function getInfiniteBossRemainSec() {
@@ -22257,20 +20753,7 @@ function getInfiniteBossRemainSec() {
   return Math.ceil(remainMs / 1000);
 }
 
-
-function updatePauseButtonSafePosition() {
-  // ✅ [v.167.3] HUD 높이 기준 보정 제거 → 캔버스 맨 위 고정
-  // 실제 버튼은 캔버스 내부 상단에만 붙고 HUD에는 가려지지 않음
-  if (document.body.classList.contains('title-mode') || document.body.classList.contains('dead-mode') || document.body.classList.contains('tutorial-mode')) return;
-  syncPauseButtonPosition();
-}
-
-window.addEventListener('resize', () => { try { updatePauseButtonSafePosition(); } catch(e){} });
-
 function drawInfiniteBossCountdown() {
-  // ✅ [v.167.3] 보스 카운트는 drawCanvasTopInfoPanel()에서 점수와 함께 표시합니다.
-  // 중복으로 그리면 캔버스 상단 글자와 겹칠 수 있어 이 함수는 비활성화합니다.
-  return;
   if (gameMode !== 'infinite' || state !== 'playing') return;
   if (boss || (bossIntro && bossIntro.active) || bossSpawned || infiniteBossBonusShowing) return;
 
@@ -22284,8 +20767,8 @@ function drawInfiniteBossCountdown() {
   ctx.strokeStyle = 'rgba(0,0,0,0.72)';
   ctx.fillStyle = '#fff4a8';
   const text = `보스 ${remain}초`;
-  ctx.strokeText(text, 12, 52);
-  ctx.fillText(text, 12, 52);
+  ctx.strokeText(text, 10, 10);
+  ctx.fillText(text, 10, 10);
   ctx.restore();
 }
 
@@ -22412,174 +20895,5 @@ requestAnimationFrame(gameLoop);
   </div>
 </div>
 
-
-<script>
-// ✅ [v.166.3] iOS 홈 화면 실행 여부 감지
-(function(){
-  try{
-    var isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-    document.documentElement.classList.toggle('standalone-app', !!isStandalone);
-    document.body && document.body.classList.toggle('standalone-app', !!isStandalone);
-  }catch(e){}
-})();
-
-
-// ===============================
-// ✅ [v.167.6] 모든 모드 실시간 정보를 HUD 바 안으로 통합
-// ===============================
-(function(){
-  function _fmt(n){
-    try { return (typeof formatNumber === 'function') ? formatNumber(Math.floor(Number(n)||0)) : String(Math.floor(Number(n)||0)); }
-    catch(e){ return String(Math.floor(Number(n)||0)); }
-  }
-  function _mmss(ms){
-    try { return (typeof formatMMSS === 'function') ? formatMMSS(ms || 0) : Math.max(0, Math.ceil((ms||0)/1000)) + '초'; }
-    catch(e){ return Math.max(0, Math.ceil((ms||0)/1000)) + '초'; }
-  }
-  function _stageTarget(){
-    try { return (typeof getStageKillTarget === 'function') ? getStageKillTarget(stage) : 0; }
-    catch(e){ return 0; }
-  }
-  function _isBossStage(){
-    try { return (typeof isBossStage === 'function') ? isBossStage(stage) : false; }
-    catch(e){ return false; }
-  }
-  function _isMissionBonus(){
-    try { return (typeof isMissionBonusStage === 'function') ? isMissionBonusStage(stage) : false; }
-    catch(e){ return false; }
-  }
-  function _missionProgress(){
-    try { return (typeof getMissionProgressText === 'function') ? getMissionProgressText(stage) : ''; }
-    catch(e){ return ''; }
-  }
-  function _earnedGold(){
-    if (typeof gameMode !== 'undefined' && gameMode === 'itempark' && typeof itemParkState !== 'undefined') return Math.max(0, Math.floor(itemParkState.goldGained || 0));
-    return Math.max(0, Math.floor((typeof stageRunGoldEarned !== 'undefined' ? stageRunGoldEarned : 0) || 0));
-  }
-  function _totalGold(){ return Math.max(0, Math.floor((typeof gold !== 'undefined' ? gold : 0) || 0)); }
-  function _set(el, text, color){
-    if (!el) return;
-    el.textContent = text;
-    el.style.display = '';
-    if (color) el.style.color = color;
-  }
-  window.updateAllModeHudInfoV1676 = function(){
-    if (typeof state !== 'undefined' && state === 'title') return;
-    if (!window.scoreEl && typeof scoreEl === 'undefined') return;
-
-    const earnedGold = _earnedGold();
-    const totalGold = _totalGold();
-    const mode = (typeof gameMode !== 'undefined') ? gameMode : 'stage';
-
-    let left1 = '', left2 = '', left3 = '', right1 = '', right2 = '', right3 = '';
-
-    if (mode === 'infinite') {
-      const huntScore = Math.max(0, Math.floor((typeof score !== 'undefined' ? score : 0) || 0));
-      const distScore = (typeof getInfiniteDistanceScore === 'function') ? getInfiniteDistanceScore() : 0;
-      const totalScore = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : huntScore + distScore;
-      const dist = Math.floor((typeof infiniteDistance !== 'undefined' ? infiniteDistance : 0) || 0);
-      const bossText = (typeof boss !== 'undefined' && boss) || (typeof bossIntro !== 'undefined' && bossIntro && bossIntro.active) || (typeof bossSpawned !== 'undefined' && bossSpawned)
-        ? '보스 출현!'
-        : `보스 ${(typeof getInfiniteBossRemainSec === 'function') ? getInfiniteBossRemainSec() : 0}초`;
-      const itemParts = [];
-      try {
-        if (isInfiniteItemEffectActive('magnet')) itemParts.push(`자석 ${Math.ceil(infiniteItemTimers.magnet / 1000)}초`);
-        if (isInfiniteItemEffectActive('doubleShot')) itemParts.push(`더블샷 ${Math.ceil(infiniteItemTimers.doubleShot / 1000)}초`);
-        if (isInfiniteItemEffectActive('dash')) itemParts.push(`하이퍼 ${Math.ceil(infiniteItemTimers.dash / 1000)}초`);
-        if (isInfiniteItemEffectActive('doubleScore')) itemParts.push(`점수2배 ${Math.ceil(infiniteItemTimers.doubleScore / 1000)}초`);
-      } catch(e) {}
-      left1 = `총점 ${_fmt(totalScore)} · ${bossText}`;
-      left2 = `사냥 ${_fmt(huntScore)} · 거리 ${_fmt(distScore)} · 이동 ${_fmt(dist)}m`;
-      left3 = itemParts.length ? `아이템 ${itemParts.join(' · ')}` : '아이템 사용 중 없음';
-      right1 = `획득 골드 ${_fmt(earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '무한 모드';
-    } else if (mode === 'dungeon') {
-      const ds = (typeof dungeonState !== 'undefined') ? dungeonState : {};
-      left1 = `던전 ${ds.tier || 1}단계 · 남은 ${_mmss(ds.timeLeft || 0)}`;
-      left2 = `처치 ${_fmt(ds.spawned || 0)} / ${_fmt(typeof DUNGEON_TOTAL_MONSTERS !== 'undefined' ? DUNGEON_TOTAL_MONSTERS : 0)}`;
-      left3 = `획득 EXP ${_fmt(Math.max(0, (typeof exp !== 'undefined' ? exp : 0) - (ds.runStartExp || 0)))}`;
-      right1 = `획득 골드 ${_fmt(earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '던전 모드';
-    } else if (mode === 'mission') {
-      const ms = (typeof missionState !== 'undefined') ? missionState : {};
-      left1 = `스테이지 ${typeof stage !== 'undefined' ? stage : 1}`;
-      left2 = _isMissionBonus() ? `보너스 남은 ${_mmss(ms.bonusTimeLeft || 0)}` : (_missionProgress() || `처치 ${_fmt(typeof stageRunKillCount !== 'undefined' ? stageRunKillCount : 0)}`);
-      left3 = `이번 점수 ${_fmt(Math.max(0, (typeof score !== 'undefined' ? score : 0) - (ms.stageScoreStart || 0)))}`;
-      right1 = `획득 골드 ${_fmt(earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '스테이지 모드';
-    } else if (mode === 'itempark') {
-      const ips = (typeof itemParkState !== 'undefined') ? itemParkState : {};
-      left1 = `아이템 파크 · 남은 ${_mmss(ips.timeLeft || 0)}`;
-      left2 = `수집 ${_fmt(ips.caught || 0)}개`;
-      left3 = `획득 EXP ${_fmt(ips.expGained || 0)}`;
-      right1 = `획득 골드 ${_fmt(ips.goldGained || earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '아이템 파크';
-    } else if (mode === 'minigame') {
-      const mg = (typeof miniGameState !== 'undefined') ? miniGameState : {};
-      left1 = `미니게임 · 남은 ${_mmss(mg.timeLeft || 0)}`;
-      left2 = `점수 ${_fmt(mg.score || 0)} · 콤보 x${_fmt(mg.combo || 0)}`;
-      left3 = '미니게임 진행 중';
-      right1 = `획득 골드 ${_fmt(earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '미니게임';
-    } else {
-      const st = (typeof stage !== 'undefined') ? stage : 1;
-      const k = Math.max(0, Math.floor((typeof stageRunKillCount !== 'undefined' ? stageRunKillCount : 0) || 0));
-      const t = Math.max(1, _stageTarget() || 1);
-      left1 = `스테이지 ${st} · 몬스터 ${_fmt(k)} / ${_fmt(t)}`;
-      left2 = _isBossStage() ? `보스 ${_fmt(typeof stageBossKillCount !== 'undefined' ? stageBossKillCount : 0)} / 1` : `처치 진행도 ${Math.min(100, Math.floor(k / t * 100))}%`;
-      left3 = `현재 처치 ${_fmt(k)}마리`;
-      right1 = `획득 골드 ${_fmt(earnedGold)}`;
-      right2 = `총 보유 골드 ${_fmt(totalGold)}`;
-      right3 = '스테이지 모드';
-    }
-
-    try {
-      _set(scoreEl, left1, '#ffffff');
-      _set(highScoreEl, left2, '#cfefff');
-      _set(hotTimeEl, left3, left3.includes('없음') ? '#aab8c8' : '#7ce7ff');
-      _set(stageEl, right1, '#ffd86b');
-      _set(goldEl, right2, '#ffd700');
-      _set(hpEl, right3, '#baffd7');
-      if (levelEl) levelEl.style.display = 'none';
-    } catch(e) {}
-  };
-
-  const __hud1676Prev = (typeof updateHUD === 'function') ? updateHUD : null;
-  if (__hud1676Prev) {
-    updateHUD = function(){
-      __hud1676Prev.apply(this, arguments);
-      try { window.updateAllModeHudInfoV1676(); } catch(e) {}
-      try { syncHudCanvasFullHeightV1676(); } catch(e) {}
-    };
-  }
-
-  window.syncHudCanvasFullHeightV1676 = function(){
-    const hud = document.getElementById('hud');
-    const root = document.documentElement;
-    if (!hud || !root) return;
-    const h = Math.ceil(hud.getBoundingClientRect().height || 96);
-    root.style.setProperty('--hud-real-height', h + 'px');
-  };
-  window.addEventListener('resize', () => { try { syncHudCanvasFullHeightV1676(); } catch(e){} });
-  window.addEventListener('orientationchange', () => setTimeout(() => { try { syncHudCanvasFullHeightV1676(); } catch(e){} }, 80));
-  setTimeout(() => { try { window.updateAllModeHudInfoV1676(); syncHudCanvasFullHeightV1676(); } catch(e){} }, 50);
-
-  // 캔버스 상단 패널 제거: 정보는 HUD 바 안에서만 표시합니다.
-  window.drawCanvasTopInfoPanel = function(){};
-  window.getCanvasTopInfoBottom = function(){ return 0; };
-  window.getCanvasTopInfoMetrics = function(){ return { y:0, lineH:0, rows:0, bottom:0, small:(typeof width !== 'undefined' ? width < 520 : true) }; };
-  window.getBossHudY = function(){ return (typeof width !== 'undefined' && width < 520) ? 8 : 10; };
-  window.getHudBottomCanvasYForSuddenQuest = function(){
-    const hasBossHpBar = !!(typeof boss !== 'undefined' && boss && boss.hp > 0 && !boss._deadHandled);
-    return hasBossHpBar ? ((typeof width !== 'undefined' && width < 520) ? 50 : 56) : 10;
-  };
-})();
-
-</script>
 </body>
 </html>
