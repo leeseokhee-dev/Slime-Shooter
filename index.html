@@ -3188,7 +3188,7 @@ const pauseLowPowerBtn = document.getElementById('pauseLowPowerBtn');
 const RANK_COLORS = ['#ff4b4b','#ff8a22','#ffd83d','#a8ff3d','#35df65','#41dfff','#4078ff','#263cbe','#9c45ff','#ff62c7'];
 const RANK_ACCENTS = ['#fff1f1','#fff0dc','#fff8c9','#efffce','#d6ffe0','#d9fbff','#dbe6ff','#d8ddff','#efdfff','#ffe0f4'];
 
-// ✅ v.168.0 슬라임 계급 250종: 표정 없는 슬라임 형태 / 10색 순환 / 레벨별 크기 증가 / 100Lv 반짝임 / 200Lv 황금 테두리
+// ✅ v.168.2 계급 애니메이션 단계화: 1~99 정적 / 100Lv 반짝임 / 200Lv 오라+강화 애니메이션
 function getRankInfo(lv){
   const safeLv = Math.max(1, Math.min(250, Number(lv)||1));
   const type = Math.floor((safeLv-1)/10);     // 0~24, 10레벨마다 슬라임 계열 진화
@@ -3196,8 +3196,9 @@ function getRankInfo(lv){
   const subLevel = colorStep + 1;
   const family = type % 10;                   // 기존 도형 계열 유지
   const era = Math.floor(type / 10);
-  const animated = safeLv >= 100;             // ✅ 100레벨부터 애니메이션
-  const luminous = safeLv >= 100;             // ✅ 100레벨부터 반짝임
+  const animated = safeLv >= 100;             // ✅ 100레벨부터 애니메이션 시작
+  const sparkle = safeLv >= 100;              // ✅ 100레벨부터 반짝임
+  const aura = safeLv >= 200;                 // ✅ 200레벨부터 오라 효과
   const silver = safeLv >= 100 && safeLv < 200; // ✅ 100~199 실버 외곽선
   const golden = safeLv >= 200;               // ✅ 200~250 황금 외곽선
   const finalTier = safeLv >= 241;
@@ -3215,7 +3216,8 @@ function getRankInfo(lv){
     accent:RANK_ACCENTS[colorStep],
     name:shapeNames[family],
     animated,
-    luminous,
+    sparkle,
+    aura,
     silver,
     golden,
     finalTier,
@@ -3242,10 +3244,11 @@ function drawRankIconToCanvas(c, lv, preview=false){
   const cy = size/2;
   const maxR = size * 0.33; // ✅ 가장 큰 레벨도 외곽선 포함 안전 영역 안에 배치
   const rawR = (size * 0.235) * r.sizeScale;
-  const pulse = (!preview && r.animated) ? 1 + Math.sin(now*2.35)*0.045 : 1;
+  // 1~99레벨은 완전 정적. 100~199는 반짝임 위주, 200+는 오라와 숨쉬는 강화 효과가 추가됩니다.
+  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.1)*0.035 : 1;
   const bodyR = Math.min(maxR, rawR * pulse);
-  const rotAnim = (!preview && r.animated) ? Math.sin(now*1.25)*0.055 : 0;
-  const shineMove = (!preview && r.animated) ? now*0.9 : 0;
+  const rotAnim = (!preview && r.aura) ? Math.sin(now*1.05)*0.035 : 0;
+  const shineMove = (!preview && r.sparkle) ? now*0.9 : 0;
   const detailPower = r.subLevel / 10;
 
   function hexToRgba(hex, alpha){
@@ -3373,15 +3376,36 @@ function drawRankIconToCanvas(c, lv, preview=false){
   ctx2.translate(cx, cy);
   ctx2.rotate(rotAnim);
 
-  // 그림자/오라
+  // 기본 그림자: 1~99도 도형은 선명하게 보이되, 오라는 200레벨부터만 표시
   ctx2.save();
-  const auraColor = r.golden ? 'rgba(255,210,70,0.34)' : r.silver ? 'rgba(220,235,255,0.32)' : hexToRgba(r.main,0.24);
-  ctx2.fillStyle = auraColor;
-  ctx2.shadowBlur = r.animated ? 18 : 8;
-  ctx2.shadowColor = auraColor;
-  rankShapePath(bodyR*1.10);
+  ctx2.fillStyle = 'rgba(0,0,0,0.26)';
+  ctx2.shadowBlur = 6;
+  ctx2.shadowColor = 'rgba(0,0,0,0.38)';
+  ctx2.translate(0, bodyR*0.08);
+  rankShapePath(bodyR*1.03);
   ctx2.fill();
   ctx2.restore();
+
+  // 200레벨 이상 오라: 황금빛 외곽 광휘 + 회전 링
+  if(r.aura){
+    ctx2.save();
+    const auraBeat = preview ? 1 : (0.78 + Math.sin(now*2.0)*0.16);
+    const auraColor = 'rgba(255,210,70,' + (0.18 + auraBeat*0.13).toFixed(3) + ')';
+    ctx2.fillStyle = auraColor;
+    ctx2.shadowBlur = 22 + auraBeat*10;
+    ctx2.shadowColor = 'rgba(255,215,90,0.72)';
+    rankShapePath(bodyR*(1.18 + auraBeat*0.05));
+    ctx2.fill();
+    ctx2.globalAlpha = 0.55;
+    ctx2.rotate(preview ? 0 : now*0.65);
+    ctx2.lineWidth = Math.max(1.4, size*0.016);
+    ctx2.strokeStyle = 'rgba(255,238,160,0.72)';
+    ctx2.setLineDash([bodyR*0.42, bodyR*0.20]);
+    ctx2.beginPath();
+    ctx2.arc(0, 0, bodyR*1.38, 0, Math.PI*2);
+    ctx2.stroke();
+    ctx2.restore();
+  }
 
   // 본체
   const grad = ctx2.createRadialGradient(-bodyR*0.35, -bodyR*0.42, bodyR*0.12, 0, 0, bodyR*1.05);
@@ -3434,7 +3458,7 @@ function drawRankIconToCanvas(c, lv, preview=false){
   ctx2.fill();
 
   // 100레벨 이후 은은한 사선 광택 애니메이션
-  if(r.animated){
+  if(r.sparkle){
     ctx2.globalAlpha = 0.22;
     ctx2.rotate(-0.45);
     const sweepX = ((shineMove % 2) - 1) * bodyR * 2.2;
@@ -3462,8 +3486,8 @@ function drawRankIconToCanvas(c, lv, preview=false){
   }
   ctx2.restore();
 
-  // 100레벨 이후 반짝임
-  if(r.luminous){
+  // 100레벨 이후 반짝임: 100~199는 실버 별빛, 200+는 황금 별빛으로 강화
+  if(r.sparkle){
     const sparkCount = r.golden ? 12 : 8;
     for(let i=0;i<sparkCount;i++){
       const a = i*Math.PI*2/sparkCount + (preview ? 0 : now*(i%2 ? 0.35 : -0.25));
@@ -3475,6 +3499,27 @@ function drawRankIconToCanvas(c, lv, preview=false){
       drawSpark(sx, sy, r.golden ? 3.1 : 2.5, r.golden ? '#fff0a8' : '#ffffff', a);
     }
     ctx2.globalAlpha = 1;
+  }
+
+  // 200레벨 이상 추가 아이디어: 작은 오브가 천천히 공전하며 고급 계급 느낌 강화
+  if(r.aura){
+    const orbCount = r.finalTier ? 6 : 4;
+    for(let i=0;i<orbCount;i++){
+      const a = i*Math.PI*2/orbCount + (preview ? 0 : now*0.85);
+      const rr = bodyR * (1.30 + (i%2)*0.10);
+      const ox = Math.cos(a)*rr;
+      const oy = Math.sin(a)*rr;
+      const orbSize = 1.8 + (i%3)*0.45;
+      ctx2.save();
+      ctx2.globalAlpha = preview ? 0.55 : 0.45 + Math.sin(now*2.4+i)*0.18;
+      ctx2.fillStyle = i%2 ? '#fff6bc' : '#ffd76a';
+      ctx2.shadowBlur = 10;
+      ctx2.shadowColor = 'rgba(255,220,100,0.80)';
+      ctx2.beginPath();
+      ctx2.arc(ox, oy, orbSize, 0, Math.PI*2);
+      ctx2.fill();
+      ctx2.restore();
+    }
   }
 
   // 241~250 최종 진화: 무지개 광택
