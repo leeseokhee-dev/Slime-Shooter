@@ -3193,13 +3193,15 @@ function getRankInfo(lv){
   const safeLv = Math.max(1, Math.min(250, Number(lv)||1));
   const type = Math.floor((safeLv-1)/10);     // 0~24, 10레벨마다 슬라임 계열 진화
   const colorStep = (safeLv-1) % 10;          // 빨강→주황→노랑→연두→초록→하늘→파랑→남색→보라→분홍
-  const subLevel = colorStep + 1;             // 같은 계열 안에서도 1~10레벨마다 세부 디테일 변화
-  const family = type % 10;                   // 0 둥근 / 1 세모 / 2 네모 / 3 오각 / 4 육각 / 5 클로버 / 6 하트 / 7 다이아 / 8 스페이드 / 9 별
-  const era = Math.floor(type / 10);           // 0 기본형 / 1 반짝형 / 2 황금 진화형
-  const luminous = safeLv >= 101;
-  const golden = safeLv >= 201;
+  const subLevel = colorStep + 1;
+  const family = type % 10;                   // 기존 도형 계열 유지
+  const era = Math.floor(type / 10);
+  const animated = safeLv >= 100;             // ✅ 100레벨부터 애니메이션
+  const luminous = safeLv >= 100;             // ✅ 100레벨부터 반짝임
+  const silver = safeLv >= 100 && safeLv < 200; // ✅ 100~199 실버 외곽선
+  const golden = safeLv >= 200;               // ✅ 200~250 황금 외곽선
   const finalTier = safeLv >= 241;
-  const sizeScale = 1 + (safeLv - 1) / 249 * 0.36; // 레벨이 올라갈수록 계급 크기 증가
+  const sizeScale = 1 + (safeLv - 1) / 249 * 0.30; // 커지되 캔버스 안에서 안전하게 제한
   const shapeNames = ['둥근 슬라임','세모 슬라임','네모 슬라임','오각형 슬라임','육각형 슬라임','클로버 슬라임','하트 슬라임','다이아몬드 슬라임','스페이드 슬라임','별 슬라임'];
   return {
     lv:safeLv,
@@ -3212,7 +3214,9 @@ function getRankInfo(lv){
     main:RANK_COLORS[colorStep],
     accent:RANK_ACCENTS[colorStep],
     name:shapeNames[family],
+    animated,
     luminous,
+    silver,
     golden,
     finalTier,
     sizeScale
@@ -3222,25 +3226,27 @@ function getRankInfo(lv){
 function drawRankIconToCanvas(c, lv, preview=false){
   if(!c) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const size = preview ? 112 : 92;
+  const size = preview ? 116 : 96; // ✅ 내부 캔버스를 약간 키워 외곽선/애니메이션 잘림 방지
   c.width = size*dpr;
   c.height = size*dpr;
-  c.style.width = preview ? '48px' : '34px';
-  c.style.height = preview ? '48px' : '34px';
+  c.style.width = preview ? '50px' : '36px';
+  c.style.height = preview ? '50px' : '36px';
 
   const ctx2 = c.getContext('2d');
   ctx2.setTransform(dpr,0,0,dpr,0,0);
   ctx2.clearRect(0,0,size,size);
 
   const r = getRankInfo(lv);
-  const x = size/2, y = size/2;
   const now = Date.now()/1000;
-  const animPower = preview ? 0.18 : Math.min(1, Math.max(0.22, r.tier/25));
-  const pulse = preview ? 0.55 : (0.5 + 0.5*Math.sin(now*(2.0 + r.tier*0.03)));
-  const wobble = preview ? 0 : Math.sin(now*(2.4 + r.subLevel*.11))*0.9*animPower;
-  const bodyR = (13.5 + r.lv * 0.078) * r.sizeScale + (!preview ? pulse*0.9 : 0);
+  const cx = size/2;
+  const cy = size/2;
+  const maxR = size * 0.33; // ✅ 가장 큰 레벨도 외곽선 포함 안전 영역 안에 배치
+  const rawR = (size * 0.235) * r.sizeScale;
+  const pulse = (!preview && r.animated) ? 1 + Math.sin(now*2.35)*0.045 : 1;
+  const bodyR = Math.min(maxR, rawR * pulse);
+  const rotAnim = (!preview && r.animated) ? Math.sin(now*1.25)*0.055 : 0;
+  const shineMove = (!preview && r.animated) ? now*0.9 : 0;
   const detailPower = r.subLevel / 10;
-  const stagePower = 1 + r.era * 0.22 + (r.finalTier ? 0.18 : 0);
 
   function hexToRgba(hex, alpha){
     const h = String(hex || '#ffffff').replace('#','');
@@ -3249,239 +3255,239 @@ function drawRankIconToCanvas(c, lv, preview=false){
     const bb = parseInt(h.substring(4,6),16) || 255;
     return `rgba(${rr},${gg},${bb},${alpha})`;
   }
-  function roundedPolygonPath(n, rad, rot=0, round=0.32){
-    const pts=[];
-    for(let i=0;i<n;i++){
-      const a = rot - Math.PI/2 + i*Math.PI*2/n;
-      const rr = rad * (1 + Math.sin(i*1.77 + r.subLevel*.63)*0.025*detailPower);
-      pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr});
-    }
+
+  function polygonPath(n, rad, rot=-Math.PI/2){
     ctx2.beginPath();
     for(let i=0;i<n;i++){
-      const p=pts[i], prev=pts[(i+n-1)%n], next=pts[(i+1)%n];
-      const sx=p.x+(prev.x-p.x)*round, sy=p.y+(prev.y-p.y)*round;
-      const ex=p.x+(next.x-p.x)*round, ey=p.y+(next.y-p.y)*round;
-      if(i===0) ctx2.moveTo(sx,sy); else ctx2.lineTo(sx,sy);
-      ctx2.quadraticCurveTo(p.x,p.y,ex,ey);
+      const a = rot + i*Math.PI*2/n;
+      const x = Math.cos(a)*rad;
+      const y = Math.sin(a)*rad;
+      if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
     }
     ctx2.closePath();
   }
-  function blobPath(rad, lobes=5, amp=0.065){
-    const steps=96;
+
+  function circlePath(rad){
     ctx2.beginPath();
-    for(let i=0;i<=steps;i++){
-      const a = -Math.PI/2 + i*Math.PI*2/steps;
-      const rr = rad * (1 + Math.sin(a*lobes + r.subLevel*.72 + wobble*.06)*amp + Math.sin(a*3 - r.lv*.11)*amp*.45);
-      const px = Math.cos(a)*rr;
-      const py = Math.sin(a)*rr * (0.92 + r.subLevel*.006);
-      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
-    }
+    ctx2.arc(0,0,rad,0,Math.PI*2);
     ctx2.closePath();
   }
+
   function cloverPath(rad){
-    const steps=120;
     ctx2.beginPath();
-    for(let i=0;i<=steps;i++){
-      const a = i*Math.PI*2/steps;
-      const rr = rad * (0.80 + 0.22*Math.cos(4*a) + 0.025*Math.sin(a*8 + r.subLevel));
-      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
-      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
+    for(let i=0;i<=160;i++){
+      const a = i*Math.PI*2/160;
+      const rr = rad * (0.74 + 0.24*Math.cos(4*a)); // ✅ 클로버 윤곽을 더 확실하게
+      const x = Math.cos(a)*rr;
+      const y = Math.sin(a)*rr;
+      if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
     }
     ctx2.closePath();
   }
+
   function heartPath(rad){
     ctx2.beginPath();
-    for(let i=0;i<=120;i++){
-      const t = Math.PI*2*i/120;
-      const px = 16*Math.pow(Math.sin(t),3);
-      const py = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
-      const sx = px * rad / 18;
-      const sy = py * rad / 18 + rad*0.12;
-      if(i===0) ctx2.moveTo(sx,sy); else ctx2.lineTo(sx,sy);
+    for(let i=0;i<=180;i++){
+      const t = Math.PI*2*i/180;
+      const x = 16*Math.pow(Math.sin(t),3);
+      const y = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+      const px = x/18*rad;
+      const py = y/18*rad;
+      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
     }
     ctx2.closePath();
   }
+
+  function diamondPath(rad){
+    ctx2.beginPath();
+    ctx2.moveTo(0,-rad);
+    ctx2.lineTo(rad*0.72,0);
+    ctx2.lineTo(0,rad);
+    ctx2.lineTo(-rad*0.72,0);
+    ctx2.closePath();
+  }
+
   function spadePath(rad){
-    ctx2.save();
-    ctx2.scale(1,-1);
-    heartPath(rad*0.92);
-    ctx2.restore();
-    ctx2.moveTo(0, rad*0.12);
-    ctx2.quadraticCurveTo(rad*.18, rad*.46, rad*.38, rad*.55);
-    ctx2.lineTo(-rad*.38, rad*.55);
-    ctx2.quadraticCurveTo(-rad*.18, rad*.46, 0, rad*.12);
+    ctx2.beginPath();
+    for(let i=0;i<=160;i++){
+      const t = Math.PI*2*i/160;
+      const x = 16*Math.pow(Math.sin(t),3);
+      const y = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+      const px = x/18*rad;
+      const py = -y/18*rad - rad*0.08;
+      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
+    }
+    ctx2.lineTo(rad*0.34, rad*0.70);
+    ctx2.lineTo(-rad*0.34, rad*0.70);
     ctx2.closePath();
   }
-  function starSlimePath(rad){
-    const points=5;
+
+  function starPath(rad){
     ctx2.beginPath();
-    for(let i=0;i<points*2;i++){
-      const a=-Math.PI/2+i*Math.PI/points;
-      const rr=(i%2===0?rad:rad*(0.56+detailPower*.035)) * (1 + Math.sin(i+r.lv)*0.018);
-      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
-      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
+    for(let i=0;i<10;i++){
+      const a = -Math.PI/2 + i*Math.PI/5;
+      const rr = (i%2===0) ? rad : rad*0.50;
+      const x = Math.cos(a)*rr;
+      const y = Math.sin(a)*rr;
+      if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
     }
     ctx2.closePath();
   }
-  function slimeBodyPath(family, rad){
-    const rot = Math.sin(now*1.2)*0.035*animPower + r.subLevel*0.018;
-    if(family===0) return blobPath(rad, 4 + (r.subLevel%4), 0.042 + detailPower*.035);
-    if(family===1) return roundedPolygonPath(3, rad*1.06, rot, 0.34 - detailPower*.06);
-    if(family===2) return roundedPolygonPath(4, rad*1.02, Math.PI/4 + rot, 0.26 + detailPower*.04);
-    if(family===3) return roundedPolygonPath(5, rad*1.03, rot, 0.24 + detailPower*.035);
-    if(family===4) return roundedPolygonPath(6, rad*1.02, rot, 0.22 + detailPower*.03);
-    if(family===5) return cloverPath(rad*1.10);
-    if(family===6) return heartPath(rad*1.08);
-    if(family===7) return roundedPolygonPath(4, rad*1.12, rot, 0.12 + detailPower*.02);
-    if(family===8) return spadePath(rad*1.04);
-    return starSlimePath(rad*1.06);
-  }
-  function drawTinySpark(cx,cy,rad,fill,rot=0){
-    ctx2.save();
-    ctx2.translate(cx,cy); ctx2.rotate(rot);
-    ctx2.beginPath();
-    for(let i=0;i<8;i++){
-      const a=i*Math.PI/4;
-      const rr=i%2===0?rad:rad*.32;
-      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
-      if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
+
+  function rankShapePath(rad){
+    switch(r.family){
+      case 0: circlePath(rad); break;
+      case 1: polygonPath(3, rad, -Math.PI/2); break;
+      case 2: polygonPath(4, rad, -Math.PI/4); break;
+      case 3: polygonPath(5, rad, -Math.PI/2); break;
+      case 4: polygonPath(6, rad, -Math.PI/2); break;
+      case 5: cloverPath(rad); break;
+      case 6: heartPath(rad*0.98); break;
+      case 7: diamondPath(rad); break;
+      case 8: spadePath(rad*0.98); break;
+      case 9: starPath(rad); break;
+      default: circlePath(rad); break;
     }
+  }
+
+  function drawSpark(x,y,rad,color,rot=0){
+    ctx2.save();
+    ctx2.translate(x,y);
+    ctx2.rotate(rot);
+    ctx2.beginPath();
+    ctx2.moveTo(0,-rad);
+    ctx2.lineTo(rad*0.32,-rad*0.32);
+    ctx2.lineTo(rad,0);
+    ctx2.lineTo(rad*0.32,rad*0.32);
+    ctx2.lineTo(0,rad);
+    ctx2.lineTo(-rad*0.32,rad*0.32);
+    ctx2.lineTo(-rad,0);
+    ctx2.lineTo(-rad*0.32,-rad*0.32);
     ctx2.closePath();
-    ctx2.fillStyle=fill; ctx2.fill();
+    ctx2.fillStyle=color;
+    ctx2.fill();
     ctx2.restore();
   }
 
   ctx2.save();
-  ctx2.translate(x,y+1);
+  ctx2.translate(cx, cy);
+  ctx2.rotate(rotAnim);
 
-  // 전체 오라: 101레벨부터 확실하게 반짝이고, 201레벨부터 황금빛 강화
-  const aura=ctx2.createRadialGradient(0,0,2,0,0,48);
-  aura.addColorStop(0, r.finalTier ? 'rgba(255,255,210,.92)' : hexToRgba(r.accent,.82));
-  aura.addColorStop(.35, r.golden ? 'rgba(255,216,107,.42)' : hexToRgba(r.main, r.luminous?.34:.18));
-  aura.addColorStop(1,'rgba(0,0,0,0)');
-  ctx2.globalAlpha = r.luminous ? (preview?.50:.58+pulse*.18) : .22+pulse*.08;
-  ctx2.fillStyle=aura;
-  ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.72 + r.era*6 + pulse*4,0,Math.PI*2); ctx2.fill();
-  ctx2.globalAlpha=1;
-
-  // 최종권/황금권 배경 링
-  if(r.luminous){
-    const ringCount = r.finalTier ? 4 : r.golden ? 3 : 2;
-    for(let i=0;i<ringCount;i++){
-      ctx2.save();
-      ctx2.rotate((preview?0:now*(0.35+i*.11)) + i*.8);
-      ctx2.setLineDash(i%2?[5,4]:[10,7]);
-      ctx2.lineWidth = r.golden ? 1.5+i*.45 : 1+i*.35;
-      ctx2.strokeStyle = r.golden ? (i%2?'#fff2a6':'#ffd86b') : (i%2?r.accent:r.main);
-      ctx2.globalAlpha = preview ? .30 : .28 + pulse*.24;
-      ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.16+i*4+pulse*1.8,0,Math.PI*2); ctx2.stroke();
-      ctx2.restore();
-    }
-    ctx2.setLineDash([]);
-    ctx2.globalAlpha=1;
-  }
-
-  // 슬라임 몸체 그림자
+  // 그림자/오라
   ctx2.save();
-  ctx2.translate(0, bodyR*.34);
-  ctx2.scale(1.12, .24);
-  ctx2.beginPath(); ctx2.arc(0,0,bodyR*.92,0,Math.PI*2);
-  ctx2.fillStyle='rgba(0,0,0,.24)'; ctx2.fill();
+  const auraColor = r.golden ? 'rgba(255,210,70,0.34)' : r.silver ? 'rgba(220,235,255,0.32)' : hexToRgba(r.main,0.24);
+  ctx2.fillStyle = auraColor;
+  ctx2.shadowBlur = r.animated ? 18 : 8;
+  ctx2.shadowColor = auraColor;
+  rankShapePath(bodyR*1.10);
+  ctx2.fill();
   ctx2.restore();
 
-  // 메인 몸체: 표정 없음, 광택과 젤리 질감만 적용
-  ctx2.save();
-  ctx2.rotate((preview?0:Math.sin(now*1.6)*0.025*animPower));
-  ctx2.scale(1 + Math.sin(now*2.1)*0.018*animPower, 1 - Math.sin(now*2.1)*0.014*animPower);
-  ctx2.shadowColor = r.golden ? '#ffd86b' : r.main;
-  ctx2.shadowBlur = (r.luminous?10:5) + r.era*5 + (!preview?pulse*(r.finalTier?14:r.golden?10:6):0);
-  const grad=ctx2.createRadialGradient(-bodyR*.35,-bodyR*.42,2,0,0,bodyR*1.25);
-  grad.addColorStop(0,'#ffffff');
-  grad.addColorStop(.16,r.accent);
-  grad.addColorStop(.58,r.main);
-  grad.addColorStop(1,r.golden?'#6a4306':'#102032');
-  slimeBodyPath(r.family, bodyR*stagePower);
-  ctx2.fillStyle=grad; ctx2.fill();
-  ctx2.lineWidth = r.finalTier ? 4.2 : r.golden ? 3.5 : r.luminous ? 2.35 : 1.75;
-  ctx2.strokeStyle = r.golden ? '#ffd86b' : 'rgba(255,255,255,.88)';
+  // 본체
+  const grad = ctx2.createRadialGradient(-bodyR*0.35, -bodyR*0.42, bodyR*0.12, 0, 0, bodyR*1.05);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.18, r.accent);
+  grad.addColorStop(0.58, r.main);
+  grad.addColorStop(1, hexToRgba(r.main,0.72));
+  ctx2.fillStyle = grad;
+  rankShapePath(bodyR);
+  ctx2.fill();
+
+  // 도형 윤곽을 확실하게 보이도록 기본 외곽선 강화
+  ctx2.lineJoin = 'round';
+  ctx2.lineCap = 'round';
+  ctx2.lineWidth = Math.max(2.2, size*0.025);
+  ctx2.strokeStyle = 'rgba(255,255,255,0.92)';
+  rankShapePath(bodyR);
   ctx2.stroke();
 
-  if(r.golden){
-    ctx2.shadowBlur = preview ? 4 : 10+pulse*7;
-    ctx2.lineWidth = r.finalTier ? 2.4 : 1.8;
-    ctx2.strokeStyle = r.finalTier ? '#fff7bd' : '#fff1a6';
-    slimeBodyPath(r.family, bodyR*stagePower + 4 + pulse*.8);
+  ctx2.lineWidth = Math.max(1.3, size*0.015);
+  ctx2.strokeStyle = 'rgba(0,0,0,0.28)';
+  rankShapePath(bodyR*0.965);
+  ctx2.stroke();
+
+  // 100~199: 실버 외곽선 / 200~250: 황금 외곽선
+  if(r.silver || r.golden){
+    ctx2.save();
+    const outline = r.golden ? '#ffd76a' : '#dcecff';
+    const outline2 = r.golden ? '#fff2a6' : '#ffffff';
+    ctx2.shadowBlur = r.golden ? 14 : 11;
+    ctx2.shadowColor = r.golden ? 'rgba(255,215,90,0.70)' : 'rgba(220,235,255,0.70)';
+    ctx2.lineWidth = r.golden ? Math.max(4.2, size*0.046) : Math.max(3.4, size*0.038);
+    ctx2.strokeStyle = outline;
+    rankShapePath(bodyR*1.035);
     ctx2.stroke();
+    ctx2.lineWidth = Math.max(1.2, size*0.014);
+    ctx2.strokeStyle = outline2;
+    rankShapePath(bodyR*1.105);
+    ctx2.stroke();
+    ctx2.restore();
   }
 
-  // 내부 젤리 하이라이트: 표정처럼 보이지 않도록 눈/입 없이 곡면광만 배치
-  ctx2.shadowBlur=0;
-  ctx2.globalAlpha=.42;
+  // 내부 하이라이트: 표정 없이 광택만
+  ctx2.save();
+  ctx2.clip();
+  ctx2.globalAlpha = 0.38;
+  ctx2.fillStyle = 'rgba(255,255,255,0.82)';
   ctx2.beginPath();
-  ctx2.ellipse(-bodyR*.27, -bodyR*.31, bodyR*.28, bodyR*.13, -0.55, 0, Math.PI*2);
-  ctx2.fillStyle='rgba(255,255,255,.72)'; ctx2.fill();
-  ctx2.globalAlpha=.18 + detailPower*.12;
-  ctx2.beginPath();
-  ctx2.ellipse(bodyR*.18, bodyR*.17, bodyR*.42, bodyR*.12, .25, 0, Math.PI*2);
-  ctx2.fillStyle='rgba(255,255,255,.42)'; ctx2.fill();
-  ctx2.globalAlpha=1;
+  ctx2.ellipse(-bodyR*0.28, -bodyR*0.35, bodyR*0.30, bodyR*0.16, -0.45, 0, Math.PI*2);
+  ctx2.fill();
 
-  // 같은 10레벨 구간 안에서도 완전히 다르게 보이도록 작은 젤리 방울/돌기 추가
-  const bumpCount = 1 + Math.floor(r.subLevel/2) + r.era;
-  for(let i=0;i<bumpCount;i++){
-    const a = -Math.PI*.82 + i*(Math.PI*1.64/Math.max(1,bumpCount-1 || 1)) + Math.sin(r.lv+i)*.08;
-    const br = bodyR*(0.09 + (i%3)*0.018 + r.era*.012);
-    const rr = bodyR*stagePower*(0.82 + (i%2)*.08);
-    ctx2.beginPath();
-    ctx2.arc(Math.cos(a)*rr, Math.sin(a)*rr, br, 0, Math.PI*2);
-    ctx2.fillStyle = i%2 ? hexToRgba(r.accent,.58) : hexToRgba(r.main,.45);
-    ctx2.fill();
-    ctx2.lineWidth=.7;
-    ctx2.strokeStyle='rgba(255,255,255,.36)';
-    ctx2.stroke();
+  // 100레벨 이후 은은한 사선 광택 애니메이션
+  if(r.animated){
+    ctx2.globalAlpha = 0.22;
+    ctx2.rotate(-0.45);
+    const sweepX = ((shineMove % 2) - 1) * bodyR * 2.2;
+    const sweep = ctx2.createLinearGradient(sweepX-bodyR*0.22, -bodyR, sweepX+bodyR*0.22, bodyR);
+    sweep.addColorStop(0, 'rgba(255,255,255,0)');
+    sweep.addColorStop(0.5, 'rgba(255,255,255,0.95)');
+    sweep.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx2.fillStyle = sweep;
+    ctx2.fillRect(sweepX-bodyR*0.26, -bodyR*1.45, bodyR*0.52, bodyR*2.9);
   }
+  ctx2.restore();
 
-  // 내부 결 무늬: 레벨이 높을수록 복잡해짐
-  const veinCount = Math.min(9, 2 + Math.floor(r.subLevel/2) + r.era*2 + (r.finalTier?2:0));
+  // 레벨별 디테일: 도형 모양은 유지하고 내부 문양만 증가
+  const veinCount = Math.min(10, 3 + Math.floor(r.type/3));
+  ctx2.save();
+  ctx2.globalAlpha = 0.50;
   for(let i=0;i<veinCount;i++){
-    const a = -Math.PI/2 + i*Math.PI*2/veinCount + r.subLevel*.05;
-    const len1 = bodyR*.14;
-    const len2 = bodyR*(0.48 + (i%2)*.16);
+    const a = -Math.PI/2 + i*Math.PI*2/veinCount + detailPower*0.15;
     ctx2.beginPath();
-    ctx2.moveTo(Math.cos(a)*len1, Math.sin(a)*len1);
-    ctx2.quadraticCurveTo(Math.cos(a+.35)*bodyR*.35, Math.sin(a+.35)*bodyR*.35, Math.cos(a)*len2, Math.sin(a)*len2);
-    ctx2.lineWidth = .65 + (i%3===0?.35:0);
-    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,.36)' : 'rgba(0,0,0,.18)';
+    ctx2.moveTo(Math.cos(a)*bodyR*0.16, Math.sin(a)*bodyR*0.16);
+    ctx2.lineTo(Math.cos(a)*bodyR*(0.48 + (i%2)*0.10), Math.sin(a)*bodyR*(0.48 + (i%2)*0.10));
+    ctx2.lineWidth = 0.7 + (i%3)*0.18;
+    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.20)';
     ctx2.stroke();
   }
+  ctx2.restore();
 
-  // 101레벨 이후: 몸체 곳곳 반짝임
+  // 100레벨 이후 반짝임
   if(r.luminous){
-    const sparkCount = r.finalTier ? 18 : r.golden ? 14 : 9;
+    const sparkCount = r.golden ? 12 : 8;
     for(let i=0;i<sparkCount;i++){
-      const a = i*Math.PI*2/sparkCount + (preview?0:now*(i%2?.22:-.18));
-      const rr = bodyR*(0.24 + (i%4)*0.16);
+      const a = i*Math.PI*2/sparkCount + (preview ? 0 : now*(i%2 ? 0.35 : -0.25));
+      const rr = bodyR * (1.05 + (i%3)*0.12);
       const sx = Math.cos(a)*rr;
-      const sy = Math.sin(a)*rr*(0.86 + (i%2)*.08);
-      const sr = 1.2 + (i%3)*.45 + r.era*.35;
-      ctx2.globalAlpha = preview ? .46 : .42 + Math.sin(now*2.4+i)*.20;
-      drawTinySpark(sx, sy, sr, i%2 ? r.accent : (r.golden?'#fff2a6':'#ffffff'), a);
+      const sy = Math.sin(a)*rr;
+      const alpha = preview ? 0.58 : 0.40 + Math.sin(now*2.6+i)*0.22;
+      ctx2.globalAlpha = Math.max(0.18, alpha);
+      drawSpark(sx, sy, r.golden ? 3.1 : 2.5, r.golden ? '#fff0a8' : '#ffffff', a);
     }
-    ctx2.globalAlpha=1;
+    ctx2.globalAlpha = 1;
   }
 
-  // 241~250 최종 진화: 무지개 광택 + 황금 테두리 + 부유감
+  // 241~250 최종 진화: 무지개 광택
   if(r.finalTier){
     const rainbow=['#ff5b5b','#ffb13d','#fff45c','#7dff73','#62e7ff','#6f8cff','#cb6dff','#ff75cf'];
     for(let i=0;i<rainbow.length;i++){
-      const a=i*Math.PI*2/rainbow.length + (preview?0:now*.35);
-      ctx2.globalAlpha=.62;
-      drawTinySpark(Math.cos(a)*bodyR*1.48, Math.sin(a)*bodyR*1.48, 2.1+(i%2), rainbow[i], a);
+      const a=i*Math.PI*2/rainbow.length + (preview?0:now*.42);
+      ctx2.globalAlpha=.64;
+      drawSpark(Math.cos(a)*bodyR*1.42, Math.sin(a)*bodyR*1.42, 2.5+(i%2), rainbow[i], a);
     }
     ctx2.globalAlpha=1;
   }
 
-  ctx2.restore();
   ctx2.restore();
 }
 
@@ -3490,7 +3496,7 @@ function updateRankIcon(){
   let c=rankIconBtn.querySelector('canvas'); if(!c){ c=document.createElement('canvas'); rankIconBtn.appendChild(c); }
   const curLv = level || 1;
   const ri = getRankInfo(curLv);
-  rankIconBtn.classList.toggle('rank-animated', curLv >= 50);
+  rankIconBtn.classList.toggle('rank-animated', curLv >= 100);
   rankIconBtn.style.boxShadow = curLv >= 200
     ? `0 0 20px ${ri.main}, 0 0 30px rgba(255,216,107,.45)`
     : curLv >= 100
