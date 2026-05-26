@@ -1264,6 +1264,8 @@ function shouldShowTutorial(id){
 
 /* EXP 바 강화 */
 #expBarFill{
+  position:relative !important;
+  z-index:1 !important;
   background: linear-gradient(90deg, #00ff88, #44ffb8);
   box-shadow:0 0 12px rgba(68,255,184,0.5);
 }
@@ -2507,8 +2509,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 </style>
 
 
-<!-- ✅ v.168.5 계급 아이콘 배경 제거 + EXP 10% 구분선 -->
-<style id="rankCrestNoIconExpTicksV1685">
+<!-- ✅ v.168.6 101레벨 반짝임 + EXP 10% 선 가시성 보정 -->
+<style id="rankCrestNoIconExpTicksV1686">
 #rankIconBtn{
   width:44px !important;
   height:44px !important;
@@ -2527,7 +2529,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
   filter:drop-shadow(0 0 6px rgba(255,255,255,.28));
 }
 #rankIconBtn.rank-animated{
-  animation: rankCrestFloatV1685 1.55s ease-in-out infinite !important;
+  animation: rankCrestFloatV1685 1.5s ease-in-out infinite !important;
 }
 #rankIconBtn.rank-animated::before,
 #rankIconBtn.rank-animated::after{
@@ -2558,15 +2560,17 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
   position:absolute;
   inset:0;
   pointer-events:none;
-  z-index:2;
+  z-index:3;
   background:repeating-linear-gradient(90deg,
-    rgba(255,255,255,0.34) 0 1px,
+    rgba(255,255,255,0.42) 0 1px,
     rgba(255,255,255,0.00) 1px 10%
   );
   mix-blend-mode:screen;
-  opacity:.46;
+  opacity:.58;
 }
 #expBarFill{
+  position:relative !important;
+  z-index:1 !important;
   background:
     linear-gradient(90deg, #00ff88, #44ffb8),
     repeating-linear-gradient(90deg,
@@ -2575,6 +2579,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
     ) !important;
 }
 #expText{ z-index:4 !important; }
+#expWrapper::before{ z-index:2 !important; }
+#expWrapper::after{ z-index:3 !important; }
 </style>
 
 </head>
@@ -3268,8 +3274,8 @@ function getRankInfo(lv){
   const subLevel = colorStep + 1;
   const family = type % 10;                   // 기존 도형 계열 유지
   const era = Math.floor(type / 10);
-  const animated = safeLv >= 100;             // ✅ 100레벨부터 애니메이션 시작
-  const sparkle = safeLv >= 100;              // ✅ 100레벨부터 반짝임
+  const animated = safeLv >= 101;             // ✅ 101레벨부터 반짝임 애니메이션 시작
+  const sparkle = safeLv >= 101;              // ✅ 101레벨부터 1.5초 주기 반짝임
   const aura = safeLv >= 200;                 // ✅ 200레벨부터 오라 효과
   const silver = safeLv >= 100 && safeLv < 200; // ✅ 100~199 실버 외곽선
   const golden = safeLv >= 200;               // ✅ 200~250 황금 외곽선
@@ -3907,7 +3913,7 @@ function updateRankIcon(){
   let c=rankIconBtn.querySelector('canvas'); if(!c){ c=document.createElement('canvas'); rankIconBtn.appendChild(c); }
   const curLv = level || 1;
   const ri = getRankInfo(curLv);
-  rankIconBtn.classList.toggle('rank-animated', curLv >= 100);
+  rankIconBtn.classList.toggle('rank-animated', curLv >= 101);
   rankIconBtn.style.boxShadow = curLv >= 200
     ? `0 0 20px ${ri.main}, 0 0 30px rgba(255,216,107,.45)`
     : curLv >= 100
@@ -21365,8 +21371,8 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   const t=preview ? 0 : Date.now()/1000;
   const cx=size/2, cy=size/2;
   const base=size*(0.255 + Math.min(0.065, r.type*0.0026));
-  const pulse=(tier>=1 && !preview) ? 1 + Math.sin(t*(1.5+tier*.28))*0.018*tier : 1;
-  const rot=(tier>=2 && !preview) ? Math.sin(t*.85)*0.05 : 0;
+  const pulse=(r.sparkle && !preview) ? 1 + Math.sin(t*(Math.PI*2/1.5))*0.018*Math.max(1,tier) : 1;
+  const rot=(r.sparkle && tier>=2 && !preview) ? Math.sin(t*.85)*0.05 : 0;
   const rad=Math.min(size*.37, base*pulse);
   const main=r.main || '#44ffb8';
   const accent=r.accent || '#ffffff';
@@ -21376,7 +21382,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
 
   // 외부 오라/룬 링: 배경 박스가 아니라 문양 주변 에너지로만 표현
   if(tier>=1){
-    const ringRot=(preview?0:t*(0.55+tier*.18));
+    const ringRot=(preview||!r.sparkle?0:t*(0.55+tier*.18));
     for(let k=0;k<tier;k++){
       ctx.save();
       ctx.rotate(ringRot*(k%2?-1:1)+k*.45);
@@ -21399,7 +21405,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   if(tier>=3){
     const orbs=tier>=4 ? 8 : 6;
     for(let i=0;i<orbs;i++){
-      const a=i*Math.PI*2/orbs + (preview?0:t*.9);
+      const a=i*Math.PI*2/orbs + (preview||!r.sparkle?0:t*.9);
       const rr=rad*1.35;
       const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
       const grd=ctx.createRadialGradient(x-rad*.05,y-rad*.05,0,x,y,rad*.11);
@@ -21444,7 +21450,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   ctx.globalAlpha=1;
 
   // 샤인 스윕
-  if(tier>=1 && !preview){
+  if(r.sparkle && tier>=1 && !preview){
     ctx.save();
     ctx.rotate(-0.55);
     ctx.beginPath();
@@ -21482,7 +21488,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   }
 
   // 반짝이 파티클
-  if(tier>=1){
+  if(r.sparkle && tier>=1){
     const n=tier>=4 ? 14 : tier>=3 ? 10 : tier>=2 ? 7 : 4;
     for(let i=0;i<n;i++){
       const a=i*Math.PI*2/n + (preview?0:t*(0.45+i*.02));
@@ -21504,17 +21510,21 @@ updateRankIcon = function(){
   if(!c){ c=document.createElement('canvas'); rankIconBtn.appendChild(c); }
   const curLv = level || 1;
   const ri = getRankInfo(curLv);
-  rankIconBtn.classList.toggle('rank-animated', curLv >= 100);
+  rankIconBtn.classList.toggle('rank-animated', curLv >= 101);
   rankIconBtn.style.boxShadow = 'none';
   rankIconBtn.style.background = 'transparent';
   rankIconBtn.style.border = 'none';
   rankIconBtn.style.filter = curLv >= 200
     ? `drop-shadow(0 0 10px ${ri.main}) drop-shadow(0 0 16px rgba(255,216,107,.42))`
-    : curLv >= 100
+    : curLv >= 101
       ? `drop-shadow(0 0 9px ${ri.main})`
       : 'drop-shadow(0 0 4px rgba(255,255,255,.20))';
   drawRankIconToCanvas(c, curLv, false);
 };
+
+// ✅ v.168.6 최종 보정
+// - 반짝임/움직임 클래스는 101레벨부터 적용
+// - EXP 10% 구분선은 expBarFill 위 레이어에 남아 채워진 뒤에도 살짝 보임
 
 loadGameData();
 updateHUD();
