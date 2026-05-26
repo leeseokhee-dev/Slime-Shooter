@@ -2588,7 +2588,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <!-- ✅ v.168.7 계급 반짝임 주기 보정: 101레벨부터 1.5초마다 짧게 1회 -->
 <style id="rankShinePulseV1687">
 #rankIconBtn.rank-animated{
-  animation: rankCrestSinglePulseV1687 1.5s linear infinite !important;
+  animation: none !important;
 }
 @keyframes rankCrestSinglePulseV1687{
   0%,72%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
@@ -3694,21 +3694,22 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   const now = Date.now()/1000;
   const cx=size/2, cy=size/2;
 
-  // ✅ v.168.7: 반짝임은 101레벨부터 1.5초마다 '짧게 한 번'만 발생
-  // - 평소에는 t를 1.5초 단위로 고정해서 30/60FPS처럼 계속 움직이지 않게 함
-  // - flash는 각 1.5초 주기의 앞부분(약 0.28초)에만 0→1→0으로 작동
+  // ✅ v.168.10: 회전/오라 애니메이션은 계속 유지, 반짝임만 1.5초마다 단발 발생
+  // - spinT: 룬 링/고레벨 오라/최종 링 회전용 연속 시간
+  // - flash: 101레벨 이상에서 1.5초마다 0.24초 동안만 켜지는 광택 신호
+  const spinT = preview ? 0 : now;
   const shineCycle = 1.5;
-  const shineWindow = 0.28;
+  const shineWindow = 0.24;
   const shineElapsed = preview ? 999 : (now % shineCycle);
   const shineProgress = Math.min(1, Math.max(0, shineElapsed / shineWindow));
   const flash = (!preview && r.lv >= 101 && shineElapsed <= shineWindow)
     ? Math.sin(shineProgress * Math.PI)
     : 0;
-  const t = preview ? 0 : Math.floor(now / shineCycle) * shineCycle;
+  const shineT = preview ? 0 : Math.floor(now / shineCycle) * shineCycle;
   const bodyBase = size*(0.255 + Math.min(0.055, r.type*0.0023));
-  const beat = (!preview && tier>=1) ? flash*0.026*tier : 0;
+  const beat = (!preview && tier>=1) ? flash*0.018*tier : 0;
   const bodyR = Math.min(size*0.36, bodyBase * (1+beat));
-  const rot = (!preview && tier>=2) ? flash*0.035*Math.sin(shineProgress*Math.PI*2) : 0;
+  const rot = (!preview && tier>=2) ? Math.sin(spinT*0.85)*0.030 : 0;
   const detail = r.subLevel/10;
   const tierPower = Math.min(1, r.type/24);
 
@@ -3807,7 +3808,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   // 룬/에너지 링
   if(tier>=2){
     ctx.save();
-    ctx.rotate(preview?0:t*(tier>=3?.72:.42));
+    ctx.rotate(preview?0:spinT*(tier>=3?.72:.42));
     ctx.lineWidth=Math.max(1.2,size*.012);
     ctx.strokeStyle=tier>=3?'rgba(255,238,165,.75)':'rgba(210,235,255,.62)';
     ctx.setLineDash([bodyR*.16, bodyR*.10]);
@@ -3868,17 +3869,51 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   }
   ctx.restore();
 
-  // 외곽선: 온라인 게임 장비 테두리 느낌
+  // 외곽선: 101Lv 실버 / 201Lv 골드가 작은 HUD에서도 확실히 보이도록 강화
   ctx.lineJoin='round'; ctx.lineCap='round';
-  ctx.lineWidth=Math.max(2.1,size*.022); ctx.strokeStyle='rgba(255,255,255,.96)'; crestPath(bodyR); ctx.stroke();
-  ctx.lineWidth=Math.max(1,size*.010); ctx.strokeStyle='rgba(0,0,0,.38)'; crestPath(bodyR*.96); ctx.stroke();
-  if(tier>=1){
+  ctx.lineWidth=Math.max(2.0,size*.021); ctx.strokeStyle='rgba(255,255,255,.94)'; crestPath(bodyR); ctx.stroke();
+  ctx.lineWidth=Math.max(1,size*.010); ctx.strokeStyle='rgba(0,0,0,.45)'; crestPath(bodyR*.955); ctx.stroke();
+  if(r.lv >= 101){
     ctx.save();
-    const metal = tier>=3 ? '#ffd76a' : '#ddebff';
-    const metal2 = tier>=4 ? '#ffffff' : (tier>=3 ? '#fff4b7' : '#ffffff');
-    ctx.shadowBlur=10+tier*5; ctx.shadowColor=tier>=3?'rgba(255,218,88,.82)':'rgba(210,230,255,.78)';
-    ctx.lineWidth=Math.max(3.1,size*(.030+.006*tier)); ctx.strokeStyle=metal; crestPath(bodyR*1.035); ctx.stroke();
-    ctx.lineWidth=Math.max(1.1,size*.012); ctx.strokeStyle=metal2; crestPath(bodyR*1.13); ctx.stroke();
+    const isGold = r.lv >= 201;
+    const metal = isGold ? '#ffd15a' : '#dce8ff';
+    const metalMid = isGold ? '#fff1a6' : '#ffffff';
+    const metalDark = isGold ? '#9a6500' : '#7788a8';
+    const glow = isGold ? 'rgba(255,205,70,.92)' : 'rgba(205,225,255,.86)';
+    const outerWidth = isGold ? Math.max(4.8,size*.052) : Math.max(3.8,size*.041);
+    const innerWidth = isGold ? Math.max(2.2,size*.023) : Math.max(1.7,size*.018);
+    const haloWidth = isGold ? Math.max(7.2,size*.074) : Math.max(5.4,size*.058);
+
+    ctx.shadowBlur = isGold ? 24 : 18;
+    ctx.shadowColor = glow;
+    ctx.globalAlpha = isGold ? .80 : .62;
+    ctx.lineWidth = haloWidth;
+    ctx.strokeStyle = glow;
+    crestPath(bodyR*1.072); ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = isGold ? 12 : 8;
+    ctx.lineWidth = outerWidth;
+    ctx.strokeStyle = metalDark;
+    crestPath(bodyR*1.064); ctx.stroke();
+
+    ctx.shadowBlur = isGold ? 18 : 12;
+    ctx.lineWidth = Math.max(3.2,size*(isGold ? .040 : .032));
+    ctx.strokeStyle = metal;
+    crestPath(bodyR*1.045); ctx.stroke();
+
+    ctx.shadowBlur = isGold ? 10 : 7;
+    ctx.lineWidth = innerWidth;
+    ctx.strokeStyle = metalMid;
+    crestPath(bodyR*1.135); ctx.stroke();
+
+    // 반짝임 순간에는 테두리 하이라이트만 추가, 회전 애니메이션과 별도 작동
+    if(flash > 0.001){
+      ctx.globalAlpha = .45 * flash;
+      ctx.lineWidth = Math.max(1.6,size*.016);
+      ctx.strokeStyle = '#ffffff';
+      crestPath(bodyR*(isGold?1.205:1.185)); ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -3897,9 +3932,9 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   if(tier>=1 && flash > 0.001){
     const count=[0,7,10,14,18][tier];
     for(let i=0;i<count;i++){
-      const a=i*Math.PI*2/count+(preview?0:t*(i%2?.42:-.28));
+      const a=i*Math.PI*2/count+(preview?0:shineT*(i%2?.42:-.28));
       const rr=bodyR*(1.05+(i%4)*.12+.04*tier);
-      const alpha=preview?.48:(.26 + flash*.62 + Math.sin(t*2.4+i)*.08);
+      const alpha=preview?.48:(.26 + flash*.62 + Math.sin(shineT*2.4+i)*.08);
       ctx.globalAlpha=Math.max(.10,alpha) * flash;
       spark(Math.cos(a)*rr,Math.sin(a)*rr, tier>=3?3.1:2.4, tier>=3?'#fff0a8':'#ffffff', a);
     }
@@ -3908,16 +3943,16 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   if(tier>=3 && flash > 0.001){
     const orbs=tier>=4?8:5;
     for(let i=0;i<orbs;i++){
-      const a=i*Math.PI*2/orbs+(preview?0:t*.95);
+      const a=i*Math.PI*2/orbs+(preview?0:spinT*.95);
       const rr=bodyR*(1.36+(i%2)*.10);
-      ctx.save(); ctx.globalAlpha=preview?.58:.48+Math.sin(t*2.1+i)*.16;
+      ctx.save(); ctx.globalAlpha=preview?.58:.48+Math.sin(spinT*2.1+i)*.16;
       ctx.fillStyle=i%2?'#fff8c8':'#ffd76a'; ctx.shadowBlur=13; ctx.shadowColor='rgba(255,220,100,.88)';
       ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,2.1+(i%3)*.45,0,Math.PI*2); ctx.fill(); ctx.restore();
     }
   }
-  if(tier>=4 && flash > 0.001){
+  if(tier>=4){
     const rainbow=['#ff5757','#ffb13d','#fff45c','#79ff70','#5deaff','#7890ff','#c66dff','#ff74ce'];
-    ctx.save(); ctx.rotate(preview?0:t*.38);
+    ctx.save(); ctx.rotate(preview?0:spinT*.38);
     ctx.lineWidth=Math.max(1.2,size*.012);
     const rg=ctx.createLinearGradient(-bodyR*1.65,0,bodyR*1.65,0);
     rainbow.forEach((col,i)=>rg.addColorStop(i/(rainbow.length-1),col));
@@ -3925,7 +3960,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
     ctx.beginPath(); ctx.arc(0,0,bodyR*1.62,0,Math.PI*2); ctx.stroke();
     ctx.restore();
     rainbow.forEach((col,i)=>{
-      const a=i*Math.PI*2/rainbow.length+(preview?0:t*.55);
+      const a=i*Math.PI*2/rainbow.length+(preview?0:spinT*.55);
       spark(Math.cos(a)*bodyR*1.52, Math.sin(a)*bodyR*1.52, 2.8+(i%2), col, a);
     });
   }
