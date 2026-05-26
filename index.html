@@ -21393,11 +21393,12 @@ drawRankIconToCanvas = function(c, lv, preview=false){
 
   const r=getRankInfo(lv);
   const tier=getRankCrestTierV1685(r.lv);
-  const t=preview ? 0 : Date.now()/1000;
+  const rankFlashV1688 = !!window.__rankFlashActiveV1688 && r.lv >= 101 && !preview;
+  const t=preview ? 0 : (rankFlashV1688 ? Date.now()/1000 : Math.floor(Date.now()/1500)*1.5);
   const cx=size/2, cy=size/2;
   const base=size*(0.255 + Math.min(0.065, r.type*0.0026));
-  const pulse=(r.sparkle && !preview) ? 1 + Math.sin(t*(Math.PI*2/1.5))*0.018*Math.max(1,tier) : 1;
-  const rot=(r.sparkle && tier>=2 && !preview) ? Math.sin(t*.85)*0.05 : 0;
+  const pulse=(r.sparkle && rankFlashV1688) ? 1 + Math.sin(t*(Math.PI*2/1.5))*0.018*Math.max(1,tier) : 1;
+  const rot=(r.sparkle && tier>=2 && rankFlashV1688) ? Math.sin(t*.85)*0.05 : 0;
   const rad=Math.min(size*.37, base*pulse);
   const main=r.main || '#44ffb8';
   const accent=r.accent || '#ffffff';
@@ -21407,7 +21408,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
 
   // 외부 오라/룬 링: 배경 박스가 아니라 문양 주변 에너지로만 표현
   if(tier>=1){
-    const ringRot=(preview||!r.sparkle?0:t*(0.55+tier*.18));
+    const ringRot=(!rankFlashV1688?0:t*(0.55+tier*.18));
     for(let k=0;k<tier;k++){
       ctx.save();
       ctx.rotate(ringRot*(k%2?-1:1)+k*.45);
@@ -21430,7 +21431,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   if(tier>=3){
     const orbs=tier>=4 ? 8 : 6;
     for(let i=0;i<orbs;i++){
-      const a=i*Math.PI*2/orbs + (preview||!r.sparkle?0:t*.9);
+      const a=i*Math.PI*2/orbs + (!rankFlashV1688?0:t*.9);
       const rr=rad*1.35;
       const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
       const grd=ctx.createRadialGradient(x-rad*.05,y-rad*.05,0,x,y,rad*.11);
@@ -21475,7 +21476,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   ctx.globalAlpha=1;
 
   // 샤인 스윕
-  if(r.sparkle && tier>=1 && !preview){
+  if(r.sparkle && tier>=1 && rankFlashV1688){
     ctx.save();
     ctx.rotate(-0.55);
     ctx.beginPath();
@@ -21513,7 +21514,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   }
 
   // 반짝이 파티클
-  if(r.sparkle && tier>=1){
+  if(r.sparkle && tier>=1 && rankFlashV1688){
     const n=tier>=4 ? 14 : tier>=3 ? 10 : tier>=2 ? 7 : 4;
     for(let i=0;i<n;i++){
       const a=i*Math.PI*2/n + (preview?0:t*(0.45+i*.02));
@@ -21550,6 +21551,45 @@ updateRankIcon = function(){
 // ✅ v.168.6 최종 보정
 // - 반짝임/움직임 클래스는 101레벨부터 적용
 // - EXP 10% 구분선은 expBarFill 위 레이어에 남아 채워진 뒤에도 살짝 보임
+
+// ✅ v.168.8 계급 반짝임 최종 보정
+// - 기존 80ms 계급 갱신 타이머 제거
+// - 101레벨부터 1.5초마다 0.16초 동안만 빛 효과 ON
+// - 평소에는 문양을 정지 상태로 유지해서 0.1초마다 번쩍이는 느낌 제거
+(function(){
+  try{
+    if(window.__rankIconAnimationTimer){
+      clearInterval(window.__rankIconAnimationTimer);
+      window.__rankIconAnimationTimer = null;
+    }
+    if(window.__rankFlashTimerV1688){
+      clearInterval(window.__rankFlashTimerV1688);
+      window.__rankFlashTimerV1688 = null;
+    }
+  }catch(e){}
+
+  window.__rankFlashActiveV1688 = false;
+  window.__triggerRankFlashV1688 = function(){
+    if(typeof updateRankIcon !== 'function') return;
+    const curLv = (typeof level !== 'undefined' ? level : 1) || 1;
+    if(curLv < 101){
+      window.__rankFlashActiveV1688 = false;
+      updateRankIcon();
+      return;
+    }
+    window.__rankFlashActiveV1688 = true;
+    updateRankIcon();
+    setTimeout(function(){
+      window.__rankFlashActiveV1688 = false;
+      updateRankIcon();
+    }, 160);
+  };
+
+  // 첫 화면은 정지 상태로 1회 표시, 이후 1.5초마다 단발 반짝임
+  setTimeout(function(){ if(typeof updateRankIcon === 'function') updateRankIcon(); }, 60);
+  window.__rankFlashTimerV1688 = setInterval(window.__triggerRankFlashV1688, 1500);
+})();
+
 
 loadGameData();
 updateHUD();
