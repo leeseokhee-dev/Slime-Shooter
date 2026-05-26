@@ -3228,11 +3228,11 @@ function getRankInfo(lv){
 function drawRankIconToCanvas(c, lv, preview=false){
   if(!c) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const size = preview ? 116 : 96; // ✅ 내부 캔버스를 약간 키워 외곽선/애니메이션 잘림 방지
+  const size = preview ? 128 : 104; // ✅ v.168.3: 광택/오라/장식이 잘리지 않도록 내부 여백 확대
   c.width = size*dpr;
   c.height = size*dpr;
-  c.style.width = preview ? '50px' : '36px';
-  c.style.height = preview ? '50px' : '36px';
+  c.style.width = preview ? '54px' : '38px';
+  c.style.height = preview ? '54px' : '38px';
 
   const ctx2 = c.getContext('2d');
   ctx2.setTransform(dpr,0,0,dpr,0,0);
@@ -3242,14 +3242,14 @@ function drawRankIconToCanvas(c, lv, preview=false){
   const now = Date.now()/1000;
   const cx = size/2;
   const cy = size/2;
-  const maxR = size * 0.33; // ✅ 가장 큰 레벨도 외곽선 포함 안전 영역 안에 배치
-  const rawR = (size * 0.235) * r.sizeScale;
-  // 1~99레벨은 완전 정적. 100~199는 반짝임 위주, 200+는 오라와 숨쉬는 강화 효과가 추가됩니다.
-  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.1)*0.035 : 1;
+  const maxR = size * 0.315;
+  const rawR = (size * 0.228) * r.sizeScale;
+  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.05)*0.032 : 1;
   const bodyR = Math.min(maxR, rawR * pulse);
   const rotAnim = (!preview && r.aura) ? Math.sin(now*1.05)*0.035 : 0;
   const shineMove = (!preview && r.sparkle) ? now*0.9 : 0;
   const detailPower = r.subLevel / 10;
+  const tierPower = Math.min(1, r.type / 24);
 
   function hexToRgba(hex, alpha){
     const h = String(hex || '#ffffff').replace('#','');
@@ -3269,29 +3269,22 @@ function drawRankIconToCanvas(c, lv, preview=false){
     }
     ctx2.closePath();
   }
-
-  function circlePath(rad){
-    ctx2.beginPath();
-    ctx2.arc(0,0,rad,0,Math.PI*2);
-    ctx2.closePath();
-  }
-
+  function circlePath(rad){ ctx2.beginPath(); ctx2.arc(0,0,rad,0,Math.PI*2); ctx2.closePath(); }
   function cloverPath(rad){
     ctx2.beginPath();
-    for(let i=0;i<=160;i++){
-      const a = i*Math.PI*2/160;
-      const rr = rad * (0.74 + 0.24*Math.cos(4*a)); // ✅ 클로버 윤곽을 더 확실하게
+    for(let i=0;i<=180;i++){
+      const a = i*Math.PI*2/180;
+      const rr = rad * (0.73 + 0.25*Math.cos(4*a));
       const x = Math.cos(a)*rr;
       const y = Math.sin(a)*rr;
       if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
     }
     ctx2.closePath();
   }
-
   function heartPath(rad){
     ctx2.beginPath();
-    for(let i=0;i<=180;i++){
-      const t = Math.PI*2*i/180;
+    for(let i=0;i<=190;i++){
+      const t = Math.PI*2*i/190;
       const x = 16*Math.pow(Math.sin(t),3);
       const y = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
       const px = x/18*rad;
@@ -3300,43 +3293,33 @@ function drawRankIconToCanvas(c, lv, preview=false){
     }
     ctx2.closePath();
   }
-
   function diamondPath(rad){
     ctx2.beginPath();
-    ctx2.moveTo(0,-rad);
-    ctx2.lineTo(rad*0.72,0);
-    ctx2.lineTo(0,rad);
-    ctx2.lineTo(-rad*0.72,0);
-    ctx2.closePath();
+    ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.74,0); ctx2.lineTo(0,rad); ctx2.lineTo(-rad*0.74,0); ctx2.closePath();
   }
-
   function spadePath(rad){
     ctx2.beginPath();
-    for(let i=0;i<=160;i++){
-      const t = Math.PI*2*i/160;
+    for(let i=0;i<=170;i++){
+      const t = Math.PI*2*i/170;
       const x = 16*Math.pow(Math.sin(t),3);
       const y = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
       const px = x/18*rad;
       const py = -y/18*rad - rad*0.08;
       if(i===0) ctx2.moveTo(px,py); else ctx2.lineTo(px,py);
     }
-    ctx2.lineTo(rad*0.34, rad*0.70);
-    ctx2.lineTo(-rad*0.34, rad*0.70);
-    ctx2.closePath();
+    ctx2.lineTo(rad*0.36, rad*0.72); ctx2.lineTo(-rad*0.36, rad*0.72); ctx2.closePath();
   }
-
   function starPath(rad){
     ctx2.beginPath();
     for(let i=0;i<10;i++){
       const a = -Math.PI/2 + i*Math.PI/5;
-      const rr = (i%2===0) ? rad : rad*0.50;
+      const rr = (i%2===0) ? rad : rad*0.48;
       const x = Math.cos(a)*rr;
       const y = Math.sin(a)*rr;
       if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
     }
     ctx2.closePath();
   }
-
   function rankShapePath(rad){
     switch(r.family){
       case 0: circlePath(rad); break;
@@ -3352,23 +3335,23 @@ function drawRankIconToCanvas(c, lv, preview=false){
       default: circlePath(rad); break;
     }
   }
-
   function drawSpark(x,y,rad,color,rot=0){
     ctx2.save();
-    ctx2.translate(x,y);
-    ctx2.rotate(rot);
+    ctx2.translate(x,y); ctx2.rotate(rot);
     ctx2.beginPath();
-    ctx2.moveTo(0,-rad);
-    ctx2.lineTo(rad*0.32,-rad*0.32);
-    ctx2.lineTo(rad,0);
-    ctx2.lineTo(rad*0.32,rad*0.32);
-    ctx2.lineTo(0,rad);
-    ctx2.lineTo(-rad*0.32,rad*0.32);
-    ctx2.lineTo(-rad,0);
-    ctx2.lineTo(-rad*0.32,-rad*0.32);
+    ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.30,-rad*0.30); ctx2.lineTo(rad,0); ctx2.lineTo(rad*0.30,rad*0.30);
+    ctx2.lineTo(0,rad); ctx2.lineTo(-rad*0.30,rad*0.30); ctx2.lineTo(-rad,0); ctx2.lineTo(-rad*0.30,-rad*0.30);
+    ctx2.closePath(); ctx2.fillStyle=color; ctx2.fill(); ctx2.restore();
+  }
+  function drawTinyGem(x,y,rad,color,rot=0){
+    ctx2.save(); ctx2.translate(x,y); ctx2.rotate(rot);
+    ctx2.beginPath();
+    ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.78,-rad*0.10); ctx2.lineTo(rad*0.42,rad*0.82); ctx2.lineTo(-rad*0.42,rad*0.82); ctx2.lineTo(-rad*0.78,-rad*0.10);
     ctx2.closePath();
     ctx2.fillStyle=color;
+    ctx2.shadowBlur=7; ctx2.shadowColor=color;
     ctx2.fill();
+    ctx2.lineWidth=0.8; ctx2.strokeStyle='rgba(255,255,255,0.62)'; ctx2.stroke();
     ctx2.restore();
   }
 
@@ -3376,117 +3359,160 @@ function drawRankIconToCanvas(c, lv, preview=false){
   ctx2.translate(cx, cy);
   ctx2.rotate(rotAnim);
 
-  // 기본 그림자: 1~99도 도형은 선명하게 보이되, 오라는 200레벨부터만 표시
+  // ✅ v.168.3: 뒤쪽 보석 받침대/후광. 저레벨도 더 예쁘게 보이되, 애니메이션은 기존 규칙 유지.
   ctx2.save();
-  ctx2.fillStyle = 'rgba(0,0,0,0.26)';
-  ctx2.shadowBlur = 6;
-  ctx2.shadowColor = 'rgba(0,0,0,0.38)';
-  ctx2.translate(0, bodyR*0.08);
-  rankShapePath(bodyR*1.03);
-  ctx2.fill();
+  const haloGrad = ctx2.createRadialGradient(0,0,bodyR*0.2,0,0,bodyR*1.58);
+  haloGrad.addColorStop(0, hexToRgba(r.main, r.aura ? 0.42 : 0.20));
+  haloGrad.addColorStop(0.55, hexToRgba(r.main, r.aura ? 0.16 : 0.07));
+  haloGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx2.fillStyle = haloGrad;
+  ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.58,0,Math.PI*2); ctx2.fill();
   ctx2.restore();
 
-  // 200레벨 이상 오라: 황금빛 외곽 광휘 + 회전 링
+  // 200레벨 이상 오라: 황금빛 외곽 광휘 + 회전 링 + 룬 점선
   if(r.aura){
     ctx2.save();
     const auraBeat = preview ? 1 : (0.78 + Math.sin(now*2.0)*0.16);
-    const auraColor = 'rgba(255,210,70,' + (0.18 + auraBeat*0.13).toFixed(3) + ')';
-    ctx2.fillStyle = auraColor;
-    ctx2.shadowBlur = 22 + auraBeat*10;
+    ctx2.fillStyle = 'rgba(255,210,70,' + (0.18 + auraBeat*0.13).toFixed(3) + ')';
+    ctx2.shadowBlur = 24 + auraBeat*12;
     ctx2.shadowColor = 'rgba(255,215,90,0.72)';
     rankShapePath(bodyR*(1.18 + auraBeat*0.05));
     ctx2.fill();
-    ctx2.globalAlpha = 0.55;
+    ctx2.globalAlpha = 0.62;
     ctx2.rotate(preview ? 0 : now*0.65);
-    ctx2.lineWidth = Math.max(1.4, size*0.016);
-    ctx2.strokeStyle = 'rgba(255,238,160,0.72)';
-    ctx2.setLineDash([bodyR*0.42, bodyR*0.20]);
-    ctx2.beginPath();
-    ctx2.arc(0, 0, bodyR*1.38, 0, Math.PI*2);
-    ctx2.stroke();
+    ctx2.lineWidth = Math.max(1.3, size*0.014);
+    ctx2.strokeStyle = 'rgba(255,238,160,0.78)';
+    ctx2.setLineDash([bodyR*0.40, bodyR*0.18]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.40,0,Math.PI*2); ctx2.stroke();
+    ctx2.setLineDash([bodyR*0.10, bodyR*0.18]);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.22,0,Math.PI*2); ctx2.stroke();
     ctx2.restore();
   }
 
-  // 본체
-  const grad = ctx2.createRadialGradient(-bodyR*0.35, -bodyR*0.42, bodyR*0.12, 0, 0, bodyR*1.05);
+  // 그림자
+  ctx2.save();
+  ctx2.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx2.shadowBlur = 8;
+  ctx2.shadowColor = 'rgba(0,0,0,0.42)';
+  ctx2.translate(0, bodyR*0.10);
+  rankShapePath(bodyR*1.04);
+  ctx2.fill();
+  ctx2.restore();
+
+  // 본체: 유리 보석 느낌의 다중 그라데이션
+  const grad = ctx2.createRadialGradient(-bodyR*0.40, -bodyR*0.46, bodyR*0.08, 0, 0, bodyR*1.10);
   grad.addColorStop(0, '#ffffff');
-  grad.addColorStop(0.18, r.accent);
-  grad.addColorStop(0.58, r.main);
-  grad.addColorStop(1, hexToRgba(r.main,0.72));
+  grad.addColorStop(0.16, r.accent);
+  grad.addColorStop(0.52, r.main);
+  grad.addColorStop(0.82, hexToRgba(r.main,0.84));
+  grad.addColorStop(1, 'rgba(20,22,36,0.78)');
   ctx2.fillStyle = grad;
   rankShapePath(bodyR);
   ctx2.fill();
 
-  // 도형 윤곽을 확실하게 보이도록 기본 외곽선 강화
-  ctx2.lineJoin = 'round';
-  ctx2.lineCap = 'round';
-  ctx2.lineWidth = Math.max(2.2, size*0.025);
-  ctx2.strokeStyle = 'rgba(255,255,255,0.92)';
-  rankShapePath(bodyR);
-  ctx2.stroke();
-
-  ctx2.lineWidth = Math.max(1.3, size*0.015);
-  ctx2.strokeStyle = 'rgba(0,0,0,0.28)';
-  rankShapePath(bodyR*0.965);
-  ctx2.stroke();
-
-  // 100~199: 실버 외곽선 / 200~250: 황금 외곽선
-  if(r.silver || r.golden){
-    ctx2.save();
-    const outline = r.golden ? '#ffd76a' : '#dcecff';
-    const outline2 = r.golden ? '#fff2a6' : '#ffffff';
-    ctx2.shadowBlur = r.golden ? 14 : 11;
-    ctx2.shadowColor = r.golden ? 'rgba(255,215,90,0.70)' : 'rgba(220,235,255,0.70)';
-    ctx2.lineWidth = r.golden ? Math.max(4.2, size*0.046) : Math.max(3.4, size*0.038);
-    ctx2.strokeStyle = outline;
-    rankShapePath(bodyR*1.035);
-    ctx2.stroke();
-    ctx2.lineWidth = Math.max(1.2, size*0.014);
-    ctx2.strokeStyle = outline2;
-    rankShapePath(bodyR*1.105);
-    ctx2.stroke();
-    ctx2.restore();
-  }
-
-  // 내부 하이라이트: 표정 없이 광택만
+  // 상단 유리 코팅
   ctx2.save();
+  rankShapePath(bodyR);
   ctx2.clip();
-  ctx2.globalAlpha = 0.38;
-  ctx2.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx2.beginPath();
-  ctx2.ellipse(-bodyR*0.28, -bodyR*0.35, bodyR*0.30, bodyR*0.16, -0.45, 0, Math.PI*2);
-  ctx2.fill();
+  const glass = ctx2.createLinearGradient(0,-bodyR,0,bodyR);
+  glass.addColorStop(0, 'rgba(255,255,255,0.42)');
+  glass.addColorStop(0.38, 'rgba(255,255,255,0.08)');
+  glass.addColorStop(0.72, 'rgba(0,0,0,0.10)');
+  glass.addColorStop(1, 'rgba(255,255,255,0.12)');
+  ctx2.fillStyle = glass;
+  ctx2.fillRect(-bodyR,-bodyR,bodyR*2,bodyR*2);
 
-  // 100레벨 이후 은은한 사선 광택 애니메이션
+  ctx2.globalAlpha = 0.42;
+  ctx2.fillStyle = 'rgba(255,255,255,0.86)';
+  ctx2.beginPath(); ctx2.ellipse(-bodyR*0.29,-bodyR*0.37,bodyR*0.32,bodyR*0.15,-0.45,0,Math.PI*2); ctx2.fill();
+  ctx2.globalAlpha = 0.18;
+  ctx2.beginPath(); ctx2.ellipse(bodyR*0.24,bodyR*0.26,bodyR*0.42,bodyR*0.16,-0.20,0,Math.PI*2); ctx2.fill();
+
   if(r.sparkle){
-    ctx2.globalAlpha = 0.22;
+    ctx2.globalAlpha = 0.25;
     ctx2.rotate(-0.45);
     const sweepX = ((shineMove % 2) - 1) * bodyR * 2.2;
     const sweep = ctx2.createLinearGradient(sweepX-bodyR*0.22, -bodyR, sweepX+bodyR*0.22, bodyR);
     sweep.addColorStop(0, 'rgba(255,255,255,0)');
-    sweep.addColorStop(0.5, 'rgba(255,255,255,0.95)');
+    sweep.addColorStop(0.5, 'rgba(255,255,255,0.98)');
     sweep.addColorStop(1, 'rgba(255,255,255,0)');
     ctx2.fillStyle = sweep;
-    ctx2.fillRect(sweepX-bodyR*0.26, -bodyR*1.45, bodyR*0.52, bodyR*2.9);
+    ctx2.fillRect(sweepX-bodyR*0.28, -bodyR*1.48, bodyR*0.56, bodyR*2.96);
   }
   ctx2.restore();
 
-  // 레벨별 디테일: 도형 모양은 유지하고 내부 문양만 증가
-  const veinCount = Math.min(10, 3 + Math.floor(r.type/3));
+  // 외곽선: 기본 흰 테두리 + 안쪽 어두운 선
+  ctx2.lineJoin = 'round'; ctx2.lineCap = 'round';
+  ctx2.lineWidth = Math.max(2.1, size*0.023);
+  ctx2.strokeStyle = 'rgba(255,255,255,0.94)';
+  rankShapePath(bodyR); ctx2.stroke();
+  ctx2.lineWidth = Math.max(1.0, size*0.011);
+  ctx2.strokeStyle = 'rgba(0,0,0,0.32)';
+  rankShapePath(bodyR*0.965); ctx2.stroke();
+
+  // 100~199 실버 / 200~250 황금 테두리 강화
+  if(r.silver || r.golden){
+    ctx2.save();
+    const outline = r.golden ? '#ffd76a' : '#dcecff';
+    const outline2 = r.golden ? '#fff5b8' : '#ffffff';
+    ctx2.shadowBlur = r.golden ? 16 : 12;
+    ctx2.shadowColor = r.golden ? 'rgba(255,215,90,0.74)' : 'rgba(220,235,255,0.72)';
+    ctx2.lineWidth = r.golden ? Math.max(4.4, size*0.046) : Math.max(3.4, size*0.037);
+    ctx2.strokeStyle = outline;
+    rankShapePath(bodyR*1.035); ctx2.stroke();
+    ctx2.lineWidth = Math.max(1.15, size*0.013);
+    ctx2.strokeStyle = outline2;
+    rankShapePath(bodyR*1.115); ctx2.stroke();
+    ctx2.restore();
+  }
+
+  // ✅ v.168.3: 내부 문양 업그레이드. 저레벨은 심플, 고레벨은 보석/룬/방사형 패턴 증가.
+  const veinCount = Math.min(14, 4 + Math.floor(r.type/2));
   ctx2.save();
-  ctx2.globalAlpha = 0.50;
+  rankShapePath(bodyR*0.92); ctx2.clip();
   for(let i=0;i<veinCount;i++){
-    const a = -Math.PI/2 + i*Math.PI*2/veinCount + detailPower*0.15;
+    const a = -Math.PI/2 + i*Math.PI*2/veinCount + detailPower*0.16;
+    const inner = bodyR*(0.13 + (i%3)*0.025);
+    const outer = bodyR*(0.43 + (i%4)*0.055 + tierPower*0.10);
     ctx2.beginPath();
-    ctx2.moveTo(Math.cos(a)*bodyR*0.16, Math.sin(a)*bodyR*0.16);
-    ctx2.lineTo(Math.cos(a)*bodyR*(0.48 + (i%2)*0.10), Math.sin(a)*bodyR*(0.48 + (i%2)*0.10));
-    ctx2.lineWidth = 0.7 + (i%3)*0.18;
-    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.20)';
+    ctx2.moveTo(Math.cos(a)*inner, Math.sin(a)*inner);
+    ctx2.lineTo(Math.cos(a)*outer, Math.sin(a)*outer);
+    ctx2.lineWidth = 0.65 + (i%3)*0.20;
+    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.20)';
+    ctx2.stroke();
+  }
+  if(r.type >= 5){
+    ctx2.globalAlpha = 0.38;
+    ctx2.lineWidth = 1;
+    ctx2.strokeStyle = 'rgba(255,255,255,0.46)';
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*(0.30 + tierPower*0.10),0,Math.PI*2); ctx2.stroke();
+  }
+  if(r.type >= 10){
+    ctx2.globalAlpha = 0.30;
+    ctx2.strokeStyle = 'rgba(255,255,255,0.60)';
+    ctx2.setLineDash([bodyR*0.10, bodyR*0.07]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*(0.52 + tierPower*0.06),0,Math.PI*2); ctx2.stroke();
+    ctx2.setLineDash([]);
+  }
+  if(r.type >= 15){
+    ctx2.globalAlpha = 0.42;
+    polygonPath(3 + (r.type % 5), bodyR*(0.22 + tierPower*0.08), -Math.PI/2 + detailPower*0.45);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.48)';
+    ctx2.lineWidth = 1.1;
     ctx2.stroke();
   }
   ctx2.restore();
 
-  // 100레벨 이후 반짝임: 100~199는 실버 별빛, 200+는 황금 별빛으로 강화
+  // 색 단계에 따른 작은 보석 장식: 10레벨 주기 컬러 체감 강화
+  const gemCount = Math.min(6, 2 + Math.floor(r.subLevel/2));
+  for(let i=0;i<gemCount;i++){
+    const a = -Math.PI/2 + i*Math.PI*2/gemCount + (r.family*0.13);
+    const rr = bodyR * (0.78 + (i%2)*0.04);
+    drawTinyGem(Math.cos(a)*rr, Math.sin(a)*rr, Math.max(1.35, bodyR*0.055), i%2 ? r.accent : '#ffffff', a);
+  }
+
+  // 100레벨 이후 반짝임
   if(r.sparkle){
     const sparkCount = r.golden ? 12 : 8;
     for(let i=0;i<sparkCount;i++){
@@ -3496,12 +3522,12 @@ function drawRankIconToCanvas(c, lv, preview=false){
       const sy = Math.sin(a)*rr;
       const alpha = preview ? 0.58 : 0.40 + Math.sin(now*2.6+i)*0.22;
       ctx2.globalAlpha = Math.max(0.18, alpha);
-      drawSpark(sx, sy, r.golden ? 3.1 : 2.5, r.golden ? '#fff0a8' : '#ffffff', a);
+      drawSpark(sx, sy, r.golden ? 3.2 : 2.6, r.golden ? '#fff0a8' : '#ffffff', a);
     }
     ctx2.globalAlpha = 1;
   }
 
-  // 200레벨 이상 추가 아이디어: 작은 오브가 천천히 공전하며 고급 계급 느낌 강화
+  // 200레벨 이상 공전 오브
   if(r.aura){
     const orbCount = r.finalTier ? 6 : 4;
     for(let i=0;i<orbCount;i++){
@@ -3509,28 +3535,35 @@ function drawRankIconToCanvas(c, lv, preview=false){
       const rr = bodyR * (1.30 + (i%2)*0.10);
       const ox = Math.cos(a)*rr;
       const oy = Math.sin(a)*rr;
-      const orbSize = 1.8 + (i%3)*0.45;
+      const orbSize = 1.9 + (i%3)*0.45;
       ctx2.save();
       ctx2.globalAlpha = preview ? 0.55 : 0.45 + Math.sin(now*2.4+i)*0.18;
       ctx2.fillStyle = i%2 ? '#fff6bc' : '#ffd76a';
-      ctx2.shadowBlur = 10;
-      ctx2.shadowColor = 'rgba(255,220,100,0.80)';
-      ctx2.beginPath();
-      ctx2.arc(ox, oy, orbSize, 0, Math.PI*2);
-      ctx2.fill();
+      ctx2.shadowBlur = 11;
+      ctx2.shadowColor = 'rgba(255,220,100,0.82)';
+      ctx2.beginPath(); ctx2.arc(ox,oy,orbSize,0,Math.PI*2); ctx2.fill();
       ctx2.restore();
     }
   }
 
-  // 241~250 최종 진화: 무지개 광택
+  // 241~250 최종 진화: 무지개 왕관 링
   if(r.finalTier){
     const rainbow=['#ff5b5b','#ffb13d','#fff45c','#7dff73','#62e7ff','#6f8cff','#cb6dff','#ff75cf'];
     for(let i=0;i<rainbow.length;i++){
       const a=i*Math.PI*2/rainbow.length + (preview?0:now*.42);
-      ctx2.globalAlpha=.64;
-      drawSpark(Math.cos(a)*bodyR*1.42, Math.sin(a)*bodyR*1.42, 2.5+(i%2), rainbow[i], a);
+      ctx2.globalAlpha=.66;
+      drawSpark(Math.cos(a)*bodyR*1.44, Math.sin(a)*bodyR*1.44, 2.6+(i%2), rainbow[i], a);
     }
     ctx2.globalAlpha=1;
+    ctx2.save();
+    ctx2.rotate(preview?0:now*0.22);
+    ctx2.lineWidth = Math.max(1.1, size*0.012);
+    const rg = ctx2.createLinearGradient(-bodyR*1.45,0,bodyR*1.45,0);
+    rg.addColorStop(0,'rgba(255,91,91,0.75)'); rg.addColorStop(0.25,'rgba(255,244,92,0.75)'); rg.addColorStop(0.5,'rgba(98,231,255,0.75)'); rg.addColorStop(0.75,'rgba(203,109,255,0.75)'); rg.addColorStop(1,'rgba(255,117,207,0.75)');
+    ctx2.strokeStyle = rg;
+    ctx2.setLineDash([bodyR*0.12, bodyR*0.08]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.52,0,Math.PI*2); ctx2.stroke();
+    ctx2.restore();
   }
 
   ctx2.restore();
