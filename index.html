@@ -3290,9 +3290,9 @@ function getRankInfo(lv){
   const era = Math.floor(type / 10);
   const animated = safeLv >= 101;             // ✅ 101레벨부터 반짝임 애니메이션 시작
   const sparkle = safeLv >= 101;              // ✅ 101레벨부터 1.5초 주기 반짝임
-  const aura = safeLv >= 200;                 // ✅ 200레벨부터 오라 효과
-  const silver = safeLv >= 100 && safeLv < 200; // ✅ 100~199 실버 외곽선
-  const golden = safeLv >= 200;               // ✅ 200~250 황금 외곽선
+  const aura = safeLv >= 201;                 // ✅ v.168.11: 201레벨부터 오라 효과 지속 유지
+  const silver = safeLv >= 100 && safeLv < 201; // ✅ 100~200 실버 외곽선
+  const golden = safeLv >= 201;               // ✅ 201~250 황금 외곽선
   const finalTier = safeLv >= 241;
   const sizeScale = 1 + (safeLv - 1) / 249 * 0.30; // 커지되 캔버스 안에서 안전하게 제한
   const shapeNames = ['둥근 슬라임','세모 슬라임','네모 슬라임','오각형 슬라임','육각형 슬라임','클로버 슬라임','하트 슬라임','다이아몬드 슬라임','스페이드 슬라임','별 슬라임'];
@@ -3672,7 +3672,7 @@ function drawRankIconToCanvas(c, lv, preview=false){
 function getRankOnlineTier(lv){
   lv = Math.max(1, Math.min(250, Number(lv)||1));
   if(lv >= 240) return 4;
-  if(lv >= 200) return 3;
+  if(lv >= 201) return 3;
   if(lv >= 150) return 2;
   if(lv >= 100) return 1;
   return 0;
@@ -3691,10 +3691,12 @@ drawRankIconToCanvas = function(c, lv, preview=false){
 
   const r = getRankInfo(lv);
   const tier = getRankOnlineTier(r.lv);
-  const now = Date.now()/1000;
+  // ✅ v.168.11: 계급 애니메이션은 게임 FPS 설정과 분리해서 60fps 시간값으로 고정
+  // - 15fps/30fps 설정에서도 계급 회전·오라·광택만 60fps 기준으로 부드럽게 갱신
+  const now = preview ? 0 : (Math.floor(performance.now() / (1000/60)) / 60);
   const cx=size/2, cy=size/2;
 
-  // ✅ v.168.10: 회전/오라 애니메이션은 계속 유지, 반짝임만 1.5초마다 단발 발생
+  // ✅ v.168.11: 회전/오라 애니메이션은 계속 유지, 반짝임만 1.5초마다 단발 발생
   // - spinT: 룬 링/고레벨 오라/최종 링 회전용 연속 시간
   // - flash: 101레벨 이상에서 1.5초마다 0.24초 동안만 켜지는 광택 신호
   const spinT = preview ? 0 : now;
@@ -3974,19 +3976,29 @@ function updateRankIcon(){
   const curLv = level || 1;
   const ri = getRankInfo(curLv);
   rankIconBtn.classList.toggle('rank-animated', curLv >= 101);
-  rankIconBtn.style.boxShadow = curLv >= 200
+  rankIconBtn.style.boxShadow = curLv >= 201
     ? `0 0 20px ${ri.main}, 0 0 30px rgba(255,216,107,.45)`
     : curLv >= 100
       ? `0 0 18px ${ri.main}`
       : `0 0 12px rgba(255,255,255,.18)`;
   drawRankIconToCanvas(c, curLv, false);
 }
-if(!window.__rankIconAnimationTimer){
-  window.__rankIconAnimationTimer = setInterval(()=>{
-    if(rankIconBtn && !rankIconBtn.offsetParent) return;
-    if(typeof state !== 'undefined' && state === 'playing') updateRankIcon();
-    else updateRankIcon();
-  }, 80);
+// ✅ v.168.11: 계급 아이콘 전용 60fps 애니메이션 루프
+// 게임 FPS 설정(10/15/20/30 등)과 분리되어 계급 회전/오라만 부드럽게 유지됩니다.
+if(!window.__rankIconAnimationRAF){
+  window.__rankIconAnimationRAF = true;
+  let __rankIconLastFrame = 0;
+  const __rankIconFrameMs = 1000 / 60;
+  const __rankIconLoop = (t)=>{
+    if(t - __rankIconLastFrame >= __rankIconFrameMs - 0.5){
+      __rankIconLastFrame = t;
+      if(!rankIconBtn || rankIconBtn.offsetParent){
+        updateRankIcon();
+      }
+    }
+    requestAnimationFrame(__rankIconLoop);
+  };
+  requestAnimationFrame(__rankIconLoop);
 }
 function openRankTableModal(){
   if(!rankTableModal || !rankTableBody) return;
@@ -21349,7 +21361,7 @@ drawEnemyShape = function(e) {
 function getRankCrestTierV1685(lv){
   lv = Math.max(1, Math.min(250, Number(lv)||1));
   if(lv >= 240) return 4;
-  if(lv >= 200) return 3;
+  if(lv >= 201) return 3;
   if(lv >= 150) return 2;
   if(lv >= 100) return 1;
   return 0;
