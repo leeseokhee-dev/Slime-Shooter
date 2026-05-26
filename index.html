@@ -2505,6 +2505,78 @@ body.playing-ui #settingsBar{ display:none !important; }
 body:not(.playing-ui) #settingsBar{ display:flex; }
 
 </style>
+
+
+<!-- ✅ v.168.5 계급 아이콘 배경 제거 + EXP 10% 구분선 -->
+<style id="rankCrestNoIconExpTicksV1685">
+#rankIconBtn{
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  border:none !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  overflow:visible !important;
+  position:relative !important;
+}
+#rankIconBtn canvas{
+  width:42px !important;
+  height:42px !important;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.28));
+}
+#rankIconBtn.rank-animated{
+  animation: rankCrestFloatV1685 1.55s ease-in-out infinite !important;
+}
+#rankIconBtn.rank-animated::before,
+#rankIconBtn.rank-animated::after{
+  display:none !important;
+}
+@keyframes rankCrestFloatV1685{
+  0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  50%{ transform:translateY(-1px) scale(1.055); filter:brightness(1.25); }
+}
+.rank-card canvas{
+  width:54px !important;
+  height:54px !important;
+  filter:drop-shadow(0 0 8px rgba(255,255,255,.20));
+}
+.rank-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)) !important;
+}
+#expWrapper{
+  background:
+    linear-gradient(180deg, rgba(8,20,44,0.98) 0%, rgba(6,12,28,0.98) 100%),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.28) 0 1px,
+      rgba(255,255,255,0.00) 1px 10%
+    ) !important;
+}
+#expWrapper::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:2;
+  background:repeating-linear-gradient(90deg,
+    rgba(255,255,255,0.34) 0 1px,
+    rgba(255,255,255,0.00) 1px 10%
+  );
+  mix-blend-mode:screen;
+  opacity:.46;
+}
+#expBarFill{
+  background:
+    linear-gradient(90deg, #00ff88, #44ffb8),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.30) 0 1px,
+      rgba(255,255,255,0.00) 1px 10%
+    ) !important;
+}
+#expText{ z-index:4 !important; }
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -3228,7 +3300,7 @@ function getRankInfo(lv){
 function drawRankIconToCanvas(c, lv, preview=false){
   if(!c) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const size = preview ? 128 : 104; // ✅ v.168.3: 광택/오라/장식이 잘리지 않도록 내부 여백 확대
+  const size = preview ? 128 : 104; // ✅ v.168.4: 온라인 게임풍 계급장/진화 애니메이션 적용
   c.width = size*dpr;
   c.height = size*dpr;
   c.style.width = preview ? '54px' : '38px';
@@ -3568,6 +3640,267 @@ function drawRankIconToCanvas(c, lv, preview=false){
 
   ctx2.restore();
 }
+
+
+
+// ✅ v.168.4 온라인 게임풍 계급장 오버라이드
+// - 1~99: 정적이지만 메탈 계급장 느낌 강화
+// - 100~149: 실버 샤인/스캔 광택
+// - 150~199: 룬 링/별빛 파티클 추가
+// - 200~239: 골드 오라/공전 오브 추가
+// - 240~250: 최종 진화 무지개 왕관/에너지 링
+function getRankOnlineTier(lv){
+  lv = Math.max(1, Math.min(250, Number(lv)||1));
+  if(lv >= 240) return 4;
+  if(lv >= 200) return 3;
+  if(lv >= 150) return 2;
+  if(lv >= 100) return 1;
+  return 0;
+}
+
+drawRankIconToCanvas = function(c, lv, preview=false){
+  if(!c) return;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const size = preview ? 140 : 112;
+  c.width = size*dpr; c.height = size*dpr;
+  c.style.width = preview ? '58px' : '40px';
+  c.style.height = preview ? '58px' : '40px';
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+
+  const r = getRankInfo(lv);
+  const tier = getRankOnlineTier(r.lv);
+  const now = Date.now()/1000;
+  const cx=size/2, cy=size/2;
+  const t = preview ? 0 : now;
+  const bodyBase = size*(0.255 + Math.min(0.055, r.type*0.0023));
+  const beat = (!preview && tier>=1) ? Math.sin(t*(1.7+tier*.25))*0.018*tier : 0;
+  const bodyR = Math.min(size*0.36, bodyBase * (1+beat));
+  const rot = (!preview && tier>=2) ? Math.sin(t*.85)*0.045 : 0;
+  const detail = r.subLevel/10;
+  const tierPower = Math.min(1, r.type/24);
+
+  function rgba(hex,a){
+    const h=String(hex||'#fff').replace('#','');
+    const rr=parseInt(h.slice(0,2),16)||255, gg=parseInt(h.slice(2,4),16)||255, bb=parseInt(h.slice(4,6),16)||255;
+    return `rgba(${rr},${gg},${bb},${a})`;
+  }
+  function pathPoly(n, rad, rot=-Math.PI/2, spike=0){
+    ctx.beginPath();
+    const steps = spike ? n*2 : n;
+    for(let i=0;i<steps;i++){
+      const a=rot+i*Math.PI*2/steps;
+      const rr=spike && i%2 ? rad*(0.68-spike*.08) : rad;
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  function pathHeart(rad){
+    ctx.beginPath();
+    for(let i=0;i<=180;i++){
+      const u=Math.PI*2*i/180;
+      const x=16*Math.pow(Math.sin(u),3)/18*rad;
+      const y=-(13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u))/18*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  function pathClover(rad){
+    ctx.beginPath();
+    for(let i=0;i<=180;i++){
+      const a=i*Math.PI*2/180;
+      const rr=rad*(0.70+0.28*Math.cos(4*a));
+      if(i===0) ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); else ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);
+    }
+    ctx.closePath();
+  }
+  function crestPath(rad){
+    // 온라인 게임 계급장 느낌: 같은 계열이어도 레벨대에 따라 더 날카롭고 장식적인 실루엣
+    const f=r.family;
+    if(f===0){ pathPoly(18, rad, -Math.PI/2, tier>=2?0.55:0); return; }
+    if(f===1){ pathPoly(3 + Math.min(2,tier), rad, -Math.PI/2, tier>=1?0.42:0); return; }
+    if(f===2){ pathPoly(4 + Math.min(2,tier), rad, -Math.PI/4, tier>=1?0.38:0); return; }
+    if(f===3){ pathPoly(5 + Math.min(3,tier), rad, -Math.PI/2, tier>=1?0.34:0); return; }
+    if(f===4){ pathPoly(6 + Math.min(4,tier), rad, -Math.PI/2, tier>=1?0.30:0); return; }
+    if(f===5){ pathClover(rad); return; }
+    if(f===6){ pathHeart(rad*.96); return; }
+    if(f===7){ pathPoly(4, rad, -Math.PI/2, .55); return; }
+    if(f===8){ pathPoly(8, rad, -Math.PI/2, .48); return; }
+    pathPoly(5, rad, -Math.PI/2, .62);
+  }
+  function spark(x,y,rad,col,rot=0){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+    ctx.beginPath();
+    for(let i=0;i<8;i++){
+      const a=-Math.PI/2+i*Math.PI/4;
+      const rr=i%2?rad*.32:rad;
+      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fillStyle=col; ctx.shadowBlur=10; ctx.shadowColor=col; ctx.fill(); ctx.restore();
+  }
+  function wing(side){
+    ctx.save(); ctx.scale(side,1);
+    const wg=ctx.createLinearGradient(-bodyR*1.45,-bodyR*.45,-bodyR*.55,bodyR*.45);
+    wg.addColorStop(0, tier>=3?'rgba(255,235,150,.72)':'rgba(220,235,255,.50)');
+    wg.addColorStop(1, 'rgba(50,70,110,.08)');
+    ctx.fillStyle=wg;
+    ctx.strokeStyle=tier>=3?'rgba(255,225,120,.55)':'rgba(220,238,255,.40)';
+    ctx.lineWidth=Math.max(1,size*.012);
+    for(let i=0;i<3+Math.min(tier,2);i++){
+      const y=-bodyR*.38+i*bodyR*.24;
+      ctx.beginPath();
+      ctx.moveTo(-bodyR*.56,y);
+      ctx.quadraticCurveTo(-bodyR*(1.04+i*.10), y+bodyR*.03, -bodyR*(1.24+i*.06), y+bodyR*.20);
+      ctx.quadraticCurveTo(-bodyR*.92, y+bodyR*.27, -bodyR*.58, y+bodyR*.18);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot);
+
+  // 배경 오라: 등급별로 강해짐
+  const auraAlpha=[0.10,0.18,0.25,0.34,0.44][tier];
+  const ag=ctx.createRadialGradient(0,0,bodyR*.15,0,0,bodyR*(1.85+.12*tier));
+  ag.addColorStop(0, rgba(r.main,auraAlpha));
+  ag.addColorStop(.45, tier>=3?'rgba(255,215,90,.16)':rgba(r.accent,auraAlpha*.42));
+  ag.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=ag; ctx.beginPath(); ctx.arc(0,0,bodyR*(1.85+.12*tier),0,Math.PI*2); ctx.fill();
+
+  // 날개형 메탈 장식: 50레벨 이후부터 서서히, 고레벨에서 확실히
+  if(r.lv>=50){ wing(-1); wing(1); }
+
+  // 룬/에너지 링
+  if(tier>=2){
+    ctx.save();
+    ctx.rotate(preview?0:t*(tier>=3?.72:.42));
+    ctx.lineWidth=Math.max(1.2,size*.012);
+    ctx.strokeStyle=tier>=3?'rgba(255,238,165,.75)':'rgba(210,235,255,.62)';
+    ctx.setLineDash([bodyR*.16, bodyR*.10]);
+    ctx.beginPath(); ctx.arc(0,0,bodyR*(1.30+.05*tier),0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([bodyR*.035, bodyR*.17]);
+    ctx.strokeStyle='rgba(255,255,255,.45)';
+    ctx.beginPath(); ctx.arc(0,0,bodyR*(1.50+.04*tier),0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 그림자
+  ctx.save(); ctx.translate(0,bodyR*.10); ctx.fillStyle='rgba(0,0,0,.34)'; ctx.shadowBlur=12; ctx.shadowColor='rgba(0,0,0,.45)'; crestPath(bodyR*1.05); ctx.fill(); ctx.restore();
+
+  // 본체: 메탈+보석 그라데이션
+  const g=ctx.createRadialGradient(-bodyR*.38,-bodyR*.45,bodyR*.05,0,0,bodyR*1.18);
+  g.addColorStop(0,'#ffffff');
+  g.addColorStop(.14,r.accent);
+  g.addColorStop(.46,r.main);
+  g.addColorStop(.78,rgba(r.main,.78));
+  g.addColorStop(1,'rgba(8,12,26,.92)');
+  ctx.fillStyle=g; crestPath(bodyR); ctx.fill();
+
+  // 입체 유리 코팅 + 아래 음영
+  ctx.save(); crestPath(bodyR); ctx.clip();
+  const glass=ctx.createLinearGradient(-bodyR,-bodyR,bodyR,bodyR);
+  glass.addColorStop(0,'rgba(255,255,255,.55)');
+  glass.addColorStop(.28,'rgba(255,255,255,.10)');
+  glass.addColorStop(.60,'rgba(0,0,0,.12)');
+  glass.addColorStop(1,'rgba(255,255,255,.20)');
+  ctx.fillStyle=glass; ctx.fillRect(-bodyR,-bodyR,bodyR*2,bodyR*2);
+  ctx.globalAlpha=.34; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(-bodyR*.24,-bodyR*.36,bodyR*.38,bodyR*.15,-.45,0,Math.PI*2); ctx.fill();
+
+  // 100레벨 이상 스캔 광택
+  if(tier>=1){
+    const sweep=((t*(.72+.18*tier))%2-1)*bodyR*2.25;
+    ctx.globalAlpha=.34+.04*tier; ctx.rotate(-.52);
+    const sg=ctx.createLinearGradient(sweep-bodyR*.18,-bodyR,sweep+bodyR*.18,bodyR);
+    sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,'rgba(255,255,255,.96)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sg; ctx.fillRect(sweep-bodyR*.25,-bodyR*1.7,bodyR*.5,bodyR*3.4);
+  }
+  ctx.restore();
+
+  // 내부 룬 문양: 고레벨일수록 복잡
+  ctx.save(); crestPath(bodyR*.90); ctx.clip();
+  const lineN=6+Math.floor(r.type/2)+tier*2;
+  for(let i=0;i<lineN;i++){
+    const a=-Math.PI/2+i*Math.PI*2/lineN+detail*.22;
+    ctx.beginPath(); ctx.moveTo(Math.cos(a)*bodyR*.12,Math.sin(a)*bodyR*.12); ctx.lineTo(Math.cos(a)*bodyR*(.48+.05*(i%3)),Math.sin(a)*bodyR*(.48+.05*(i%3)));
+    ctx.lineWidth=.65+(i%2)*.25; ctx.strokeStyle=i%2?'rgba(255,255,255,.45)':'rgba(0,0,0,.22)'; ctx.stroke();
+  }
+  if(r.type>=10){
+    ctx.strokeStyle='rgba(255,255,255,.50)'; ctx.lineWidth=1;
+    pathPoly(3+(r.type%6), bodyR*(.25+tierPower*.08), -Math.PI/2+detail*.5, tier>=3?.18:0); ctx.stroke();
+  }
+  if(tier>=3){
+    ctx.strokeStyle='rgba(255,230,140,.62)'; ctx.lineWidth=1.15;
+    ctx.beginPath(); ctx.arc(0,0,bodyR*.52,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+
+  // 외곽선: 온라인 게임 장비 테두리 느낌
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.lineWidth=Math.max(2.1,size*.022); ctx.strokeStyle='rgba(255,255,255,.96)'; crestPath(bodyR); ctx.stroke();
+  ctx.lineWidth=Math.max(1,size*.010); ctx.strokeStyle='rgba(0,0,0,.38)'; crestPath(bodyR*.96); ctx.stroke();
+  if(tier>=1){
+    ctx.save();
+    const metal = tier>=3 ? '#ffd76a' : '#ddebff';
+    const metal2 = tier>=4 ? '#ffffff' : (tier>=3 ? '#fff4b7' : '#ffffff');
+    ctx.shadowBlur=10+tier*5; ctx.shadowColor=tier>=3?'rgba(255,218,88,.82)':'rgba(210,230,255,.78)';
+    ctx.lineWidth=Math.max(3.1,size*(.030+.006*tier)); ctx.strokeStyle=metal; crestPath(bodyR*1.035); ctx.stroke();
+    ctx.lineWidth=Math.max(1.1,size*.012); ctx.strokeStyle=metal2; crestPath(bodyR*1.13); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 색 단계 보석 핀
+  const gems=Math.min(8,2+Math.floor(r.subLevel/2)+Math.floor(tier/2));
+  for(let i=0;i<gems;i++){
+    const a=-Math.PI/2+i*Math.PI*2/gems+r.family*.13;
+    const rr=bodyR*(.82+(i%2)*.045);
+    ctx.save(); ctx.translate(Math.cos(a)*rr,Math.sin(a)*rr); ctx.rotate(a);
+    ctx.fillStyle=i%2?r.accent:'#fff'; ctx.shadowBlur=8; ctx.shadowColor=ctx.fillStyle;
+    pathPoly(4, Math.max(1.6,bodyR*.055), -Math.PI/4, 0); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.68)'; ctx.lineWidth=.75; ctx.stroke(); ctx.restore();
+  }
+
+  // 파티클 / 공전 오브
+  if(tier>=1){
+    const count=[0,7,10,14,18][tier];
+    for(let i=0;i<count;i++){
+      const a=i*Math.PI*2/count+(preview?0:t*(i%2?.42:-.28));
+      const rr=bodyR*(1.05+(i%4)*.12+.04*tier);
+      const alpha=preview?.48:.32+Math.sin(t*2.4+i)*.20;
+      ctx.globalAlpha=Math.max(.16,alpha);
+      spark(Math.cos(a)*rr,Math.sin(a)*rr, tier>=3?3.1:2.4, tier>=3?'#fff0a8':'#ffffff', a);
+    }
+    ctx.globalAlpha=1;
+  }
+  if(tier>=3){
+    const orbs=tier>=4?8:5;
+    for(let i=0;i<orbs;i++){
+      const a=i*Math.PI*2/orbs+(preview?0:t*.95);
+      const rr=bodyR*(1.36+(i%2)*.10);
+      ctx.save(); ctx.globalAlpha=preview?.58:.48+Math.sin(t*2.1+i)*.16;
+      ctx.fillStyle=i%2?'#fff8c8':'#ffd76a'; ctx.shadowBlur=13; ctx.shadowColor='rgba(255,220,100,.88)';
+      ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,2.1+(i%3)*.45,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+  }
+  if(tier>=4){
+    const rainbow=['#ff5757','#ffb13d','#fff45c','#79ff70','#5deaff','#7890ff','#c66dff','#ff74ce'];
+    ctx.save(); ctx.rotate(preview?0:t*.38);
+    ctx.lineWidth=Math.max(1.2,size*.012);
+    const rg=ctx.createLinearGradient(-bodyR*1.65,0,bodyR*1.65,0);
+    rainbow.forEach((col,i)=>rg.addColorStop(i/(rainbow.length-1),col));
+    ctx.strokeStyle=rg; ctx.setLineDash([bodyR*.12,bodyR*.075]);
+    ctx.beginPath(); ctx.arc(0,0,bodyR*1.62,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+    rainbow.forEach((col,i)=>{
+      const a=i*Math.PI*2/rainbow.length+(preview?0:t*.55);
+      spark(Math.cos(a)*bodyR*1.52, Math.sin(a)*bodyR*1.52, 2.8+(i%2), col, a);
+    });
+  }
+
+  ctx.restore();
+};
 
 function updateRankIcon(){
   if(!rankIconBtn) return;
@@ -20939,6 +21272,248 @@ drawEnemyShape = function(e) {
   } finally {
     stage = realStage;
   }
+};
+
+
+
+// ✅ v.168.5 계급을 "아이콘 배지"가 아닌 온라인 게임풍 순수 문양으로 다시 렌더링
+// - 버튼 배경/둥근 아이콘 느낌 제거
+// - 계급 모양은 크리스탈, 날개, 룬, 왕관, 오라가 단계적으로 진화
+// - 100/150/200/240레벨 구간에서 애니메이션 강도 상승
+function getRankCrestTierV1685(lv){
+  lv = Math.max(1, Math.min(250, Number(lv)||1));
+  if(lv >= 240) return 4;
+  if(lv >= 200) return 3;
+  if(lv >= 150) return 2;
+  if(lv >= 100) return 1;
+  return 0;
+}
+function rankRgbaV1685(hex,a){
+  const h=String(hex||'#ffffff').replace('#','');
+  const rr=parseInt(h.slice(0,2),16)||255;
+  const gg=parseInt(h.slice(2,4),16)||255;
+  const bb=parseInt(h.slice(4,6),16)||255;
+  return `rgba(${rr},${gg},${bb},${a})`;
+}
+function drawRankShardPathV1685(ctx, family, rad, tier){
+  ctx.beginPath();
+  const spikes = Math.max(0, tier-1);
+  const count = family===0 ? 14 : family===1 ? 3 : family===2 ? 4 : family===3 ? 5 : family===4 ? 6 : family===5 ? 8 : family===6 ? 10 : family===7 ? 4 : family===8 ? 12 : 5;
+  if(family===5){
+    for(let i=0;i<=192;i++){
+      const a=i*Math.PI*2/192;
+      const rr=rad*(0.66+0.34*Math.cos(4*a));
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); return;
+  }
+  if(family===6){
+    for(let i=0;i<=200;i++){
+      const u=Math.PI*2*i/200;
+      const x=16*Math.pow(Math.sin(u),3)/18*rad;
+      const y=-(13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u))/18*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); return;
+  }
+  const steps = (spikes || family>=7) ? count*2 : count;
+  const rot = family===2 || family===7 ? -Math.PI/4 : -Math.PI/2;
+  for(let i=0;i<steps;i++){
+    const a=rot+i*Math.PI*2/steps;
+    const inner = family>=7 ? 0.48 : 0.62;
+    const rr=(steps>count && i%2) ? rad*inner : rad;
+    const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+function drawRankWingV1685(ctx, side, rad, tier, color){
+  const dir = side==='left' ? -1 : 1;
+  ctx.save();
+  ctx.scale(dir,1);
+  const featherCount = tier>=4 ? 5 : tier>=3 ? 4 : 3;
+  for(let i=0;i<featherCount;i++){
+    const off=i*rad*0.17;
+    ctx.beginPath();
+    ctx.moveTo(rad*0.40, -rad*0.22+off*0.30);
+    ctx.quadraticCurveTo(rad*(1.00+i*.08), -rad*(0.72-i*.08), rad*(1.18+i*.10), -rad*(0.23-i*.04)+off);
+    ctx.quadraticCurveTo(rad*(0.78+i*.05), -rad*(0.05-i*.02)+off, rad*0.34, rad*0.16+off*0.20);
+    ctx.closePath();
+    ctx.fillStyle=rankRgbaV1685(color, 0.30 + i*.06);
+    ctx.strokeStyle='rgba(255,255,255,.20)';
+    ctx.lineWidth=Math.max(1, rad*.045);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+const __drawRankIconToCanvasBeforeV1685 = drawRankIconToCanvas;
+drawRankIconToCanvas = function(c, lv, preview=false){
+  if(!c) return;
+  const dpr=Math.max(1, window.devicePixelRatio || 1);
+  const size=preview ? 148 : 118;
+  c.width=size*dpr; c.height=size*dpr;
+  c.style.width=preview ? '58px' : '42px';
+  c.style.height=preview ? '58px' : '42px';
+  const ctx=c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+
+  const r=getRankInfo(lv);
+  const tier=getRankCrestTierV1685(r.lv);
+  const t=preview ? 0 : Date.now()/1000;
+  const cx=size/2, cy=size/2;
+  const base=size*(0.255 + Math.min(0.065, r.type*0.0026));
+  const pulse=(tier>=1 && !preview) ? 1 + Math.sin(t*(1.5+tier*.28))*0.018*tier : 1;
+  const rot=(tier>=2 && !preview) ? Math.sin(t*.85)*0.05 : 0;
+  const rad=Math.min(size*.37, base*pulse);
+  const main=r.main || '#44ffb8';
+  const accent=r.accent || '#ffffff';
+
+  ctx.save();
+  ctx.translate(cx,cy);
+
+  // 외부 오라/룬 링: 배경 박스가 아니라 문양 주변 에너지로만 표현
+  if(tier>=1){
+    const ringRot=(preview?0:t*(0.55+tier*.18));
+    for(let k=0;k<tier;k++){
+      ctx.save();
+      ctx.rotate(ringRot*(k%2?-1:1)+k*.45);
+      ctx.strokeStyle = tier>=3 ? 'rgba(255,215,106,.38)' : rankRgbaV1685(main,.30);
+      ctx.lineWidth=Math.max(1.1, size*(0.008+k*.002));
+      ctx.setLineDash([rad*(0.18+k*.04), rad*(0.09+k*.03)]);
+      ctx.beginPath();
+      ctx.arc(0,0,rad*(1.10+k*.13),0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  if(tier>=2){
+    drawRankWingV1685(ctx,'left',rad,tier,main);
+    drawRankWingV1685(ctx,'right',rad,tier,main);
+  }
+
+  // 200+ 공전 보석
+  if(tier>=3){
+    const orbs=tier>=4 ? 8 : 6;
+    for(let i=0;i<orbs;i++){
+      const a=i*Math.PI*2/orbs + (preview?0:t*.9);
+      const rr=rad*1.35;
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      const grd=ctx.createRadialGradient(x-rad*.05,y-rad*.05,0,x,y,rad*.11);
+      grd.addColorStop(0,'rgba(255,255,255,.95)');
+      grd.addColorStop(.45,rankRgbaV1685(accent,.85));
+      grd.addColorStop(1,rankRgbaV1685(main,.08));
+      ctx.fillStyle=grd;
+      ctx.beginPath(); ctx.arc(x,y,rad*(tier>=4?.075:.06),0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // 핵심 문양 본체
+  ctx.save();
+  ctx.rotate(rot);
+  drawRankShardPathV1685(ctx, r.family, rad, tier);
+  const g=ctx.createLinearGradient(-rad,-rad,rad,rad);
+  g.addColorStop(0,'rgba(255,255,255,.96)');
+  g.addColorStop(.18,rankRgbaV1685(accent,.92));
+  g.addColorStop(.55,rankRgbaV1685(main,.95));
+  g.addColorStop(1,rankRgbaV1685(main,.54));
+  ctx.fillStyle=g;
+  ctx.shadowColor=rankRgbaV1685(main, tier>=1?.82:.45);
+  ctx.shadowBlur=tier>=4 ? rad*.52 : tier>=3 ? rad*.38 : tier>=1 ? rad*.22 : rad*.10;
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.lineJoin='round';
+  ctx.lineWidth=Math.max(1.6, size*(tier>=3?.024:.018));
+  ctx.strokeStyle=tier>=3 ? 'rgba(255,224,119,.96)' : tier>=1 ? 'rgba(230,240,255,.86)' : 'rgba(255,255,255,.52)';
+  ctx.stroke();
+
+  // 내부 절개선/크리스탈 면
+  ctx.globalAlpha=.55;
+  ctx.strokeStyle='rgba(255,255,255,.72)';
+  ctx.lineWidth=Math.max(1, size*.008);
+  for(let i=0;i<3+tier;i++){
+    const a=-Math.PI/2 + i*Math.PI*2/(3+tier);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(a)*rad*.78, Math.sin(a)*rad*.78);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  // 샤인 스윕
+  if(tier>=1 && !preview){
+    ctx.save();
+    ctx.rotate(-0.55);
+    ctx.beginPath();
+    ctx.rect(-rad*1.4 + ((t*70)%(rad*3.2)), -rad*1.6, rad*.22, rad*3.2);
+    ctx.clip();
+    drawRankShardPathV1685(ctx, r.family, rad*1.02, tier);
+    ctx.fillStyle='rgba(255,255,255,.50)';
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // 최종 진화 왕관/상단 보석
+  if(tier>=4){
+    ctx.save();
+    const y=-rad*1.18;
+    const crown=ctx.createLinearGradient(0,y-rad*.32,0,y+rad*.18);
+    crown.addColorStop(0,'rgba(255,255,255,.95)');
+    crown.addColorStop(.45,'rgba(255,226,99,.95)');
+    crown.addColorStop(1,'rgba(255,121,215,.68)');
+    ctx.fillStyle=crown;
+    ctx.strokeStyle='rgba(255,255,255,.78)';
+    ctx.lineWidth=Math.max(1,size*.012);
+    ctx.beginPath();
+    ctx.moveTo(-rad*.50,y+rad*.18);
+    ctx.lineTo(-rad*.34,y-rad*.20);
+    ctx.lineTo(-rad*.12,y+rad*.02);
+    ctx.lineTo(0,y-rad*.34);
+    ctx.lineTo(rad*.12,y+rad*.02);
+    ctx.lineTo(rad*.34,y-rad*.20);
+    ctx.lineTo(rad*.50,y+rad*.18);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 반짝이 파티클
+  if(tier>=1){
+    const n=tier>=4 ? 14 : tier>=3 ? 10 : tier>=2 ? 7 : 4;
+    for(let i=0;i<n;i++){
+      const a=i*Math.PI*2/n + (preview?0:t*(0.45+i*.02));
+      const rr=rad*(1.02 + ((i%3)*.16));
+      const tw=preview ? .55 : .35 + .45*Math.max(0,Math.sin(t*2.5+i));
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      ctx.strokeStyle=`rgba(255,255,255,${tw})`;
+      ctx.lineWidth=Math.max(1,size*.007);
+      ctx.beginPath(); ctx.moveTo(x-rad*.055,y); ctx.lineTo(x+rad*.055,y); ctx.moveTo(x,y-rad*.055); ctx.lineTo(x,y+rad*.055); ctx.stroke();
+    }
+  }
+  ctx.restore();
+};
+
+const __updateRankIconBeforeV1685 = updateRankIcon;
+updateRankIcon = function(){
+  if(!rankIconBtn) return;
+  let c=rankIconBtn.querySelector('canvas');
+  if(!c){ c=document.createElement('canvas'); rankIconBtn.appendChild(c); }
+  const curLv = level || 1;
+  const ri = getRankInfo(curLv);
+  rankIconBtn.classList.toggle('rank-animated', curLv >= 100);
+  rankIconBtn.style.boxShadow = 'none';
+  rankIconBtn.style.background = 'transparent';
+  rankIconBtn.style.border = 'none';
+  rankIconBtn.style.filter = curLv >= 200
+    ? `drop-shadow(0 0 10px ${ri.main}) drop-shadow(0 0 16px rgba(255,216,107,.42))`
+    : curLv >= 100
+      ? `drop-shadow(0 0 9px ${ri.main})`
+      : 'drop-shadow(0 0 4px rgba(255,255,255,.20))';
+  drawRankIconToCanvas(c, curLv, false);
 };
 
 loadGameData();
