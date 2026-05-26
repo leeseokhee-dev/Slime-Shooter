@@ -2583,6 +2583,20 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 #expWrapper::after{ z-index:3 !important; }
 </style>
 
+
+
+<!-- ✅ v.168.7 계급 반짝임 주기 보정: 101레벨부터 1.5초마다 짧게 1회 -->
+<style id="rankShinePulseV1687">
+#rankIconBtn.rank-animated{
+  animation: rankCrestSinglePulseV1687 1.5s linear infinite !important;
+}
+@keyframes rankCrestSinglePulseV1687{
+  0%,72%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  80%{ transform:translateY(-1px) scale(1.045); filter:brightness(1.55) drop-shadow(0 0 7px rgba(255,255,255,.78)); }
+  88%{ transform:translateY(0) scale(1.018); filter:brightness(1.18) drop-shadow(0 0 3px rgba(255,255,255,.36)); }
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -3679,11 +3693,22 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   const tier = getRankOnlineTier(r.lv);
   const now = Date.now()/1000;
   const cx=size/2, cy=size/2;
-  const t = preview ? 0 : now;
+
+  // ✅ v.168.7: 반짝임은 101레벨부터 1.5초마다 '짧게 한 번'만 발생
+  // - 평소에는 t를 1.5초 단위로 고정해서 30/60FPS처럼 계속 움직이지 않게 함
+  // - flash는 각 1.5초 주기의 앞부분(약 0.28초)에만 0→1→0으로 작동
+  const shineCycle = 1.5;
+  const shineWindow = 0.28;
+  const shineElapsed = preview ? 999 : (now % shineCycle);
+  const shineProgress = Math.min(1, Math.max(0, shineElapsed / shineWindow));
+  const flash = (!preview && r.lv >= 101 && shineElapsed <= shineWindow)
+    ? Math.sin(shineProgress * Math.PI)
+    : 0;
+  const t = preview ? 0 : Math.floor(now / shineCycle) * shineCycle;
   const bodyBase = size*(0.255 + Math.min(0.055, r.type*0.0023));
-  const beat = (!preview && tier>=1) ? Math.sin(t*(1.7+tier*.25))*0.018*tier : 0;
+  const beat = (!preview && tier>=1) ? flash*0.026*tier : 0;
   const bodyR = Math.min(size*0.36, bodyBase * (1+beat));
-  const rot = (!preview && tier>=2) ? Math.sin(t*.85)*0.045 : 0;
+  const rot = (!preview && tier>=2) ? flash*0.035*Math.sin(shineProgress*Math.PI*2) : 0;
   const detail = r.subLevel/10;
   const tierPower = Math.min(1, r.type/24);
 
@@ -3815,10 +3840,10 @@ drawRankIconToCanvas = function(c, lv, preview=false){
   ctx.fillStyle=glass; ctx.fillRect(-bodyR,-bodyR,bodyR*2,bodyR*2);
   ctx.globalAlpha=.34; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(-bodyR*.24,-bodyR*.36,bodyR*.38,bodyR*.15,-.45,0,Math.PI*2); ctx.fill();
 
-  // 100레벨 이상 스캔 광택
-  if(tier>=1){
-    const sweep=((t*(.72+.18*tier))%2-1)*bodyR*2.25;
-    ctx.globalAlpha=.34+.04*tier; ctx.rotate(-.52);
+  // 101레벨 이상: 1.5초마다 한 번 지나가는 스캔 광택
+  if(tier>=1 && flash > 0.001){
+    const sweep=(-1 + shineProgress*2) * bodyR*2.25;
+    ctx.globalAlpha=(.34+.04*tier) * flash; ctx.rotate(-.52);
     const sg=ctx.createLinearGradient(sweep-bodyR*.18,-bodyR,sweep+bodyR*.18,bodyR);
     sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,'rgba(255,255,255,.96)'); sg.addColorStop(1,'rgba(255,255,255,0)');
     ctx.fillStyle=sg; ctx.fillRect(sweep-bodyR*.25,-bodyR*1.7,bodyR*.5,bodyR*3.4);
@@ -3868,19 +3893,19 @@ drawRankIconToCanvas = function(c, lv, preview=false){
     ctx.strokeStyle='rgba(255,255,255,.68)'; ctx.lineWidth=.75; ctx.stroke(); ctx.restore();
   }
 
-  // 파티클 / 공전 오브
-  if(tier>=1){
+  // 파티클 / 공전 오브: 반짝임 타이밍에만 순간적으로 표시
+  if(tier>=1 && flash > 0.001){
     const count=[0,7,10,14,18][tier];
     for(let i=0;i<count;i++){
       const a=i*Math.PI*2/count+(preview?0:t*(i%2?.42:-.28));
       const rr=bodyR*(1.05+(i%4)*.12+.04*tier);
-      const alpha=preview?.48:.32+Math.sin(t*2.4+i)*.20;
-      ctx.globalAlpha=Math.max(.16,alpha);
+      const alpha=preview?.48:(.26 + flash*.62 + Math.sin(t*2.4+i)*.08);
+      ctx.globalAlpha=Math.max(.10,alpha) * flash;
       spark(Math.cos(a)*rr,Math.sin(a)*rr, tier>=3?3.1:2.4, tier>=3?'#fff0a8':'#ffffff', a);
     }
     ctx.globalAlpha=1;
   }
-  if(tier>=3){
+  if(tier>=3 && flash > 0.001){
     const orbs=tier>=4?8:5;
     for(let i=0;i<orbs;i++){
       const a=i*Math.PI*2/orbs+(preview?0:t*.95);
@@ -3890,7 +3915,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
       ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,2.1+(i%3)*.45,0,Math.PI*2); ctx.fill(); ctx.restore();
     }
   }
-  if(tier>=4){
+  if(tier>=4 && flash > 0.001){
     const rainbow=['#ff5757','#ffb13d','#fff45c','#79ff70','#5deaff','#7890ff','#c66dff','#ff74ce'];
     ctx.save(); ctx.rotate(preview?0:t*.38);
     ctx.lineWidth=Math.max(1.2,size*.012);
