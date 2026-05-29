@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - v.171.3 Notice Update</title>
+<title>Slime Shooter - Ultimate Evolution (v.170.1 Treasure Rush BGM)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2616,6 +2616,42 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 }
 </style>
 
+
+
+<!-- ✅ v.169.1 EXP 바 눈금 가독성 개선: 녹색 채움 밝게 조정 + 10% 눈금 최상단 표시 -->
+<style id="expTickVisibilityV1691">
+#expWrapper{
+  background:
+    linear-gradient(180deg, rgba(8,20,44,0.98) 0%, rgba(6,12,28,0.98) 100%) !important;
+}
+#expBarFill{
+  background:
+    linear-gradient(90deg, rgba(126,255,211,0.82) 0%, rgba(158,255,184,0.80) 56%, rgba(220,255,138,0.78) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.30),
+    0 0 8px rgba(68,255,184,0.22) !important;
+}
+#expBarFill::after{
+  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 55%, rgba(0,0,0,0.10) 100%) !important;
+}
+#expWrapper::after{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  pointer-events:none !important;
+  z-index:5 !important;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,0.72) 0 1px,
+      rgba(255,255,255,0.92) 1px 2px,
+      rgba(255,255,255,0.00) 2px 10%
+    ) !important;
+  mix-blend-mode:normal !important;
+  opacity:0.95 !important;
+}
+#expText{ z-index:6 !important; }
+#expWrapper::before{ z-index:4 !important; }
+</style>
 </head>
 <body>
 <div id="gameContainer">
@@ -2820,45 +2856,41 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(255,216,107,0.12); border:1px solid rgba(255,216,107,0.34); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#ffd86b; margin-bottom:6px;">[v.170 신규 모드]</div>
+            <div>신규 보너스 모드 「보물 슬라임 러시」가 추가되었습니다.</div>
+            <div>60초 동안 황금 슬라임, 보석 슬라임, 경험치 슬라임, 폭죽 슬라임을 처치하고 골드, 보석, 경험치를 획득할 수 있습니다.</div>
+            <div>짧은 시간 안에 시원한 보상과 폭발 연출을 즐길 수 있는 보상 중심 모드입니다.</div>
+            <div>전용 배경음악(bg_treasure.mp3)이 추가되어 보물 슬라임 러시 진입 시 자동으로 재생됩니다.</div>
+        </div>
         <div style="background:rgba(255,211,106,0.10); border:1px solid rgba(255,211,106,0.30); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.171 업데이트 핵심]</div>
-            <div>최대 레벨이 250레벨에서 300레벨로 확장되었습니다.</div>
-            <div>251~300레벨 구간의 경험치가 새롭게 추가되었습니다.</div>
+            <div style="font-weight:900; color:#ffd36a; margin-bottom:6px;">[v.157 업데이트 핵심]</div>
+            <div>멀티킬 시스템이 추가되었습니다. 번개, 눈보라처럼 동시 공격이 가능한 범위형 스킬로 몬스터를 3마리 이상 동시에 처치하면 멀티킬이 발동됩니다.</div>
+            <div>멀티킬 수가 높을수록 화면 중앙의 연출 색상과 효과가 더욱 화려해집니다.</div>
         </div>
-
         <div style="background:rgba(124,231,255,0.08); border:1px solid rgba(124,231,255,0.24); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#9beeff; margin-bottom:6px;">스테이지 확장</div>
-            <div>최대 스테이지가 300스테이지로 확장되었습니다.</div>
-            <div>201~300스테이지가 새롭게 추가되었습니다.</div>
-            <div>201스테이지 진입 시 몬스터 이동 속도가 다시 느리게 시작되도록 조정되었습니다.</div>
+            <div style="font-weight:900; color:#9beeff; margin-bottom:6px;">신규 퀘스트 / 업적</div>
+            <div>멀티킬 관련 업적, 일일 퀘스트, 주간 퀘스트, 일반 퀘스트가 추가되었습니다.</div>
+            <div>멀티킬 횟수, 최고 동시 처치 수, 멀티킬 추가 EXP 누적량 등이 기록됩니다.</div>
+            <div>퀘스트 메뉴에서 진행도를 확인하고 보상을 받을 수 있습니다.</div>
         </div>
-
         <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">신규 지역 추가</div>
-            <div>201~300스테이지 전용 신규 지역이 추가되었습니다.</div>
-            <div>기존 초원, 사막, 얼음, 화산, 우주 지역 이후의 새로운 배경을 만나보실 수 있습니다.</div>
+            <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">무한 모드 돌발 퀘스트</div>
+            <div>무한 모드에서는 90초마다 짧은 돌발 퀘스트가 발생합니다.</div>
+            <div>예시: 30초 안에 N킬 하기, 15초 안에 멀티킬 N번 하기, 제한 시간 안에 대량 처치하기.</div>
+            <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
         </div>
-
         <div style="background:rgba(120,255,150,0.08); border:1px solid rgba(120,255,150,0.24); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#baffc7; margin-bottom:6px;">신규 몬스터 및 보스</div>
-            <div>201~300스테이지 전용 신규 몬스터가 추가되었습니다.</div>
-            <div>신규 보스 1종이 추가되었습니다.</div>
+            <div style="font-weight:900; color:#baffc7; margin-bottom:6px;">신규 멀티킬 보조 펫</div>
+            <div>기존 추가 범위형 스킬인 독안개, 블랙홀, 플라즈마 폭발은 제거되었습니다.</div>
+            <div>대신 폭탄형 펫과 토네이도형 펫이 추가되어 자동으로 범위 피해를 주고 멀티킬을 보조합니다.</div>
+            <div>폭탄형은 2초마다 폭탄을 던지고, 토네이도형은 5초마다 3초 동안 지속 피해를 줍니다.</div>
         </div>
-
         <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#ffffff; margin-bottom:6px;">계급 시스템 개선</div>
-            <div>101레벨 이상부터 계급 반짝임 효과가 적용됩니다.</div>
-            <div>반짝임 효과는 1.2초마다 발생합니다.</div>
-            <div>레벨이 높아질수록 더욱 화려한 반짝임 효과가 적용됩니다.</div>
+            <div style="font-weight:900; color:#ffffff; margin-bottom:6px;">플레이 팁</div>
+            <div>무한 모드에서는 폭탄형 펫의 순간 폭발과 토네이도형 펫의 지속 피해를 이용하면 멀티킬을 만들기 쉽습니다.</div>
+            <div>3성 이상 폭탄형 펫은 일정 확률로 폭탄 3개를 동시에 던져 대량 처치 기회를 만듭니다.</div>
         </div>
-
-        <div style="background:rgba(255,170,120,0.08); border:1px solid rgba(255,170,120,0.24); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#ffd1b0; margin-bottom:6px;">퀘스트 시스템 개선</div>
-            <div>일일 퀘스트가 추가되었습니다.</div>
-            <div>주간 퀘스트가 추가되었습니다.</div>
-            <div>다양한 목표를 달성하고 보상을 획득하실 수 있습니다.</div>
-        </div>
-
         <div style="font-size:12px; color:#aebfff;">타이틀 화면의 공지사항 버튼으로 언제든 다시 확인할 수 있습니다.</div>
     </div>
     <button id="closeNoticeBtn" class="ui-btn">닫기</button>
@@ -3023,6 +3055,9 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
         <button id="modeMiniGameBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffcc66; color:#fff0c2; background:linear-gradient(to bottom, #5a3e10, #1f1406);">
             🎮 미니게임 (1분 · 하루 5회)
         </button>
+        <button id="modeTreasureRushBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffd86b; color:#fff4b8; background:linear-gradient(to bottom, #6a4a08, #231604);">
+            💰 보물 슬라임 러시 (60초)
+        </button>
 <button id="modeDungeonBtn" class="ui-btn big-btn" style="width:100%; border-color:#7aa8ff; color:#cfe1ff; background:linear-gradient(to bottom, #1a2a55, #0b132a);">
             🏰 던전 모드 (LV.100+ · 하루 10회)
         </button>
@@ -3030,7 +3065,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
             아이템 파크: 하늘에서 아이템 수집<br>
-            미니게임: 줍기형 2종 + 터치형 3종
+            미니게임: 줍기형 2종 + 터치형 3종<br>
+            보물 슬라임 러시: 60초 동안 보물 슬라임 처치
         </div>
     </div>
     <button id="closeModeBtn" class="close-btn">취소</button>
@@ -4369,6 +4405,7 @@ const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
 const modeDungeonBtn = document.getElementById('modeDungeonBtn');
 const modeItemParkBtn = document.getElementById('modeItemParkBtn');
 const modeMiniGameBtn = document.getElementById('modeMiniGameBtn');
+const modeTreasureRushBtn = document.getElementById('modeTreasureRushBtn');
 const closeModeBtn = document.getElementById('closeModeBtn');
 const miniGameSelectModal = document.getElementById('miniGameSelectModal');
 const miniGameSelectList = document.getElementById('miniGameSelectList');
@@ -4459,6 +4496,7 @@ const bgmTracks = {
   dungeon:  new Audio('bg_dungeon.mp3'),  // ✅ 던전 모드 전용
   itempark: new Audio('bg_itempark.mp3'), // ✅ 아이템 파크 전용
   minigame: new Audio('bg_minigame.mp3'), // ✅ 미니게임 전용
+  treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
   christmas: new Audio('bg_christmas.mp3'),
@@ -4567,7 +4605,7 @@ function getSeasonKeyNow(date = new Date()) {
 
 function resolveBgmName(requested) {
   // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame') return requested;
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
@@ -4581,6 +4619,7 @@ function getModeBgmName() {
   if (gameMode === 'dungeon') return 'dungeon';
   if (gameMode === 'itempark') return 'itempark';
   if (gameMode === 'minigame') return 'minigame';
+  if (gameMode === 'treasure') return 'treasure';
   return 'game';
 }
 
@@ -5484,7 +5523,7 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'infinite' | 'itempark' | 'minigame' | 'dungeon'
+let gameMode = 'stage';      // 'stage' | 'infinite' | 'itempark' | 'minigame' | 'treasure' | 'dungeon'
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
 
@@ -10714,7 +10753,7 @@ function drawMultiKillFx() {
 }
 
 const SKILL_QUEST_META = {
-  bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
+  bubble:    { title:'거품 스킬 연습', reward: tier => tier * 300, color:'#bdefff' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -11469,6 +11508,13 @@ if (modeMiniGameBtn) modeMiniGameBtn.addEventListener('click', () => {
   openMiniGameSelect();
 });
 
+if (modeTreasureRushBtn) modeTreasureRushBtn.addEventListener('click', () => {
+  ensureTreasureRushSaveState();
+  gameMode = 'treasure';
+  modeModal.classList.add('hidden');
+  startTreasureRushMode();
+});
+
 if (modeDungeonBtn) modeDungeonBtn.addEventListener('click', () => {
   if (level < 100) {
     alert(`던전 모드는 LV.100부터 입장 가능합니다.\n(현재 LV.${level})`);
@@ -11486,6 +11532,315 @@ if (modeDungeonBtn) modeDungeonBtn.addEventListener('click', () => {
 if (closeDungeonBtn) closeDungeonBtn.addEventListener('click', () => {
   dungeonModal.classList.add('hidden');
 });
+
+
+// ===============================
+// ✅ [v.170] 보물 슬라임 러시 모드
+// - 60초 동안 보물 슬라임을 처치하는 짧은 보상형 모드
+// ===============================
+const TREASURE_RUSH_DURATION_MS = 60000;
+let treasureRushState = {
+  active: false,
+  timeLeft: TREASURE_RUSH_DURATION_MS,
+  spawnAcc: 0,
+  specialAcc: 0,
+  targets: [],
+  kills: 0,
+  goldGained: 0,
+  expGained: 0,
+  gemsGained: 0,
+  bestKills: 0
+};
+
+function getTreasureRushBestKills(){
+  try { return Math.max(0, Number(saveData?.treasureRush?.bestKills || 0)); }
+  catch(e){ return 0; }
+}
+
+function ensureTreasureRushSaveState(){
+  if (!saveData.treasureRush || typeof saveData.treasureRush !== 'object') {
+    saveData.treasureRush = { bestKills: 0, totalKills: 0, totalGold: 0, totalExp: 0, totalGems: 0 };
+  }
+}
+
+function startTreasureRushMode() {
+  gameMode = 'treasure';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  treasureRushState.active = true;
+  treasureRushState.timeLeft = TREASURE_RUSH_DURATION_MS;
+  treasureRushState.spawnAcc = 0;
+  treasureRushState.specialAcc = 0;
+  treasureRushState.targets = [];
+  treasureRushState.kills = 0;
+  treasureRushState.goldGained = 0;
+  treasureRushState.expGained = 0;
+  treasureRushState.gemsGained = 0;
+  treasureRushState.bestKills = getTreasureRushBestKills();
+  playBgmTrack('treasure');
+  startGame(1);
+}
+
+function initTreasureRushRun() {
+  treasureRushState.active = true;
+  treasureRushState.timeLeft = TREASURE_RUSH_DURATION_MS;
+  treasureRushState.spawnAcc = 0;
+  treasureRushState.specialAcc = 0;
+  treasureRushState.targets = [];
+  treasureRushState.kills = 0;
+  treasureRushState.goldGained = 0;
+  treasureRushState.expGained = 0;
+  treasureRushState.gemsGained = 0;
+  treasureRushState.bestKills = getTreasureRushBestKills();
+  enemies = [];
+  boss = null;
+  enemyBullets = [];
+  expItems = [];
+  goldDrops = [];
+  fieldItems = [];
+  stageCleared = false;
+  bossSpawned = false;
+  waveIndex = 0;
+}
+
+function spawnTreasureTarget(kind = 'normal') {
+  const defs = {
+    normal: { emoji:'🟢', label:'슬라임', color:'#7cff7c', hp:1, score:10, radius:22, vy:1.35, chance:0 },
+    gold: { emoji:'🟡', label:'황금', color:'#ffd700', hp:2, score:80, radius:26, vy:1.15, chance:0.34 },
+    gem: { emoji:'💎', label:'보석', color:'#7ce7ff', hp:2, score:90, radius:25, vy:1.08, chance:0.24 },
+    exp: { emoji:'✨', label:'EXP', color:'#44ffb8', hp:2, score:70, radius:25, vy:1.18, chance:0.26 },
+    bomb: { emoji:'🎆', label:'폭죽', color:'#ff8fd6', hp:1, score:120, radius:27, vy:1.22, chance:0.16 }
+  };
+  const def = defs[kind] || defs.normal;
+  treasureRushState.targets.push({
+    kind, def,
+    x: randRange(def.radius + 10, width - def.radius - 10),
+    y: -randRange(20, 90),
+    vx: randRange(-0.55, 0.55),
+    vy: def.vy + Math.min(1.0, (level || 1) * 0.004),
+    r: def.radius,
+    hp: def.hp,
+    rot: randRange(-0.4, 0.4),
+    pulse: Math.random() * Math.PI * 2
+  });
+}
+
+function pickTreasureSpecialKind(){
+  const r = Math.random();
+  if (r < 0.34) return 'gold';
+  if (r < 0.58) return 'gem';
+  if (r < 0.84) return 'exp';
+  return 'bomb';
+}
+
+function rewardTreasureTarget(t) {
+  if (!t || !t.def) return;
+  treasureRushState.kills++;
+  addScore(t.def.score || 0, 'monster', { noExp: true });
+  const baseExp = Math.max(20, Math.floor(60 + (level || 1) * 12));
+  let expReward = 0;
+  let goldReward = 0;
+  let gemReward = 0;
+  if (t.kind === 'gold') {
+    goldReward = Math.floor(80 + (level || 1) * 6 + Math.random() * 80);
+  } else if (t.kind === 'gem') {
+    gemReward = 1 + Math.floor(Math.random() * 3);
+    goldReward = Math.floor(20 + Math.random() * 30);
+  } else if (t.kind === 'exp') {
+    expReward = baseExp * 8;
+  } else if (t.kind === 'bomb') {
+    expReward = baseExp * 2;
+    goldReward = 40;
+    // 주변 보물 슬라임을 같이 터뜨리는 보너스
+    const bx = t.x, by = t.y;
+    treasureRushState.targets.forEach(o => {
+      if (!o || o === t || o._dead) return;
+      const dx = o.x - bx, dy = o.y - by;
+      if (dx*dx + dy*dy <= 130*130) {
+        o._dead = true;
+        spawnExplosion(o.x, o.y, o.def?.color || '#fff', 14);
+        spawnDamageText(o.x, o.y - 20, '연쇄!', '#ffb8ff', true);
+        treasureRushState.kills++;
+        expReward += baseExp;
+        goldReward += 20;
+      }
+    });
+  } else {
+    expReward = baseExp;
+    goldReward = 10;
+  }
+
+  if (expReward > 0) {
+    const granted = addExpDirect(expReward);
+    treasureRushState.expGained += Math.max(0, granted || expReward);
+  }
+  if (goldReward > 0) {
+    gold = Math.max(0, Math.floor(gold || 0) + goldReward);
+    saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + goldReward);
+    treasureRushState.goldGained += goldReward;
+  }
+  if (gemReward > 0) {
+    saveData.gems = Math.max(0, Math.floor(saveData.gems || 0) + gemReward);
+    treasureRushState.gemsGained += gemReward;
+  }
+
+  const pop = [];
+  if (goldReward) pop.push(`+${formatNumber(goldReward)}G`);
+  if (gemReward) pop.push(`+${formatNumber(gemReward)}보석`);
+  if (expReward) pop.push(`+${formatNumber(expReward)}EXP`);
+  spawnDamageText(t.x, t.y - 26, pop.join(' '), t.def.color, true);
+  spawnExplosion(t.x, t.y, t.def.color, t.kind === 'bomb' ? 32 : 18);
+  try { if (SFX && SFX.enemyDie) SFX.enemyDie(); } catch(e) {}
+}
+
+function updateTreasureRush(dt, currentTime) {
+  treasureRushState.timeLeft -= dt;
+  if (treasureRushState.timeLeft <= 0) {
+    treasureRushState.timeLeft = 0;
+    endTreasureRushRun();
+    return;
+  }
+
+  sessionSurvivalTime += dt;
+  if (levelUpTimer > 0) levelUpTimer -= dt;
+  if (player) player.speed = BASE_PLAYER_SPEED + (level - 1) * 0.10;
+  if (playerInvulnTimer > 0) playerInvulnTimer = Math.max(0, playerInvulnTimer - dt);
+
+  handlePlayerMovement(dt);
+  shootBullet(currentTime);
+  shootPetBullet(currentTime);
+  shootPet2Bullet(currentTime);
+  updateBullets(dt);
+  updatePetBullets(dt);
+  updatePet2Bullets(dt);
+  updatePetSkillProjectiles(dt);
+  updatePetSkillStreams(dt);
+  updatePetSkillBursts(dt);
+  updateLasers(dt);
+  updateLaserSkillUI();
+  updateBubble(dt);
+  updateBubbleSkillUI();
+  updateBubbles(dt);
+  updateLightning(dt);
+  updateLightningSkillUI();
+  updateBlizzard(dt);
+  updateBlizzardSkillUI();
+  updateMeteors(dt);
+  updateMeteorSkillUI();
+  updateQuake(dt);
+  updateQuakeSkillUI();
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  updateGoldDrops(dt);
+  updatePetProduction(dt);
+
+  treasureRushState.spawnAcc += dt;
+  treasureRushState.specialAcc += dt;
+  while (treasureRushState.spawnAcc >= 650) {
+    treasureRushState.spawnAcc -= 650;
+    if (treasureRushState.targets.length < 18) spawnTreasureTarget('normal');
+  }
+  while (treasureRushState.specialAcc >= 2400) {
+    treasureRushState.specialAcc -= 2400;
+    if (treasureRushState.targets.length < 22) spawnTreasureTarget(pickTreasureSpecialKind());
+  }
+
+  const delta = dt / 16.67;
+  treasureRushState.targets.forEach(t => {
+    t.x += t.vx * delta;
+    t.y += t.vy * delta;
+    t.pulse += dt * 0.006;
+    if (t.x < t.r || t.x > width - t.r) t.vx *= -1;
+  });
+
+  function hitTargetWithProjectile(projectile, dmg) {
+    for (const t of treasureRushState.targets) {
+      if (!t || t._dead) continue;
+      if (circleCollision(projectile.x, projectile.y, projectile.radius || 8, t.x, t.y, t.r)) {
+        t.hp -= Math.max(1, Math.floor(dmg || 1));
+        projectile._hit = true;
+        spawnDamageText(t.x, t.y - t.r, 'HIT', t.def.color);
+        if (t.hp <= 0) {
+          t._dead = true;
+          rewardTreasureTarget(t);
+        }
+        break;
+      }
+    }
+  }
+
+  bullets.forEach(b => hitTargetWithProjectile(b, b.damage || 1));
+  bubbles.forEach(b => hitTargetWithProjectile(b, b.damage || 1));
+  petBullets.forEach(b => hitTargetWithProjectile(b, b.damage || 1));
+  pet2Bullets.forEach(b => hitTargetWithProjectile(b, b.damage || 1));
+
+  bullets = bullets.filter(b => !b._hit);
+  bubbles = bubbles.filter(b => !b._hit);
+  petBullets = petBullets.filter(b => !b._hit);
+  pet2Bullets = pet2Bullets.filter(b => !b._hit);
+  treasureRushState.targets = treasureRushState.targets.filter(t => !t._dead && t.y < height + 70);
+
+  saveGameDataDebounced();
+}
+
+function drawTreasureTargets() {
+  if (gameMode !== 'treasure' || !treasureRushState.active) return;
+  treasureRushState.targets.forEach(t => {
+    const def = t.def || {};
+    const pulse = 1 + Math.sin(t.pulse || 0) * 0.06;
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.scale(pulse, pulse);
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = def.color || '#fff';
+    ctx.fillStyle = def.color || '#7cff7c';
+    ctx.beginPath();
+    ctx.arc(0, 0, t.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.beginPath();
+    ctx.arc(-t.r * 0.32, -t.r * 0.32, Math.max(4, t.r * 0.22), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = `900 ${Math.max(16, t.r * 0.9)}px ${getUIFontFamily()}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(def.emoji || '🟢', 0, 2);
+    ctx.restore();
+  });
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  ctx.fillRect(width/2 - 190, 16, 380, 58);
+  ctx.strokeStyle = 'rgba(255,216,107,0.65)';
+  ctx.strokeRect(width/2 - 190, 16, 380, 58);
+  ctx.fillStyle = '#fff4b8';
+  ctx.font = `900 18px ${getUIFontFamily()}`;
+  ctx.fillText(`보물 슬라임 러시 · 남은 ${formatMMSS(treasureRushState.timeLeft)}`, width/2, 40);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold 13px ${getUIFontFamily()}`;
+  ctx.fillText(`처치 ${formatNumber(treasureRushState.kills)} · 골드 ${formatNumber(treasureRushState.goldGained)}G · 보석 ${formatNumber(treasureRushState.gemsGained)}`, width/2, 62);
+  ctx.restore();
+}
+
+function endTreasureRushRun() {
+  ensureTreasureRushSaveState();
+  treasureRushState.active = false;
+  const best = Math.max(getTreasureRushBestKills(), Math.floor(treasureRushState.kills || 0));
+  saveData.treasureRush.bestKills = best;
+  saveData.treasureRush.totalKills = Math.max(0, Math.floor(saveData.treasureRush.totalKills || 0)) + Math.floor(treasureRushState.kills || 0);
+  saveData.treasureRush.totalGold = Math.max(0, Math.floor(saveData.treasureRush.totalGold || 0)) + Math.floor(treasureRushState.goldGained || 0);
+  saveData.treasureRush.totalExp = Math.max(0, Math.floor(saveData.treasureRush.totalExp || 0)) + Math.floor(treasureRushState.expGained || 0);
+  saveData.treasureRush.totalGems = Math.max(0, Math.floor(saveData.treasureRush.totalGems || 0)) + Math.floor(treasureRushState.gemsGained || 0);
+  saveGameData();
+  state = 'gameover';
+  gameOverCooldown = 500;
+  updateGameOverModal();
+  gameOverUI.classList.remove('hidden');
+  stopBGM();
+}
+
 
 function startInfiniteMode() {
   // 무한 모드: 1스테이지부터 시작
@@ -17069,6 +17424,7 @@ setPauseUI();
 if (gameMode === 'dungeon') startDungeon();
 else if (gameMode === 'itempark') initItemParkRun();
 else if (gameMode === 'minigame') initMiniGameRun();
+else if (gameMode === 'treasure') initTreasureRushRun();
 else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
@@ -17088,7 +17444,7 @@ missionState.bonusActive = false;
 // 초기화
 bullets = [];
 
-bubbles = []; enemies = []; enemyBullets = []; particles = []; boss = null; expItems = []; goldDrops = []; fieldItems = []; resetInfiniteItemEffects(); // ✅ [v.65] 스킬 이펙트 초기화
+bubbles = []; enemies = []; enemyBullets = []; particles = []; boss = null; expItems = []; goldDrops = []; fieldItems = []; if (treasureRushState) treasureRushState.targets = []; resetInfiniteItemEffects(); // ✅ [v.65] 스킬 이펙트 초기화
 blizzard = null;
 blizzardFlakes = [];
 meteors = [];
@@ -17134,6 +17490,8 @@ restartBtn.addEventListener('click', () => {
       saveGameDataDebounced();
       startMiniGameMode();
     }
+  } else if (gameMode === 'treasure') {
+    startTreasureRushMode();
   } else {
     startGame(1);
   }
@@ -17499,10 +17857,11 @@ function updateGameOverModal() {
   const isDungeon = gameMode === 'dungeon';
   const isItemPark = gameMode === 'itempark';
   const isMiniGame = gameMode === 'minigame';
+  const isTreasure = gameMode === 'treasure';
   const levelText = `LV.${formatNumber(level || 1)}`;
 
   if (gameOverModeTextEl) {
-    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드'))));
+    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드')))));
   }
   if (gameOverLevelTextEl) gameOverLevelTextEl.textContent = levelText;
 
@@ -17540,6 +17899,18 @@ function updateGameOverModal() {
     setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '최고 콤보', `${formatNumber(miniGameState.bestCombo || 0)}콤보`, { color: '#ffe08a' });
     setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', formatNumber(miniGameState.expReward || 0), { color: '#aef' });
     setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '남은 횟수', `${Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0))}회`);
+    return;
+  }
+
+  if (isTreasure) {
+    if (gameOverTitleEl) gameOverTitleEl.textContent = 'TREASURE RUSH CLEAR';
+    if (gameOverTitleEl) gameOverTitleEl.style.color = '#ffd86b';
+    if (gameOverDescEl) gameOverDescEl.textContent = '60초 동안 보물 슬라임을 처치한 결과입니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `처치 ${formatNumber(treasureRushState.kills || 0)}마리 · 최고 ${formatNumber(getTreasureRushBestKills())}마리`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '획득 골드', `${formatNumber(treasureRushState.goldGained || 0)}G`, { color: '#ffd700' });
+    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '획득 보석', `${formatNumber(treasureRushState.gemsGained || 0)}개`, { color: '#7ce7ff' });
+    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', formatNumber(treasureRushState.expGained || 0), { color: '#aef' });
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '최고 기록', `${formatNumber(getTreasureRushBestKills())}마리`, { color: '#fff0c2' });
     return;
   }
 
@@ -17677,6 +18048,11 @@ function update(dt, currentTime) {
   }
   if (gameMode === 'minigame') {
     updateMiniGame(dt);
+    updateHUD();
+    return;
+  }
+  if (gameMode === 'treasure') {
+    updateTreasureRush(dt, currentTime);
     updateHUD();
     return;
   }
@@ -18794,7 +19170,7 @@ scoreEl.textContent = '점수: ' + formatNumber(score);
 highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
   // ✅ 스테이지 모드에서는 점수 UI 숨김 (무한 모드에서만 표시)
-  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame');
+  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame' || gameMode === 'treasure');
   if (scoreEl) scoreEl.style.display = showScoreUI ? '' : 'none';
   if (highScoreEl) highScoreEl.style.display = showScoreUI ? '' : 'none';
   if (gameMode === 'mission') {
@@ -18811,6 +19187,9 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
   } else if (gameMode === 'minigame') {
     if (scoreEl) scoreEl.textContent = '미니게임 점수: ' + formatNumber(miniGameState.score || 0);
     if (highScoreEl) highScoreEl.textContent = `콤보 x${formatNumber(miniGameState.combo || 0)} · 예상 EXP: ${formatNumber(Math.floor((miniGameState.score || 0) / 100))}`;
+  } else if (gameMode === 'treasure') {
+    if (scoreEl) scoreEl.textContent = '처치 수: ' + formatNumber(treasureRushState.kills || 0);
+    if (highScoreEl) highScoreEl.textContent = `획득: ${formatNumber(treasureRushState.goldGained || 0)}G · 보석 ${formatNumber(treasureRushState.gemsGained || 0)}`;
   }
 
   if (goldEl) goldEl.textContent = '골드: ' + formatNumber(gold);
@@ -18861,6 +19240,8 @@ if (gameMode === 'dungeon') {
 } else if (gameMode === 'minigame') {
   const left = Math.max(0, MINIGAME_MAX_DAILY_RUNS - Number(saveData?.miniGame?.used || 0));
   stageEl.textContent = `미니게임 · ${getMiniGameTypeLabel(miniGameState.type)} · 최고 ${formatNumber(miniGameState.bestCombo || 0)}콤보 · 남은 ${left}회`;
+} else if (gameMode === 'treasure') {
+  stageEl.textContent = `보물 슬라임 러시 · 남은 ${formatMMSS(treasureRushState.timeLeft || 0)} · 최고 ${formatNumber(getTreasureRushBestKills())}`;
 } else {
   if (gameMode === 'stage') {
     const t = getStageKillTarget(stage);
@@ -18889,6 +19270,9 @@ if (hotTimeEl) {
     } else if (gameMode === 'minigame') {
       hotTimeEl.textContent = `미니게임 · 남은 ${formatMMSS(miniGameState.timeLeft || 0)} · 현재 ${formatNumber(miniGameState.combo || 0)}콤보`;
       hotTimeEl.style.color = '#ffcc66';
+    } else if (gameMode === 'treasure') {
+      hotTimeEl.textContent = `💰 보물 러시 · EXP ${formatNumber(treasureRushState.expGained || 0)} · 남은 ${formatMMSS(treasureRushState.timeLeft || 0)}`;
+      hotTimeEl.style.color = '#ffd86b';
     } else if (gameMode === 'mission') {
       hotTimeEl.textContent = isMissionBonusStage(stage)
         ? `🎁 보너스 스테이지 · 남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}`
@@ -20551,6 +20935,7 @@ requestAnimationFrame(gameLoop);
     drawGoldDrops();
     drawParkItems();
     drawMiniTargets();
+    drawTreasureTargets();
     drawBoss();
     drawBullets();
     drawBubbles();
@@ -21750,40 +22135,3 @@ requestAnimationFrame(gameLoop);
 
 </body>
 </html>
-
-<!-- NOTICE_UPDATE_V171_1
-
-📢 업데이트 안내
-
-안녕하세요.
-
-슬라임 슈터가 업데이트되었습니다.
-
-■ 최대 레벨 확장
-- 최대 레벨이 250레벨에서 300레벨로 확장되었습니다.
-- 251~300레벨 구간의 경험치가 추가되었습니다.
-
-■ 스테이지 확장
-- 최대 스테이지가 300스테이지로 확장되었습니다.
-- 201~300스테이지가 새롭게 추가되었습니다.
-- 201스테이지 진입 시 몬스터 이동 속도가 다시 느리게 시작되도록 조정되었습니다.
-
-■ 신규 지역 추가
-- 201~300스테이지 전용 신규 지역이 추가되었습니다.
-
-■ 신규 몬스터 및 보스 추가
-- 201~300스테이지 전용 신규 몬스터가 추가되었습니다.
-- 신규 보스 1종이 추가되었습니다.
-
-■ 계급 시스템 개선
-- 101레벨 이상부터 계급 반짝임 효과가 적용됩니다.
-- 반짝임 효과는 1.2초마다 발생합니다.
-- 레벨이 높을수록 더욱 화려한 반짝임 효과가 적용됩니다.
-
-■ 퀘스트 시스템 개선
-- 일일 퀘스트가 추가되었습니다.
-- 주간 퀘스트가 추가되었습니다.
-
-감사합니다.
-
--->
