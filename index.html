@@ -10714,7 +10714,7 @@ function drawMultiKillFx() {
 }
 
 const SKILL_QUEST_META = {
-  bubble:    { title:'거품 스킬 연습', reward: tier => tier * 300, color:'#bdefff' },
+  bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
