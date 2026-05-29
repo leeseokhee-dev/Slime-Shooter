@@ -1264,6 +1264,8 @@ function shouldShowTutorial(id){
 
 /* EXP 바 강화 */
 #expBarFill{
+  position:relative !important;
+  z-index:1 !important;
   background: linear-gradient(90deg, #00ff88, #44ffb8);
   box-shadow:0 0 12px rgba(68,255,184,0.5);
 }
@@ -2441,20 +2443,19 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 
 /* ===============================
-   ✅ v.165.3 계급 250종/풀화면 캔버스/일시정지 설정
+   ✅ v.165.3 계급 300종/풀화면 캔버스/일시정지 설정
    =============================== */
 #gameContainer{ width:100vw !important; max-width:100vw !important; }
 #hud{ border-bottom:2px solid rgba(255,215,106,.65); box-shadow:0 8px 18px rgba(0,0,0,.28); }
 #gameCanvas{ display:block; width:100vw !important; max-width:100vw !important; border-radius:0 !important; }
 body.rank-modal-open{ overflow:hidden; }
 #rankIconBtn{
-  width:38px; height:38px; min-width:38px; border-radius:0;
-  border:0; background:transparent;
-  box-shadow:none; cursor:pointer; padding:0;
+  width:34px; height:34px; min-width:34px; border-radius:12px;
+  border:2px solid rgba(255,255,255,.45); background:rgba(0,0,0,.25);
+  box-shadow:0 0 12px rgba(255,255,255,.18); cursor:pointer; padding:2px;
   vertical-align:middle; margin-right:6px; display:inline-flex; align-items:center; justify-content:center;
-  position:relative; overflow:visible;
 }
-#rankIconBtn canvas{ width:38px; height:38px; display:block; }
+#rankIconBtn canvas{ width:28px; height:28px; display:block; }
 #rankIconBtn.rank-animated{
   animation: rankButtonPulse 1.45s ease-in-out infinite;
   overflow:hidden;
@@ -2506,6 +2507,115 @@ body.playing-ui #settingsBar{ display:none !important; }
 body:not(.playing-ui) #settingsBar{ display:flex; }
 
 </style>
+
+
+<!-- ✅ v.168.6 101레벨 반짝임 + EXP 10% 선 가시성 보정 -->
+<style id="rankCrestNoIconExpTicksV1686">
+#rankIconBtn{
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  border:none !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  overflow:visible !important;
+  position:relative !important;
+}
+#rankIconBtn canvas{
+  width:42px !important;
+  height:42px !important;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.28));
+}
+#rankIconBtn.rank-animated{
+  animation: rankCrestFloatV1685 1.5s ease-in-out infinite !important;
+}
+#rankIconBtn.rank-animated::before,
+#rankIconBtn.rank-animated::after{
+  display:none !important;
+}
+@keyframes rankCrestFloatV1685{
+  0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  50%{ transform:translateY(-1px) scale(1.055); filter:brightness(1.25); }
+}
+.rank-card canvas{
+  width:54px !important;
+  height:54px !important;
+  filter:drop-shadow(0 0 8px rgba(255,255,255,.20));
+}
+.rank-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)) !important;
+}
+#expWrapper{
+  background:
+    linear-gradient(180deg, rgba(8,20,44,0.98) 0%, rgba(6,12,28,0.98) 100%),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.28) 0 1px,
+      rgba(255,255,255,0.00) 1px 10%
+    ) !important;
+}
+#expWrapper::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:3;
+  background:repeating-linear-gradient(90deg,
+    rgba(255,255,255,0.42) 0 1px,
+    rgba(255,255,255,0.00) 1px 10%
+  );
+  mix-blend-mode:screen;
+  opacity:.58;
+}
+#expBarFill{
+  position:relative !important;
+  z-index:1 !important;
+  background:
+    linear-gradient(90deg, #00ff88, #44ffb8),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.30) 0 1px,
+      rgba(255,255,255,0.00) 1px 10%
+    ) !important;
+}
+#expText{ z-index:4 !important; }
+#expWrapper::before{ z-index:2 !important; }
+#expWrapper::after{ z-index:3 !important; }
+</style>
+
+
+
+<!-- ✅ v.168.7 계급 반짝임 주기 보정: 101레벨부터 1.5초마다 짧게 1회 -->
+<style id="rankShinePulseV1687">
+#rankIconBtn.rank-animated{
+  animation: none !important;
+}
+@keyframes rankCrestSinglePulseV1687{
+  0%,72%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  80%{ transform:translateY(-1px) scale(1.045); filter:brightness(1.55) drop-shadow(0 0 7px rgba(255,255,255,.78)); }
+  88%{ transform:translateY(0) scale(1.018); filter:brightness(1.18) drop-shadow(0 0 3px rgba(255,255,255,.36)); }
+}
+</style>
+
+
+<style id="rankAnimationContinuousV16813">
+/* ✅ v.171 계급 반짝임 강화: 101~300 전 구간, 1.2초 주기, 레벨 상승 시 화려함 증가 */
+#rankIconBtn.rank-animated{
+  animation: rankCrestContinuousFloatV16813 1.8s ease-in-out infinite !important;
+  will-change: transform, filter;
+}
+#rankIconBtn.rank-animated::before{
+  animation: rankButtonRing 1.2s linear infinite !important;
+}
+#rankIconBtn.rank-animated::after{
+  animation: rankButtonSweep 1.2s linear infinite !important;
+}
+@keyframes rankCrestContinuousFloatV16813{
+  0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  50%{ transform:translateY(-1px) scale(1.035); filter:brightness(1.12); }
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -2628,7 +2738,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
       <div>
         <div style="font-size:22px; font-weight:900; color:#ffd36a;">계급표</div>
-        <div style="font-size:12px; color:#cfd6ff;">1~250레벨 · 표정 없는 슬라임 계급 250종 · 10색 순환</div>
+        <div style="font-size:12px; color:#cfd6ff;">1~300레벨 · 표정 없는 슬라임 계급 300종 · 10색 순환</div>
       </div>
       <button id="rankTableCloseBtn" class="ui-btn" type="button">닫기</button>
     </div>
@@ -3191,19 +3301,19 @@ const RANK_ACCENTS = ['#fff1f1','#fff0dc','#fff8c9','#efffce','#d6ffe0','#d9fbff
 
 // ✅ v.168.2 계급 애니메이션 단계화: 1~99 정적 / 100Lv 반짝임 / 200Lv 오라+강화 애니메이션
 function getRankInfo(lv){
-  const safeLv = Math.max(1, Math.min(250, Number(lv)||1));
-  const type = Math.floor((safeLv-1)/10);     // 0~24, 10레벨마다 슬라임 계열 진화
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL, Number(lv)||1));
+  const type = Math.floor((safeLv-1)/10);     // 0~29, 10레벨마다 슬라임 계열 진화
   const colorStep = (safeLv-1) % 10;          // 빨강→주황→노랑→연두→초록→하늘→파랑→남색→보라→분홍
   const subLevel = colorStep + 1;
   const family = type % 10;                   // 기존 도형 계열 유지
   const era = Math.floor(type / 10);
-  const animated = safeLv >= 101;             // ✅ 101레벨부터 애니메이션 시작
-  const sparkle = safeLv >= 101;              // ✅ 101레벨부터 반짝임
-  const aura = safeLv >= 201;                 // ✅ 201레벨부터 오라 효과
-  const silver = safeLv >= 101 && safeLv < 201; // ✅ 101~200 실버 외곽선
-  const golden = safeLv >= 201;               // ✅ 201~250 황금 외곽선
-  const finalTier = safeLv >= 241;
-  const sizeScale = 1 + (safeLv - 1) / 249 * 0.30; // 커지되 캔버스 안에서 안전하게 제한
+  const animated = safeLv >= 101;             // ✅ 101레벨부터 반짝임 애니메이션 시작
+  const sparkle = safeLv >= 101;              // ✅ 101레벨부터 1.5초 주기 반짝임
+  const aura = safeLv >= 201;                 // ✅ v.168.11: 201레벨부터 오라 효과 지속 유지
+  const silver = safeLv >= 100 && safeLv < 201; // ✅ 100~200 실버 외곽선
+  const golden = safeLv >= 201;               // ✅ 201~300 황금 외곽선
+  const finalTier = safeLv >= 280;
+  const sizeScale = 1 + (safeLv - 1) / Math.max(1, (MAX_LEVEL - 1)) * 0.30; // 커지되 캔버스 안에서 안전하게 제한
   const shapeNames = ['둥근 슬라임','세모 슬라임','네모 슬라임','오각형 슬라임','육각형 슬라임','클로버 슬라임','하트 슬라임','다이아몬드 슬라임','스페이드 슬라임','별 슬라임'];
   return {
     lv:safeLv,
@@ -3229,7 +3339,7 @@ function getRankInfo(lv){
 function drawRankIconToCanvas(c, lv, preview=false){
   if(!c) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const size = preview ? 128 : 104;
+  const size = preview ? 128 : 104; // ✅ v.168.4: 온라인 게임풍 계급장/진화 애니메이션 적용
   c.width = size*dpr;
   c.height = size*dpr;
   c.style.width = preview ? '54px' : '38px';
@@ -3243,13 +3353,14 @@ function drawRankIconToCanvas(c, lv, preview=false){
   const now = Date.now()/1000;
   const cx = size/2;
   const cy = size/2;
-  const maxR = size * 0.34;
-  const rawR = (size * 0.245) * r.sizeScale;
-  const pulse = (!preview && r.animated) ? 1 + Math.sin(now*2.2)*0.026 : 1;
+  const maxR = size * 0.315;
+  const rawR = (size * 0.228) * r.sizeScale;
+  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.05)*0.032 : 1;
   const bodyR = Math.min(maxR, rawR * pulse);
-  const rotAnim = (!preview && r.aura) ? now*0.28 : ((!preview && r.sparkle) ? Math.sin(now*1.25)*0.025 : 0);
+  const rotAnim = (!preview && r.aura) ? Math.sin(now*1.05)*0.035 : 0;
+  const shineMove = (!preview && r.sparkle) ? now*0.9 : 0;
   const detailPower = r.subLevel / 10;
-  const tierPower = Math.min(1, r.type / 24);
+  const tierPower = Math.min(1, r.type / 29);
 
   function hexToRgba(hex, alpha){
     const h = String(hex || '#ffffff').replace('#','');
@@ -3258,6 +3369,7 @@ function drawRankIconToCanvas(c, lv, preview=false){
     const bb = parseInt(h.substring(4,6),16) || 255;
     return `rgba(${rr},${gg},${bb},${alpha})`;
   }
+
   function polygonPath(n, rad, rot=-Math.PI/2){
     ctx2.beginPath();
     for(let i=0;i<n;i++){
@@ -3273,7 +3385,7 @@ function drawRankIconToCanvas(c, lv, preview=false){
     ctx2.beginPath();
     for(let i=0;i<=180;i++){
       const a = i*Math.PI*2/180;
-      const rr = rad * (0.72 + 0.26*Math.cos(4*a));
+      const rr = rad * (0.73 + 0.25*Math.cos(4*a));
       const x = Math.cos(a)*rr;
       const y = Math.sin(a)*rr;
       if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y);
@@ -3292,7 +3404,10 @@ function drawRankIconToCanvas(c, lv, preview=false){
     }
     ctx2.closePath();
   }
-  function diamondPath(rad){ ctx2.beginPath(); ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.74,0); ctx2.lineTo(0,rad); ctx2.lineTo(-rad*0.74,0); ctx2.closePath(); }
+  function diamondPath(rad){
+    ctx2.beginPath();
+    ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.74,0); ctx2.lineTo(0,rad); ctx2.lineTo(-rad*0.74,0); ctx2.closePath();
+  }
   function spadePath(rad){
     ctx2.beginPath();
     for(let i=0;i<=170;i++){
@@ -3332,140 +3447,568 @@ function drawRankIconToCanvas(c, lv, preview=false){
     }
   }
   function drawSpark(x,y,rad,color,rot=0){
-    ctx2.save(); ctx2.translate(x,y); ctx2.rotate(rot);
+    ctx2.save();
+    ctx2.translate(x,y); ctx2.rotate(rot);
     ctx2.beginPath();
     ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.30,-rad*0.30); ctx2.lineTo(rad,0); ctx2.lineTo(rad*0.30,rad*0.30);
     ctx2.lineTo(0,rad); ctx2.lineTo(-rad*0.30,rad*0.30); ctx2.lineTo(-rad,0); ctx2.lineTo(-rad*0.30,-rad*0.30);
     ctx2.closePath(); ctx2.fillStyle=color; ctx2.fill(); ctx2.restore();
   }
+  function drawTinyGem(x,y,rad,color,rot=0){
+    ctx2.save(); ctx2.translate(x,y); ctx2.rotate(rot);
+    ctx2.beginPath();
+    ctx2.moveTo(0,-rad); ctx2.lineTo(rad*0.78,-rad*0.10); ctx2.lineTo(rad*0.42,rad*0.82); ctx2.lineTo(-rad*0.42,rad*0.82); ctx2.lineTo(-rad*0.78,-rad*0.10);
+    ctx2.closePath();
+    ctx2.fillStyle=color;
+    ctx2.shadowBlur=7; ctx2.shadowColor=color;
+    ctx2.fill();
+    ctx2.lineWidth=0.8; ctx2.strokeStyle='rgba(255,255,255,0.62)'; ctx2.stroke();
+    ctx2.restore();
+  }
 
   ctx2.save();
   ctx2.translate(cx, cy);
   ctx2.rotate(rotAnim);
-  ctx2.lineJoin = 'round';
-  ctx2.lineCap = 'round';
 
-  // ✅ 유리창/패널 느낌 제거: 계급 도형 자체만 표시합니다.
-  // 201레벨 이후에는 도형 뒤쪽에만 얇은 골드 오라를 추가해 등급을 한눈에 구분합니다.
+  // ✅ v.168.3: 뒤쪽 보석 받침대/후광. 저레벨도 더 예쁘게 보이되, 애니메이션은 기존 규칙 유지.
+  ctx2.save();
+  const haloGrad = ctx2.createRadialGradient(0,0,bodyR*0.2,0,0,bodyR*1.58);
+  haloGrad.addColorStop(0, hexToRgba(r.main, r.aura ? 0.42 : 0.20));
+  haloGrad.addColorStop(0.55, hexToRgba(r.main, r.aura ? 0.16 : 0.07));
+  haloGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx2.fillStyle = haloGrad;
+  ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.58,0,Math.PI*2); ctx2.fill();
+  ctx2.restore();
+
+  // 200레벨 이상 오라: 황금빛 외곽 광휘 + 회전 링 + 룬 점선
   if(r.aura){
     ctx2.save();
-    const beat = preview ? 1 : (0.88 + Math.sin(now*2.0)*0.12);
-    ctx2.globalAlpha = 0.86;
-    ctx2.shadowBlur = 20;
-    ctx2.shadowColor = 'rgba(255,215,85,0.90)';
-    ctx2.lineWidth = Math.max(5.0, size*0.052) * beat;
-    ctx2.strokeStyle = 'rgba(255,213,82,0.70)';
-    rankShapePath(bodyR*1.16);
-    ctx2.stroke();
-    ctx2.restore();
-  } else if(r.silver){
-    ctx2.save();
-    ctx2.shadowBlur = 14;
-    ctx2.shadowColor = 'rgba(220,235,255,0.82)';
-    ctx2.lineWidth = Math.max(4.0, size*0.042);
-    ctx2.strokeStyle = 'rgba(220,235,255,0.72)';
-    rankShapePath(bodyR*1.12);
-    ctx2.stroke();
+    const auraBeat = preview ? 1 : (0.78 + Math.sin(now*2.0)*0.16);
+    ctx2.fillStyle = 'rgba(255,210,70,' + (0.18 + auraBeat*0.13).toFixed(3) + ')';
+    ctx2.shadowBlur = 24 + auraBeat*12;
+    ctx2.shadowColor = 'rgba(255,215,90,0.72)';
+    rankShapePath(bodyR*(1.18 + auraBeat*0.05));
+    ctx2.fill();
+    ctx2.globalAlpha = 0.62;
+    ctx2.rotate(preview ? 0 : now*0.65);
+    ctx2.lineWidth = Math.max(1.3, size*0.014);
+    ctx2.strokeStyle = 'rgba(255,238,160,0.78)';
+    ctx2.setLineDash([bodyR*0.40, bodyR*0.18]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.40,0,Math.PI*2); ctx2.stroke();
+    ctx2.setLineDash([bodyR*0.10, bodyR*0.18]);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.22,0,Math.PI*2); ctx2.stroke();
     ctx2.restore();
   }
 
-  // 본체: 유리 광택 없이 선명한 계급 색상만 사용
-  const grad = ctx2.createLinearGradient(-bodyR, -bodyR, bodyR, bodyR);
-  grad.addColorStop(0, r.accent);
-  grad.addColorStop(0.34, r.main);
-  grad.addColorStop(1, hexToRgba(r.main, 0.88));
+  // 그림자
+  ctx2.save();
+  ctx2.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx2.shadowBlur = 8;
+  ctx2.shadowColor = 'rgba(0,0,0,0.42)';
+  ctx2.translate(0, bodyR*0.10);
+  rankShapePath(bodyR*1.04);
+  ctx2.fill();
+  ctx2.restore();
+
+  // 본체: 유리 보석 느낌의 다중 그라데이션
+  const grad = ctx2.createRadialGradient(-bodyR*0.40, -bodyR*0.46, bodyR*0.08, 0, 0, bodyR*1.10);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.16, r.accent);
+  grad.addColorStop(0.52, r.main);
+  grad.addColorStop(0.82, hexToRgba(r.main,0.84));
+  grad.addColorStop(1, 'rgba(20,22,36,0.78)');
   ctx2.fillStyle = grad;
-  ctx2.shadowBlur = r.golden ? 16 : (r.silver ? 11 : 5);
-  ctx2.shadowColor = r.golden ? 'rgba(255,213,82,0.78)' : (r.silver ? 'rgba(220,235,255,0.58)' : hexToRgba(r.main,0.38));
   rankShapePath(bodyR);
   ctx2.fill();
-  ctx2.shadowBlur = 0;
 
-  // 외곽선: 101 실버, 201 골드가 바로 보이도록 굵고 밝게 처리
-  const borderColor = r.golden ? '#ffd43d' : (r.silver ? '#e8f3ff' : 'rgba(255,255,255,0.94)');
-  const borderDark = r.golden ? '#8a5a00' : (r.silver ? '#6b7f99' : 'rgba(0,0,0,0.34)');
-  ctx2.lineWidth = r.golden ? Math.max(5.2, size*0.054) : (r.silver ? Math.max(4.4, size*0.046) : Math.max(2.5, size*0.026));
-  ctx2.strokeStyle = borderColor;
-  rankShapePath(bodyR*1.015); ctx2.stroke();
-  ctx2.lineWidth = Math.max(1.2, size*0.013);
-  ctx2.strokeStyle = borderDark;
-  rankShapePath(bodyR*0.93); ctx2.stroke();
+  // 상단 유리 코팅
+  ctx2.save();
+  rankShapePath(bodyR);
+  ctx2.clip();
+  const glass = ctx2.createLinearGradient(0,-bodyR,0,bodyR);
+  glass.addColorStop(0, 'rgba(255,255,255,0.42)');
+  glass.addColorStop(0.38, 'rgba(255,255,255,0.08)');
+  glass.addColorStop(0.72, 'rgba(0,0,0,0.10)');
+  glass.addColorStop(1, 'rgba(255,255,255,0.12)');
+  ctx2.fillStyle = glass;
+  ctx2.fillRect(-bodyR,-bodyR,bodyR*2,bodyR*2);
 
-  if(r.golden){
-    ctx2.lineWidth = Math.max(1.4, size*0.015);
-    ctx2.strokeStyle = '#fff4a8';
-    rankShapePath(bodyR*1.16); ctx2.stroke();
+  ctx2.globalAlpha = 0.42;
+  ctx2.fillStyle = 'rgba(255,255,255,0.86)';
+  ctx2.beginPath(); ctx2.ellipse(-bodyR*0.29,-bodyR*0.37,bodyR*0.32,bodyR*0.15,-0.45,0,Math.PI*2); ctx2.fill();
+  ctx2.globalAlpha = 0.18;
+  ctx2.beginPath(); ctx2.ellipse(bodyR*0.24,bodyR*0.26,bodyR*0.42,bodyR*0.16,-0.20,0,Math.PI*2); ctx2.fill();
+
+  if(r.sparkle){
+    ctx2.globalAlpha = 0.25;
+    ctx2.rotate(-0.45);
+    const sweepX = ((shineMove % 2) - 1) * bodyR * 2.2;
+    const sweep = ctx2.createLinearGradient(sweepX-bodyR*0.22, -bodyR, sweepX+bodyR*0.22, bodyR);
+    sweep.addColorStop(0, 'rgba(255,255,255,0)');
+    sweep.addColorStop(0.5, 'rgba(255,255,255,0.98)');
+    sweep.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx2.fillStyle = sweep;
+    ctx2.fillRect(sweepX-bodyR*0.28, -bodyR*1.48, bodyR*0.56, bodyR*2.96);
+  }
+  ctx2.restore();
+
+  // 외곽선: 기본 흰 테두리 + 안쪽 어두운 선
+  ctx2.lineJoin = 'round'; ctx2.lineCap = 'round';
+  ctx2.lineWidth = Math.max(2.1, size*0.023);
+  ctx2.strokeStyle = 'rgba(255,255,255,0.94)';
+  rankShapePath(bodyR); ctx2.stroke();
+  ctx2.lineWidth = Math.max(1.0, size*0.011);
+  ctx2.strokeStyle = 'rgba(0,0,0,0.32)';
+  rankShapePath(bodyR*0.965); ctx2.stroke();
+
+  // 100~199 실버 / 200~250 황금 테두리 강화
+  if(r.silver || r.golden){
+    ctx2.save();
+    const outline = r.golden ? '#ffd76a' : '#dcecff';
+    const outline2 = r.golden ? '#fff5b8' : '#ffffff';
+    ctx2.shadowBlur = r.golden ? 16 : 12;
+    ctx2.shadowColor = r.golden ? 'rgba(255,215,90,0.74)' : 'rgba(220,235,255,0.72)';
+    ctx2.lineWidth = r.golden ? Math.max(4.4, size*0.046) : Math.max(3.4, size*0.037);
+    ctx2.strokeStyle = outline;
+    rankShapePath(bodyR*1.035); ctx2.stroke();
+    ctx2.lineWidth = Math.max(1.15, size*0.013);
+    ctx2.strokeStyle = outline2;
+    rankShapePath(bodyR*1.115); ctx2.stroke();
+    ctx2.restore();
   }
 
-  // 내부 문양: 계급 모양만 남기되 고레벨일수록 디테일 증가
+  // ✅ v.168.3: 내부 문양 업그레이드. 저레벨은 심플, 고레벨은 보석/룬/방사형 패턴 증가.
+  const veinCount = Math.min(14, 4 + Math.floor(r.type/2));
   ctx2.save();
-  rankShapePath(bodyR*0.90); ctx2.clip();
-  const lineCount = Math.min(12, 3 + Math.floor(r.type/2));
-  for(let i=0;i<lineCount;i++){
-    const a = -Math.PI/2 + i*Math.PI*2/lineCount + detailPower*0.18;
-    const inner = bodyR*(0.12 + (i%3)*0.035);
-    const outer = bodyR*(0.42 + tierPower*0.18 + (i%2)*0.06);
+  rankShapePath(bodyR*0.92); ctx2.clip();
+  for(let i=0;i<veinCount;i++){
+    const a = -Math.PI/2 + i*Math.PI*2/veinCount + detailPower*0.16;
+    const inner = bodyR*(0.13 + (i%3)*0.025);
+    const outer = bodyR*(0.43 + (i%4)*0.055 + tierPower*0.10);
     ctx2.beginPath();
     ctx2.moveTo(Math.cos(a)*inner, Math.sin(a)*inner);
     ctx2.lineTo(Math.cos(a)*outer, Math.sin(a)*outer);
-    ctx2.lineWidth = 0.8 + (i%3)*0.25;
-    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.18)';
+    ctx2.lineWidth = 0.65 + (i%3)*0.20;
+    ctx2.strokeStyle = i%2 ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.20)';
     ctx2.stroke();
   }
-  if(r.type >= 8){
-    ctx2.lineWidth = 1.1;
-    ctx2.strokeStyle = 'rgba(255,255,255,0.42)';
-    ctx2.beginPath(); ctx2.arc(0,0,bodyR*(0.36 + tierPower*0.10),0,Math.PI*2); ctx2.stroke();
+  if(r.type >= 5){
+    ctx2.globalAlpha = 0.38;
+    ctx2.lineWidth = 1;
+    ctx2.strokeStyle = 'rgba(255,255,255,0.46)';
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*(0.30 + tierPower*0.10),0,Math.PI*2); ctx2.stroke();
   }
-  if(r.type >= 14){
-    ctx2.lineWidth = 1.2;
+  if(r.type >= 10){
+    ctx2.globalAlpha = 0.30;
+    ctx2.strokeStyle = 'rgba(255,255,255,0.60)';
+    ctx2.setLineDash([bodyR*0.10, bodyR*0.07]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*(0.52 + tierPower*0.06),0,Math.PI*2); ctx2.stroke();
+    ctx2.setLineDash([]);
+  }
+  if(r.type >= 15){
+    ctx2.globalAlpha = 0.42;
+    polygonPath(3 + (r.type % 5), bodyR*(0.22 + tierPower*0.08), -Math.PI/2 + detailPower*0.45);
     ctx2.strokeStyle = 'rgba(255,255,255,0.48)';
-    polygonPath(3 + (r.type % 5), bodyR*(0.24 + tierPower*0.08), -Math.PI/2 + detailPower*0.45);
+    ctx2.lineWidth = 1.1;
     ctx2.stroke();
   }
   ctx2.restore();
 
-  // 101레벨 이후 반짝임 유지: 유리창 스윕이 아니라 도형 주변 별빛만 표시
+  // 색 단계에 따른 작은 보석 장식: 10레벨 주기 컬러 체감 강화
+  const gemCount = Math.min(6, 2 + Math.floor(r.subLevel/2));
+  for(let i=0;i<gemCount;i++){
+    const a = -Math.PI/2 + i*Math.PI*2/gemCount + (r.family*0.13);
+    const rr = bodyR * (0.78 + (i%2)*0.04);
+    drawTinyGem(Math.cos(a)*rr, Math.sin(a)*rr, Math.max(1.35, bodyR*0.055), i%2 ? r.accent : '#ffffff', a);
+  }
+
+  // 100레벨 이후 반짝임
   if(r.sparkle){
     const sparkCount = r.golden ? 12 : 8;
     for(let i=0;i<sparkCount;i++){
-      const a = i*Math.PI*2/sparkCount + (preview ? 0 : now*(i%2 ? 0.42 : -0.30));
-      const rr = bodyR * (1.10 + (i%3)*0.11);
-      const alpha = preview ? 0.52 : 0.38 + Math.sin(now*2.7+i)*0.22;
-      ctx2.globalAlpha = Math.max(0.16, alpha);
-      drawSpark(Math.cos(a)*rr, Math.sin(a)*rr, r.golden ? 3.3 : 2.7, r.golden ? '#fff0a8' : '#ffffff', a);
+      const a = i*Math.PI*2/sparkCount + (preview ? 0 : now*(i%2 ? 0.35 : -0.25));
+      const rr = bodyR * (1.05 + (i%3)*0.12);
+      const sx = Math.cos(a)*rr;
+      const sy = Math.sin(a)*rr;
+      const alpha = preview ? 0.58 : 0.40 + Math.sin(now*2.6+i)*0.22;
+      ctx2.globalAlpha = Math.max(0.18, alpha);
+      drawSpark(sx, sy, r.golden ? 3.2 : 2.6, r.golden ? '#fff0a8' : '#ffffff', a);
     }
     ctx2.globalAlpha = 1;
   }
 
-  // 201레벨 이후 골드 오브: 작게 공전하여 골드 등급이 더 확실히 보임
+  // 200레벨 이상 공전 오브
   if(r.aura){
     const orbCount = r.finalTier ? 6 : 4;
     for(let i=0;i<orbCount;i++){
-      const a = i*Math.PI*2/orbCount + (preview ? 0 : now*0.9);
-      const rr = bodyR * (1.34 + (i%2)*0.08);
+      const a = i*Math.PI*2/orbCount + (preview ? 0 : now*0.85);
+      const rr = bodyR * (1.30 + (i%2)*0.10);
+      const ox = Math.cos(a)*rr;
+      const oy = Math.sin(a)*rr;
+      const orbSize = 1.9 + (i%3)*0.45;
       ctx2.save();
-      ctx2.globalAlpha = preview ? 0.56 : 0.48 + Math.sin(now*2.4+i)*0.18;
-      ctx2.fillStyle = i%2 ? '#fff6bc' : '#ffd43d';
+      ctx2.globalAlpha = preview ? 0.55 : 0.45 + Math.sin(now*2.4+i)*0.18;
+      ctx2.fillStyle = i%2 ? '#fff6bc' : '#ffd76a';
       ctx2.shadowBlur = 11;
-      ctx2.shadowColor = 'rgba(255,220,100,0.86)';
-      ctx2.beginPath(); ctx2.arc(Math.cos(a)*rr, Math.sin(a)*rr, 2.2+(i%2)*0.5,0,Math.PI*2); ctx2.fill();
+      ctx2.shadowColor = 'rgba(255,220,100,0.82)';
+      ctx2.beginPath(); ctx2.arc(ox,oy,orbSize,0,Math.PI*2); ctx2.fill();
       ctx2.restore();
     }
   }
 
+  // 280~300 최종 진화: 무지개 왕관 링
   if(r.finalTier){
     const rainbow=['#ff5b5b','#ffb13d','#fff45c','#7dff73','#62e7ff','#6f8cff','#cb6dff','#ff75cf'];
     for(let i=0;i<rainbow.length;i++){
       const a=i*Math.PI*2/rainbow.length + (preview?0:now*.42);
-      ctx2.globalAlpha=.62;
-      drawSpark(Math.cos(a)*bodyR*1.48, Math.sin(a)*bodyR*1.48, 2.5+(i%2), rainbow[i], a);
+      ctx2.globalAlpha=.66;
+      drawSpark(Math.cos(a)*bodyR*1.44, Math.sin(a)*bodyR*1.44, 2.6+(i%2), rainbow[i], a);
     }
     ctx2.globalAlpha=1;
+    ctx2.save();
+    ctx2.rotate(preview?0:now*0.22);
+    ctx2.lineWidth = Math.max(1.1, size*0.012);
+    const rg = ctx2.createLinearGradient(-bodyR*1.45,0,bodyR*1.45,0);
+    rg.addColorStop(0,'rgba(255,91,91,0.75)'); rg.addColorStop(0.25,'rgba(255,244,92,0.75)'); rg.addColorStop(0.5,'rgba(98,231,255,0.75)'); rg.addColorStop(0.75,'rgba(203,109,255,0.75)'); rg.addColorStop(1,'rgba(255,117,207,0.75)');
+    ctx2.strokeStyle = rg;
+    ctx2.setLineDash([bodyR*0.12, bodyR*0.08]);
+    ctx2.beginPath(); ctx2.arc(0,0,bodyR*1.52,0,Math.PI*2); ctx2.stroke();
+    ctx2.restore();
   }
 
   ctx2.restore();
 }
+
+
+
+// ✅ v.168.4 온라인 게임풍 계급장 오버라이드
+// - 1~99: 정적이지만 메탈 계급장 느낌 강화
+// - 100~149: 실버 샤인/스캔 광택
+// - 150~199: 룬 링/별빛 파티클 추가
+// - 200~239: 골드 오라/공전 오브 추가
+// - 280~300: 최종 진화 무지개 왕관/에너지 링
+function getRankOnlineTier(lv){
+  lv = Math.max(1, Math.min(MAX_LEVEL, Number(lv)||1));
+  if(lv >= 280) return 4;
+  if(lv >= 201) return 3;
+  if(lv >= 150) return 2;
+  if(lv >= 100) return 1;
+  return 0;
+}
+
+drawRankIconToCanvas = function(c, lv, preview=false){
+  if(!c) return;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const size = preview ? 140 : 112;
+  // ✅ v.168.13: 매 프레임 canvas 크기를 재설정하면 내부 버퍼가 초기화되어 끊김처럼 보일 수 있음
+  // 필요한 경우에만 리사이즈하고, 애니메이션 프레임에서는 그리기만 수행
+  const targetW = Math.round(size*dpr), targetH = Math.round(size*dpr);
+  if(c.width !== targetW || c.height !== targetH){ c.width = targetW; c.height = targetH; }
+  c.style.width = preview ? '58px' : '40px';
+  c.style.height = preview ? '58px' : '40px';
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+
+  const r = getRankInfo(lv);
+  const tier = getRankOnlineTier(r.lv);
+  // ✅ v.168.13: 계급 애니메이션은 프레임 수를 세지 않고 실제 시간 기반으로 계속 유지
+  // 설정 FPS가 10/15fps여도 회전·오라·파티클은 requestAnimationFrame 시간값으로 부드럽게 흐름
+  const now = preview ? 0 : (performance.now() / 1000);
+  const cx=size/2, cy=size/2;
+
+  // ✅ v.168.13: 끊겨 보이는 단발식 반짝임 제거 → 모든 계급 애니메이션을 지속형으로 변경
+  // - spinT: 계속 증가하는 시간값
+  // - shineProgress: 광택이 끊기지 않고 계속 이동하는 진행값
+  // - flash: 101레벨 이상에서 항상 살아있는 부드러운 광량
+  const spinT = preview ? 0 : now;
+  const shineCycle = 1.2; // ✅ v.171: 계급 반짝임은 1.2초마다 1회
+  const shineProgress = preview ? 0.35 : ((now / shineCycle) % 1);
+  const sparklePower =
+    r.lv >= 300 ? 6 :
+    r.lv >= 280 ? 5 :
+    r.lv >= 250 ? 4 :
+    r.lv >= 201 ? 3 :
+    r.lv >= 151 ? 2 :
+    r.lv >= 101 ? 1 : 0;
+  // 1.2초 주기로 짧게 밝아지는 펄스 + 낮은 기본 광량 유지
+  const pulsePeak = Math.exp(-Math.pow((shineProgress - 0.12) / 0.115, 2));
+  const flash = (!preview && sparklePower > 0)
+    ? (0.28 + 0.72 * pulsePeak)
+    : 0;
+  const shineT = spinT;
+  const bodyBase = size*(0.255 + Math.min(0.055, r.type*0.0023));
+  const beat = (!preview && sparklePower>0) ? flash*(0.010 + sparklePower*0.004) : 0;
+  const bodyR = Math.min(size*0.36, bodyBase * (1+beat));
+  const rot = (!preview && tier>=2) ? Math.sin(spinT*0.85)*0.030 : 0;
+  const detail = r.subLevel/10;
+  const tierPower = Math.min(1, r.type/24);
+
+  function rgba(hex,a){
+    const h=String(hex||'#fff').replace('#','');
+    const rr=parseInt(h.slice(0,2),16)||255, gg=parseInt(h.slice(2,4),16)||255, bb=parseInt(h.slice(4,6),16)||255;
+    return `rgba(${rr},${gg},${bb},${a})`;
+  }
+  function pathPoly(n, rad, rot=-Math.PI/2, spike=0){
+    ctx.beginPath();
+    const steps = spike ? n*2 : n;
+    for(let i=0;i<steps;i++){
+      const a=rot+i*Math.PI*2/steps;
+      const rr=spike && i%2 ? rad*(0.68-spike*.08) : rad;
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  function pathHeart(rad){
+    ctx.beginPath();
+    for(let i=0;i<=180;i++){
+      const u=Math.PI*2*i/180;
+      const x=16*Math.pow(Math.sin(u),3)/18*rad;
+      const y=-(13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u))/18*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  function pathClover(rad){
+    ctx.beginPath();
+    for(let i=0;i<=180;i++){
+      const a=i*Math.PI*2/180;
+      const rr=rad*(0.70+0.28*Math.cos(4*a));
+      if(i===0) ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); else ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);
+    }
+    ctx.closePath();
+  }
+  function crestPath(rad){
+    // 온라인 게임 계급장 느낌: 같은 계열이어도 레벨대에 따라 더 날카롭고 장식적인 실루엣
+    const f=r.family;
+    if(f===0){ pathPoly(18, rad, -Math.PI/2, tier>=2?0.55:0); return; }
+    if(f===1){ pathPoly(3 + Math.min(2,tier), rad, -Math.PI/2, tier>=1?0.42:0); return; }
+    if(f===2){ pathPoly(4 + Math.min(2,tier), rad, -Math.PI/4, tier>=1?0.38:0); return; }
+    if(f===3){ pathPoly(5 + Math.min(3,tier), rad, -Math.PI/2, tier>=1?0.34:0); return; }
+    if(f===4){ pathPoly(6 + Math.min(4,tier), rad, -Math.PI/2, tier>=1?0.30:0); return; }
+    if(f===5){ pathClover(rad); return; }
+    if(f===6){ pathHeart(rad*.96); return; }
+    if(f===7){ pathPoly(4, rad, -Math.PI/2, .55); return; }
+    if(f===8){ pathPoly(8, rad, -Math.PI/2, .48); return; }
+    pathPoly(5, rad, -Math.PI/2, .62);
+  }
+  function spark(x,y,rad,col,rot=0){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+    ctx.beginPath();
+    for(let i=0;i<8;i++){
+      const a=-Math.PI/2+i*Math.PI/4;
+      const rr=i%2?rad*.32:rad;
+      const px=Math.cos(a)*rr, py=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fillStyle=col; ctx.shadowBlur=10; ctx.shadowColor=col; ctx.fill(); ctx.restore();
+  }
+  function wing(side){
+    ctx.save(); ctx.scale(side,1);
+    const wg=ctx.createLinearGradient(-bodyR*1.45,-bodyR*.45,-bodyR*.55,bodyR*.45);
+    wg.addColorStop(0, tier>=3?'rgba(255,235,150,.72)':'rgba(220,235,255,.50)');
+    wg.addColorStop(1, 'rgba(50,70,110,.08)');
+    ctx.fillStyle=wg;
+    ctx.strokeStyle=tier>=3?'rgba(255,225,120,.55)':'rgba(220,238,255,.40)';
+    ctx.lineWidth=Math.max(1,size*.012);
+    for(let i=0;i<3+Math.min(tier,2);i++){
+      const y=-bodyR*.38+i*bodyR*.24;
+      ctx.beginPath();
+      ctx.moveTo(-bodyR*.56,y);
+      ctx.quadraticCurveTo(-bodyR*(1.04+i*.10), y+bodyR*.03, -bodyR*(1.24+i*.06), y+bodyR*.20);
+      ctx.quadraticCurveTo(-bodyR*.92, y+bodyR*.27, -bodyR*.58, y+bodyR*.18);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot);
+
+  // 배경 오라: 등급별로 강해짐
+  const auraAlpha=[0.10,0.18,0.25,0.34,0.44][tier];
+  const ag=ctx.createRadialGradient(0,0,bodyR*.15,0,0,bodyR*(1.85+.12*tier));
+  ag.addColorStop(0, rgba(r.main,auraAlpha));
+  ag.addColorStop(.45, tier>=3?'rgba(255,215,90,.16)':rgba(r.accent,auraAlpha*.42));
+  ag.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=ag; ctx.beginPath(); ctx.arc(0,0,bodyR*(1.85+.12*tier),0,Math.PI*2); ctx.fill();
+
+  // 날개형 메탈 장식: 50레벨 이후부터 서서히, 고레벨에서 확실히
+  if(r.lv>=50){ wing(-1); wing(1); }
+
+  // 룬/에너지 링
+  if(tier>=2){
+    ctx.save();
+    ctx.rotate(preview?0:spinT*(tier>=3?.72:.42));
+    ctx.lineWidth=Math.max(1.2,size*.012);
+    ctx.strokeStyle=tier>=3?'rgba(255,238,165,.75)':'rgba(210,235,255,.62)';
+    ctx.setLineDash([bodyR*.16, bodyR*.10]);
+    ctx.beginPath(); ctx.arc(0,0,bodyR*(1.30+.05*tier),0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([bodyR*.035, bodyR*.17]);
+    ctx.strokeStyle='rgba(255,255,255,.45)';
+    ctx.beginPath(); ctx.arc(0,0,bodyR*(1.50+.04*tier),0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 그림자
+  ctx.save(); ctx.translate(0,bodyR*.10); ctx.fillStyle='rgba(0,0,0,.34)'; ctx.shadowBlur=12; ctx.shadowColor='rgba(0,0,0,.45)'; crestPath(bodyR*1.05); ctx.fill(); ctx.restore();
+
+  // 본체: 메탈+보석 그라데이션
+  const g=ctx.createRadialGradient(-bodyR*.38,-bodyR*.45,bodyR*.05,0,0,bodyR*1.18);
+  g.addColorStop(0,'#ffffff');
+  g.addColorStop(.14,r.accent);
+  g.addColorStop(.46,r.main);
+  g.addColorStop(.78,rgba(r.main,.78));
+  g.addColorStop(1,'rgba(8,12,26,.92)');
+  ctx.fillStyle=g; crestPath(bodyR); ctx.fill();
+
+  // 입체 유리 코팅 + 아래 음영
+  ctx.save(); crestPath(bodyR); ctx.clip();
+  const glass=ctx.createLinearGradient(-bodyR,-bodyR,bodyR,bodyR);
+  glass.addColorStop(0,'rgba(255,255,255,.55)');
+  glass.addColorStop(.28,'rgba(255,255,255,.10)');
+  glass.addColorStop(.60,'rgba(0,0,0,.12)');
+  glass.addColorStop(1,'rgba(255,255,255,.20)');
+  ctx.fillStyle=glass; ctx.fillRect(-bodyR,-bodyR,bodyR*2,bodyR*2);
+  ctx.globalAlpha=.34; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(-bodyR*.24,-bodyR*.36,bodyR*.38,bodyR*.15,-.45,0,Math.PI*2); ctx.fill();
+
+  // 101레벨 이상: 끊기지 않는 지속 스캔 광택
+  if(tier>=1){
+    const sweep=(-1 + shineProgress*2) * bodyR*2.25;
+    ctx.globalAlpha=(.28 + .035*tier + .032*sparklePower) * flash; ctx.rotate(-.52);
+    const sg=ctx.createLinearGradient(sweep-bodyR*.18,-bodyR,sweep+bodyR*.18,bodyR);
+    sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,'rgba(255,255,255,.96)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sg; ctx.fillRect(sweep-bodyR*.25,-bodyR*1.7,bodyR*.5,bodyR*3.4);
+  }
+  ctx.restore();
+
+  // 내부 룬 문양: 고레벨일수록 복잡
+  ctx.save(); crestPath(bodyR*.90); ctx.clip();
+  const lineN=6+Math.floor(r.type/2)+tier*2;
+  for(let i=0;i<lineN;i++){
+    const a=-Math.PI/2+i*Math.PI*2/lineN+detail*.22;
+    ctx.beginPath(); ctx.moveTo(Math.cos(a)*bodyR*.12,Math.sin(a)*bodyR*.12); ctx.lineTo(Math.cos(a)*bodyR*(.48+.05*(i%3)),Math.sin(a)*bodyR*(.48+.05*(i%3)));
+    ctx.lineWidth=.65+(i%2)*.25; ctx.strokeStyle=i%2?'rgba(255,255,255,.45)':'rgba(0,0,0,.22)'; ctx.stroke();
+  }
+  if(r.type>=10){
+    ctx.strokeStyle='rgba(255,255,255,.50)'; ctx.lineWidth=1;
+    pathPoly(3+(r.type%6), bodyR*(.25+tierPower*.08), -Math.PI/2+detail*.5, tier>=3?.18:0); ctx.stroke();
+  }
+  if(tier>=3){
+    ctx.strokeStyle='rgba(255,230,140,.62)'; ctx.lineWidth=1.15;
+    ctx.beginPath(); ctx.arc(0,0,bodyR*.52,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+
+  // 외곽선: 101Lv 실버 / 201Lv 골드가 작은 HUD에서도 확실히 보이도록 강화
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.lineWidth=Math.max(2.0,size*.021); ctx.strokeStyle='rgba(255,255,255,.94)'; crestPath(bodyR); ctx.stroke();
+  ctx.lineWidth=Math.max(1,size*.010); ctx.strokeStyle='rgba(0,0,0,.45)'; crestPath(bodyR*.955); ctx.stroke();
+  if(r.lv >= 101){
+    ctx.save();
+    const isGold = r.lv >= 201;
+    const metal = isGold ? '#ffd15a' : '#dce8ff';
+    const metalMid = isGold ? '#fff1a6' : '#ffffff';
+    const metalDark = isGold ? '#9a6500' : '#7788a8';
+    const glow = isGold ? 'rgba(255,205,70,.92)' : 'rgba(205,225,255,.86)';
+    const outerWidth = isGold ? Math.max(4.8,size*.052) : Math.max(3.8,size*.041);
+    const innerWidth = isGold ? Math.max(2.2,size*.023) : Math.max(1.7,size*.018);
+    const haloWidth = isGold ? Math.max(7.2,size*.074) : Math.max(5.4,size*.058);
+
+    ctx.shadowBlur = isGold ? 24 : 18;
+    ctx.shadowColor = glow;
+    ctx.globalAlpha = isGold ? .80 : .62;
+    ctx.lineWidth = haloWidth;
+    ctx.strokeStyle = glow;
+    crestPath(bodyR*1.072); ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = isGold ? 12 : 8;
+    ctx.lineWidth = outerWidth;
+    ctx.strokeStyle = metalDark;
+    crestPath(bodyR*1.064); ctx.stroke();
+
+    ctx.shadowBlur = isGold ? 18 : 12;
+    ctx.lineWidth = Math.max(3.2,size*(isGold ? .040 : .032));
+    ctx.strokeStyle = metal;
+    crestPath(bodyR*1.045); ctx.stroke();
+
+    ctx.shadowBlur = isGold ? 10 : 7;
+    ctx.lineWidth = innerWidth;
+    ctx.strokeStyle = metalMid;
+    crestPath(bodyR*1.135); ctx.stroke();
+
+    // 반짝임 순간에는 테두리 하이라이트만 추가, 회전 애니메이션과 별도 작동
+    if(flash > 0.001){
+      ctx.globalAlpha = .45 * flash;
+      ctx.lineWidth = Math.max(1.6,size*.016);
+      ctx.strokeStyle = '#ffffff';
+      crestPath(bodyR*(isGold?1.205:1.185)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 색 단계 보석 핀
+  const gems=Math.min(8,2+Math.floor(r.subLevel/2)+Math.floor(tier/2));
+  for(let i=0;i<gems;i++){
+    const a=-Math.PI/2+i*Math.PI*2/gems+r.family*.13;
+    const rr=bodyR*(.82+(i%2)*.045);
+    ctx.save(); ctx.translate(Math.cos(a)*rr,Math.sin(a)*rr); ctx.rotate(a);
+    ctx.fillStyle=i%2?r.accent:'#fff'; ctx.shadowBlur=8; ctx.shadowColor=ctx.fillStyle;
+    pathPoly(4, Math.max(1.6,bodyR*.055), -Math.PI/4, 0); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.68)'; ctx.lineWidth=.75; ctx.stroke(); ctx.restore();
+  }
+
+  // 파티클 / 공전 오브: 계급 애니메이션이 끊기지 않도록 지속 표시
+  if(tier>=1){
+    const count = Math.min(26, 5 + sparklePower * 3);
+    for(let i=0;i<count;i++){
+      const a=i*Math.PI*2/count+(preview?0:shineT*(i%2?.42:-.28));
+      const rr=bodyR*(1.05+(i%4)*.12+.04*tier);
+      const alpha=preview?.48:(.34 + flash*.36 + Math.sin(shineT*2.4+i)*.10);
+      ctx.globalAlpha=Math.max(.18,alpha);
+      spark(Math.cos(a)*rr,Math.sin(a)*rr, (tier>=3?3.1:2.4) + sparklePower*0.12, tier>=3?'#fff0a8':'#ffffff', a);
+    }
+    // 250레벨 이상은 1.2초 펄스 순간에 큰 별빛을 한 번 더 강조
+    if(sparklePower >= 4 && flash > 0.62){
+      const burstCount = sparklePower >= 6 ? 10 : sparklePower >= 5 ? 8 : 6;
+      for(let j=0;j<burstCount;j++){
+        const a = j*Math.PI*2/burstCount + (preview?0:spinT*.18);
+        const rr = bodyR*(1.72 + (j%2)*.10);
+        ctx.globalAlpha = Math.min(.86, (flash-.55)*1.65);
+        spark(Math.cos(a)*rr, Math.sin(a)*rr, 3.3 + sparklePower*.18, j%2 ? '#fff6bc' : '#ffffff', a);
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+  if(tier>=3){
+    const orbs=tier>=4?8:5;
+    for(let i=0;i<orbs;i++){
+      const a=i*Math.PI*2/orbs+(preview?0:spinT*.95);
+      const rr=bodyR*(1.36+(i%2)*.10);
+      ctx.save(); ctx.globalAlpha=preview?.58:.48+Math.sin(spinT*2.1+i)*.16;
+      ctx.fillStyle=i%2?'#fff8c8':'#ffd76a'; ctx.shadowBlur=13; ctx.shadowColor='rgba(255,220,100,.88)';
+      ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,2.1+(i%3)*.45,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+  }
+  if(tier>=4){
+    const rainbow=['#ff5757','#ffb13d','#fff45c','#79ff70','#5deaff','#7890ff','#c66dff','#ff74ce'];
+    ctx.save(); ctx.rotate(preview?0:spinT*.38);
+    ctx.lineWidth=Math.max(1.2,size*.012);
+    const rg=ctx.createLinearGradient(-bodyR*1.65,0,bodyR*1.65,0);
+    rainbow.forEach((col,i)=>rg.addColorStop(i/(rainbow.length-1),col));
+    ctx.strokeStyle=rg; ctx.setLineDash([bodyR*.12,bodyR*.075]);
+    ctx.beginPath(); ctx.arc(0,0,bodyR*1.62,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+    rainbow.forEach((col,i)=>{
+      const a=i*Math.PI*2/rainbow.length+(preview?0:spinT*.55);
+      spark(Math.cos(a)*bodyR*1.52, Math.sin(a)*bodyR*1.52, 2.8+(i%2), col, a);
+    });
+  }
+
+  ctx.restore();
+};
 
 function updateRankIcon(){
   if(!rankIconBtn) return;
@@ -3475,22 +4018,28 @@ function updateRankIcon(){
   rankIconBtn.classList.toggle('rank-animated', curLv >= 101);
   rankIconBtn.style.boxShadow = curLv >= 201
     ? `0 0 20px ${ri.main}, 0 0 30px rgba(255,216,107,.45)`
-    : curLv >= 101
+    : curLv >= 100
       ? `0 0 18px ${ri.main}`
       : `0 0 12px rgba(255,255,255,.18)`;
   drawRankIconToCanvas(c, curLv, false);
 }
-if(!window.__rankIconAnimationTimer){
-  window.__rankIconAnimationTimer = setInterval(()=>{
-    if(rankIconBtn && !rankIconBtn.offsetParent) return;
-    if(typeof state !== 'undefined' && state === 'playing') updateRankIcon();
-    else updateRankIcon();
-  }, 80);
+// ✅ v.168.13: 계급 아이콘 전용 지속 애니메이션 루프
+// 브라우저의 requestAnimationFrame마다 갱신하여 게임 FPS 설정과 완전히 분리합니다.
+// 15fps/저사양 모드에서도 계급 회전·오라·파티클은 계속 유지됩니다.
+if(!window.__rankIconAnimationRAF){
+  window.__rankIconAnimationRAF = true;
+  const __rankIconLoop = ()=>{
+    if(rankIconBtn && rankIconBtn.offsetParent){
+      updateRankIcon();
+    }
+    requestAnimationFrame(__rankIconLoop);
+  };
+  requestAnimationFrame(__rankIconLoop);
 }
 function openRankTableModal(){
   if(!rankTableModal || !rankTableBody) return;
   const html=[];
-  for(let lv=1; lv<=250; lv++) html.push(`<div class="rank-card ${lv===(level||1)?'current':''}" data-rank-lv="${lv}"><canvas></canvas><div>LV.${lv}</div></div>`);
+  for(let lv=1; lv<=MAX_LEVEL; lv++) html.push(`<div class="rank-card ${lv===(level||1)?'current':''}" data-rank-lv="${lv}"><canvas></canvas><div>LV.${lv}</div></div>`);
   rankTableBody.innerHTML=html.join('');
   rankTableBody.querySelectorAll('.rank-card').forEach(card=>drawRankIconToCanvas(card.querySelector('canvas'), Number(card.dataset.rankLv), true));
   rankTableModal.classList.remove('hidden'); document.body.classList.add('rank-modal-open');
@@ -4203,7 +4752,7 @@ siren: () => {
         playTone(82, 'sawtooth', 0.22, 0.13);
         setTimeout(() => playTone(48, 'triangle', 0.30, 0.11), 70);
     },
-  // ✅ [v.56] 만렙(250) 도달 축하 사운드
+  // ✅ [v.56] 만렙(300) 도달 축하 사운드
   maxLevel: () => {
     if(!audioCtx || !sfxEnabled) return;
     // 밝은 3음 + 짧은 피날레
@@ -4460,7 +5009,7 @@ function addExpDirect(amount) {
 
 function doExpGachaOnce() {
   if (gold < EXP_GACHA.cost) { alert('골드가 부족합니다!'); return; }
-  if (level >= MAX_LEVEL || exp >= MAX_EXP_CAP) { alert('이미 만렙입니다! (EXP 지급 불가)'); return; }
+  if (level >= MAX_LEVEL || exp >= MAX_EXP_CAP) { alert('이미 만렙입니다! (LV.300 / EXP 지급 불가)'); return; }
 
   gold -= EXP_GACHA.cost;
   saveData.goldSpent = (saveData.goldSpent || 0) + EXP_GACHA.cost;
@@ -4501,7 +5050,7 @@ async function doExpGachaFive() {
   }
 
   if (level >= MAX_LEVEL || exp >= MAX_EXP_CAP) {
-    alert('이미 만렙입니다! (EXP 지급 불가)');
+    alert('이미 만렙입니다! (LV.300 / EXP 지급 불가)');
     return;
   }
 
@@ -4689,7 +5238,7 @@ const BASE_PLAYER_SPEED = 3.0;
 const FIRE_INTERVAL = 150;
 const PLAYER_SIZE = 24;
 const BASE_PLAYER_DAMAGE = 5;
-const MAX_LEVEL = 250;
+const MAX_LEVEL = 300; // ✅ [v.170] 최대 레벨 300 확장
 const EVO_MILESTONES = [11, 31, 61, 101, 200];
 
 let evoAnim = {
@@ -4725,7 +5274,7 @@ function getWavesPerStage(stage) {
   if (s <= 80) return 4;
   return 5;
 }
-const MAX_STAGE_CAP = 200;
+const MAX_STAGE_CAP = 300; // ✅ [v.169] 300스테이지 확장
 
 const ENEMY_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'club', 'heart', 'spade', 'hexagon', 'ghost'];
 
@@ -4735,7 +5284,8 @@ const bgImages = {
   desert: new Image(),
   glacier: new Image(),
   volcano: new Image(),
-  space: new Image()
+  space: new Image(),
+  crystal: new Image() // ✅ [v.169] 201~300 크리스탈 동굴 배경
 };
 
 bgImages.title.src = 'title.png';
@@ -4744,6 +5294,7 @@ bgImages.desert.src = 'desert.png';
 bgImages.glacier.src = 'glacier.png';
 bgImages.volcano.src = 'volcano.png';
 bgImages.space.src = 'space.png';
+bgImages.crystal.src = 'crystal.png';
 
 function getStageBackgroundImage(stg, currentState = state) {
   if (currentState === 'title') return bgImages.title;
@@ -4752,7 +5303,8 @@ function getStageBackgroundImage(stg, currentState = state) {
   if (s <= 40) return bgImages.desert;
   if (s <= 60) return bgImages.glacier;
   if (s <= 80) return bgImages.volcano;
-  return bgImages.space;
+  if (s <= 200) return bgImages.space;
+  return bgImages.crystal; // ✅ 201~300 신규 지역
 }
 
 function drawCoverImage(img, dx, dy, dw, dh) {
@@ -4827,7 +5379,7 @@ window.EXP_TABLE = window.EXP_TABLE || [];
 const EXP_TABLE = window.EXP_TABLE;
 
 // ✅ 안전장치: MAX_LEVEL / EARLY_NEEDED가 없으면 기본값 (터지지 않게)
-const SAFE_MAX_LEVEL = (typeof MAX_LEVEL !== "undefined") ? MAX_LEVEL : 250;
+const SAFE_MAX_LEVEL = (typeof MAX_LEVEL !== "undefined") ? MAX_LEVEL : 300;
 
 const SAFE_EARLY_NEEDED = (typeof EARLY_NEEDED !== "undefined") ? EARLY_NEEDED : {
   1: 10, 2: 17, 3: 31, 4: 50, 5: 73, 6: 98, 7: 130, 8: 165, 9: 211, 10: 287
@@ -4872,20 +5424,37 @@ const SAFE_EARLY_NEEDED = (typeof EARLY_NEEDED !== "undefined") ? EARLY_NEEDED :
 
     } else {
       const prev = l - 1;
-      let rate = 1.04;
 
-      if (prev >= 200 && prev <= 208) rate = 1.06;
-      else if (prev === 209) rate = 1.8;
-      else if (prev >= 210 && prev <= 218) rate = 1.04;
-      else if (prev === 219) rate = 1.8;
-      else if (prev >= 220 && prev <= 228) rate = 1.03;
-      else if (prev === 229) rate = 1.8;
-      else if (prev >= 230 && prev <= 238) rate = 1.02;
-      else if (prev === 239) rate = 1.8;
-      else if (prev >= 240 && prev <= 247) rate = 1.01;
-      else if (prev === 248) rate = 2.0;
+      // ✅ [v.170] 201~300 EXP 확장 규칙
+      // - 249→250 기준 EXP: 62,757,091,756 유지
+      // - 10단위 목표 레벨(260/270/280/290/300)은 지정값 고정
+      // - 그 사이 레벨은 직전 필요 EXP 대비 1% 증가
+      const lateExpAnchors = {
+        259: 125514183512,    // 259→260
+        269: 251028367024,    // 269→270
+        279: 502056734048,    // 279→280
+        289: 1004113468096,   // 289→290
+        299: 2409872323430    // 299→300
+      };
 
-      needed = Math.ceil(lastNeeded * rate);
+      if (l >= 250) {
+        needed = lateExpAnchors[l] || Math.ceil(lastNeeded * 1.01);
+      } else {
+        let rate = 1.04;
+
+        if (prev >= 200 && prev <= 208) rate = 1.06;
+        else if (prev === 209) rate = 1.8;
+        else if (prev >= 210 && prev <= 218) rate = 1.04;
+        else if (prev === 219) rate = 1.8;
+        else if (prev >= 220 && prev <= 228) rate = 1.03;
+        else if (prev === 229) rate = 1.8;
+        else if (prev >= 230 && prev <= 238) rate = 1.02;
+        else if (prev === 239) rate = 1.8;
+        else if (prev >= 240 && prev <= 247) rate = 1.01;
+        else if (prev === 248) rate = 2.0;
+
+        needed = Math.ceil(lastNeeded * rate);
+      }
     }
 
     EXP_TABLE[l] = { needed, totalMin: cumulative };
@@ -6012,7 +6581,7 @@ const INTRO_TUTORIAL_PRE_MESSAGES = [
   "안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 이 게임은 몬스터를 처치하며 성장하고, 스킬과 진화 시스템을 활용해 점점 더 강해지는 슈팅 액션 게임입니다.",
   "화면 중앙의 [게임 시작] 버튼을 눌러주세요.",
   "게임 모드는 총 5가지입니다. 스테이지 모드는 기본 진행, 무한 모드는 생존과 골드 획득, 아이템 파크는 아이템 수집, 미니게임은 점수 기반 경험치 획득, 던전 모드는 제한 시간 집중 전투에 특화되어 있습니다. 먼저 [스테이지 모드]를 선택해보세요.",
-  "스테이지는 총 200개가 있으며, 진행 중에는 보스전과 성장 요소가 함께 등장합니다. 또한 LV.11에 도달하면 진화와 새로운 스킬이 해금되고, 펫을 획득하면 펫 시스템도 사용할 수 있게 됩니다. 이제 [1스테이지]를 선택해볼까요?"
+  "스테이지는 총 300개가 있으며, 진행 중에는 보스전과 성장 요소가 함께 등장합니다. 또한 LV.11에 도달하면 진화와 새로운 스킬이 해금되고, 펫을 획득하면 펫 시스템도 사용할 수 있게 됩니다. 이제 [1스테이지]를 선택해볼까요?"
 ];
 
 const INTRO_TUTORIAL_INGAME_MESSAGES = [
@@ -11305,7 +11874,7 @@ stageGrid.innerHTML = '';
 const maxStage = MAX_STAGE_CAP;
 const unlocked = saveData.maxUnlockedStage || 1;
 
-if (unlocked >= 200) {
+if (unlocked >= MAX_STAGE_CAP) {
 const msg = document.createElement('div');
 msg.style.gridColumn = "1 / -1";
 msg.style.textAlign = "center";
@@ -13084,7 +13653,7 @@ function startEvolutionAnimation(oldLevel, newLevel) {
   if (player) spawnExplosion(player.x, player.y - 10, 'rgba(255,255,255,1)', 22);
 }
 
-// ✅ [v.56] 만렙(250) 도달 폭죽 연출
+// ✅ [v.56] 만렙(300) 도달 폭죽 연출
 const maxLevelCelebration = { active: false, timer: 0, duration: 4200, nextBurst: 0 };
 
 function spawnFireworkBurst(cx, cy) {
@@ -15300,9 +15869,12 @@ let stageBonus;
 if (stage <= 100) {
   // 1~100: 5스테이지 단위
   stageBonus = 100 * Math.min(evo, 6) * tier;
-} else {
+} else if (stage <= 200) {
   // 101~200: 1~100의 5배
   stageBonus = 100 * Math.min(evo, 6) * tier * 5;
+} else {
+  // 201~300: 신규 지역 보정. 101~200보다 한 단계 높은 보상
+  stageBonus = 100 * Math.min(evo, 6) * tier * 6;
 }
 
 let finalScore = cfg.score + stageBonus;
@@ -15328,6 +15900,7 @@ let finalScore = cfg.score + stageBonus;
 
 function getBossEvoStageByLevel(bossLevel) {
     const lv = Math.max(1, Math.floor(Number(bossLevel) || 1));
+    if (lv >= 201) return 7;      // 크리스탈 슬라임
     if (lv >= 105) return 6;      // 우주 슬라임
     if (lv >= 55) return 5;       // 신 슬라임
     if (lv >= 35) return 4;       // 왕 슬라임
@@ -15338,12 +15911,12 @@ function getBossEvoStageByLevel(bossLevel) {
 
 function getBossDisplayLevelByStage(stageValue) {
     const s = Math.max(1, Math.floor(Number(stageValue) || 1));
-    return Math.min(200, s);
+    return Math.min(MAX_STAGE_CAP, s);
 }
 
 function getStageBossExpReward(stageValue) {
-    const lv = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
-    // ✅ [v.154] 보스 EXP: 5스테이지 단위 구간 × 현재 스테이지 레벨
+    const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
+    // ✅ [v.154/v.169] 보스 EXP: 5스테이지 단위 구간 × 현재 스테이지 레벨
     const table = [
         [5, 10], [10, 36], [15, 107], [20, 230], [25, 496],
         [30, 525], [35, 556], [40, 587], [45, 1113], [50, 1145],
@@ -15357,12 +15930,15 @@ function getStageBossExpReward(stageValue) {
     for (const [maxLv, expPerLevel] of table) {
         if (lv <= maxLv) return lv * expPerLevel;
     }
-    return lv * 52007;
+    // ✅ [v.169] 201~300 크리스탈 지역 보스 EXP: 200스테이지 이후 점진 증가
+    const over = Math.max(0, lv - 200);
+    const perLevel = Math.floor(68876 + over * 620);
+    return lv * perLevel;
 }
 
 function getStageMonsterExpReward(stageValue) {
-    const s = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
-    // ✅ [v.154] 몬스터 EXP: 해당 스테이지 보스 EXP의 50%를 목표 처치 수로 나눈 1마리당 EXP
+    const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
+    // ✅ [v.154/v.169] 몬스터 EXP: 해당 스테이지 보스 EXP의 50%를 목표 처치 수로 나눈 1마리당 EXP
     // 예) 5스테이지 보스 EXP 50 → 몬스터 총합 25 EXP → 목표 5마리 기준 1마리당 5 EXP
     const target = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
     const monsterTotalExp = Math.floor(getStageBossExpReward(s) * 0.5);
@@ -15370,7 +15946,7 @@ function getStageMonsterExpReward(stageValue) {
 }
 
 function getStageMonsterTotalExpReward(stageValue) {
-    const s = Math.max(1, Math.min(200, Math.floor(Number(stageValue) || 1)));
+    const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     return Math.max(0, Math.floor(getStageBossExpReward(s) * 0.5));
 }
 
@@ -15591,17 +16167,23 @@ function spawnNextWave() {
     } else if (gameMode === 'stage' || gameMode === 'mission') {
       enemyCount = Math.min(enemyCount, STAGE_ENEMY_CAP);
     }
-// [업데이트] 속도 로직(조정):
-// - 1~100: 기존 그대로 (스테이지가 올라갈수록 빨라짐)
-// - 101~200: 100스테이지 대비 '약 40% 느리게'(=60% 속도) 시작 → 200까지 완만히 상승
+// [v.169] 속도 로직(300스테이지 확장):
+// - 1~100: 기존 성장 구간
+// - 101~200: 101스테이지에서 느리게 재시작 후 200까지 완만히 상승
+// - 201~300: 신규 크리스탈 지역. 201스테이지도 101스테이지처럼 느리게 재시작
 let speedBase;
 if (stage <= 100) {
   speedBase = 1.0 + stage * 0.045;
+} else if (stage <= 200) {
+  const speedAt100 = 1.0 + 100 * 0.07;
+  const slowBase = speedAt100 * 0.25;
+  const t = clamp((stage - 101) / 99, 0, 1);
+  speedBase = slowBase + t * 0.8;
 } else {
-  const speedAt100 = 1.0 + 100 * 0.07; // 8.0
-  const slowBase = speedAt100 * 0.25;  // 2.0 (100스테이지 대비 75% 느리게)
-  const t = clamp((stage - 101) / 99, 0, 1); // 101->0, 200->1
-  speedBase = slowBase + t * 0.8; // 4.8 ~ 5.6 (완만 상승)
+  const speedAt200 = 1.0 + 100 * 0.07;
+  const slowBase = speedAt200 * 0.27;
+  const t = clamp((stage - 201) / 99, 0, 1);
+  speedBase = slowBase + t * 0.95;
 }
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
@@ -18353,9 +18935,13 @@ function drawBackground() {
     } else if (stage <= 80) {
       fallback.addColorStop(0, '#ff9b54');
       fallback.addColorStop(1, '#3f1108');
-    } else {
+    } else if (stage <= 200) {
       fallback.addColorStop(0, '#1d2158');
       fallback.addColorStop(1, '#04010f');
+    } else {
+      fallback.addColorStop(0, '#4b2aa8');
+      fallback.addColorStop(0.55, '#20134f');
+      fallback.addColorStop(1, '#050014');
     }
     ctx.fillStyle = fallback;
     ctx.fillRect(0, 0, width, height);
@@ -19109,7 +19695,8 @@ ctx.scale(1 / b, b);
     else if (evoStage === 3) { bossColorStop1 = '#b0b0ff'; bossColorStop2 = '#4444cc'; }  // 청소년 (파랑)
     else if (evoStage === 4) { bossColorStop1 = '#d000d0'; bossColorStop2 = '#440044'; }  // 왕 (보라/근엄)
     else if (evoStage === 5) { bossColorStop1 = '#ffffff'; bossColorStop2 = '#00ffff'; }  // 신 (화이트/시안)
-    else { bossColorStop1 = '#220000'; bossColorStop2 = '#000000'; }                      // 우주 (검정/적색)
+    else if (evoStage === 6) { bossColorStop1 = '#220000'; bossColorStop2 = '#000000'; } // 우주 (검정/적색)
+    else { bossColorStop1 = '#b8f7ff'; bossColorStop2 = '#7d35ff'; } // 크리스탈 (시안/보라)
 
     // 배경 오라 (뒷배경)
     if (evoStage >= 5) {
@@ -19137,8 +19724,14 @@ ctx.scale(1 / b, b);
 
     // 그라데이션 본체
     const grad = ctx.createRadialGradient(-r*0.3, -r*0.4, r*0.2, 0, 0, r);
-    if (evoStage === 6) {
-        // 최종 보스: 검은 핵에 붉은 에너지가 감도는 느낌
+    if (evoStage === 7) {
+        // 크리스탈 보스: 푸른 핵과 보라 수정 에너지
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, '#55eaff');
+        grad.addColorStop(0.72, '#8a4dff');
+        grad.addColorStop(1, '#17003d');
+    } else if (evoStage === 6) {
+        // 우주 보스: 검은 핵에 붉은 에너지가 감도는 느낌
         grad.addColorStop(0, '#ff0000'); 
         grad.addColorStop(0.4, '#330000'); 
         grad.addColorStop(1, '#000000');
@@ -19261,7 +19854,8 @@ ctx.scale(1 / b, b);
         else if(evoStage===3) title="청소년 슬라임";
         else if(evoStage===4) title="왕 슬라임";
         else if(evoStage===5) title="신 슬라임";   // 51~100
-        else if(evoStage===6) title="우주 슬라임"; // 101~200 (최종)
+        else if(evoStage===6) title="우주 슬라임"; // 101~200
+        else if(evoStage===7) title="크리스탈 슬라임"; // 201~300
 
         ctx.fillStyle = '#ffffff'; ctx.font = `11px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const hpPercent = (ratio * 100).toFixed(1);
@@ -19905,7 +20499,7 @@ requestAnimationFrame(gameLoop);
   lastTime = timestamp;
 
   syncTopSettingsVisibility();
-  updateRankIcon();
+  // ✅ v.168.12: 계급 아이콘은 게임 FPS 루프가 아니라 별도 60fps requestAnimationFrame 루프에서 갱신
   // 배경은 항상
   drawBackground();
 
@@ -20838,6 +21432,279 @@ drawEnemyShape = function(e) {
     stage = realStage;
   }
 };
+
+
+
+// ✅ v.168.5 계급을 "아이콘 배지"가 아닌 온라인 게임풍 순수 문양으로 다시 렌더링
+// - 버튼 배경/둥근 아이콘 느낌 제거
+// - 계급 모양은 크리스탈, 날개, 룬, 왕관, 오라가 단계적으로 진화
+// - 100/150/200/240레벨 구간에서 애니메이션 강도 상승
+function getRankCrestTierV1685(lv){
+  lv = Math.max(1, Math.min(MAX_LEVEL, Number(lv)||1));
+  if(lv >= 280) return 4;
+  if(lv >= 201) return 3;
+  if(lv >= 150) return 2;
+  if(lv >= 100) return 1;
+  return 0;
+}
+function rankRgbaV1685(hex,a){
+  const h=String(hex||'#ffffff').replace('#','');
+  const rr=parseInt(h.slice(0,2),16)||255;
+  const gg=parseInt(h.slice(2,4),16)||255;
+  const bb=parseInt(h.slice(4,6),16)||255;
+  return `rgba(${rr},${gg},${bb},${a})`;
+}
+function drawRankShardPathV1685(ctx, family, rad, tier){
+  ctx.beginPath();
+  const spikes = Math.max(0, tier-1);
+  const count = family===0 ? 14 : family===1 ? 3 : family===2 ? 4 : family===3 ? 5 : family===4 ? 6 : family===5 ? 8 : family===6 ? 10 : family===7 ? 4 : family===8 ? 12 : 5;
+  if(family===5){
+    for(let i=0;i<=192;i++){
+      const a=i*Math.PI*2/192;
+      const rr=rad*(0.66+0.34*Math.cos(4*a));
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); return;
+  }
+  if(family===6){
+    for(let i=0;i<=200;i++){
+      const u=Math.PI*2*i/200;
+      const x=16*Math.pow(Math.sin(u),3)/18*rad;
+      const y=-(13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u))/18*rad;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); return;
+  }
+  const steps = (spikes || family>=7) ? count*2 : count;
+  const rot = family===2 || family===7 ? -Math.PI/4 : -Math.PI/2;
+  for(let i=0;i<steps;i++){
+    const a=rot+i*Math.PI*2/steps;
+    const inner = family>=7 ? 0.48 : 0.62;
+    const rr=(steps>count && i%2) ? rad*inner : rad;
+    const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+function drawRankWingV1685(ctx, side, rad, tier, color){
+  const dir = side==='left' ? -1 : 1;
+  ctx.save();
+  ctx.scale(dir,1);
+  const featherCount = tier>=4 ? 5 : tier>=3 ? 4 : 3;
+  for(let i=0;i<featherCount;i++){
+    const off=i*rad*0.17;
+    ctx.beginPath();
+    ctx.moveTo(rad*0.40, -rad*0.22+off*0.30);
+    ctx.quadraticCurveTo(rad*(1.00+i*.08), -rad*(0.72-i*.08), rad*(1.18+i*.10), -rad*(0.23-i*.04)+off);
+    ctx.quadraticCurveTo(rad*(0.78+i*.05), -rad*(0.05-i*.02)+off, rad*0.34, rad*0.16+off*0.20);
+    ctx.closePath();
+    ctx.fillStyle=rankRgbaV1685(color, 0.30 + i*.06);
+    ctx.strokeStyle='rgba(255,255,255,.20)';
+    ctx.lineWidth=Math.max(1, rad*.045);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+const __drawRankIconToCanvasBeforeV1685 = drawRankIconToCanvas;
+drawRankIconToCanvas = function(c, lv, preview=false){
+  if(!c) return;
+  const dpr=Math.max(1, window.devicePixelRatio || 1);
+  const size=preview ? 148 : 118;
+  // ✅ v.168.13: 매 프레임 캔버스 버퍼를 리셋하지 않고 필요한 경우에만 크기 변경
+  const targetW=Math.round(size*dpr), targetH=Math.round(size*dpr);
+  if(c.width!==targetW || c.height!==targetH){ c.width=targetW; c.height=targetH; }
+  c.style.width=preview ? '58px' : '42px';
+  c.style.height=preview ? '58px' : '42px';
+  const ctx=c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+
+  const r=getRankInfo(lv);
+  const tier=getRankCrestTierV1685(r.lv);
+  // ✅ v.168.13: 계급 전용 지속 애니메이션 시간값
+  // - 단발 flash ON/OFF를 제거하고, 101레벨 이상은 항상 부드러운 광량을 유지
+  // - 201레벨 이상 오라/공전/룬 링은 계속 회전
+  const t=preview ? 0 : ((window.__rankAnimTimeV16812 || performance.now()) / 1000);
+  const rankFlashV1688 = r.lv >= 101 && !preview;
+  const rankGlowV16813 = rankFlashV1688 ? (0.62 + 0.38 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 1.65))) : 0;
+  const auraOnV16812 = !preview && r.lv >= 201;
+  const cx=size/2, cy=size/2;
+  const base=size*(0.255 + Math.min(0.065, r.type*0.0026));
+  const pulse=(r.sparkle && rankFlashV1688) ? 1 + Math.sin(t*(Math.PI*2/1.65))*0.012*Math.max(1,tier) : 1;
+  const rot=(!preview && tier>=2) ? Math.sin(t*.85)*0.05 : 0;
+  const rad=Math.min(size*.37, base*pulse);
+  const main=r.main || '#44ffb8';
+  const accent=r.accent || '#ffffff';
+
+  ctx.save();
+  ctx.translate(cx,cy);
+
+  // 외부 오라/룬 링: 배경 박스가 아니라 문양 주변 에너지로만 표현
+  if(tier>=1){
+    const ringRot=((auraOnV16812 || tier>=1) ? t*(0.55+tier*.18) : 0);
+    for(let k=0;k<tier;k++){
+      ctx.save();
+      ctx.rotate(ringRot*(k%2?-1:1)+k*.45);
+      ctx.strokeStyle = tier>=3 ? 'rgba(255,215,106,.38)' : rankRgbaV1685(main,.30);
+      ctx.lineWidth=Math.max(1.1, size*(0.008+k*.002));
+      ctx.setLineDash([rad*(0.18+k*.04), rad*(0.09+k*.03)]);
+      ctx.beginPath();
+      ctx.arc(0,0,rad*(1.10+k*.13),0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  if(tier>=2){
+    drawRankWingV1685(ctx,'left',rad,tier,main);
+    drawRankWingV1685(ctx,'right',rad,tier,main);
+  }
+
+  // 200+ 공전 보석
+  if(tier>=3){
+    const orbs=tier>=4 ? 8 : 6;
+    for(let i=0;i<orbs;i++){
+      const a=i*Math.PI*2/orbs + t*.9;
+      const rr=rad*1.35;
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      const grd=ctx.createRadialGradient(x-rad*.05,y-rad*.05,0,x,y,rad*.11);
+      grd.addColorStop(0,'rgba(255,255,255,.95)');
+      grd.addColorStop(.45,rankRgbaV1685(accent,.85));
+      grd.addColorStop(1,rankRgbaV1685(main,.08));
+      ctx.fillStyle=grd;
+      ctx.beginPath(); ctx.arc(x,y,rad*(tier>=4?.075:.06),0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // 핵심 문양 본체
+  ctx.save();
+  ctx.rotate(rot);
+  drawRankShardPathV1685(ctx, r.family, rad, tier);
+  const g=ctx.createLinearGradient(-rad,-rad,rad,rad);
+  g.addColorStop(0,'rgba(255,255,255,.96)');
+  g.addColorStop(.18,rankRgbaV1685(accent,.92));
+  g.addColorStop(.55,rankRgbaV1685(main,.95));
+  g.addColorStop(1,rankRgbaV1685(main,.54));
+  ctx.fillStyle=g;
+  ctx.shadowColor=rankRgbaV1685(main, tier>=1?.82:.45);
+  ctx.shadowBlur=tier>=4 ? rad*.52 : tier>=3 ? rad*.38 : tier>=1 ? rad*.22 : rad*.10;
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.lineJoin='round';
+  ctx.lineWidth=Math.max(1.6, size*(tier>=3?.024:.018));
+  ctx.strokeStyle=tier>=3 ? 'rgba(255,224,119,.96)' : tier>=1 ? 'rgba(230,240,255,.86)' : 'rgba(255,255,255,.52)';
+  ctx.stroke();
+
+  // 내부 절개선/크리스탈 면
+  ctx.globalAlpha=.55;
+  ctx.strokeStyle='rgba(255,255,255,.72)';
+  ctx.lineWidth=Math.max(1, size*.008);
+  for(let i=0;i<3+tier;i++){
+    const a=-Math.PI/2 + i*Math.PI*2/(3+tier);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(a)*rad*.78, Math.sin(a)*rad*.78);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  // 샤인 스윕: 단발이 아니라 계속 흐르는 광택
+  if(r.sparkle && tier>=1){
+    ctx.save();
+    ctx.rotate(-0.55);
+    ctx.beginPath();
+    ctx.rect(-rad*1.4 + ((t*54)%(rad*3.2)), -rad*1.6, rad*.22, rad*3.2);
+    ctx.clip();
+    drawRankShardPathV1685(ctx, r.family, rad*1.02, tier);
+    ctx.fillStyle=`rgba(255,255,255,${0.26 + rankGlowV16813*.24})`;
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // 최종 진화 왕관/상단 보석
+  if(tier>=4){
+    ctx.save();
+    const y=-rad*1.18;
+    const crown=ctx.createLinearGradient(0,y-rad*.32,0,y+rad*.18);
+    crown.addColorStop(0,'rgba(255,255,255,.95)');
+    crown.addColorStop(.45,'rgba(255,226,99,.95)');
+    crown.addColorStop(1,'rgba(255,121,215,.68)');
+    ctx.fillStyle=crown;
+    ctx.strokeStyle='rgba(255,255,255,.78)';
+    ctx.lineWidth=Math.max(1,size*.012);
+    ctx.beginPath();
+    ctx.moveTo(-rad*.50,y+rad*.18);
+    ctx.lineTo(-rad*.34,y-rad*.20);
+    ctx.lineTo(-rad*.12,y+rad*.02);
+    ctx.lineTo(0,y-rad*.34);
+    ctx.lineTo(rad*.12,y+rad*.02);
+    ctx.lineTo(rad*.34,y-rad*.20);
+    ctx.lineTo(rad*.50,y+rad*.18);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 반짝이 파티클: 항상 유지되어 끊김 없이 회전/점멸
+  if(r.sparkle && tier>=1){
+    const n=tier>=4 ? 14 : tier>=3 ? 10 : tier>=2 ? 7 : 4;
+    for(let i=0;i<n;i++){
+      const a=i*Math.PI*2/n + (preview?0:t*(0.45+i*.02));
+      const rr=rad*(1.02 + ((i%3)*.16));
+      const tw=preview ? .55 : .28 + .42*(0.5 + 0.5*Math.sin(t*2.5+i));
+      const x=Math.cos(a)*rr, y=Math.sin(a)*rr;
+      ctx.strokeStyle=`rgba(255,255,255,${tw})`;
+      ctx.lineWidth=Math.max(1,size*.007);
+      ctx.beginPath(); ctx.moveTo(x-rad*.055,y); ctx.lineTo(x+rad*.055,y); ctx.moveTo(x,y-rad*.055); ctx.lineTo(x,y+rad*.055); ctx.stroke();
+    }
+  }
+  ctx.restore();
+};
+
+const __updateRankIconBeforeV1685 = updateRankIcon;
+updateRankIcon = function(){
+  if(!rankIconBtn) return;
+  let c=rankIconBtn.querySelector('canvas');
+  if(!c){ c=document.createElement('canvas'); rankIconBtn.appendChild(c); }
+  const curLv = level || 1;
+  const ri = getRankInfo(curLv);
+  rankIconBtn.classList.toggle('rank-animated', curLv >= 101);
+  rankIconBtn.style.boxShadow = 'none';
+  rankIconBtn.style.background = 'transparent';
+  rankIconBtn.style.border = 'none';
+  rankIconBtn.style.filter = curLv >= 200
+    ? `drop-shadow(0 0 10px ${ri.main}) drop-shadow(0 0 16px rgba(255,216,107,.42))`
+    : curLv >= 101
+      ? `drop-shadow(0 0 9px ${ri.main})`
+      : 'drop-shadow(0 0 4px rgba(255,255,255,.20))';
+  drawRankIconToCanvas(c, curLv, false);
+};
+
+// ✅ v.168.6 최종 보정
+// - 반짝임/움직임 클래스는 101레벨부터 적용
+// - EXP 10% 구분선은 expBarFill 위 레이어에 남아 채워진 뒤에도 살짝 보임
+
+// ✅ v.168.13 계급 애니메이션 최종 보정
+// - 단발 반짝임 타이머 제거
+// - requestAnimationFrame 실제 시간 기반으로 계급 애니메이션 지속 유지
+(function(){
+  try{
+    if(window.__rankIconAnimationTimer){ clearInterval(window.__rankIconAnimationTimer); window.__rankIconAnimationTimer = null; }
+    if(window.__rankFlashTimerV1688){ clearInterval(window.__rankFlashTimerV1688); window.__rankFlashTimerV1688 = null; }
+    if(window.__rankRafV16812){ cancelAnimationFrame(window.__rankRafV16812); window.__rankRafV16812 = null; }
+  }catch(e){}
+
+  window.__rankFlashActiveV1688 = true;
+  window.__rankAnimationLoopV16812 = function(nowMs){
+    window.__rankAnimTimeV16812 = nowMs || performance.now();
+    if(typeof updateRankIcon === 'function') updateRankIcon();
+    window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
+  };
+  window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
+})();
 
 loadGameData();
 updateHUD();
