@@ -195,9 +195,7 @@ padding: 8px 0;
     #expBarFill {
         width: 0%;
         height: 100%;
-        background:
-          linear-gradient(90deg, #2fd1ff 0%, #44ffb8 52%, #b7ff6e 100%),
-          repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 20px, rgba(255,255,255,0.00) 20px 24px);
+        background: linear-gradient(90deg, #2fd1ff 0%, #44ffb8 52%, #b7ff6e 100%);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px rgba(68,255,184,0.24);
         transition: width 0.9s linear;
         position: relative;
@@ -344,7 +342,7 @@ padding: 8px 0;
 /* =============================== */
 /* ✅ [v.78] 스킬 버튼 아이콘/쿨타임 링 */
 /* =============================== */
-.laser-skill, .bubble-skill, .blizzard-skill, .meteor-skill, .lightning-skill, .quake-skill{
+.laser-skill, .bubble-skill, .blizzard-skill, .meteor-skill, .lightning-skill, .quake-skill, .plasma-skill{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -356,7 +354,8 @@ padding: 8px 0;
 .blizzard-skill .skill-icon,
 .meteor-skill .skill-icon,
 .lightning-skill .skill-icon,
-.quake-skill .skill-icon{
+.quake-skill .skill-icon,
+.plasma-skill .skill-icon{
   font-size: 20px;
   transform: translateY(-2px);
   pointer-events:none;
@@ -366,14 +365,16 @@ padding: 8px 0;
   .blizzard-skill .skill-icon,
   .meteor-skill .skill-icon,
   .lightning-skill .skill-icon,
-  .quake-skill .skill-icon{ font-size: calc(20px * var(--canvas-scale) + 6px); }
+  .quake-skill .skill-icon,
+.plasma-skill .skill-icon{ font-size: calc(20px * var(--canvas-scale) + 6px); }
 }
 .laser-skill .skill-cd,
 .bubble-skill .skill-cd,
 .blizzard-skill .skill-cd,
 .meteor-skill .skill-cd,
 .lightning-skill .skill-cd,
-.quake-skill .skill-cd{
+.quake-skill .skill-cd,
+.plasma-skill .skill-cd{
   position:absolute;
   bottom: 8px;
   font-size: 10px;
@@ -388,7 +389,8 @@ padding: 8px 0;
 .blizzard-skill .skill-cd.ready,
 .meteor-skill .skill-cd.ready,
 .lightning-skill .skill-cd.ready,
-.quake-skill .skill-cd.ready{ display:none; }
+.quake-skill .skill-cd.ready,
+.plasma-skill .skill-cd.ready{ display:none; }
 
 .laser-skill.cooling::after,
 .bubble-skill.cooling::after,
@@ -2774,7 +2776,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
       <div>
         <div style="font-size:22px; font-weight:900; color:#ffd36a;">계급표</div>
-        <div style="font-size:12px; color:#cfd6ff;">1~300레벨 · 표정 없는 슬라임 계급 300종 · 10색 순환</div>
+        <div style="font-size:12px; color:#cfd6ff;">1~300레벨 · 온라인 게임풍 웅장한 계급 300종 · 10색 순환</div>
       </div>
       <button id="rankTableCloseBtn" class="ui-btn" type="button">닫기</button>
     </div>
@@ -2812,7 +2814,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <!-- ✅ [v.78] 번개 / 지진 스킬 버튼 -->
 <button id="lightningSkillBtn" class="ui-btn lightning-skill hidden">⚡</button>
 <button id="quakeSkillBtn" class="ui-btn quake-skill hidden">🌎</button>
-<!-- ✅ [v.156] 멀티킬 특화 범위형 스킬 -->
+<button id="plasmaSkillBtn" class="ui-btn plasma-skill hidden">💥</button>
+<!-- ✅ [v.171] LV.250 신규 플라즈마 스킬 -->
 
 <!-- 모바일 소모품 퀵바 -->
 <div id="consumableQuickBar">
@@ -3402,10 +3405,10 @@ function drawRankIconToCanvas(c, lv, preview=false){
   const cy = size/2;
   const maxR = size * 0.315;
   const rawR = (size * 0.228) * r.sizeScale;
-  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.05)*0.032 : 1;
+  const pulse = (!preview && r.aura) ? 1 + Math.sin(now*2.35)*0.048 : 1;
   const bodyR = Math.min(maxR, rawR * pulse);
-  const rotAnim = (!preview && r.aura) ? Math.sin(now*1.05)*0.035 : 0;
-  const shineMove = (!preview && r.sparkle) ? now*0.9 : 0;
+  const rotAnim = (!preview && r.aura) ? Math.sin(now*1.2)*0.055 : 0;
+  const shineMove = (!preview && r.sparkle) ? now*1.55 : 0;
   const detailPower = r.subLevel / 10;
   const tierPower = Math.min(1, r.type / 29);
 
@@ -3609,7 +3612,7 @@ function drawRankIconToCanvas(c, lv, preview=false){
   ctx2.strokeStyle = 'rgba(0,0,0,0.32)';
   rankShapePath(bodyR*0.965); ctx2.stroke();
 
-  // 100~199 실버 / 200~250 황금 테두리 강화
+  // 100~199 실버 / 200~300 황금 테두리 강화
   if(r.silver || r.golden){
     ctx2.save();
     const outline = r.golden ? '#ffd76a' : '#dcecff';
@@ -4019,7 +4022,7 @@ drawRankIconToCanvas = function(c, lv, preview=false){
     }
     // 250레벨 이상은 1.2초 펄스 순간에 큰 별빛을 한 번 더 강조
     if(sparklePower >= 4 && flash > 0.62){
-      const burstCount = sparklePower >= 6 ? 10 : sparklePower >= 5 ? 8 : 6;
+      const burstCount = sparklePower >= 6 ? 18 : sparklePower >= 5 ? 14 : 10;
       for(let j=0;j<burstCount;j++){
         const a = j*Math.PI*2/burstCount + (preview?0:spinT*.18);
         const rr = bodyR*(1.72 + (j%2)*.10);
@@ -5925,7 +5928,8 @@ skills: {
   lightning: { count: 0, target: 10, tier: 1 },
   quake: { count: 0, target: 10, tier: 1 },
   blizzard: { count: 0, target: 10, tier: 1 },
-  meteor: { count: 0, target: 10, tier: 1 }
+  meteor: { count: 0, target: 10, tier: 1 },
+  plasma: { count: 0, target: 10, tier: 1 }
 }
 },
 
@@ -6749,7 +6753,7 @@ function maybeStartPostClearTutorial() {
 let tutorialShown = (localStorage.getItem('ss_tutorial_shown') === '1');
 
 // 스킬 해금 안내(레벨별 최초 1회)
-const SKILL_NOTICE_LEVELS = [11, 31, 61, 101, 200];
+const SKILL_NOTICE_LEVELS = [11, 31, 61, 101, 200, 250];
 let skillNoticeShown = {};
 try {
   skillNoticeShown = JSON.parse(localStorage.getItem('ss_skill_notice_shown') || '{}') || {};
@@ -7319,6 +7323,17 @@ const SKILL_GUIDE_DATA = [
       '쿨타임은 30초입니다.'
     ],
     tips: ['위기 상황에서 화면을 천천히 정리하는 안정형 광역 스킬입니다.']
+  },
+  {
+    level: 250,
+    name: '플라즈마 폭풍', icon: '💥', color: '#ff9df3',
+    lines: [
+      '화면 중앙에서 플라즈마 폭풍이 발생해 넓은 범위의 적을 연쇄 타격합니다.',
+      '처치가 발생하면 주변으로 전격이 번져 멀티킬을 노리기 좋습니다.',
+      '기본 피해는 레벨에 따라 강해지고, 스테이지 보정이 적용됩니다.',
+      '쿨타임은 11초입니다.'
+    ],
+    tips: ['LV.250 이후 고레벨 구간에서 몰려오는 적을 한 번에 정리하는 웅장한 광역 스킬입니다.']
   }
 ];
 
@@ -7686,7 +7701,7 @@ if (typeof saveData.quests.expOrb.target !== 'number') saveData.quests.expOrb.ta
 if (typeof saveData.quests.expOrb.reward !== 'number') saveData.quests.expOrb.reward = 300;
 
 if (!saveData.quests.skills || typeof saveData.quests.skills !== 'object') saveData.quests.skills = {};
-const _skillQuestKeys = ['bubble','laser','lightning','quake','blizzard','meteor'];
+const _skillQuestKeys = ['bubble','laser','lightning','quake','blizzard','meteor','plasma'];
 for (const _k of _skillQuestKeys) {
   if (!saveData.quests.skills[_k] || typeof saveData.quests.skills[_k] !== 'object') saveData.quests.skills[_k] = { count: 0, target: 10, tier: 1 };
   if (typeof saveData.quests.skills[_k].count !== 'number' || !isFinite(saveData.quests.skills[_k].count)) saveData.quests.skills[_k].count = 0;
@@ -8907,7 +8922,23 @@ if (quakeSkillBtn) {
 }
 
 
-// ✅ [v.157.5] 독안개/블랙홀/플라즈마 버튼 이벤트 제거: 멀티킬 보조 펫으로 대체
+// ✅ [v.171] LV.250 플라즈마 폭풍 스킬 버튼
+if (plasmaSkillBtn) {
+  let lastTap = 0;
+  const fire = (e) => {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+    const now = Date.now();
+    if (now - lastTap < 120) return;
+    lastTap = now;
+    handleInputStart();
+    tryCastPlasmaSkill();
+  };
+  plasmaSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  plasmaSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  plasmaSkillBtn.addEventListener('mousedown', fire);
+  plasmaSkillBtn.addEventListener('click', fire);
+}
+
 
 
 
@@ -9062,6 +9093,7 @@ const TITLE_DEFS = [
   { id:'title_awakened_slime', name:'각성한 슬라임', desc:'레벨 100 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 100 },
   { id:'title_ultimate_slime', name:'궁극 슬라임', desc:'레벨 200 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 200 },
   { id:'title_legend_slime', name:'전설 슬라임', desc:'레벨 250 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 250 },
+  { id:'title_ancient_slime', name:'초월 슬라임', desc:'레벨 300 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 300 },
 
   { id:'title_gold_collector', name:'골드 수집가', desc:'누적 골드 100,000 획득', group:'골드', unlocked: () => getGoldEarnedSafe() >= 100000 },
   { id:'title_tycoon', name:'대부호', desc:'누적 골드 1,000,000 획득', group:'골드', unlocked: () => getGoldEarnedSafe() >= 1000000 },
@@ -10753,12 +10785,13 @@ function drawMultiKillFx() {
 }
 
 const SKILL_QUEST_META = {
-  bubble:    { title:'거품 스킬 연습', reward: tier => tier * 300, color:'#bdefff' },
+  bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
   blizzard:  { title:'눈보라 마스터', reward: () => 3000, color:'#d7f2ff' },
-  meteor:    { title:'메테오 마스터', reward: () => 5000, color:'#ffc7a8' }
+  meteor:    { title:'메테오 마스터', reward: () => 5000, color:'#ffc7a8' },
+  plasma:    { title:'플라즈마 폭풍 마스터', reward: () => 12000, color:'#ff9df3' }
 };
 
 function addSkillQuestCount(type, amount = 1) {
@@ -11001,7 +11034,7 @@ function updateQuestUI() {
 
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
-  for (const skillKey of ['bubble','laser','lightning','quake','blizzard','meteor']) {
+  for (const skillKey of ['bubble','laser','lightning','quake','blizzard','meteor','plasma']) {
     const meta = SKILL_QUEST_META[skillKey];
     const q = saveData.quests.skills[skillKey];
     const reward = getSkillQuestReward(skillKey);
@@ -14102,8 +14135,8 @@ function drawMaxLevelCelebrationOverlay() {
   ctx.strokeStyle = '#222';
   ctx.lineWidth = 2.2;
   const y = height * 0.18;
-  ctx.strokeText('250 MAX LEVEL!', width * 0.5, y);
-  ctx.fillText('250 MAX LEVEL!', width * 0.5, y);
+  ctx.strokeText(`${MAX_LEVEL} MAX LEVEL!`, width * 0.5, y);
+  ctx.fillText(`${MAX_LEVEL} MAX LEVEL!`, width * 0.5, y);
   ctx.restore();
 }
 
@@ -16005,13 +16038,35 @@ let blackholes = [];
 let plasmaBursts = [];
 function canUseToxicSkill(){ return false; }
 function canUseBlackholeSkill(){ return false; }
-function canUsePlasmaSkill(){ return false; }
+function canUsePlasmaSkill(){
+  return (state === 'playing') &&
+         (gameMode !== 'dungeon') &&
+         player && player.alive && !isPlayerDying &&
+         (typeof level === 'number') && level >= 250;
+}
 function tryCastToxicSkill(){ return; }
 function tryCastBlackholeSkill(){ return; }
-function tryCastPlasmaSkill(){ return; }
+function tryCastPlasmaSkill(){
+  if (!canUsePlasmaSkill()) return;
+  if ((player.plasmaCooldown || 0) > 0) return;
+  castPlasmaSkill();
+  player.plasmaCooldown = applyHyperSkillCooldown(11000);
+  addSkillQuestCount('plasma', 1);
+  if (SFX && SFX.skill) SFX.skill();
+}
 function castToxicSkill(){ return; }
 function castBlackholeSkill(){ return; }
-function castPlasmaSkill(){ return; }
+function castPlasmaSkill(){
+  const x = width * 0.5;
+  const y = Math.max(120, height * 0.44);
+  const baseDamage = Math.max(9000, Math.floor((level || 250) * 95));
+  plasmaBursts.push({
+    x, y, r: Math.min(260, Math.max(150, width * 0.23)),
+    life: 950, maxLife: 950, tick: 25,
+    chain: 0, maxChain: 9, damage: baseDamage, hit: new Set()
+  });
+  spawnExplosion(x, y, '#ff9df3', saveData.lowPower ? 36 : 76);
+}
 function damageEnemyByAreaSkill(e, dmg, color){
   if (!e || e.hp <= 0) return false;
   const _dmg = calcLevelScaledDamage(dmg, e);
@@ -19675,6 +19730,7 @@ ctx.restore();
 }
 
 function getPlayerEvolutionStageByLevel(lv) {
+  if (lv >= 300) return 7;
   if (lv >= 200) return 6;
   if (lv >= 101) return 5;
   if (lv >= 61) return 4;
@@ -19738,6 +19794,7 @@ function drawPlayerStageVisual(evolutionStage, size, playerElement, playerElemen
   else if (evolutionStage === 4) { bodyColor = '#5500ff'; wingColor = '#cc99ff'; hasCrown = true; ctx.shadowColor = 'rgba(200, 100, 255, 0.6)'; ctx.shadowBlur = isLowPower() ? 0 : 15; }
   else if (evolutionStage === 5) { bodyColor = '#ffffff'; wingColor = '#ffdd44'; ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'; ctx.shadowBlur = isLowPower() ? 0 : 20; }
   else if (evolutionStage === 6) { bodyColor = '#ffdd00'; wingColor = '#ffffff'; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = isLowPower() ? 0 : 25; hasCrown = true; hasAntenna = true; }
+  else if (evolutionStage === 7) { bodyColor = '#8bfff7'; wingColor = '#ff9df3'; ctx.shadowColor = '#ff9df3'; ctx.shadowBlur = isLowPower() ? 0 : 34; hasCrown = true; hasAntenna = true; }
 
   // Wing
   ctx.fillStyle = wingColor;
@@ -19752,7 +19809,7 @@ function drawPlayerStageVisual(evolutionStage, size, playerElement, playerElemen
     ctx.moveTo(-size*0.5, size*0.3); ctx.lineTo(-size*1.5, -size*0.8); ctx.lineTo(-size*0.5, -size*0.4);
     ctx.moveTo(size*0.5, size*0.3); ctx.lineTo(size*1.5, -size*0.8); ctx.lineTo(size*0.5, -size*0.4);
   } else if (evolutionStage >= 4) {
-    const scale = evolutionStage === 6 ? 1.5 : 1.0;
+    const scale = evolutionStage === 7 ? 1.85 : (evolutionStage === 6 ? 1.5 : 1.0);
     ctx.save(); ctx.scale(scale, scale);
     ctx.moveTo(-size*0.4, 0); ctx.quadraticCurveTo(-size*1.8, -size*1.5, -size*0.8, -size*2.0); ctx.quadraticCurveTo(-size*0.2, -size*1.0, -size*0.2, -size*0.5);
     ctx.moveTo(size*0.4, 0); ctx.quadraticCurveTo(size*1.8, -size*1.5, size*0.8, -size*2.0); ctx.quadraticCurveTo(size*0.2, -size*1.0, size*0.2, -size*0.5);
@@ -19808,8 +19865,20 @@ function drawPlayerStageVisual(evolutionStage, size, playerElement, playerElemen
   if (evolutionStage >= 5) {
     ctx.strokeStyle = '#ffdd44'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.ellipse(0, -size * 1.6, size * 0.8, size * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
-    if (evolutionStage === 6) {
+    if (evolutionStage === 6 || evolutionStage === 7) {
       ctx.beginPath(); ctx.ellipse(0, -size * 1.9, size * 1.0, size * 0.25, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (evolutionStage === 7) {
+      ctx.strokeStyle = '#ff9df3';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.ellipse(0, -size * 2.22, size * 1.24, size * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 6; i++) {
+        const a = Date.now() / 420 + i * Math.PI / 3;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * size * 1.25, Math.sin(a) * size * 0.95 - size * 0.18, size * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -20706,7 +20775,7 @@ function drawTitleScreen() {
     ctx.font = fontStr(compactTitle ? 14 : 16);
     ctx.fillText(`(누적 EXP: ${formatNumber(saveData.exp)})`, width/2, levelBaseY + (compactTitle ? 24 : 28));
 
-if (MAX_LEVEL === 250 && saveData.level >= 250) {
+if (saveData.level >= MAX_LEVEL) {
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
