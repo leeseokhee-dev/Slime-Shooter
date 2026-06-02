@@ -2553,7 +2553,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
   background:
     linear-gradient(180deg, rgba(8,20,44,0.98) 0%, rgba(6,12,28,0.98) 100%),
     repeating-linear-gradient(90deg,
-      rgba(255,255,255,0.28) 0 1px,
+      rgba(255,255,255,0.06) 0 1px,
       rgba(255,255,255,0.00) 1px 10%
     ) !important;
 }
@@ -2654,6 +2654,21 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 #expText{ z-index:6 !important; }
 #expWrapper::before{ z-index:4 !important; }
 </style>
+
+
+<!-- ✅ v.172 EXP 10% 눈금 연하게 조정: 눈금은 유지하되 초록색 채움이 보이도록 투명도 완화 -->
+<style id="expTickSoftV172">
+#expWrapper::after{
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.70) 0 2px,
+      rgba(255,255,255,0.00) 1px 10%
+    ) !important;
+  mix-blend-mode:screen !important;
+  opacity:0.58 !important;
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -10721,28 +10736,33 @@ function drawSuddenQuestUI() {
   if (gameMode !== 'infinite' || !suddenQuest || !suddenQuest.active) return;
   const remain = Math.max(0, suddenQuest.timer || 0);
   const pct = Math.max(0, Math.min(1, remain / Math.max(1, suddenQuest.duration || 1)));
-  const x = width / 2;
-  const y = 76;
-  const w = Math.min(520, width - 80);
-  const h = 58;
+
+  // ✅ v.172: 돌발 퀘스트 UI를 중앙 큰 박스에서 좌측 상단 미니 패널로 변경
+  // 게임 진행 상황은 계속 보이고, 목표/시간/보상은 유지됩니다.
+  const margin = 10;
+  const w = Math.min(330, Math.max(220, width * 0.42));
+  const h = 46;
+  const x = margin;
+  const y = 10;
+
   ctx.save();
-  ctx.translate(x - w/2, y);
-  ctx.fillStyle = 'rgba(10,14,28,0.86)';
-  drawRoundRect(0, 0, w, h, 12);
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(10,14,28,0.58)';
+  drawRoundRect(0, 0, w, h, 10);
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = remain <= 5000 ? '#ff6666' : '#ffdf7a';
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = remain <= 5000 ? 'rgba(255,102,102,0.92)' : 'rgba(255,223,122,0.72)';
   ctx.stroke();
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = `900 15px ${getUIFontFamily()}`;
+  ctx.font = `900 12px ${getUIFontFamily()}`;
   ctx.fillStyle = '#ffdf7a';
-  ctx.fillText(`⚠ 돌발 퀘스트: ${suddenQuest.title}`, w/2, 18);
-  ctx.font = `900 13px ${getUIFontFamily()}`;
+  ctx.fillText(`⚠ ${suddenQuest.title}`, 10, 15);
+  ctx.font = `900 11px ${getUIFontFamily()}`;
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(`${formatNumber(suddenQuest.current || 0)} / ${formatNumber(suddenQuest.target || 0)} · 남은 시간 ${(remain/1000).toFixed(1)}초 · 보상 EXP ${formatNumber(suddenQuest.rewardExp || 0)}`, w/2, 38);
+  ctx.fillText(`${formatNumber(suddenQuest.current || 0)} / ${formatNumber(suddenQuest.target || 0)} · ${(remain/1000).toFixed(1)}초 · EXP ${formatNumber(suddenQuest.rewardExp || 0)}`, 10, 31);
   ctx.fillStyle = remain <= 5000 ? '#ff6666' : (remain <= 10000 ? '#ffe066' : '#73c7ff');
-  ctx.fillRect(12, h - 8, (w - 24) * pct, 4);
+  ctx.fillRect(10, h - 6, (w - 20) * pct, 3);
   ctx.restore();
 }
 
@@ -21073,17 +21093,20 @@ if (state === 'gameover') drawGameOverScreen();
     toastEl = document.createElement('div');
     toastEl.id = 'consumableToast';
     toastEl.style.position = 'fixed';
-    toastEl.style.left = '50%';
-    toastEl.style.top = 'calc(env(safe-area-inset-top) + 18px)';
-    toastEl.style.transform = 'translateX(-50%)';
+    // ✅ v.172: 플레이 화면을 가리지 않도록 토스트를 중앙이 아닌 우측 상단 미니 배너로 표시
+    toastEl.style.left = 'auto';
+    toastEl.style.right = 'calc(env(safe-area-inset-right) + 12px)';
+    toastEl.style.top = 'calc(env(safe-area-inset-top) + 74px)';
+    toastEl.style.transform = 'none';
+    toastEl.style.maxWidth = 'min(360px, 72vw)';
     toastEl.style.zIndex = '999999';
-    toastEl.style.padding = '10px 14px';
+    toastEl.style.padding = '8px 12px';
     toastEl.style.borderRadius = '12px';
-    toastEl.style.background = 'rgba(10,14,28,0.92)';
+    toastEl.style.background = 'rgba(10,14,28,0.78)';
     toastEl.style.border = '2px solid rgba(255,255,255,0.16)';
     toastEl.style.color = '#ffffff';
     toastEl.style.fontWeight = '800';
-    toastEl.style.fontSize = '14px';
+    toastEl.style.fontSize = '12px';
     toastEl.style.lineHeight = '1.35';
     toastEl.style.textAlign = 'center';
     toastEl.style.boxShadow = '0 12px 32px rgba(0,0,0,0.45)';
@@ -21489,20 +21512,21 @@ function ensureInfiniteBossNotice() {
   const el = document.createElement('div');
   el.id = 'infiniteBossNotice';
   el.style.position = 'fixed';
+  // ✅ v.172: 무한 모드 보스 접근/처치 알림이 화면 중앙을 막지 않도록 상단 배너화
   el.style.left = '50%';
-  el.style.top = '50%';
-  el.style.transform = 'translate(-50%, -50%)';
-  el.style.minWidth = '280px';
-  el.style.maxWidth = '92vw';
-  el.style.padding = '18px 20px';
-  el.style.borderRadius = '16px';
-  el.style.background = 'rgba(10, 14, 24, 0.92)';
+  el.style.top = 'calc(env(safe-area-inset-top) + 76px)';
+  el.style.transform = 'translateX(-50%)';
+  el.style.minWidth = '220px';
+  el.style.maxWidth = 'min(620px, 86vw)';
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '14px';
+  el.style.background = 'rgba(10, 14, 24, 0.74)';
   el.style.border = '2px solid rgba(255, 215, 0, 0.82)';
-  el.style.boxShadow = '0 20px 60px rgba(0,0,0,0.55)';
+  el.style.boxShadow = '0 10px 28px rgba(0,0,0,0.36)';
   el.style.color = '#fff';
   el.style.fontWeight = '900';
-  el.style.fontSize = '20px';
-  el.style.lineHeight = '1.55';
+  el.style.fontSize = '15px';
+  el.style.lineHeight = '1.35';
   el.style.textAlign = 'center';
   el.style.zIndex = '1000001';
   el.style.display = 'none';
