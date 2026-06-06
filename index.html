@@ -3451,6 +3451,10 @@ let __lastExpBarPercent = 0;
 const FEVER_GAIN_PER_KILL = 0.5;       // 1킬당 +0.5%
 const FEVER_DURATION_MS = 15000;       // 피버 지속 15초
 const FEVER_SPAWN_MULTIPLIER = 1.4;    // 피버 중 몬스터 스폰량 40% 증가
+const FEVER_EXP_MULTIPLIER = 1.2;      // 피버 중 EXP +20%
+const FEVER_GOLD_MULTIPLIER = 1.3;     // 피버 중 골드/보석 획득량 +30%
+const FEVER_EXP_DROP_BONUS = 0.10;     // 피버 중 EXP 구슬 드롭 확률 +10%p
+const FEVER_MAGNET_RANGE = 360;        // 피버 중 EXP/골드 자동 흡수 거리
 let feverGauge = 0;
 let feverActive = false;
 let feverTimeLeft = 0;
@@ -3477,6 +3481,22 @@ function getFeverSpawnMultiplier() {
   return isFeverActive() ? FEVER_SPAWN_MULTIPLIER : 1;
 }
 
+function getFeverExpMultiplier() {
+  return isFeverActive() ? FEVER_EXP_MULTIPLIER : 1;
+}
+
+function getFeverGoldMultiplier() {
+  return isFeverActive() ? FEVER_GOLD_MULTIPLIER : 1;
+}
+
+function getFeverExpDropBonus() {
+  return isFeverActive() ? FEVER_EXP_DROP_BONUS : 0;
+}
+
+function isFeverMagnetActive() {
+  return isFeverActive() && player && player.alive && !isPlayerDying;
+}
+
 function addFeverGaugeByKill() {
   if (!isFeverEligibleMode()) return;
   if (state !== 'playing') return;
@@ -3496,7 +3516,7 @@ function startFeverMode() {
   feverPreviousBgmName = getFeverReturnBgmName();
   try { initAudio(); playBgmTrack('fever'); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
-  try { showToast('🔥 FEVER TIME! 15초 동안 몬스터 스폰량 40% 증가!', '#ffd86b', 1400); } catch(e) {}
+  try { showToast('🔥 FEVER TIME! 15초 동안 스폰+40% / EXP+20% / 골드+30%!', '#ffd86b', 1600); } catch(e) {}
 }
 
 function endFeverMode() {
@@ -3539,7 +3559,7 @@ function updateFeverUI() {
   if (feverBarFillEl) feverBarFillEl.style.width = percent.toFixed(1) + '%';
   if (feverTextEl) {
     feverTextEl.textContent = isFeverActive()
-      ? `FEVER! ${(feverTimeLeft / 1000).toFixed(1)}초`
+      ? `FEVER! ${(feverTimeLeft / 1000).toFixed(1)}초 · EXP+20%`
       : `${percent.toFixed(1)}%`;
   }
 }
@@ -7678,8 +7698,14 @@ const EXP_ITEM_GRADES = {
 };
 
 function rollExpGrade() {
-  // 가볍게: 하 60% / 중 35% / 상 5% (원하면 조절)
   const r = Math.random();
+  // 일반: 하 60% / 중 35% / 상 5%
+  // 피버: 하 45% / 중 45% / 상 10%로 상위 구슬 체감 증가
+  if (isFeverActive()) {
+    if (r < 0.45) return 'low';
+    if (r < 0.90) return 'mid';
+    return 'high';
+  }
   if (r < 0.60) return 'low';
   if (r < 0.95) return 'mid';
   return 'high';
@@ -7720,10 +7746,11 @@ function spawnExpItemFromEnemy(enemy) {
   if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   if (!enemy) return;
 
-  let dropChance = EXP_ITEM_DROP_CHANCE;
+  let dropChance = EXP_ITEM_DROP_CHANCE + getFeverExpDropBonus();
   if (isMissionExpObjectiveActive()) {
     dropChance = Math.max(dropChance, 0.45);
   }
+  dropChance = Math.min(1, dropChance);
   if (Math.random() >= dropChance) return;
 
   // ✅ [v.153] EXP 구슬도 점수 환산이 아닌 현재 스테이지의 몬스터 EXP 기준으로 계산합니다.
@@ -7764,6 +7791,17 @@ function updateExpItems(dt) {
       const dist = Math.sqrt(dx*dx + dy*dy);
       if (dist > 1 && dist < range) {
         const pull = 10; // 클수록 더 빨리 끌림
+        it.x += (dx / dist) * pull * delta;
+        it.y += (dy / dist) * pull * delta;
+      }
+    }
+
+    if (isFeverMagnetActive() && gameMode !== 'dungeon') {
+      const dx = player.x - it.x;
+      const dy = player.y - it.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      if (dist <= FEVER_MAGNET_RANGE) {
+        const pull = 8 + (1 - Math.min(1, dist / FEVER_MAGNET_RANGE)) * 12;
         it.x += (dx / dist) * pull * delta;
         it.y += (dy / dist) * pull * delta;
       }
@@ -7849,7 +7887,7 @@ function tryPickupExpItems() {
       player.x, player.y, player.size * 0.8,
       it.x, it.y, it.r
     )) {
-      const hotMult = getHotMultiplier();
+      const hotMult = getHotMultiplier() * getFeverExpMultiplier();
       const baseExp = Math.max(0, Math.floor(it.baseExp * (it.gradeMult || 1)));
       const gained = Math.floor(baseExp * hotMult);
       if (gained > 0) {
@@ -14044,7 +14082,7 @@ function spawnGoldDrop(x, y, amount) {
   } else if (isMissionPickupObjectiveActive()) {
     dropType = 'gold';
     finalAmount = Math.max(1, Math.floor(amount));
-  } else if (Math.random() < 0.10) {
+  } else if (Math.random() < (isFeverActive() ? 0.18 : 0.10)) {
     const roll = Math.random();
     if (roll < 0.3333) {
       dropType = 'ruby';
@@ -14120,7 +14158,21 @@ function updateGoldDrops(dt) {
   const magnetActive = isInfiniteItemEffectActive('magnet');
   for (let i = goldDrops.length - 1; i >= 0; i--) {
     const it = goldDrops[i];
-    if (magnetActive && player && player.alive && !isPlayerDying) {
+    if (isFeverMagnetActive()) {
+      const dx = player.x - it.x;
+      const dy = player.y - it.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (dist <= FEVER_MAGNET_RANGE) {
+        const pull = 8 + (1 - Math.min(1, dist / FEVER_MAGNET_RANGE)) * 12;
+        it.vy = Math.max(it.vy || 0, 1.2);
+        it.x += (dx / dist) * pull * delta;
+        it.y += (dy / dist) * pull * delta;
+      } else {
+        it.vy += (it.gravity || 0.17) * delta;
+        it.x += (it.vx || 0) * delta;
+        it.y += it.vy * delta;
+      }
+    } else if (magnetActive && player && player.alive && !isPlayerDying) {
       const dx = player.x - it.x;
       const dy = player.y - it.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -14239,7 +14291,7 @@ function tryPickupGoldDrops() {
     const it = goldDrops[i];
     if (circleCollision(player.x, player.y, player.size * 0.85, it.x, it.y, it.r)) {
       const baseGained = Math.max(1, Math.floor(it.amount || 1));
-      const gained = Math.max(1, Math.floor(baseGained * getPetGoldMultiplier()));
+      const gained = Math.max(1, Math.floor(baseGained * getPetGoldMultiplier() * getFeverGoldMultiplier()));
       addGoldGainMessages(baseGained, gained, it.type || 'gold');
       stageRunItemPickupCount = (stageRunItemPickupCount || 0) + 1;
       if (it.type && it.type !== 'gold') stageRunGemPickupCount = (stageRunGemPickupCount || 0) + 1;
@@ -14425,15 +14477,20 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
     : 1;
   const lostRate = (gameMode === 'stage') ? (1 - stageHitRate) : 0;
 
-  const hotRate = Math.max(0, (Number(hotMult) || 1) - 1);
+  const combinedHotMult = Math.max(1, Number(hotMult) || 1);
+  const feverExpMult = getFeverExpMultiplier();
+  const baseHotMult = (feverExpMult > 1) ? Math.max(1, combinedHotMult / feverExpMult) : combinedHotMult;
+  const hotRate = Math.max(0, baseHotMult - 1);
+  const feverRate = Math.max(0, feverExpMult - 1);
   const expBuffRate = Math.max(0, (Number(expBuffMult) || 1) - 1);
   const petRate = Math.max(0, (Number(petExpMult) || 1) - 1);
 
   const hotBonusRaw = safeBaseRaw * hotRate;
+  const feverBonusRaw = safeBaseRaw * feverRate;
   const expBuffBonusRaw = safeBaseRaw * expBuffRate;
   const petBonusRaw = safeBaseRaw * petRate;
 
-  const prePenaltyTotalRaw = safeBaseRaw + hotBonusRaw + expBuffBonusRaw + petBonusRaw;
+  const prePenaltyTotalRaw = safeBaseRaw + hotBonusRaw + feverBonusRaw + expBuffBonusRaw + petBonusRaw;
   const lostAmountRaw = prePenaltyTotalRaw * lostRate;
 
   pushGainMessage(`경험치를 얻었습니다(+${formatNumber(Math.round(safeBaseRaw))})`, '#7dffb2');
@@ -14441,6 +14498,11 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
   if (hotBonusRaw > 0) {
     const pct = Math.round(hotRate * 100);
     pushGainMessage(`핫타임 추가 경험치 ${pct}%(+${formatNumber(Math.round(hotBonusRaw))})`, '#ffb26b');
+  }
+
+  if (feverBonusRaw > 0) {
+    const pct = Math.round(feverRate * 100);
+    pushGainMessage(`피버 추가 경험치 ${pct}%(+${formatNumber(Math.round(feverBonusRaw))})`, '#ffd86b');
   }
 
   if (expBuffBonusRaw > 0) {
@@ -14481,11 +14543,20 @@ function addGoldGainMessages(baseAmount, finalAmount, pickupType = 'gold') {
 
   pushGainMessage(`${typeLabel}(+${formatNumber(safeBase)})`, typeColor);
 
-  const bonus = Math.max(0, safeFinal - safeBase);
-  if (bonus > 0) {
-    const petGoldMult = Number(getPetGoldMultiplier()) || 1;
+  const petGoldMult = Math.max(1, Number(getPetGoldMultiplier()) || 1);
+  const feverGoldMult = getFeverGoldMultiplier();
+  const afterPet = Math.max(0, Math.floor(safeBase * petGoldMult));
+  const petBonus = Math.max(0, afterPet - safeBase);
+  const feverBonus = Math.max(0, safeFinal - afterPet);
+
+  if (petBonus > 0) {
     const pct = Math.max(1, Math.round((petGoldMult - 1) * 100));
-    pushGainMessage(`펫 골드 보너스 ${pct}%(+${formatNumber(bonus)})`, '#ffe07a');
+    pushGainMessage(`펫 골드 보너스 ${pct}%(+${formatNumber(petBonus)})`, '#ffe07a');
+  }
+
+  if (feverBonus > 0) {
+    const pct = Math.max(1, Math.round((feverGoldMult - 1) * 100));
+    pushGainMessage(`피버 골드 보너스 ${pct}%(+${formatNumber(feverBonus)})`, '#ffd86b');
   }
 }
 
@@ -14555,10 +14626,14 @@ function addExp(amount, opts = {}) {
   const expBuffMult = getBuffMult('exp');
   const petExpMult = getPetExpMultiplier();
 
-  const hotBonusRaw = rawBaseAmount * Math.max(0, hotMult - 1);
+  const combinedHotMult = Math.max(1, Number(hotMult) || 1);
+  const feverExpMult = getFeverExpMultiplier();
+  const baseHotMult = (feverExpMult > 1) ? Math.max(1, combinedHotMult / feverExpMult) : combinedHotMult;
+  const hotBonusRaw = rawBaseAmount * Math.max(0, baseHotMult - 1);
+  const feverBonusRaw = rawBaseAmount * Math.max(0, feverExpMult - 1);
   const expBuffBonusRaw = rawBaseAmount * Math.max(0, expBuffMult - 1);
   const petBonusRaw = rawBaseAmount * Math.max(0, petExpMult - 1);
-  const prePenaltyTotal = rawBaseAmount + hotBonusRaw + expBuffBonusRaw + petBonusRaw;
+  const prePenaltyTotal = rawBaseAmount + hotBonusRaw + feverBonusRaw + expBuffBonusRaw + petBonusRaw;
 
   amount = Math.max(0, Math.round(prePenaltyTotal * stageHitRate));
 
