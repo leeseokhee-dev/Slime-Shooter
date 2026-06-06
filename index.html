@@ -238,6 +238,89 @@ padding: 8px 0;
 }
 
 
+/* ===== 피버 게이지 바 ===== */
+#feverRow {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 3px 0 0;
+}
+#feverLabel {
+    flex: 0 0 auto;
+    min-width: 58px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(255,182,55,0.98) 0%, rgba(255,124,26,0.96) 62%, rgba(178,64,12,0.96) 100%);
+    color: #fff8d9;
+    border: 0.2px solid rgba(255,226,145,0.86);
+    border-right: 0;
+    font-size: 13px;
+    font-weight: 1000;
+    letter-spacing: -0.2px;
+    line-height: 1;
+    white-space: nowrap;
+    border-radius: 0;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.45);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -1px 0 rgba(0,0,0,0.10), 0 6px 18px rgba(0,0,0,0.18);
+}
+#feverWrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 14px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(46,22,4,0.98) 0%, rgba(18,8,2,0.98) 100%);
+    border: 0.2px solid rgba(255,226,145,0.86);
+    overflow: hidden;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.05), 0 6px 18px rgba(0,0,0,0.18);
+}
+#feverBarFill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b00 0%, #ffd86b 52%, #fff59b 100%);
+    box-shadow: 0 0 14px rgba(255,196,64,0.38);
+    transition: width 0.25s linear;
+    position: relative;
+}
+#feverText {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    padding: 0 6px;
+    box-sizing: border-box;
+    font-size: 10px;
+    font-weight: 1000;
+    color: #fffdf0;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.92), 0 0 6px rgba(0,0,0,0.72);
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+    z-index: 2;
+}
+#feverRow.fever-active #feverLabel {
+    background: linear-gradient(180deg, #fff59b 0%, #ffb000 50%, #ff5a00 100%);
+    color: #3a1600;
+    text-shadow: none;
+}
+#feverRow.fever-active #feverWrapper {
+    box-shadow: 0 0 18px rgba(255,160,0,0.55), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+body.fever-mode #gameCanvas {
+    box-shadow: 0 0 28px rgba(255,170,0,0.55), 0 0 20px rgba(0,0,0,0.8);
+}
+@media (max-width: 520px) {
+  #feverLabel { min-width: 48px; font-size: 11px; padding: 0 5px; }
+  #feverWrapper { height: 13px; }
+  #feverText { font-size: 9px; }
+}
+
+
     /* ===== 캔버스 ===== */
     #gameCanvas {
         border-radius: 10px;
@@ -2737,6 +2820,14 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
             <div id="expBarFill"></div>
         </div>
     </div>
+
+    <div id="feverRow" class="hidden">
+        <span id="feverLabel">FEVER</span>
+        <div id="feverWrapper">
+            <span id="feverText">0.0%</span>
+            <div id="feverBarFill"></div>
+        </div>
+    </div>
 <input id="restoreFile" type="file" accept="application/json" style="display:none" />
 
 <!-- 복원 미리보기 모달 (백업/복원 기능) -->
@@ -3287,6 +3378,9 @@ const scoreEl = document.getElementById('scoreText');
 const highScoreEl = document.getElementById('highScoreText');
 const expEl = document.getElementById('expText');
 const expBarFillEl = document.getElementById('expBarFill');
+const feverRowEl = document.getElementById('feverRow');
+const feverTextEl = document.getElementById('feverText');
+const feverBarFillEl = document.getElementById('feverBarFill');
 // ===============================
 // ✅ [v.50] EXP 바 클릭 → 경험치 레벨표 모달
 // - 필요 경험치 / 누적 경험치 표시
@@ -3351,6 +3445,116 @@ const hotTimeEl = document.getElementById('hotTimeText');
 const goldEl = document.getElementById('goldText');
 const hpEl = document.getElementById('hpText');
 let __lastExpBarPercent = 0;
+
+
+// ===== 피버 모드 시스템 =====
+const FEVER_GAIN_PER_KILL = 0.5;       // 1킬당 +0.5%
+const FEVER_DURATION_MS = 20000;       // 기본 20초
+const FEVER_SPAWN_MULTIPLIER = 1.6;    // 피버 중 몬스터가 좀 더 많이 등장
+let feverGauge = 0;
+let feverActive = false;
+let feverTimeLeft = 0;
+let feverNoticeTimer = 0;
+
+function isFeverEligibleMode() {
+  // 던전/미니게임은 피버 제외. 타이틀 이동 시 게이지는 유지됩니다.
+  return gameMode !== 'dungeon' && gameMode !== 'minigame';
+}
+
+function isFeverActive() {
+  return feverActive && feverTimeLeft > 0 && isFeverEligibleMode();
+}
+
+function getFeverSpawnMultiplier() {
+  return isFeverActive() ? FEVER_SPAWN_MULTIPLIER : 1;
+}
+
+function addFeverGaugeByKill() {
+  if (!isFeverEligibleMode()) return;
+  if (state !== 'playing') return;
+  if (feverActive) return;
+  feverGauge = Math.min(100, Math.max(0, feverGauge + FEVER_GAIN_PER_KILL));
+  if (feverGauge >= 100) startFeverMode();
+  updateFeverUI();
+}
+
+function startFeverMode() {
+  if (!isFeverEligibleMode()) return;
+  feverGauge = 100;
+  feverActive = true;
+  feverTimeLeft = FEVER_DURATION_MS;
+  feverNoticeTimer = 1800;
+  document.body.classList.add('fever-mode');
+  try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
+  try { showToast('🔥 FEVER TIME! 몬스터가 더 많이 등장합니다!', '#ffd86b', 1400); } catch(e) {}
+}
+
+function endFeverMode() {
+  feverActive = false;
+  feverTimeLeft = 0;
+  feverGauge = 0;
+  feverNoticeTimer = 1200;
+  document.body.classList.remove('fever-mode');
+  try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(e) {}
+  updateFeverUI();
+}
+
+function updateFeverMode(dt) {
+  if (!isFeverEligibleMode()) {
+    feverActive = false;
+    feverTimeLeft = 0;
+    document.body.classList.remove('fever-mode');
+    updateFeverUI();
+    return;
+  }
+  if (feverActive) {
+    feverTimeLeft = Math.max(0, feverTimeLeft - dt);
+    if (feverTimeLeft <= 0) endFeverMode();
+  }
+  if (feverNoticeTimer > 0) feverNoticeTimer = Math.max(0, feverNoticeTimer - dt);
+  updateFeverUI();
+}
+
+function updateFeverUI() {
+  if (!feverRowEl) return;
+  const show = isFeverEligibleMode() && state !== 'title';
+  feverRowEl.classList.toggle('hidden', !show);
+  feverRowEl.classList.toggle('fever-active', isFeverActive());
+  if (!show) return;
+  const percent = isFeverActive() ? 100 : Math.max(0, Math.min(100, feverGauge));
+  if (feverBarFillEl) feverBarFillEl.style.width = percent.toFixed(1) + '%';
+  if (feverTextEl) {
+    feverTextEl.textContent = isFeverActive()
+      ? `FEVER! ${(feverTimeLeft / 1000).toFixed(1)}초`
+      : `${percent.toFixed(1)}%`;
+  }
+}
+
+function drawFeverOverlay() {
+  if (!isFeverActive()) return;
+  ctx.save();
+  ctx.globalAlpha = 0.10 + 0.05 * Math.sin(Date.now() / 90);
+  const g = ctx.createRadialGradient(width / 2, height * 0.18, 10, width / 2, height * 0.18, Math.max(width, height) * 0.85);
+  g.addColorStop(0, '#fff4a3');
+  g.addColorStop(0.42, '#ff9f1a');
+  g.addColorStop(1, '#000000');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+
+  if (feverNoticeTimer > 0) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = `bold ${Math.max(28, Math.floor(width * 0.052))}px ${getUIFontFamily()}`;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillStyle = '#ffd86b';
+    const txt = feverTimeLeft > 0 ? '🔥 FEVER TIME! 🔥' : 'FEVER END!';
+    ctx.strokeText(txt, width / 2, height * 0.22);
+    ctx.fillText(txt, width / 2, height * 0.22);
+    ctx.restore();
+  }
+}
 
 
 const rankIconBtn = document.getElementById('rankIconBtn');
@@ -9186,6 +9390,7 @@ function getGroupedTitlesForProfile() {
 }
 
 function registerEnemyKill(isBoss = false, opts = {}) {
+  if (!isBoss) addFeverGaugeByKill();
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
@@ -16575,7 +16780,7 @@ function spawnNextWave() {
       const topLaneAliveCount = enemies.filter(e => e && e.hp > 0 && e.y < 90).length;
       if (topLaneAliveCount > 0) return;
 
-      const enemyCount = 5;
+      const enemyCount = isFeverActive() ? 8 : 5;
       const speedBase = getInfiniteEnemyFallVy();
       const y = -40;
       const allKillRowId = createInfiniteAllKillRowId();
@@ -16635,8 +16840,13 @@ if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
     // ✅ [v.161.2] 스테이지 모드: 목표 처치 수에 맞춘 초당 생성량을 한 번에 부채꼴로 생성
     if (gameMode === 'stage') enemyCount = getStageMonsterSpawnBatchSize(stage);
 
-    // ✅ [v.117 패치] 1웨이브 최대 제한(스테이지 모드는 최대 20마리, 무한/기타 모드 유지)
-    enemyCount = Math.min(enemyCount, (gameMode === 'stage') ? 20 : 5);
+    // ✅ 피버 중에는 같은 모드에서 몬스터가 좀 더 많이 쏟아집니다.
+    if (isFeverActive()) {
+      enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
+    }
+
+    // ✅ [v.117 패치] 1웨이브 최대 제한(피버 중에는 조금 완화)
+    enemyCount = Math.min(enemyCount, (gameMode === 'stage') ? (isFeverActive() ? 30 : 20) : (isFeverActive() ? 8 : 5));
 
     // ✅ [v.101/v.154.2] 화면 내 몬스터 과밀 방지(스테이지 모드는 최대 20마리)
     const MAX_ENEMIES_ON_SCREEN = (gameMode === 'stage') ? 20 : ((gameMode === 'mission') ? 55 : 70);
@@ -17503,6 +17713,7 @@ else if (gameMode === 'treasure') initTreasureRushRun();
 else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
+if (!isFeverEligibleMode()) { feverActive = false; feverTimeLeft = 0; document.body.classList.remove('fever-mode'); }
 updateHUD();
 }
 
@@ -18298,7 +18509,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     if (gameMode === 'infinite') {
       if (!bossSpawned && !(bossIntro && bossIntro.active)) {
         infiniteWaveSpawnAcc += dt;
-        const waveInterval = isInfiniteItemEffectActive('dash') ? 400 : 1500;
+        const waveInterval = isInfiniteItemEffectActive('dash') ? 400 : (isFeverActive() ? 950 : 1500);
         while (infiniteWaveSpawnAcc >= waveInterval) {
           infiniteWaveSpawnAcc -= waveInterval;
           spawnNextWave();
@@ -18307,17 +18518,19 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     } else if (gameMode === 'mission') {
       if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared) {
         missionState.spawnAcc = Math.max(0, Number(missionState.spawnAcc) || 0) + dt;
-        while (missionState.spawnAcc >= 100) {
-          missionState.spawnAcc -= 100;
+        const missionSpawnInterval = isFeverActive() ? 70 : 100;
+        while (missionState.spawnAcc >= missionSpawnInterval) {
+          missionState.spawnAcc -= missionSpawnInterval;
           spawnNextWave();
         }
       }
     } else {
       // ✅ [v.161.2] 스테이지 모드: 목표 처치 수별 초당 생성량을 부채꼴 묶음으로 생성, 화면 최대 30마리 유지
       if (!bossSpawned && !stageCleared) {
-        const stageSpawnInterval = getStageMonsterSpawnIntervalMs(stage);
+        const stageSpawnInterval = Math.max(80, getStageMonsterSpawnIntervalMs(stage) * (isFeverActive() ? 0.65 : 1));
         stageWaveSpawnAcc += dt;
-        while (stageWaveSpawnAcc >= stageSpawnInterval && enemies.length < 30) {
+        const feverScreenCap = isFeverActive() ? 42 : 30;
+        while (stageWaveSpawnAcc >= stageSpawnInterval && enemies.length < feverScreenCap) {
           stageWaveSpawnAcc -= stageSpawnInterval;
           spawnNextWave();
         }
@@ -19241,6 +19454,7 @@ if (boss && !bossInvincible) {
 
 function updateHUD() {
   try { updateConsumableQuickBar(); } catch(e){}
+  try { updateFeverUI(); } catch(e){}
 scoreEl.textContent = '점수: ' + formatNumber(score);
 highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
@@ -20986,8 +21200,10 @@ requestAnimationFrame(gameLoop);
   // ✅ v.168.12: 계급 아이콘은 게임 FPS 루프가 아니라 별도 60fps requestAnimationFrame 루프에서 갱신
   // 배경은 항상
   drawBackground();
+  drawFeverOverlay();
 
   if (state === 'title') {
+    updateFeverUI();
     // 타이틀 화면
     drawTitleSlimes(dt, timestamp);
     drawTitleScreen();
@@ -21002,6 +21218,7 @@ requestAnimationFrame(gameLoop);
     // 업데이트
     if (!isPaused && (!tutorialActive || tutorialNonBlocking)) {
       update(dt, timestamp);
+      updateFeverMode(dt);
     }
     // 그리기(프레임마다!)
     // - 배경/경고/오버레이(UI)는 고정
@@ -21862,8 +22079,9 @@ update = function(dt, currentTime) {
 
       if (!boss && !(bossIntro && bossIntro.active) && !bossSpawned && !infiniteBossBonusShowing) {
         infiniteWaveSpawnTimer += dt;
-        while (infiniteWaveSpawnTimer >= 1500) {
-          infiniteWaveSpawnTimer -= 1500;
+        const infSpawnInterval = isFeverActive() ? 950 : 1500;
+        while (infiniteWaveSpawnTimer >= infSpawnInterval) {
+          infiniteWaveSpawnTimer -= infSpawnInterval;
           spawnNextWave();
         }
       }
