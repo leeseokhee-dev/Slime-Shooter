@@ -283,7 +283,7 @@ padding: 8px 0;
     height: 100%;
     background: linear-gradient(90deg, #ff6b00 0%, #ffd86b 52%, #fff59b 100%);
     box-shadow: 0 0 14px rgba(255,196,64,0.38);
-    transition: width 0.25s linear;
+    transition: width 0.9s linear;
     position: relative;
 }
 #feverText {
@@ -3449,12 +3449,20 @@ let __lastExpBarPercent = 0;
 
 // ===== 피버 모드 시스템 =====
 const FEVER_GAIN_PER_KILL = 0.5;       // 1킬당 +0.5%
-const FEVER_DURATION_MS = 20000;       // 기본 20초
-const FEVER_SPAWN_MULTIPLIER = 1.6;    // 피버 중 몬스터가 좀 더 많이 등장
+const FEVER_DURATION_MS = 15000;       // 피버 지속 15초
+const FEVER_SPAWN_MULTIPLIER = 1.4;    // 피버 중 몬스터 스폰량 40% 증가
 let feverGauge = 0;
 let feverActive = false;
 let feverTimeLeft = 0;
 let feverNoticeTimer = 0;
+let feverPreviousBgmName = null;
+
+function getFeverReturnBgmName() {
+  try {
+    if (typeof boss !== 'undefined' && boss && gameMode !== 'mission') return 'boss';
+  } catch(e) {}
+  try { return getModeBgmName(); } catch(e) { return 'game'; }
+}
 
 function isFeverEligibleMode() {
   // 던전/미니게임은 피버 제외. 타이틀 이동 시 게이지는 유지됩니다.
@@ -3485,8 +3493,10 @@ function startFeverMode() {
   feverTimeLeft = FEVER_DURATION_MS;
   feverNoticeTimer = 1800;
   document.body.classList.add('fever-mode');
+  feverPreviousBgmName = getFeverReturnBgmName();
+  try { initAudio(); playBgmTrack('fever'); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
-  try { showToast('🔥 FEVER TIME! 몬스터가 더 많이 등장합니다!', '#ffd86b', 1400); } catch(e) {}
+  try { showToast('🔥 FEVER TIME! 15초 동안 몬스터 스폰량 40% 증가!', '#ffd86b', 1400); } catch(e) {}
 }
 
 function endFeverMode() {
@@ -3495,15 +3505,19 @@ function endFeverMode() {
   feverGauge = 0;
   feverNoticeTimer = 1200;
   document.body.classList.remove('fever-mode');
+  try { playBgmTrack(feverPreviousBgmName || getFeverReturnBgmName()); } catch(e) {}
+  feverPreviousBgmName = null;
   try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(e) {}
   updateFeverUI();
 }
 
 function updateFeverMode(dt) {
   if (!isFeverEligibleMode()) {
+    const wasFeverActive = feverActive;
     feverActive = false;
     feverTimeLeft = 0;
     document.body.classList.remove('fever-mode');
+    if (wasFeverActive) { try { playBgmTrack(getFeverReturnBgmName()); } catch(e) {} feverPreviousBgmName = null; }
     updateFeverUI();
     return;
   }
@@ -4719,6 +4733,7 @@ const bgmTracks = {
   itempark: new Audio('bg_itempark.mp3'), // ✅ 아이템 파크 전용
   minigame: new Audio('bg_minigame.mp3'), // ✅ 미니게임 전용
   treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
+  fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
   christmas: new Audio('bg_christmas.mp3'),
@@ -4827,7 +4842,7 @@ function getSeasonKeyNow(date = new Date()) {
 
 function resolveBgmName(requested) {
   // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure') return requested;
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'fever') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
