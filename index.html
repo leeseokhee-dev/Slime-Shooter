@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.170.1 Treasure Rush BGM)</title>
+<title>Slime Shooter - Ultimate Evolution (v.171 Adventure & Monster Park)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3158,6 +3158,12 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
         </button>
+        <button id="modeAdventureBtn" class="ui-btn big-btn" style="width:100%; border-color:#b8ff7c; color:#efffdc; background:linear-gradient(to bottom, #275a10, #102406);">
+            🧭 모험 모드 (LV.25+ · 1~100)
+        </button>
+        <button id="modeMonsterParkBtn" class="ui-btn big-btn" style="width:100%; border-color:#ff9de8; color:#ffe8fb; background:linear-gradient(to bottom, #5a164d, #24071d);">
+            🎪 몬스터 파크 (LV.60+)
+        </button>
         <button id="modeItemParkBtn" class="ui-btn big-btn" style="width:100%; border-color:#7ce7ff; color:#e8fbff; background:linear-gradient(to bottom, #0f3e52, #071824);">
             🫧 아이템 파크 (1분 · 하루 10회)
         </button>
@@ -3173,6 +3179,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
+            모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
+            몬스터 파크: LV.60부터 사망 시까지 EXP 누적<br>
             아이템 파크: 하늘에서 아이템 수집<br>
             미니게임: 줍기형 2종 + 터치형 3종<br>
             보물 슬라임 러시: 60초 동안 보물 슬라임 처치
@@ -22502,6 +22510,450 @@ updateRankIcon = function(){
   };
   window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
 })();
+
+
+
+// ===============================
+// ✅ [v.171] 모험 모드 + 몬스터 파크 패치
+// - 모험 모드: LV.25+, 1~100스테이지, 보스 10단위, 100 클리어 최종 보상
+// - 몬스터 파크: LV.60+, 무한 진행, EXP 즉시 지급 없이 누적 → 게임 종료 후 버튼으로 수령
+// ===============================
+let adventureModeActive = false;
+let monsterParkActive = false;
+let monsterParkClaimed = false;
+let monsterParkRunExp = 0;
+let monsterParkStartTime = 0;
+
+const ADVENTURE_MAX_STAGE = 100;
+const ADVENTURE_LEVEL_REQ = 25;
+const MONSTER_PARK_LEVEL_REQ = 60;
+const ADVENTURE_FINAL_EXP = 5000000;
+const ADVENTURE_FINAL_GOLD = 30000;
+const ADVENTURE_BOSS_EXP_TABLE = {
+  10: 438, 20: 899, 30: 1512, 40: 2716, 50: 4752,
+  60: 8316, 70: 14553, 80: 25468, 90: 44569, 100: 77996
+};
+
+function v171SafeNum(v, d = 0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : d;
+}
+
+function ensureMonsterParkSave(){
+  try{
+    if (!saveData.monsterPark || typeof saveData.monsterPark !== 'object') {
+      saveData.monsterPark = { bestExp: 0, bestKills: 0, bestTimeSec: 0, pendingExp: 0, totalClaimedExp: 0 };
+    }
+  }catch(e){}
+}
+
+function setAdventureMode(active){
+  adventureModeActive = !!active;
+  try { window.__slimeAdventureModeActive = adventureModeActive; } catch(e) {}
+}
+function setMonsterParkMode(active){
+  monsterParkActive = !!active;
+  try { window.__slimeMonsterParkActive = monsterParkActive; } catch(e) {}
+}
+
+function getAdventureBossExp(stageValue){
+  const st = Math.max(1, Math.floor(v171SafeNum(stageValue, 1)));
+  if (ADVENTURE_BOSS_EXP_TABLE[st]) return ADVENTURE_BOSS_EXP_TABLE[st];
+  const lower = Math.max(10, Math.floor(st / 10) * 10);
+  const upper = Math.min(100, lower + 10);
+  const a = ADVENTURE_BOSS_EXP_TABLE[lower] || 438;
+  const b = ADVENTURE_BOSS_EXP_TABLE[upper] || a;
+  const t = Math.max(0, Math.min(1, (st - lower) / 10));
+  return Math.max(1, Math.round(a + (b - a) * t));
+}
+
+const modeAdventureBtnV171 = document.getElementById('modeAdventureBtn');
+const modeMonsterParkBtnV171 = document.getElementById('modeMonsterParkBtn');
+let monsterParkClaimBtn = null;
+
+function startAdventureMode(){
+  if (v171SafeNum(level, 1) < ADVENTURE_LEVEL_REQ) {
+    alert(`모험 모드는 LV.${ADVENTURE_LEVEL_REQ}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  setAdventureMode(true);
+  setMonsterParkMode(false);
+  gameMode = 'stage';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  if (modeModal) modeModal.classList.add('hidden');
+  startGame(1);
+}
+
+function startMonsterParkMode(){
+  if (v171SafeNum(level, 1) < MONSTER_PARK_LEVEL_REQ) {
+    alert(`몬스터 파크는 LV.${MONSTER_PARK_LEVEL_REQ}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  ensureMonsterParkSave();
+  setAdventureMode(false);
+  setMonsterParkMode(true);
+  monsterParkClaimed = false;
+  monsterParkRunExp = 0;
+  monsterParkStartTime = performance.now();
+  saveData.monsterPark.pendingExp = 0;
+  saveGameDataDebounced();
+  gameMode = 'infinite';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  if (modeModal) modeModal.classList.add('hidden');
+  startGame(1);
+}
+
+if (modeAdventureBtnV171) modeAdventureBtnV171.addEventListener('click', startAdventureMode);
+if (modeMonsterParkBtnV171) modeMonsterParkBtnV171.addEventListener('click', startMonsterParkMode);
+
+['modeStageBtn','modeInfiniteBtn','modeItemParkBtn','modeMiniGameBtn','modeTreasureRushBtn','modeDungeonBtn'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', () => { setAdventureMode(false); setMonsterParkMode(false); }, true);
+});
+
+const goToTitleBeforeV171 = goToTitle;
+goToTitle = function(){
+  setAdventureMode(false);
+  setMonsterParkMode(false);
+  monsterParkClaimed = false;
+  if (monsterParkClaimBtn) monsterParkClaimBtn.classList.add('hidden');
+  return goToTitleBeforeV171.apply(this, arguments);
+};
+
+const startGameBeforeV171 = startGame;
+startGame = function(startStageNum = 1){
+  if (adventureModeActive) {
+    startStageNum = Math.max(1, Math.min(ADVENTURE_MAX_STAGE, Math.floor(v171SafeNum(startStageNum, 1))));
+    gameMode = 'stage';
+  }
+  if (monsterParkActive) gameMode = 'infinite';
+  return startGameBeforeV171.call(this, startStageNum || 1);
+};
+
+const isBossStageBeforeV171 = isBossStage;
+isBossStage = function(s){
+  const st = Math.max(1, Math.floor(v171SafeNum(s, 1)));
+  if (monsterParkActive) return false;
+  if (adventureModeActive) return st % 10 === 0 && st <= ADVENTURE_MAX_STAGE;
+  return isBossStageBeforeV171.apply(this, arguments);
+};
+
+const getStageBossExpRewardBeforeV171 = getStageBossExpReward;
+getStageBossExpReward = function(stageValue){
+  if (adventureModeActive) return getAdventureBossExp(stageValue);
+  return getStageBossExpRewardBeforeV171.apply(this, arguments);
+};
+
+const checkStageKillClearNowBeforeV171 = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (!adventureModeActive) return checkStageKillClearNowBeforeV171.apply(this, arguments);
+  if (gameMode === 'mission') return checkMissionStageClearNow();
+  if (gameMode !== 'stage') return false;
+  if (stageCleared) return false;
+
+  const target = getStageKillTarget(stage);
+  if ((stageRunKillCount || 0) < target) return false;
+
+  if (isBossStage(stage)) {
+    if ((stageBossKillCount || 0) >= 1) {
+      stageCleared = true;
+    } else {
+      if (stageBossTriggered) return true;
+      stageBossTriggered = true;
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      lasers = [];
+      boss = null;
+      bossSpawned = true;
+      startBossIntro();
+      updateHUD();
+      return true;
+    }
+  } else {
+    stageCleared = true;
+  }
+
+  stageTransitionTimer = 1000;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  bossSpawned = false;
+  spawnExplosion(width/2, height/3, 'rgba(185, 255, 124, 1)', 25);
+  if (SFX && SFX.stageClear) SFX.stageClear();
+  addQuestStat('stageClears', 1);
+  return true;
+};
+
+const addExpBeforeV171 = addExp;
+addExp = function(amount, opts = {}){
+  if (monsterParkActive && state === 'playing') {
+    const raw = Math.max(0, Math.floor(v171SafeNum(amount, 0)));
+    if (raw > 0) {
+      monsterParkRunExp += raw;
+      ensureMonsterParkSave();
+      saveData.monsterPark.pendingExp = monsterParkRunExp;
+      saveData.monsterPark.bestExp = Math.max(v171SafeNum(saveData.monsterPark.bestExp, 0), monsterParkRunExp);
+      saveData.monsterPark.bestKills = Math.max(v171SafeNum(saveData.monsterPark.bestKills, 0), v171SafeNum(stageRunKillCount, 0));
+      saveGameDataDebounced();
+      try { spawnDamageText(player ? player.x : width/2, player ? player.y - 32 : height/2, `저장 EXP +${formatNumber(raw)}`, '#ffb8f1', true); } catch(e) {}
+    }
+    updateHUD();
+    return raw;
+  }
+  return addExpBeforeV171.apply(this, arguments);
+};
+
+(function createMonsterParkClaimButton(){
+  const gameOverBtns = document.querySelector('#gameOverUI .gameover-btns');
+  monsterParkClaimBtn = document.createElement('button');
+  monsterParkClaimBtn.id = 'monsterParkClaimExpBtn';
+  monsterParkClaimBtn.className = 'gameover-btn btn-restart hidden';
+  monsterParkClaimBtn.type = 'button';
+  monsterParkClaimBtn.style.width = '100%';
+  monsterParkClaimBtn.style.background = 'linear-gradient(to bottom, #ff78d7, #7b145f)';
+  monsterParkClaimBtn.style.borderColor = '#ffb8ef';
+  monsterParkClaimBtn.textContent = '경험치 받기!';
+  if (gameOverBtns && restartBtn) gameOverBtns.insertBefore(monsterParkClaimBtn, restartBtn);
+
+  monsterParkClaimBtn.addEventListener('click', function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    ensureMonsterParkSave();
+    const pending = Math.max(monsterParkRunExp || 0, v171SafeNum(saveData.monsterPark.pendingExp, 0));
+    if (pending <= 0 || monsterParkClaimed) {
+      alert('받을 수 있는 몬스터 파크 경험치가 없습니다.');
+      return;
+    }
+    monsterParkClaimed = true;
+    const granted = addExpBeforeV171.call(this, pending, { baseAmount: pending, hotMultiplier: 1 });
+    saveData.monsterPark.totalClaimedExp = v171SafeNum(saveData.monsterPark.totalClaimedExp, 0) + Math.max(0, Math.floor(granted || pending));
+    saveData.monsterPark.pendingExp = 0;
+    monsterParkRunExp = 0;
+    saveGameData();
+    monsterParkClaimBtn.classList.add('hidden');
+    monsterParkClaimBtn.disabled = true;
+    monsterParkClaimBtn.textContent = '수령 완료!';
+    if (gameOverDescEl) gameOverDescEl.textContent = `${formatNumber(granted || pending)} EXP를 받았습니다!`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '수령 EXP', formatNumber(granted || pending), { color:'#aef' });
+    updateHUD();
+  });
+})();
+
+const updateGameOverModalBeforeV171 = updateGameOverModal;
+updateGameOverModal = function(){
+  const ret = updateGameOverModalBeforeV171.apply(this, arguments);
+  if (monsterParkActive) {
+    ensureMonsterParkSave();
+    const pending = Math.max(monsterParkRunExp || 0, v171SafeNum(saveData.monsterPark.pendingExp, 0));
+    const playSec = Math.max(0, Math.floor((performance.now() - (monsterParkStartTime || performance.now())) / 1000));
+    saveData.monsterPark.bestTimeSec = Math.max(v171SafeNum(saveData.monsterPark.bestTimeSec, 0), playSec);
+    if (gameOverModeTextEl) gameOverModeTextEl.textContent = '몬스터 파크';
+    if (gameOverTitleEl) { gameOverTitleEl.textContent = 'MONSTER PARK END'; gameOverTitleEl.style.color = '#ffb8ef'; }
+    if (gameOverDescEl) gameOverDescEl.textContent = '누적된 경험치는 아래 버튼을 누르면 즉시 지급됩니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `생존 ${formatPlayTime(playSec)} · 처치 ${formatNumber(stageRunKillCount || 0)}마리`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '누적 EXP', formatNumber(pending), { color:'#ffb8ef', weight:'900' });
+    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '최고 누적 EXP', formatNumber(saveData.monsterPark.bestExp || pending), { color:'#fff0c2' });
+    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '최고 처치 수', `${formatNumber(saveData.monsterPark.bestKills || stageRunKillCount || 0)}마리`);
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '수령 상태', monsterParkClaimed ? '수령 완료' : '대기 중', { color: monsterParkClaimed ? '#7cff7c' : '#ffd700' });
+    if (monsterParkClaimBtn) {
+      monsterParkClaimBtn.disabled = monsterParkClaimed || pending <= 0;
+      monsterParkClaimBtn.textContent = monsterParkClaimed ? '수령 완료!' : `경험치 받기! (+${formatNumber(pending)} EXP)`;
+      monsterParkClaimBtn.classList.toggle('hidden', monsterParkClaimed || pending <= 0);
+    }
+    saveGameDataDebounced();
+  } else if (monsterParkClaimBtn) {
+    monsterParkClaimBtn.classList.add('hidden');
+  }
+  return ret;
+};
+
+const updateHUDBeforeV171 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV171.apply(this, arguments);
+  if (adventureModeActive) {
+    if (stageEl) {
+      const t = getStageKillTarget(stage);
+      const k = Math.max(0, Math.floor(stageRunKillCount || 0));
+      const bossText = isBossStage(stage) ? ` · 보스 ${Math.max(0, Math.floor(stageBossKillCount || 0))}/1` : '';
+      stageEl.textContent = `모험 모드 ${stage}/${ADVENTURE_MAX_STAGE} · 처치 ${k}/${t}${bossText}`;
+    }
+    if (hotTimeEl) {
+      hotTimeEl.textContent = `🧭 10스테이지마다 보스 등장 · 100 클리어 보상 ${formatNumber(ADVENTURE_FINAL_EXP)} EXP`;
+      hotTimeEl.style.color = '#b8ff7c';
+    }
+  }
+  if (monsterParkActive) {
+    if (scoreEl) { scoreEl.style.display = ''; scoreEl.textContent = '누적 EXP: ' + formatNumber(monsterParkRunExp || v171SafeNum(saveData?.monsterPark?.pendingExp, 0)); }
+    if (highScoreEl) { highScoreEl.style.display = ''; highScoreEl.textContent = '처치 수: ' + formatNumber(stageRunKillCount || 0); }
+    if (stageEl) stageEl.textContent = `몬스터 파크 · 사망 시 정산 · ${formatPlayTime(Math.max(0, Math.floor((performance.now() - (monsterParkStartTime || performance.now())) / 1000)))}`;
+    if (hotTimeEl) { hotTimeEl.textContent = '🎪 EXP 저장 중 · 종료 후 [경험치 받기!]'; hotTimeEl.style.color = '#ffb8ef'; }
+  }
+  return ret;
+};
+
+if (nextStageBtn) {
+  nextStageBtn.addEventListener('click', function(ev){
+    if (!adventureModeActive) return;
+    if (stage < ADVENTURE_MAX_STAGE) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    const rewardExp = addExpBeforeV171.call(this, ADVENTURE_FINAL_EXP, { baseAmount: ADVENTURE_FINAL_EXP, hotMultiplier: 1 });
+    gold = Math.max(0, Math.floor(v171SafeNum(gold, 0) + ADVENTURE_FINAL_GOLD));
+    try {
+      if (!saveData.adventure) saveData.adventure = { clears: 0, bestStage: 0 };
+      saveData.adventure.clears = v171SafeNum(saveData.adventure.clears, 0) + 1;
+      saveData.adventure.bestStage = ADVENTURE_MAX_STAGE;
+    } catch(e) {}
+    saveGameData();
+    alert(`🎉 모험 모드 완전 정복!\n\nEXP +${formatNumber(rewardExp || ADVENTURE_FINAL_EXP)}\n골드 +${formatNumber(ADVENTURE_FINAL_GOLD)}G`);
+    setAdventureMode(false);
+    goToTitleBeforeV171();
+  }, true);
+}
+
+if (restartBtn) {
+  restartBtn.addEventListener('click', function(ev){
+    if (adventureModeActive) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      startAdventureMode();
+    } else if (monsterParkActive) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      startMonsterParkMode();
+    }
+  }, true);
+}
+
+const gameOverBeforeV171 = gameOver;
+gameOver = function(){
+  if (monsterParkActive) {
+    ensureMonsterParkSave();
+    saveData.monsterPark.pendingExp = Math.max(monsterParkRunExp || 0, v171SafeNum(saveData.monsterPark.pendingExp, 0));
+    saveData.monsterPark.bestExp = Math.max(v171SafeNum(saveData.monsterPark.bestExp, 0), saveData.monsterPark.pendingExp);
+    saveData.monsterPark.bestKills = Math.max(v171SafeNum(saveData.monsterPark.bestKills, 0), v171SafeNum(stageRunKillCount, 0));
+    saveGameDataDebounced();
+  }
+  return gameOverBeforeV171.apply(this, arguments);
+};
+
+
+
+// ✅ [v.171.1] 모험 모드 자동 진행 패치
+// - 1~99스테이지 클리어 시 결과 버튼 대기 없이 다음 스테이지 자동 시작
+// - 100스테이지 클리어 시 최종 보상 지급 후 타이틀로 복귀
+let adventureAutoAdvanceTimerV1711 = null;
+let adventureAutoAdvanceStageV1711 = 0;
+let adventureFinalRewardGrantedV1711 = false;
+
+function clearAdventureAutoAdvanceV1711(){
+  if (adventureAutoAdvanceTimerV1711) {
+    clearTimeout(adventureAutoAdvanceTimerV1711);
+    adventureAutoAdvanceTimerV1711 = null;
+  }
+  adventureAutoAdvanceStageV1711 = 0;
+}
+
+function finishAdventureModeV1711(){
+  if (adventureFinalRewardGrantedV1711) return;
+  adventureFinalRewardGrantedV1711 = true;
+
+  if (stageClearModal) stageClearModal.classList.add('hidden');
+  if (stageClearSeq) {
+    stageClearSeq.active = false;
+    stageClearSeq.timer = 0;
+    stageClearSeq.formulaText = '';
+    stageClearSeq.formulaText2 = '';
+  }
+
+  const rewardExp = addExpBeforeV171.call(window, ADVENTURE_FINAL_EXP, { baseAmount: ADVENTURE_FINAL_EXP, hotMultiplier: 1 });
+  gold = Math.max(0, Math.floor(v171SafeNum(gold, 0) + ADVENTURE_FINAL_GOLD));
+
+  try {
+    if (!saveData.adventure) saveData.adventure = { clears: 0, bestStage: 0 };
+    saveData.adventure.clears = v171SafeNum(saveData.adventure.clears, 0) + 1;
+    saveData.adventure.bestStage = ADVENTURE_MAX_STAGE;
+  } catch(e) {}
+
+  saveGameData();
+  updateHUD();
+
+  alert(`🎉 모험 모드 완전 정복!\n\nEXP +${formatNumber(rewardExp || ADVENTURE_FINAL_EXP)}\n골드 +${formatNumber(ADVENTURE_FINAL_GOLD)}G`);
+  setAdventureMode(false);
+  goToTitleBeforeV171();
+}
+
+function scheduleAdventureAutoAdvanceV1711(){
+  if (!adventureModeActive || gameMode !== 'stage' || state !== 'playing') return;
+  if (!stageCleared || stageTransitionTimer > 0) return;
+
+  const clearedStage = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  if (adventureAutoAdvanceTimerV1711 && adventureAutoAdvanceStageV1711 === clearedStage) return;
+
+  clearAdventureAutoAdvanceV1711();
+  adventureAutoAdvanceStageV1711 = clearedStage;
+
+  if (nextStageBtn) {
+    if (clearedStage < ADVENTURE_MAX_STAGE) {
+      nextStageBtn.textContent = '다음 스테이지 자동 진행 중...';
+      nextStageBtn.disabled = true;
+    } else {
+      nextStageBtn.textContent = '최종 보상 정산 중...';
+      nextStageBtn.disabled = true;
+    }
+  }
+
+  adventureAutoAdvanceTimerV1711 = setTimeout(() => {
+    adventureAutoAdvanceTimerV1711 = null;
+    if (!adventureModeActive || gameMode !== 'stage' || state !== 'playing') return;
+    if (!stageCleared || Math.floor(v171SafeNum(stage, 1)) !== clearedStage) return;
+
+    if (clearedStage >= ADVENTURE_MAX_STAGE) {
+      finishAdventureModeV1711();
+      return;
+    }
+
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    if (stageClearSeq) {
+      stageClearSeq.active = false;
+      stageClearSeq.timer = 0;
+      stageClearSeq.formulaText = '';
+      stageClearSeq.formulaText2 = '';
+    }
+
+    stage = Math.min(ADVENTURE_MAX_STAGE, clearedStage + 1);
+    lastSelectedStage = stage;
+    runStartStage = stage;
+    startGame(stage);
+  }, 900);
+}
+
+const startAdventureModeBeforeV1711 = startAdventureMode;
+startAdventureMode = function(){
+  clearAdventureAutoAdvanceV1711();
+  adventureFinalRewardGrantedV1711 = false;
+  return startAdventureModeBeforeV1711.apply(this, arguments);
+};
+
+const goToTitleBeforeV1711 = goToTitle;
+goToTitle = function(){
+  clearAdventureAutoAdvanceV1711();
+  adventureFinalRewardGrantedV1711 = false;
+  return goToTitleBeforeV1711.apply(this, arguments);
+};
+
+setInterval(scheduleAdventureAutoAdvanceV1711, 120);
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.171')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,124,0.35); border-radius:10px; background:rgba(184,255,124,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#b8ff7c;">[v.171 업데이트]</b><br>모험 모드(LV.25+)와 몬스터 파크(LV.60+)가 추가되었습니다.<br>모험 모드는 1~100스테이지 연속 돌파형 콘텐츠이며, 몬스터 파크는 사망 시까지 EXP를 누적한 뒤 [경험치 받기!] 버튼으로 수령하는 성장 모드입니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 loadGameData();
 updateHUD();
