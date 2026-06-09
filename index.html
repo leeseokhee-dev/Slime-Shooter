@@ -22955,6 +22955,282 @@ try {
   }
 } catch(e) {}
 
+
+
+// ✅ [v.171.2] 몬스터 파크 5회/5스테이지 완주 보상 패치
+// - 몬스터 파크는 하루 5회만 입장 가능
+// - 1회 입장 시 1~5스테이지를 연속 진행
+// - 5스테이지 클리어 후 [경험치 받기!] 버튼 1회로 누적 EXP 지급
+// - 지급 후 "계속하려면 화면을 터치하세요." 안내 표시, 터치 시 타이틀 이동
+const MONSTER_PARK_MAX_DAILY_ENTRIES_V1712 = 5;
+const MONSTER_PARK_MAX_STAGE_V1712 = 5;
+let monsterParkAutoAdvanceTimerV1712 = null;
+let monsterParkAutoAdvanceStageV1712 = 0;
+let monsterParkClearRewardReadyV1712 = false;
+let monsterParkAwaitingTitleTouchV1712 = false;
+
+function getMonsterParkTodayKeyV1712(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function ensureMonsterParkDailyV1712(){
+  ensureMonsterParkSave();
+  const today = getMonsterParkTodayKeyV1712();
+  if (!saveData.monsterPark.entryDate || saveData.monsterPark.entryDate !== today) {
+    saveData.monsterPark.entryDate = today;
+    saveData.monsterPark.entriesUsed = 0;
+  }
+  saveData.monsterPark.entriesUsed = Math.max(0, Math.floor(v171SafeNum(saveData.monsterPark.entriesUsed, 0)));
+}
+
+function getMonsterParkEntriesLeftV1712(){
+  ensureMonsterParkDailyV1712();
+  return Math.max(0, MONSTER_PARK_MAX_DAILY_ENTRIES_V1712 - v171SafeNum(saveData.monsterPark.entriesUsed, 0));
+}
+
+function clearMonsterParkAutoAdvanceV1712(){
+  if (monsterParkAutoAdvanceTimerV1712) {
+    clearTimeout(monsterParkAutoAdvanceTimerV1712);
+    monsterParkAutoAdvanceTimerV1712 = null;
+  }
+  monsterParkAutoAdvanceStageV1712 = 0;
+}
+
+function resetStageClearSequenceV1712(){
+  if (stageClearModal) stageClearModal.classList.add('hidden');
+  if (stageClearSeq) {
+    stageClearSeq.active = false;
+    stageClearSeq.timer = 0;
+    stageClearSeq.formulaText = '';
+    stageClearSeq.formulaText2 = '';
+  }
+}
+
+const startMonsterParkModeBeforeV1712 = startMonsterParkMode;
+startMonsterParkMode = function(){
+  if (v171SafeNum(level, 1) < MONSTER_PARK_LEVEL_REQ) {
+    alert(`몬스터 파크는 LV.${MONSTER_PARK_LEVEL_REQ}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  ensureMonsterParkDailyV1712();
+  const used = v171SafeNum(saveData.monsterPark.entriesUsed, 0);
+  if (used >= MONSTER_PARK_MAX_DAILY_ENTRIES_V1712) {
+    alert(`오늘 몬스터 파크 입장 횟수를 모두 사용했습니다.\n하루 입장 가능 횟수: ${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}회`);
+    saveGameDataDebounced();
+    return;
+  }
+
+  clearMonsterParkAutoAdvanceV1712();
+  monsterParkClearRewardReadyV1712 = false;
+  monsterParkAwaitingTitleTouchV1712 = false;
+
+  ensureMonsterParkSave();
+  saveData.monsterPark.entriesUsed = used + 1;
+  saveData.monsterPark.pendingExp = 0;
+  saveGameData();
+
+  setAdventureMode(false);
+  setMonsterParkMode(true);
+  monsterParkClaimed = false;
+  monsterParkRunExp = 0;
+  monsterParkStartTime = performance.now();
+  gameMode = 'stage';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  if (modeModal) modeModal.classList.add('hidden');
+  startGame(1);
+};
+
+const startGameBeforeV1712 = startGame;
+startGame = function(startStageNum = 1){
+  if (monsterParkActive) {
+    startStageNum = Math.max(1, Math.min(MONSTER_PARK_MAX_STAGE_V1712, Math.floor(v171SafeNum(startStageNum, 1))));
+    gameMode = 'stage';
+  }
+  return startGameBeforeV171.call(this, startStageNum || 1);
+};
+
+const isBossStageBeforeV1712 = isBossStage;
+isBossStage = function(s){
+  if (monsterParkActive) return false;
+  return isBossStageBeforeV1712.apply(this, arguments);
+};
+
+const checkStageKillClearNowBeforeV1712 = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (!monsterParkActive) return checkStageKillClearNowBeforeV1712.apply(this, arguments);
+  if (gameMode !== 'stage') return false;
+  if (stageCleared) return false;
+
+  const target = getStageKillTarget(stage);
+  if ((stageRunKillCount || 0) < target) return false;
+
+  stageCleared = true;
+  stageTransitionTimer = 1000;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  bossSpawned = false;
+  spawnExplosion(width/2, height/3, 'rgba(255, 184, 239, 1)', 25);
+  if (SFX && SFX.stageClear) SFX.stageClear();
+  addQuestStat('stageClears', 1);
+  return true;
+};
+
+function finishMonsterParkClearV1712(){
+  if (!monsterParkActive || monsterParkClearRewardReadyV1712) return;
+  monsterParkClearRewardReadyV1712 = true;
+  clearMonsterParkAutoAdvanceV1712();
+  resetStageClearSequenceV1712();
+  ensureMonsterParkSave();
+  saveData.monsterPark.pendingExp = Math.max(monsterParkRunExp || 0, v171SafeNum(saveData.monsterPark.pendingExp, 0));
+  saveData.monsterPark.bestExp = Math.max(v171SafeNum(saveData.monsterPark.bestExp, 0), saveData.monsterPark.pendingExp);
+  saveData.monsterPark.bestKills = Math.max(v171SafeNum(saveData.monsterPark.bestKills, 0), v171SafeNum(stageRunKillCount, 0));
+  saveGameData();
+  gameOver();
+}
+
+function scheduleMonsterParkAutoAdvanceV1712(){
+  if (!monsterParkActive || gameMode !== 'stage' || state !== 'playing') return;
+  if (!stageCleared || stageTransitionTimer > 0) return;
+
+  const clearedStage = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  if (monsterParkAutoAdvanceTimerV1712 && monsterParkAutoAdvanceStageV1712 === clearedStage) return;
+
+  clearMonsterParkAutoAdvanceV1712();
+  monsterParkAutoAdvanceStageV1712 = clearedStage;
+
+  if (nextStageBtn) {
+    if (clearedStage < MONSTER_PARK_MAX_STAGE_V1712) {
+      nextStageBtn.textContent = '다음 몬스터 파크 스테이지로 이동 중...';
+      nextStageBtn.disabled = true;
+    } else {
+      nextStageBtn.textContent = '경험치 정산 준비 중...';
+      nextStageBtn.disabled = true;
+    }
+  }
+
+  monsterParkAutoAdvanceTimerV1712 = setTimeout(() => {
+    monsterParkAutoAdvanceTimerV1712 = null;
+    if (!monsterParkActive || gameMode !== 'stage' || state !== 'playing') return;
+    if (!stageCleared || Math.floor(v171SafeNum(stage, 1)) !== clearedStage) return;
+
+    if (clearedStage >= MONSTER_PARK_MAX_STAGE_V1712) {
+      finishMonsterParkClearV1712();
+      return;
+    }
+
+    resetStageClearSequenceV1712();
+    stage = Math.min(MONSTER_PARK_MAX_STAGE_V1712, clearedStage + 1);
+    lastSelectedStage = stage;
+    runStartStage = stage;
+    startGame(stage);
+  }, 900);
+}
+setInterval(scheduleMonsterParkAutoAdvanceV1712, 120);
+
+const updateHUDBeforeV1712 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV1712.apply(this, arguments);
+  if (monsterParkActive) {
+    ensureMonsterParkDailyV1712();
+    const left = getMonsterParkEntriesLeftV1712();
+    if (scoreEl) { scoreEl.style.display = ''; scoreEl.textContent = '누적 EXP: ' + formatNumber(monsterParkRunExp || v171SafeNum(saveData?.monsterPark?.pendingExp, 0)); }
+    if (highScoreEl) { highScoreEl.style.display = ''; highScoreEl.textContent = `오늘 남은 입장: ${left}/${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}`; }
+    if (stageEl) stageEl.textContent = `몬스터 파크 ${Math.max(1, Math.floor(v171SafeNum(stage, 1)))}/${MONSTER_PARK_MAX_STAGE_V1712} · 5스테이지 클리어 후 정산`;
+    if (hotTimeEl) { hotTimeEl.textContent = '🎪 EXP 누적 중 · 5스테이지 클리어 후 [경험치 받기!]'; hotTimeEl.style.color = '#ffb8ef'; }
+  }
+  return ret;
+};
+
+const updateGameOverModalBeforeV1712 = updateGameOverModal;
+updateGameOverModal = function(){
+  const ret = updateGameOverModalBeforeV1712.apply(this, arguments);
+  if (monsterParkActive) {
+    ensureMonsterParkDailyV1712();
+    const pending = Math.max(monsterParkRunExp || 0, v171SafeNum(saveData.monsterPark.pendingExp, 0));
+    const playSec = Math.max(0, Math.floor((performance.now() - (monsterParkStartTime || performance.now())) / 1000));
+    const completed = monsterParkClearRewardReadyV1712 || Math.floor(v171SafeNum(stage, 1)) >= MONSTER_PARK_MAX_STAGE_V1712;
+    if (gameOverModeTextEl) gameOverModeTextEl.textContent = '몬스터 파크';
+    if (gameOverTitleEl) { gameOverTitleEl.textContent = completed ? 'MONSTER PARK CLEAR' : 'MONSTER PARK END'; gameOverTitleEl.style.color = '#ffb8ef'; }
+    if (gameOverDescEl) gameOverDescEl.textContent = completed ? '5개 스테이지를 모두 클리어했습니다. 경험치 받기 버튼 하나로 누적 EXP를 받을 수 있습니다.' : '몬스터 파크가 종료되었습니다. 5스테이지 클리어 시 누적 EXP를 받을 수 있습니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `진행 ${Math.min(MONSTER_PARK_MAX_STAGE_V1712, Math.max(1, Math.floor(v171SafeNum(stage, 1))))}/${MONSTER_PARK_MAX_STAGE_V1712} · 플레이 ${formatPlayTime(playSec)}`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '누적 EXP', formatNumber(pending), { color:'#ffb8ef', weight:'900' });
+    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '오늘 입장', `${Math.min(MONSTER_PARK_MAX_DAILY_ENTRIES_V1712, v171SafeNum(saveData.monsterPark.entriesUsed, 0))}/${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}회`, { color:'#fff0c2' });
+    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '처치 수', `${formatNumber(stageRunKillCount || 0)}마리`);
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '수령 상태', monsterParkClaimed ? '수령 완료' : (completed ? '수령 가능' : '클리어 필요'), { color: monsterParkClaimed ? '#7cff7c' : (completed ? '#ffd700' : '#ff8a8a') });
+    if (monsterParkClaimBtn) {
+      monsterParkClaimBtn.disabled = monsterParkClaimed || pending <= 0 || !completed;
+      monsterParkClaimBtn.textContent = monsterParkClaimed ? '수령 완료!' : `경험치 받기! (+${formatNumber(pending)} EXP)`;
+      monsterParkClaimBtn.classList.toggle('hidden', monsterParkClaimed || pending <= 0 || !completed);
+    }
+    saveGameDataDebounced();
+  }
+  return ret;
+};
+
+function bindMonsterParkTitleTouchV1712(){
+  monsterParkAwaitingTitleTouchV1712 = true;
+  setTimeout(() => {
+    const handler = function(ev){
+      if (!monsterParkAwaitingTitleTouchV1712) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      monsterParkAwaitingTitleTouchV1712 = false;
+      clearMonsterParkAutoAdvanceV1712();
+      monsterParkClearRewardReadyV1712 = false;
+      setMonsterParkMode(false);
+      goToTitle();
+      document.removeEventListener('pointerup', handler, true);
+      document.removeEventListener('click', handler, true);
+      document.removeEventListener('touchend', handler, true);
+    };
+    document.addEventListener('pointerup', handler, true);
+    document.addEventListener('click', handler, true);
+    document.addEventListener('touchend', handler, true);
+  }, 150);
+}
+
+if (monsterParkClaimBtn) {
+  monsterParkClaimBtn.addEventListener('click', function(ev){
+    if (!monsterParkActive || !monsterParkClearRewardReadyV1712) return;
+    setTimeout(() => {
+      if (!monsterParkActive || !monsterParkClaimed) return;
+      if (gameOverTitleEl) { gameOverTitleEl.textContent = 'EXP RECEIVED!'; gameOverTitleEl.style.color = '#aef'; }
+      if (gameOverDescEl) gameOverDescEl.textContent = '계속하려면 화면을 터치하세요.';
+      if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = '터치하면 타이틀 화면으로 이동합니다.';
+      if (monsterParkClaimBtn) monsterParkClaimBtn.classList.add('hidden');
+      if (restartBtn) restartBtn.classList.add('hidden');
+      if (toTitleBtn) toTitleBtn.classList.add('hidden');
+      bindMonsterParkTitleTouchV1712();
+    }, 60);
+  }, true);
+}
+
+const goToTitleBeforeV1712 = goToTitle;
+goToTitle = function(){
+  clearMonsterParkAutoAdvanceV1712();
+  monsterParkClearRewardReadyV1712 = false;
+  monsterParkAwaitingTitleTouchV1712 = false;
+  if (restartBtn) restartBtn.classList.remove('hidden');
+  if (toTitleBtn) toTitleBtn.classList.remove('hidden');
+  return goToTitleBeforeV1712.apply(this, arguments);
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.171.2')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffb8ef;">[v.171.2 몬스터 파크 업데이트]</b><br>몬스터 파크는 하루 5회 입장 가능하며, 1회 입장 시 5개 스테이지를 모두 클리어하면 누적 EXP를 받을 수 있습니다.<br>클리어 후 [경험치 받기!] 버튼 하나로 보상을 획득하고, 이후 화면을 터치하면 타이틀 화면으로 이동합니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
 loadGameData();
 updateHUD();
 if (isInitialNicknameRequired()) openInitialNicknameModal();
