@@ -3183,7 +3183,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
             모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
-            몬스터 파크: LV.60부터 사망 시까지 EXP 누적<br>
+            몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>
             파티 원정: LV.20부터 AI 파티원 3명과 20스테이지 협동 사냥<br>
             아이템 파크: 하늘에서 아이템 수집<br>
             미니게임: 줍기형 2종 + 터치형 3종<br>
@@ -17989,8 +17989,11 @@ function finalizeStageClearStats() {
   else extra = -0.10;
 
   const bonusRate = Math.max(0, 0.30 + extra);
-  const clearBonusExp = Math.max(0, Math.floor(expGained * bonusRate));
-  const grantedBonusExp = addExpDirect(clearBonusExp);
+  // ✅ [v.172.5] 몬스터 파크는 스테이지 클리어 보너스 EXP 없음
+  // - 몬스터/보스 처치로 누적된 EXP만 최종 [경험치 받기!]에서 지급
+  const isMonsterParkClear = (typeof monsterParkActive !== 'undefined' && monsterParkActive);
+  const clearBonusExp = isMonsterParkClear ? 0 : Math.max(0, Math.floor(expGained * bonusRate));
+  const grantedBonusExp = isMonsterParkClear ? 0 : addExpDirect(clearBonusExp);
 
   // 모달 반영(요청 형식)
   const goldGained = Math.max(0, Math.floor(stageRunGoldEarned || 0));
@@ -18008,7 +18011,11 @@ function finalizeStageClearStats() {
 
   if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${timeSec}초`;
-  if (stageClearExpDetailEl) stageClearExpDetailEl.textContent = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 구슬 ${formatNumber(oExp)} · 클리어 보너스 +${formatNumber(grantedBonusExp)}`;
+  if (stageClearExpDetailEl) {
+    stageClearExpDetailEl.textContent = isMonsterParkClear
+      ? `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 클리어 보너스 없음`
+      : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 구슬 ${formatNumber(oExp)} · 클리어 보너스 +${formatNumber(grantedBonusExp)}`;
+  }
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = goldGained > 0 ? 'flex' : 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(goldGained)}골드`;
@@ -21180,7 +21187,13 @@ function drawStageClearSeqOverlay() {
   const formulaText = String(stageClearSeq.formulaText || '');
   const formulaText2 = String(stageClearSeq.formulaText2 || '');
 
-  const lines = [
+  const isMonsterParkSeq = (typeof monsterParkActive !== 'undefined' && monsterParkActive);
+  const lines = isMonsterParkSeq ? [
+    { text: '몬스터 파크 클리어!',             size: 22, weight: 'bold',  color: '#ffe8a0', gap: 6  },
+    { text: `스테이지 ${stage} 완료`,          size: 14, weight: 'normal',color: '#ffffff', gap: 14 },
+    { text: '보너스 경험치 없음',              size: 22, weight: 'bold',  color: '#ffb8ef', gap: 8  },
+    { text: `누적 EXP ${formatNumber(Math.max(0, Math.floor((typeof monsterParkRunExp !== 'undefined' ? monsterParkRunExp : 0) || 0)))}`, size: 20, weight: 'bold', color: '#44ffb8', gap: 0 },
+  ] : [
     { text: '스테이지 클리어!',                size: 22, weight: 'bold',  color: '#ffe8a0', gap: 6  },
     { text: `스테이지 ${stage} 완료`,          size: 14, weight: 'normal',color: '#ffffff', gap: 14 },
     { text: '보너스 경험치!',                 size: 24, weight: 'bold',  color: '#ffe8a0', gap: 8  },
@@ -22140,6 +22153,7 @@ function getInfiniteBossRemainSec() {
 }
 
 function drawInfiniteBossCountdown() {
+  if (monsterParkActive) return; // ✅ [v.172.4] 몬스터 파크에서는 무한모드 보스 20초 표시 금지
   if (gameMode !== 'infinite' || state !== 'playing') return;
   if (boss || (bossIntro && bossIntro.active) || bossSpawned || infiniteBossBonusShowing) return;
 
@@ -22611,7 +22625,7 @@ function startMonsterParkMode(){
   monsterParkStartTime = performance.now();
   saveData.monsterPark.pendingExp = 0;
   saveGameDataDebounced();
-  gameMode = 'infinite';
+  gameMode = 'stage'; // ✅ [v.172.4] 몬스터 파크 전용 스테이지 모드
   lastSelectedStage = 1;
   runStartStage = 1;
   if (modeModal) modeModal.classList.add('hidden');
@@ -22641,7 +22655,7 @@ startGame = function(startStageNum = 1){
     startStageNum = Math.max(1, Math.min(ADVENTURE_MAX_STAGE, Math.floor(v171SafeNum(startStageNum, 1))));
     gameMode = 'stage';
   }
-  if (monsterParkActive) gameMode = 'infinite';
+  if (monsterParkActive) gameMode = 'stage'; // ✅ [v.172.4] 몬스터 파크는 무한모드가 아닌 스테이지형 전용 모드
   return startGameBeforeV171.call(this, startStageNum || 1);
 };
 
@@ -23244,6 +23258,23 @@ try {
   }
 } catch(e) {}
 
+
+
+
+/* ===============================
+   ✅ [v.172.5] 몬스터 파크 클리어 보너스 EXP 제거
+   - 몬스터 파크에서는 스테이지 클리어 보너스를 지급하지 않습니다.
+   - 몬스터/보스 처치로 누적된 EXP만 최종 수령합니다.
+   =============================== */
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.172.5')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.5 몬스터 파크 보상 수정]</b><br>몬스터 파크는 스테이지 클리어 보너스 EXP가 지급되지 않으며, 몬스터와 보스 처치로 누적된 EXP만 최종 [경험치 받기!]에서 받을 수 있습니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 
 // ===============================
@@ -24033,6 +24064,636 @@ if (toTitleBtn) {
     goToTitle();
   }, true);
 }
+
+
+// ===============================
+// ✅ [v.172.2] 파티 웨이브 연출 + 몬스터 파크 5스테이지 보스 패치
+// - 파티 원정: 스테이지 시작 문구는 캔버스 내부에 표시, 사라진 뒤 몬스터 출현
+// - 파티 원정: 20초 사냥 → 캔버스 내부 클리어 안내 3초 → 다음 웨이브
+// - 파티 원정 20웨이브: 플레이어 레벨 기준 -5~+5 최종 보스
+// - 몬스터 파크: 1~5스테이지 각 100마리, 3/5스테이지 보스 출현
+// - 몬스터 파크 보스 EXP: 몬스터 EXP 약 50배, 보스 레벨은 플레이어 -5~+5
+// ===============================
+let partyStageIntroTimerV1722 = 0;
+let partyStageClearTimerV1722 = 0;
+let partyStageClearTextV1722 = '';
+let partyBossLevelV1722 = 0;
+let monsterParkBossLevelV1722 = 0;
+
+function getPlayerSyncedBossLevelV1722(){
+  const base = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.max(1, Math.min(MAX_LEVEL || 300, base + Math.floor(randRange(-5, 6))));
+}
+
+function beginPartyStageIntroV1722(){
+  partyStageIntroTimerV1722 = 1800;
+  partyStageClearTimerV1722 = 0;
+  partyStageClearTextV1722 = '';
+  partySpawnAcc = 0;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  partyBullets = [];
+  if (Math.floor(v171SafeNum(stage, 1)) >= PARTY_MAX_STAGE_V172) {
+    partyBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+  }
+}
+
+function drawCanvasCenterNoticeV1722(title, lines, alpha, accent){
+  if (!ctx || !width || !height) return;
+  alpha = Math.max(0, Math.min(1, Number(alpha) || 0));
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const boxW = Math.min(width - 70, 610);
+  const boxH = 138;
+  const x = width / 2 - boxW / 2;
+  const y = height / 2 - boxH / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.58)';
+  ctx.strokeStyle = accent || '#9dffea';
+  ctx.lineWidth = 2;
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = accent || '#9dffea';
+  try { ctx.beginPath(); ctx.roundRect(x, y, boxW, boxH, 22); ctx.fill(); ctx.stroke(); }
+  catch(e){ ctx.fillRect(x, y, boxW, boxH); ctx.strokeRect(x, y, boxW, boxH); }
+  ctx.shadowBlur = 0;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `1000 44px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.72)';
+  ctx.lineWidth = 6;
+  ctx.strokeText(title, width / 2, y + 44);
+  ctx.fillText(title, width / 2, y + 44);
+  ctx.font = `900 17px ${getUIFontFamily()}`;
+  ctx.fillStyle = accent || '#9dffea';
+  (lines || []).forEach((t, i) => ctx.fillText(String(t), width / 2, y + 86 + i * 24));
+  ctx.restore();
+}
+
+function drawPartyWaveNoticeV1722(){
+  if (!partyExpeditionActive || state !== 'playing') return;
+  const st = Math.max(1, Math.min(PARTY_MAX_STAGE_V172, Math.floor(v171SafeNum(stage, 1))));
+  if (partyStageIntroTimerV1722 > 0) {
+    const a = Math.min(1, partyStageIntroTimerV1722 / 650);
+    const title = st >= PARTY_MAX_STAGE_V172 ? '최종 보스' : `스테이지 ${st}`;
+    const line = st >= PARTY_MAX_STAGE_V172
+      ? `보스 Lv.${partyBossLevelV1722 || Math.max(1, level)} · 파티원과 함께 마무리하세요!`
+      : '문구가 사라지면 몬스터가 출현합니다.';
+    drawCanvasCenterNoticeV1722(title, [line], a, st >= PARTY_MAX_STAGE_V172 ? '#ffd36a' : '#9dffea');
+  }
+  if (partyStageClearTimerV1722 > 0) {
+    const a = Math.min(1, partyStageClearTimerV1722 / 450);
+    drawCanvasCenterNoticeV1722('스테이지 클리어!', [partyStageClearTextV1722 || '3초 후 다음 스테이지가 시작됩니다.', '다음 스테이지를 준비해주세요.'], a, '#b8ff7c');
+  }
+}
+
+const drawGainMessagesBeforeV1722 = drawGainMessages;
+drawGainMessages = function(){
+  const ret = drawGainMessagesBeforeV1722.apply(this, arguments);
+  drawPartyWaveNoticeV1722();
+  return ret;
+};
+
+const resetPartyStageStateBeforeV1722 = resetPartyStageState;
+resetPartyStageState = function(){
+  const ret = resetPartyStageStateBeforeV1722.apply(this, arguments);
+  beginPartyStageIntroV1722();
+  return ret;
+};
+
+const startGameBeforeV1722 = startGame;
+startGame = function(startStageNum = 1){
+  const ret = startGameBeforeV1722.call(this, startStageNum || 1);
+  if (partyExpeditionActive && state === 'playing') beginPartyStageIntroV1722();
+  if (monsterParkActive && state === 'playing') {
+    monsterParkBossLevelV1722 = 0;
+  }
+  return ret;
+};
+
+function requestPartyStageClearV1722(){
+  if (!partyExpeditionActive || partyExpeditionFinished || partyStageClearTimerV1722 > 0) return;
+  const cur = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  partyStageClearTimerV1722 = 3000;
+  partyStageClearTextV1722 = '스테이지를 클리어하였습니다. 3초 후 다음 스테이지가 시작됩니다.';
+  partyStageTimer = 0;
+  partySpawnAcc = 0;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  partyBullets = [];
+  try { spawnExplosion(width/2, height/3, 'rgba(184,255,124,1)', 24); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+  try { showToast(`🤝 파티 원정 ${cur} 웨이브 클리어!`, '#b8ff7c', 900); } catch(e) {}
+}
+
+const updatePartyExpeditionBeforeV1722 = updatePartyExpedition;
+updatePartyExpedition = function(dt, timestamp){
+  if (!partyExpeditionActive || state !== 'playing' || partyExpeditionFinished) return;
+  if (!partyMembers || partyMembers.length === 0) partyMembers = makePartyMembers();
+
+  if (partyStageIntroTimerV1722 > 0) {
+    partyStageIntroTimerV1722 = Math.max(0, partyStageIntroTimerV1722 - dt);
+    updatePartyMembers(dt);
+    updatePartyBullets(dt);
+    if (partyStageIntroTimerV1722 <= 0 && Math.floor(v171SafeNum(stage, 1)) >= PARTY_MAX_STAGE_V172) {
+      startPartyBossIfNeeded();
+    }
+    return;
+  }
+
+  if (partyStageClearTimerV1722 > 0) {
+    partyStageClearTimerV1722 = Math.max(0, partyStageClearTimerV1722 - dt);
+    updatePartyMembers(dt);
+    updatePartyBullets(dt);
+    if (partyStageClearTimerV1722 <= 0) advancePartyStage();
+    return;
+  }
+
+  const st = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  if (st < PARTY_MAX_STAGE_V172) {
+    partyStageTimer = Math.max(0, partyStageTimer - dt);
+    partySpawnAcc += dt;
+    while (partySpawnAcc >= PARTY_SPAWN_INTERVAL_MS_V172) {
+      partySpawnAcc -= PARTY_SPAWN_INTERVAL_MS_V172;
+      spawnPartyEnemies();
+    }
+    if (partyStageTimer <= 0) requestPartyStageClearV1722();
+  } else {
+    startPartyBossIfNeeded();
+  }
+  updatePartyMembers(dt);
+  updatePartyBullets(dt);
+};
+
+const advancePartyStageBeforeV1722 = advancePartyStage;
+advancePartyStage = function(){
+  if (!partyExpeditionActive) return advancePartyStageBeforeV1722.apply(this, arguments);
+  if (partyStageClearTimerV1722 > 0) return;
+  const next = Math.floor(v171SafeNum(stage, 1)) + 1;
+  stage = Math.min(PARTY_MAX_STAGE_V172, next);
+  lastSelectedStage = stage;
+  runStartStage = stage;
+  resetPartyStageState();
+  startStage();
+};
+
+const startPartyBossIfNeededBeforeV1722 = startPartyBossIfNeeded;
+startPartyBossIfNeeded = function(){
+  if (!partyExpeditionActive) return startPartyBossIfNeededBeforeV1722.apply(this, arguments);
+  if (partyStageIntroTimerV1722 > 0 || partyStageClearTimerV1722 > 0) return;
+  if (!partyBossLevelV1722) partyBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+  return startPartyBossIfNeededBeforeV1722.apply(this, arguments);
+};
+
+const getPartySyncedLevelBeforeV1722 = getPartySyncedLevel;
+getPartySyncedLevel = function(){
+  if (partyExpeditionActive) {
+    if (!partyBossLevelV1722) partyBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+    return partyBossLevelV1722;
+  }
+  return getPartySyncedLevelBeforeV1722.apply(this, arguments);
+};
+
+const getStageKillTargetBeforeV1722 = getStageKillTarget;
+getStageKillTarget = function(stg){
+  if (monsterParkActive) return 100;
+  return getStageKillTargetBeforeV1722.apply(this, arguments);
+};
+
+const getStageMonsterSpawnBatchSizeBeforeV1722 = getStageMonsterSpawnBatchSize;
+getStageMonsterSpawnBatchSize = function(stg){
+  if (monsterParkActive) return 10;
+  return getStageMonsterSpawnBatchSizeBeforeV1722.apply(this, arguments);
+};
+
+const isBossStageBeforeV1722 = isBossStage;
+isBossStage = function(s){
+  const st = Math.max(1, Math.floor(v171SafeNum(s, 1)));
+  if (monsterParkActive) return st === 3 || st === 5;
+  return isBossStageBeforeV1722.apply(this, arguments);
+};
+
+function calcMonsterParkMonsterExpV1722(stageValue){
+  const lv = Math.max(1, Math.floor(Number(level) || 1));
+  const base = Math.max(1, Math.floor(getStageBossExpRewardBeforeV171(Math.min(MAX_STAGE_CAP || 300, lv)) / 100));
+  const stageBonus = 1 + (Math.max(1, Math.floor(v171SafeNum(stageValue, 1))) - 1) * 0.08;
+  return Math.max(1, Math.round(base * stageBonus));
+}
+
+const getStageMonsterExpRewardBeforeV1722 = getStageMonsterExpReward;
+getStageMonsterExpReward = function(stageValue){
+  if (monsterParkActive) return calcMonsterParkMonsterExpV1722(stageValue);
+  return getStageMonsterExpRewardBeforeV1722.apply(this, arguments);
+};
+
+const getStageBossExpRewardBeforeV1722 = getStageBossExpReward;
+getStageBossExpReward = function(stageValue){
+  if (monsterParkActive) return Math.max(1, calcMonsterParkMonsterExpV1722(stageValue) * 50);
+  return getStageBossExpRewardBeforeV1722.apply(this, arguments);
+};
+
+const createBossBeforeV1722 = createBoss;
+createBoss = function(){
+  const b = createBossBeforeV1722.apply(this, arguments);
+  if (monsterParkActive && b) {
+    monsterParkBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+    b.level = monsterParkBossLevelV1722;
+    b.evoStage = getBossEvoStageByLevel(monsterParkBossLevelV1722);
+    const baseHp = Math.max(b.maxHp || b.hp || 1, 2200 + monsterParkBossLevelV1722 * 260 + Math.max(1, stage) * 1800);
+    b.hp = baseHp;
+    b.maxHp = baseHp;
+    b._monsterParkSyncedLevel = monsterParkBossLevelV1722;
+  }
+  return b;
+};
+
+const checkStageKillClearNowBeforeV1722 = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (!monsterParkActive) return checkStageKillClearNowBeforeV1722.apply(this, arguments);
+  if (gameMode !== 'stage' || stageCleared) return false;
+  const target = 100;
+  if ((stageRunKillCount || 0) < target) return false;
+
+  if (isBossStage(stage)) {
+    if ((stageBossKillCount || 0) >= 1) {
+      stageCleared = true;
+    } else {
+      if (stageBossTriggered) return true;
+      stageBossTriggered = true;
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      lasers = [];
+      boss = null;
+      bossSpawned = true;
+      monsterParkBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+      startBossIntro();
+      updateHUD();
+      return true;
+    }
+  } else {
+    stageCleared = true;
+  }
+
+  stageTransitionTimer = 1000;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  bossSpawned = false;
+  try { spawnExplosion(width/2, height/3, 'rgba(255,184,239,1)', 25); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+  try { addQuestStat('stageClears', 1); } catch(e) {}
+  return true;
+};
+
+const updateHUDBeforeV1722 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV1722.apply(this, arguments);
+  if (monsterParkActive) {
+    const st = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+    const bossText = isBossStage(st) ? ` · 보스 ${Math.max(0, Math.floor(stageBossKillCount || 0))}/1` : '';
+    if (stageEl) stageEl.textContent = `몬스터 파크 ${st}/${MONSTER_PARK_MAX_STAGE_V1712} · 처치 ${Math.max(0, Math.floor(stageRunKillCount || 0))}/100${bossText}`;
+    if (hotTimeEl) {
+      const bLv = monsterParkBossLevelV1722 || Math.max(1, Math.floor(Number(level) || 1));
+      hotTimeEl.textContent = `🎪 3·5스테이지 보스 Lv.${bLv} · 보스 EXP는 몬스터의 약 50배`;
+      hotTimeEl.style.color = '#ffb8ef';
+    }
+  }
+  if (partyExpeditionActive) {
+    const st = Math.max(1, Math.min(PARTY_MAX_STAGE_V172, Math.floor(v171SafeNum(stage, 1))));
+    if (stageEl) {
+      if (partyStageIntroTimerV1722 > 0) stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 스테이지 준비 중`;
+      else if (partyStageClearTimerV1722 > 0) stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 다음 웨이브 준비 중`;
+    }
+  }
+  return ret;
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.172.2')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,124,0.35); border-radius:10px; background:rgba(184,255,124,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#b8ff7c;">[v.172.2 파티/몬스터 파크 업데이트]</b><br>파티 원정은 스테이지 시작 문구가 캔버스 안에 크게 표시되고, 문구가 사라진 뒤 몬스터가 등장합니다. 20초 후 웨이브 클리어 안내가 캔버스 안에 3초 표시된 뒤 다음 웨이브가 시작되며, 20웨이브에서는 플레이어 레벨 기준 -5~+5 범위의 최종 보스가 등장합니다.<br>몬스터 파크는 1~5스테이지 모두 100마리 처치 목표로 변경되었고, 3스테이지와 5스테이지에는 플레이어 레벨 기준 -5~+5 범위의 보스가 등장합니다. 보스 EXP는 몬스터 EXP의 약 50배입니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+
+
+// ===============================
+// ✅ [v.172.3] 몬스터 파크 스폰 방식 재정리
+// - 무한모드식 5마리 가로줄 스폰 금지
+// - 0.2초마다 1마리씩 랜덤 분산 생성
+// - 화면 최대 30마리 유지
+// - 아이템/EXP 구슬/골드 드랍 없이 처치 EXP만 누적
+// - 1·2·4스테이지: 100마리 처치 시 클리어
+// - 3·5스테이지: 100마리 처치 후 보스 1마리 처치 시 클리어
+// ===============================
+const MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 = 200;
+const MONSTER_PARK_MAX_ENEMIES_V1723 = 30;
+const MONSTER_PARK_KILL_TARGET_V1723 = 100;
+
+function isMonsterParkBossStageV1723(stageValue){
+  const st = Math.max(1, Math.floor(v171SafeNum(stageValue, 1)));
+  return st === 3 || st === 5;
+}
+
+function getMonsterParkSpawnX_V1723(){
+  const margin = Math.max(34, Math.min(70, width * 0.075));
+  const lastX = Number(window.__monsterParkLastSpawnX_V1723 || -9999);
+  let x = randRange(margin, width - margin);
+  // 같은 x축으로 줄줄이 내려오는 느낌을 줄이기 위해 직전 위치와 거리를 벌립니다.
+  for (let tries = 0; tries < 8 && Math.abs(x - lastX) < width * 0.18; tries++) {
+    x = randRange(margin, width - margin);
+  }
+  window.__monsterParkLastSpawnX_V1723 = x;
+  return x;
+}
+
+function spawnMonsterParkEnemyV1723(){
+  if (!monsterParkActive || gameMode !== 'stage' || state !== 'playing') return;
+  if (stageCleared || stageBossTriggered || boss || bossIntro?.active) return;
+  if ((stageRunKillCount || 0) >= MONSTER_PARK_KILL_TARGET_V1723) return;
+  if (enemies.length >= MONSTER_PARK_MAX_ENEMIES_V1723) return;
+
+  const spawnIndex = Math.max(0, Math.floor(window.__monsterParkSpawnIndex_V1723 || 0));
+  window.__monsterParkSpawnIndex_V1723 = spawnIndex + 1;
+
+  const x = getMonsterParkSpawnX_V1723();
+  const y = -42 - randRange(0, 36);
+  const type = ENEMY_TYPES[(spawnIndex + Math.floor(v171SafeNum(stage, 1))) % ENEMY_TYPES.length];
+  const speedBase = 1.55 + Math.min(1.15, Math.max(1, Math.floor(v171SafeNum(stage, 1))) * 0.08);
+  const vx = randRange(-0.22, 0.22);
+  const extra = {
+    attackStyle: getEnemyAttackStyle(stage, spawnIndex, 0),
+    _monsterParkEnemy: true,
+    _noDrop: true
+  };
+  enemies.push(createEnemy(type, x, y, speedBase, 'rain', vx, extra));
+}
+
+const getStageMonsterSpawnIntervalMsBeforeV1723 = getStageMonsterSpawnIntervalMs;
+getStageMonsterSpawnIntervalMs = function(stg){
+  if (monsterParkActive) {
+    // 기존 업데이트 루프의 피버 보정(×0.65)이 켜져도 실제 간격은 0.2초에 가깝게 유지합니다.
+    try { return (typeof isFeverActive === 'function' && isFeverActive()) ? (MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 / 0.65) : MONSTER_PARK_SPAWN_INTERVAL_MS_V1723; }
+    catch(e) { return MONSTER_PARK_SPAWN_INTERVAL_MS_V1723; }
+  }
+  return getStageMonsterSpawnIntervalMsBeforeV1723.apply(this, arguments);
+};
+
+const getStageMonsterSpawnBatchSizeBeforeV1723 = getStageMonsterSpawnBatchSize;
+getStageMonsterSpawnBatchSize = function(stg){
+  if (monsterParkActive) return 1;
+  return getStageMonsterSpawnBatchSizeBeforeV1723.apply(this, arguments);
+};
+
+const getStageKillTargetBeforeV1723 = getStageKillTarget;
+getStageKillTarget = function(stg){
+  if (monsterParkActive) return MONSTER_PARK_KILL_TARGET_V1723;
+  return getStageKillTargetBeforeV1723.apply(this, arguments);
+};
+
+const isBossStageBeforeV1723 = isBossStage;
+isBossStage = function(s){
+  if (monsterParkActive) return isMonsterParkBossStageV1723(s);
+  return isBossStageBeforeV1723.apply(this, arguments);
+};
+
+const spawnNextWaveBeforeV1723 = spawnNextWave;
+spawnNextWave = function(){
+  if (monsterParkActive) {
+    spawnMonsterParkEnemyV1723();
+    return;
+  }
+  return spawnNextWaveBeforeV1723.apply(this, arguments);
+};
+
+const startGameBeforeV1723 = startGame;
+startGame = function(startStageNum = 1){
+  if (monsterParkActive) {
+    window.__monsterParkSpawnIndex_V1723 = 0;
+    window.__monsterParkLastSpawnX_V1723 = -9999;
+    expItems = [];
+    goldDrops = [];
+    fieldItems = [];
+  }
+  return startGameBeforeV1723.call(this, startStageNum || 1);
+};
+
+const startStageBeforeV1723 = startStage;
+startStage = function(){
+  const ret = startStageBeforeV1723.apply(this, arguments);
+  if (monsterParkActive) {
+    window.__monsterParkSpawnIndex_V1723 = 0;
+    window.__monsterParkLastSpawnX_V1723 = -9999;
+    expItems = [];
+    goldDrops = [];
+    fieldItems = [];
+  }
+  return ret;
+};
+
+const spawnExpItemBeforeV1723 = (typeof spawnExpItem === 'function') ? spawnExpItem : null;
+if (spawnExpItemBeforeV1723) {
+  spawnExpItem = function(){
+    if (monsterParkActive) return;
+    return spawnExpItemBeforeV1723.apply(this, arguments);
+  };
+}
+
+const spawnGoldDropBeforeV1723 = (typeof spawnGoldDrop === 'function') ? spawnGoldDrop : null;
+if (spawnGoldDropBeforeV1723) {
+  spawnGoldDrop = function(){
+    if (monsterParkActive) return;
+    return spawnGoldDropBeforeV1723.apply(this, arguments);
+  };
+}
+
+const spawnFieldItemBeforeV1723 = (typeof spawnFieldItem === 'function') ? spawnFieldItem : null;
+if (spawnFieldItemBeforeV1723) {
+  spawnFieldItem = function(){
+    if (monsterParkActive) return;
+    return spawnFieldItemBeforeV1723.apply(this, arguments);
+  };
+}
+
+const checkStageKillClearNowBeforeV1723 = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (!monsterParkActive) return checkStageKillClearNowBeforeV1723.apply(this, arguments);
+  if (gameMode !== 'stage' || stageCleared) return false;
+  if ((stageRunKillCount || 0) < MONSTER_PARK_KILL_TARGET_V1723) return false;
+
+  if (isMonsterParkBossStageV1723(stage)) {
+    if ((stageBossKillCount || 0) < 1) {
+      if (stageBossTriggered) return true;
+      stageBossTriggered = true;
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      expItems.length = 0;
+      goldDrops.length = 0;
+      fieldItems.length = 0;
+      lasers = [];
+      boss = null;
+      bossSpawned = true;
+      monsterParkBossLevelV1722 = getPlayerSyncedBossLevelV1722();
+      startBossIntro();
+      updateHUD();
+      return true;
+    }
+  }
+
+  stageCleared = true;
+  stageTransitionTimer = 1000;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  expItems.length = 0;
+  goldDrops.length = 0;
+  fieldItems.length = 0;
+  boss = null;
+  bossSpawned = false;
+  try { spawnExplosion(width/2, height/3, 'rgba(255,184,239,1)', 25); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+  try { addQuestStat('stageClears', 1); } catch(e) {}
+  return true;
+};
+
+const updateHUDBeforeV1723 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV1723.apply(this, arguments);
+  if (monsterParkActive) {
+    const st = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+    const bossText = isMonsterParkBossStageV1723(st) ? ` · 보스 ${Math.max(0, Math.floor(stageBossKillCount || 0))}/1` : '';
+    if (stageEl) stageEl.textContent = `몬스터 파크 ${st}/${MONSTER_PARK_MAX_STAGE_V1712} · 몬스터 ${Math.max(0, Math.floor(stageRunKillCount || 0))}/100${bossText}`;
+    if (hotTimeEl) {
+      hotTimeEl.textContent = isMonsterParkBossStageV1723(st)
+        ? '🎪 100마리 처치 후 보스까지 잡으면 클리어!'
+        : '🎪 0.2초마다 1마리씩 등장 · 화면 최대 30마리';
+      hotTimeEl.style.color = '#ffb8ef';
+    }
+  }
+  return ret;
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.172.3')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.3 몬스터 파크 스폰 개선]</b><br>몬스터 파크는 무한모드식 5마리 가로줄 스폰이 아니라 0.2초마다 1마리씩 랜덤 위치에 등장합니다. 화면에는 최대 30마리까지만 유지되며, 아이템·EXP 구슬·골드는 떨어지지 않고 처치 경험치만 누적됩니다.<br>1·2·4스테이지는 몬스터 100마리 처치 시 클리어, 3·5스테이지는 몬스터 100마리 처치 후 보스 1마리까지 처치하면 클리어됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+
+
+// ===============================
+// ✅ [v.172.4] 몬스터 파크 무한모드 잔재 제거 + 표시 고정
+// - v.171의 무한모드 기반 gameMode 되돌림을 최종 차단
+// - 캔버스의 "보스 N초" 카운트다운이 몬스터 파크에서 보이지 않도록 차단
+// - 몬스터 파크 시작/스테이지 시작 시 드랍 배열과 무한모드 타이머 초기화
+// ===============================
+const setMonsterParkModeBeforeV1724 = setMonsterParkMode;
+setMonsterParkMode = function(active){
+  const ret = setMonsterParkModeBeforeV1724.apply(this, arguments);
+  if (active) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+    infiniteBossCount = 0;
+    infiniteDistance = 0;
+    infiniteDistanceScore = 0;
+  }
+  return ret;
+};
+
+const startMonsterParkModeBeforeV1724 = startMonsterParkMode;
+startMonsterParkMode = function(){
+  const ret = startMonsterParkModeBeforeV1724.apply(this, arguments);
+  if (monsterParkActive) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+    infiniteBossCount = 0;
+    infiniteDistance = 0;
+    infiniteDistanceScore = 0;
+    expItems = [];
+    goldDrops = [];
+    fieldItems = [];
+    if (typeof updateHUD === 'function') updateHUD();
+  }
+  return ret;
+};
+
+const startGameBeforeV1724 = startGame;
+startGame = function(startStageNum = 1){
+  if (monsterParkActive) gameMode = 'stage';
+  const ret = startGameBeforeV1724.call(this, startStageNum || 1);
+  if (monsterParkActive) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+    infiniteBossCount = 0;
+    expItems = [];
+    goldDrops = [];
+    fieldItems = [];
+    if (typeof updateHUD === 'function') updateHUD();
+  }
+  return ret;
+};
+
+const startStageBeforeV1724 = startStage;
+startStage = function(){
+  if (monsterParkActive) gameMode = 'stage';
+  const ret = startStageBeforeV1724.apply(this, arguments);
+  if (monsterParkActive) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+    infiniteBossCount = 0;
+    expItems = [];
+    goldDrops = [];
+    fieldItems = [];
+    parkItems = [];
+    if (typeof updateHUD === 'function') updateHUD();
+  }
+  return ret;
+};
+
+const updateBeforeV1724 = update;
+update = function(dt, currentTime){
+  if (monsterParkActive) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+  }
+  const ret = updateBeforeV1724.apply(this, arguments);
+  if (monsterParkActive) {
+    gameMode = 'stage';
+    infiniteBossTimer = 0;
+    if (expItems && expItems.length) expItems.length = 0;
+    if (goldDrops && goldDrops.length) goldDrops.length = 0;
+    if (fieldItems && fieldItems.length) fieldItems.length = 0;
+  }
+  return ret;
+};
+
+const drawInfiniteBossCountdownBeforeV1724 = drawInfiniteBossCountdown;
+drawInfiniteBossCountdown = function(){
+  if (monsterParkActive) return;
+  return drawInfiniteBossCountdownBeforeV1724.apply(this, arguments);
+};
+
+const getModeBgmNameBeforeV1724 = getModeBgmName;
+getModeBgmName = function(){
+  if (monsterParkActive) return 'game';
+  return getModeBgmNameBeforeV1724.apply(this, arguments);
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.172.4')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.4 몬스터 파크 수정]</b><br>몬스터 파크가 무한모드로 인식되어 화면에 보스 N초가 표시되던 문제를 수정했습니다. 이제 몬스터 파크는 1~5스테이지 전용 모드로 동작하며, 0.2초마다 1마리씩 랜덤 분산 생성됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 loadGameData();
 updateHUD();
