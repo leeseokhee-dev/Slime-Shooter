@@ -14482,6 +14482,12 @@ function pushGainMessage(text, color = '#ffffff') {
   while (gainMessages.length > GAIN_MESSAGE_MAX) gainMessages.shift();
 }
 
+function pushPartyBonusExpMessage(amount) {
+  const safeAmount = Math.max(0, Math.round(Number(amount) || 0));
+  if (safeAmount <= 0) return;
+  pushGainMessage(`파티 보너스 경험치 (+${formatNumber(safeAmount)})`, '#ff87fb');
+}
+
 function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult = 1, finalAmount = 0) {
   const safeBaseRaw = Math.max(0, Number(baseAmount) || 0);
   const safeFinal = Math.max(0, Math.round(Number(finalAmount) || 0));
@@ -23244,7 +23250,7 @@ try {
 // ✅ [v.172] 파티 원정 모드
 // - LV.20+ 입장
 // - 플레이어 + AI 파티원 3명 협동 사냥
-// - 1~19스테이지: 30초씩 몬스터 사냥
+// - 1~19스테이지: 20초씩 몬스터 사냥
 // - 20스테이지: 최종 보스
 // - 몬스터 0.5초마다 5마리 생성, 화면 내 최대 30마리
 // - AI 공격력: 플레이어 공격력의 80%
@@ -23266,7 +23272,7 @@ let partyFinishReason = '';
 
 const PARTY_LEVEL_REQ_V172 = 20;
 const PARTY_MAX_STAGE_V172 = 20;
-const PARTY_STAGE_DURATION_MS_V172 = 30000;
+const PARTY_STAGE_DURATION_MS_V172 = 20000;
 const PARTY_SPAWN_INTERVAL_MS_V172 = 500;
 const PARTY_SPAWN_BATCH_V172 = 5;
 const PARTY_MAX_ENEMIES_V172 = 30;
@@ -23302,6 +23308,89 @@ function calcPartyBossExpByLevel(lv){
   return Math.max(1, Math.round(1781 + (2163984 - 1781) * Math.pow(t, 1.85)));
 }
 
+function getPartySyncedLevel(){
+  const values = [Math.max(1, Math.floor(Number(level) || 1))];
+  try {
+    (partyMembers || []).forEach(m => {
+      if (m && Number.isFinite(Number(m.level))) values.push(Math.max(1, Math.floor(Number(m.level))));
+    });
+  } catch(e) {}
+  const avg = values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
+  return Math.max(PARTY_LEVEL_REQ_V172, Math.min(300, Math.round(avg)));
+}
+
+function getPartyDisplayNickname(){
+  try {
+    const n = String((saveData && saveData.nickname) || '').trim();
+    return n || 'PLAYER';
+  } catch(e) {
+    return 'PLAYER';
+  }
+}
+
+function getPartyMemberMaxHp(lv){
+  return Math.max(1, 100 + (Math.max(1, Math.floor(Number(lv) || 1)) - 1) * 5);
+}
+
+function getPartyRoleIcon(member){
+  if (!member) return 'AI';
+  return member.emoji || 'AI';
+}
+
+function drawPartyNamePlate(x, y, nickname, lv, iconText, hp, maxHp, accentColor, options = {}){
+  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
+  const safeHp = Math.max(0, Math.round(Number(hp) || 0));
+  const safeMaxHp = Math.max(1, Math.round(Number(maxHp) || 1));
+  const ratio = Math.max(0, Math.min(1, safeHp / safeMaxHp));
+  const compact = !!options.compact;
+  const plateW = compact ? 118 : 142;
+  const plateH = compact ? 38 : 44;
+  const topY = y - (compact ? 60 : 72);
+  const leftX = x - plateW / 2;
+  ctx.save();
+  ctx.globalAlpha = 0.96;
+  ctx.fillStyle = 'rgba(0,0,0,0.58)';
+  ctx.strokeStyle = accentColor || 'rgba(255,255,255,0.72)';
+  ctx.lineWidth = 1;
+  try {
+    ctx.beginPath();
+    ctx.roundRect(leftX, topY, plateW, plateH, 8);
+    ctx.fill();
+    ctx.stroke();
+  } catch(e) {
+    ctx.fillRect(leftX, topY, plateW, plateH);
+    ctx.strokeRect(leftX, topY, plateW, plateH);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.font = `900 ${compact ? 9 : 10}px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(nickname || 'PLAYER').slice(0, compact ? 10 : 12), leftX + 8, topY + 4);
+  ctx.fillStyle = accentColor || '#9dffea';
+  ctx.fillText(`Lv.${safeLv}`, leftX + 8, topY + (compact ? 16 : 18));
+  ctx.textAlign = 'center';
+  ctx.font = `900 ${compact ? 11 : 12}px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(iconText || 'AI'), leftX + plateW - 20, topY + 8);
+  const barX = leftX + 8;
+  const barY = topY + plateH - 10;
+  const barW = plateW - 16;
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.fillRect(barX, barY, barW, 5);
+  const grad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+  grad.addColorStop(0, '#ff5a5a');
+  grad.addColorStop(0.55, '#ffd36a');
+  grad.addColorStop(1, '#66ff99');
+  ctx.fillStyle = grad;
+  ctx.fillRect(barX, barY, barW * ratio, 5);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.font = `800 ${compact ? 7 : 8}px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`HP ${formatNumber(safeHp)}/${formatNumber(safeMaxHp)}`, x, barY - 1);
+  ctx.restore();
+}
+
 function getPartyPlayerDamage(){
   try {
     let dmg = BASE_PLAYER_DAMAGE + (Math.max(1, Math.floor(level || 1)) - 1) * 10;
@@ -23317,20 +23406,29 @@ function makePartyMembers(){
   const offsets = [-2, 0, 2];
   const colors = ['#7ce7ff', '#b8ff7c', '#ffd36a'];
   const emojis = ['🟦', '🟩', '🟨'];
+  const names = ['푸른 원정대원', '초록 원정대원', '황금 원정대원'];
   return offsets.map((off, i) => {
     const lv = Math.max(1, Math.min(300, baseLv + off));
+    const maxHp = getPartyMemberMaxHp(lv);
     return {
       id: i,
       level: lv,
       title: getPartyNicknameByLevel(lv),
-      name: `Lv.${lv} ${getPartyNicknameByLevel(lv)}`,
-      x: width / 2 + (i - 1) * 46,
-      y: height - 105 - i * 10,
-      tx: 0,
-      ty: 0,
+      nickname: names[i],
+      name: `${names[i]} Lv.${lv}`,
+      x: width / 2 + (i - 1) * 70,
+      y: height - 120 - i * 28,
+      tx: randRange(60, width - 60),
+      ty: randRange(115, height - 95),
+      vx: 0,
+      vy: 0,
+      maxHp,
+      hp: maxHp,
       color: colors[i],
       emoji: emojis[i],
       shotTimer: 300 + i * 180,
+      moveTimer: 0,
+      thinkTimer: 80 + i * 120,
       kills: 0,
       exp: 0
     };
@@ -23482,22 +23580,55 @@ function findPartyTarget(member){
 }
 
 function updatePartyMembers(dt){
-  if (!partyMembers || partyMembers.length === 0 || !player) return;
+  if (!partyMembers || partyMembers.length === 0) return;
   const delta = dt / 16.67;
   partyMembers.forEach((m, i) => {
-    const angle = (i - 1) * 0.72;
-    const dist = 58 + i * 8;
-    m.tx = clamp(player.x + Math.sin(angle) * dist, 24, width - 24);
-    m.ty = clamp(player.y + 52 + Math.cos(angle) * 16, 50, height - 30);
-    m.x += (m.tx - m.x) * Math.min(1, 0.08 * delta);
-    m.y += (m.ty - m.y) * Math.min(1, 0.08 * delta);
+    m.thinkTimer -= dt;
+    m.moveTimer -= dt;
+    const target = findPartyTarget(m);
+
+    // ✅ 플레이어 추종이 아니라, 사람처럼 각자 판단해서 목표 지점으로 이동
+    if (m.thinkTimer <= 0 || m.moveTimer <= 0 || Math.hypot((m.tx || m.x) - m.x, (m.ty || m.y) - m.y) < 18) {
+      m.thinkTimer = randRange(520, 980) + i * 45;
+      m.moveTimer = randRange(900, 1700);
+      if (target && Math.random() < 0.72) {
+        const side = (i - 1) * 46 + randRange(-42, 42);
+        const back = randRange(54, 118);
+        m.tx = clamp((target.x || width / 2) + side, 38, width - 38);
+        m.ty = clamp((target.y || height / 2) + back, 88, height - 42);
+      } else {
+        m.tx = randRange(48, width - 48);
+        m.ty = randRange(98, height - 62);
+      }
+    }
+
+    let ax = ((m.tx || m.x) - m.x) * 0.018;
+    let ay = ((m.ty || m.y) - m.y) * 0.018;
+    partyMembers.forEach(o => {
+      if (!o || o === m) return;
+      const dx = m.x - o.x;
+      const dy = m.y - o.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > 0 && d2 < 38 * 38) {
+        const d = Math.sqrt(d2);
+        ax += (dx / d) * 0.16;
+        ay += (dy / d) * 0.16;
+      }
+    });
+    m.vx = clamp((m.vx || 0) + ax, -2.9, 2.9);
+    m.vy = clamp((m.vy || 0) + ay, -2.6, 2.6);
+    m.vx *= 0.9;
+    m.vy *= 0.9;
+    m.x = clamp(m.x + m.vx * delta, 24, width - 24);
+    m.y = clamp(m.y + m.vy * delta, 70, height - 26);
+
     m.shotTimer -= dt;
     if (m.shotTimer <= 0) {
-      m.shotTimer = 560 + i * 80;
-      const target = findPartyTarget(m);
-      if (target) {
-        const tx = target.x || width / 2;
-        const ty = target.y || height / 2;
+      m.shotTimer = 520 + i * 80 + randRange(0, 140);
+      const shotTarget = target || findPartyTarget(m);
+      if (shotTarget) {
+        const tx = shotTarget.x || width / 2;
+        const ty = shotTarget.y || height / 2;
         const a = Math.atan2(ty - m.y, tx - m.x);
         const spd = 8.8;
         partyBullets.push({
@@ -23521,9 +23652,11 @@ function registerPartyAiKill(enemy, member){
   enemy._partyDead = true;
   const baseExp = getStageMonsterExpRewardForEnemy(stage, enemy);
   const gained = Math.max(1, Math.floor(baseExp * PARTY_AI_EXP_RATE_V172));
-  addExp(gained, { source:'party-ai', baseAmount:gained, hotMultiplier:1 });
-  stageRunExpMonsters += gained;
-  partyTotalExp += gained;
+  const granted = addExp(gained, { source:'party-ai', baseAmount:gained, hotMultiplier:1, showGainMessage:false });
+  const shownExp = Math.max(0, Math.floor(granted || gained));
+  pushPartyBonusExpMessage(shownExp);
+  stageRunExpMonsters += shownExp;
+  partyTotalExp += shownExp;
   partyAiKills++;
   partyTotalKills++;
   if (member) { member.kills++; member.exp += gained; }
@@ -23613,6 +23746,23 @@ function finishPartyExpedition(success, aiKilledBoss){
   }, 500);
 }
 
+const createBossBeforeV172PartySync = createBoss;
+createBoss = function(){
+  const b = createBossBeforeV172PartySync.apply(this, arguments);
+  if (partyExpeditionActive && b) {
+    const syncedLv = getPartySyncedLevel();
+    b.level = syncedLv;
+    b.evoStage = getBossEvoStageByLevel(syncedLv);
+    const partyHp = Math.max(b.maxHp || b.hp || 1, Math.round(4500 + syncedLv * 420 + Math.max(1, (partyMembers || []).length) * syncedLv * 120));
+    b.hp = partyHp;
+    b.maxHp = partyHp;
+    b.roamSpeed = 1.8 + syncedLv * 0.015;
+    b.dashSpeed = 7.6 + syncedLv * 0.018;
+    b._partySyncedLevel = syncedLv;
+  }
+  return b;
+};
+
 const handleBossKilledBySkillBeforeV172Party = handleBossKilledBySkill;
 handleBossKilledBySkill = function(){
   if (!partyExpeditionActive) return handleBossKilledBySkillBeforeV172Party.apply(this, arguments);
@@ -23622,9 +23772,11 @@ handleBossKilledBySkill = function(){
   const bx = boss.x, by = boss.y;
   const baseExp = calcPartyBossExpByLevel(level);
   const gained = aiKilled ? Math.max(1, Math.floor(baseExp * PARTY_AI_EXP_RATE_V172)) : baseExp;
-  const granted = addExp(gained, { source:'party-boss', baseAmount:gained, hotMultiplier:1 });
-  stageRunExpBoss += Math.max(0, Math.floor(granted || gained));
-  partyTotalExp += Math.max(0, Math.floor(granted || gained));
+  const granted = addExp(gained, { source: aiKilled ? 'party-ai-boss' : 'party-boss', baseAmount:gained, hotMultiplier:1, showGainMessage: !aiKilled });
+  const shownExp = Math.max(0, Math.floor(granted || gained));
+  if (aiKilled) pushPartyBonusExpMessage(shownExp);
+  stageRunExpBoss += shownExp;
+  partyTotalExp += shownExp;
   if (aiKilled) partyAiKills++; else partyPlayerKills++;
   partyTotalKills++;
   try { spawnDamageText(bx, by - 42, `보스 EXP +${formatNumber(granted || gained)}`, aiKilled ? '#9dffea' : '#ffd36a', true); } catch(e) {}
@@ -23708,13 +23860,8 @@ function drawPartyMembers(){
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('AI', 0, 1);
-    ctx.font = `900 10px ${getUIFontFamily()}`;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(0,0,0,0.78)';
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeText(m.title, 0, -24);
-    ctx.fillText(m.title, 0, -24);
     ctx.restore();
+    drawPartyNamePlate(m.x, m.y, m.nickname || m.title, m.level, getPartyRoleIcon(m), m.hp || m.maxHp, m.maxHp || getPartyMemberMaxHp(m.level), m.color, { compact:true });
   });
 }
 
@@ -23735,6 +23882,9 @@ function drawPartyBullets(){
 const drawPlayerBeforeV172Party = drawPlayer;
 drawPlayer = function(){
   const ret = drawPlayerBeforeV172Party.apply(this, arguments);
+  if (partyExpeditionActive && player && player.alive && state !== 'title') {
+    drawPartyNamePlate(player.x, player.y, getPartyDisplayNickname(), level, '나', playerHp, playerMaxHp, '#ffd36a', { compact:false });
+  }
   drawPartyMembers();
   return ret;
 };
@@ -23761,8 +23911,9 @@ updateHUD = function(){
     }
     if (hotTimeEl) {
       const mExp = calcPartyMonsterExpByLevel(level);
-      const bExp = calcPartyBossExpByLevel(level);
-      hotTimeEl.textContent = `🤝 AI 공격력 80% · AI 처치 EXP 50% · 몬스터 ${formatNumber(mExp)}EXP / 보스 ${formatNumber(bExp)}EXP`;
+      const syncedLv = getPartySyncedLevel();
+      const bExp = calcPartyBossExpByLevel(syncedLv);
+      hotTimeEl.textContent = `🤝 독립 AI 이동 · AI 공격력 80% · AI EXP 50% · 보스 Lv.${syncedLv} / ${formatNumber(bExp)}EXP`;
       hotTimeEl.style.color = '#9dffea';
     }
   }
@@ -23792,10 +23943,96 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.172 파티 원정')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#9dffea;">[v.172 파티 원정 업데이트]</b><br>LV.20부터 파티 원정 모드를 이용할 수 있습니다. 플레이어와 AI 파티원 3명이 함께 20스테이지를 진행하며, 1~19스테이지는 30초 사냥, 20스테이지는 최종 보스전으로 구성됩니다.<br>몬스터는 0.5초마다 5마리씩 등장하고 최대 30마리까지 유지됩니다. AI 파티원은 플레이어 공격력의 80%로 공격하며, AI가 처치한 몬스터와 보스의 EXP는 50%만 지급됩니다.';
+    box.innerHTML = '<b style="color:#9dffea;">[v.172 파티 원정 업데이트]</b><br>LV.20부터 파티 원정 모드를 이용할 수 있습니다. 플레이어와 AI 파티원 3명이 함께 20스테이지를 진행하며, 1~19스테이지는 20초 사냥, 20스테이지는 최종 보스전으로 구성됩니다.<br>몬스터는 0.5초마다 5마리씩 등장하고 최대 30마리까지 유지됩니다. AI 파티원은 플레이어를 따라가지 않고 각자 움직이며, 플레이어 공격력의 80%로 공격합니다. 보스 레벨은 플레이어와 파티원 평균 레벨에 맞춰집니다. AI, AI가 처치한 몬스터와 보스의 EXP는 50%만 지급됩니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
+
+
+
+// ✅ [v.172.1] 타이틀 복귀 안정화 패치
+// - 모든 모드에서 [타이틀로] 이동 시 이전 클리어/사망/자동진행 상태가 다시 표시되는 문제 수정
+// - 스테이지 클리어 모달, 스테이지 클리어 연출, 자동 진행 타이머를 강제로 정리
+// - 몬스터 파크 보상 수령 후 터치 이동 및 파티 원정 종료 후에도 메인 타이틀이 정상 표시되도록 보정
+function forceResetToTitleStateV1721(){
+  try { if (typeof clearMissionAutoAdvanceTimer === 'function') clearMissionAutoAdvanceTimer(); } catch(e) {}
+  try { if (typeof clearAdventureAutoAdvanceV1711 === 'function') clearAdventureAutoAdvanceV1711(); } catch(e) {}
+  try { if (typeof clearMonsterParkAutoAdvanceV1712 === 'function') clearMonsterParkAutoAdvanceV1712(); } catch(e) {}
+
+  try {
+    if (typeof stageClearSeq !== 'undefined' && stageClearSeq) {
+      stageClearSeq.active = false;
+      stageClearSeq.timer = 0;
+      stageClearSeq.bonusExp = 0;
+      stageClearSeq.rank = 'D';
+      stageClearSeq.formulaText = '';
+      stageClearSeq.formulaText2 = '';
+    }
+  } catch(e) {}
+
+  try { stageCleared = false; } catch(e) {}
+  try { stageTransitionTimer = 0; } catch(e) {}
+  try { bossSpawned = false; } catch(e) {}
+  try { boss = null; } catch(e) {}
+  try { isPlayerDying = false; } catch(e) {}
+  try { deathAnimationTimer = 0; } catch(e) {}
+  try { pointerActive = false; } catch(e) {}
+  try { tutorialActive = false; tutorialNonBlocking = false; tutorialFlow = 'none'; } catch(e) {}
+
+  try { if (stageClearModal) stageClearModal.classList.add('hidden'); } catch(e) {}
+  try { if (gameOverUI) gameOverUI.classList.add('hidden'); } catch(e) {}
+  try { if (pauseOverlay) pauseOverlay.classList.add('hidden'); } catch(e) {}
+  try { if (confirmOverlay) confirmOverlay.classList.add('hidden'); } catch(e) {}
+  try { if (tutorialOverlay) tutorialOverlay.classList.add('hidden'); } catch(e) {}
+  try { if (focusMask) focusMask.classList.remove('show'); } catch(e) {}
+
+  try { if (nextStageBtn) { nextStageBtn.disabled = false; nextStageBtn.textContent = '다음 스테이지'; } } catch(e) {}
+  try { if (restartBtn) restartBtn.classList.remove('hidden'); } catch(e) {}
+  try { if (toTitleBtn) toTitleBtn.classList.remove('hidden'); } catch(e) {}
+  try { if (monsterParkClaimBtn) monsterParkClaimBtn.classList.add('hidden'); } catch(e) {}
+
+  try { setAdventureMode(false); } catch(e) {}
+  try { setMonsterParkMode(false); } catch(e) {}
+  try { setPartyExpeditionMode(false); } catch(e) {}
+  try { monsterParkClearRewardReadyV1712 = false; monsterParkAwaitingTitleTouchV1712 = false; } catch(e) {}
+  try { partyExpeditionFinished = false; partyMembers = []; partyBullets = []; } catch(e) {}
+
+  try { document.body.classList.add('title-mode'); } catch(e) {}
+  try { document.body.classList.remove('dead-mode', 'tutorial-mode', 'fever-mode'); } catch(e) {}
+}
+
+// 일부 구간에서 titleBtn 이름을 사용하던 부분 보정
+try { if (typeof window.titleBtn === 'undefined') window.titleBtn = toTitleBtn; } catch(e) {}
+
+const goToTitleBeforeV1721 = goToTitle;
+goToTitle = function(){
+  forceResetToTitleStateV1721();
+  const ret = goToTitleBeforeV1721.apply(this, arguments);
+  forceResetToTitleStateV1721();
+  state = 'title';
+  isPaused = false;
+  if (titleUI) titleUI.classList.remove('hidden');
+  if (gameOverUI) gameOverUI.classList.add('hidden');
+  if (stageClearModal) stageClearModal.classList.add('hidden');
+  try { setPauseUI(); } catch(e) {}
+  try { updateHUD(); } catch(e) {}
+  return ret;
+};
+
+if (clearToTitleBtn) {
+  clearToTitleBtn.addEventListener('click', function(ev){
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    goToTitle();
+  }, true);
+}
+if (toTitleBtn) {
+  toTitleBtn.addEventListener('click', function(ev){
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    goToTitle();
+  }, true);
+}
 
 loadGameData();
 updateHUD();
