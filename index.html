@@ -24695,6 +24695,224 @@ try {
   }
 } catch(e) {}
 
+
+
+// ===============================
+// ✅ [v.172.6] 파티 원정 웨이브 목표 처치 수 방식
+// - 기존 20초 타이머 클리어 제거
+// - 웨이브별 목표 처치 수 달성 시 클리어
+// - 다음 웨이브 대기 시간 5초
+// - 몬스터 리스폰 1.2초 간격
+// - 괄호 값은 1회 리스폰 수
+// ===============================
+const PARTY_WAVE_RULES_V1726 = [
+  { target:20, batch:2 },
+  { target:25, batch:2 },
+  { target:30, batch:2 },
+  { target:35, batch:2 },
+  { target:40, batch:3 },
+  { target:45, batch:3 },
+  { target:50, batch:4 },
+  { target:55, batch:5 },
+  { target:60, batch:5 },
+  { target:70, batch:6 },
+  { target:80, batch:6 },
+  { target:90, batch:6 },
+  { target:100, batch:7 },
+  { target:120, batch:8 },
+  { target:140, batch:9 },
+  { target:160, batch:10 },
+  { target:180, batch:10 },
+  { target:200, batch:10 },
+  { target:250, batch:12 }
+];
+const PARTY_SPAWN_INTERVAL_MS_V1726 = 1200;
+const PARTY_NEXT_WAVE_WAIT_MS_V1726 = 5000;
+let partyWaveKillsV1726 = 0;
+let partyWaveSpawnedV1726 = 0;
+
+function getPartyWaveRuleV1726(stg){
+  const st = Math.max(1, Math.min(19, Math.floor(v171SafeNum(stg, 1))));
+  return PARTY_WAVE_RULES_V1726[st - 1] || PARTY_WAVE_RULES_V1726[0];
+}
+
+function resetPartyWaveProgressV1726(){
+  partyWaveKillsV1726 = 0;
+  partyWaveSpawnedV1726 = 0;
+}
+
+const initPartyExpeditionRunBeforeV1726 = initPartyExpeditionRun;
+initPartyExpeditionRun = function(){
+  const ret = initPartyExpeditionRunBeforeV1726.apply(this, arguments);
+  resetPartyWaveProgressV1726();
+  partyStageTimer = 0;
+  partySpawnAcc = 0;
+  return ret;
+};
+
+const resetPartyStageStateBeforeV1726 = resetPartyStageState;
+resetPartyStageState = function(){
+  const ret = resetPartyStageStateBeforeV1726.apply(this, arguments);
+  resetPartyWaveProgressV1726();
+  partyStageTimer = 0;
+  partySpawnAcc = 0;
+  return ret;
+};
+
+const spawnPartyEnemiesBeforeV1726 = spawnPartyEnemies;
+spawnPartyEnemies = function(){
+  if (!partyExpeditionActive || state !== 'playing') return;
+  const st = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  if (st >= PARTY_MAX_STAGE_V172) return;
+  const rule = getPartyWaveRuleV1726(st);
+  if (partyWaveKillsV1726 >= rule.target) return;
+
+  const alive = enemies.filter(e => e && e.hp > 0 && !e._partyDead).length;
+  const room = Math.max(0, PARTY_MAX_ENEMIES_V172 - alive);
+  if (room <= 0) return;
+
+  const remainingToTarget = Math.max(0, rule.target - partyWaveKillsV1726 - alive);
+  const count = Math.min(rule.batch, room, Math.max(1, remainingToTarget));
+  const speedBase = 1.0 + Math.min(2.2, Math.max(1, level || 1) * 0.008) + st * 0.018;
+  for (let i = 0; i < count; i++) {
+    const x = randRange(34, width - 34);
+    const y = -40 - i * 10;
+    const type = ENEMY_TYPES[(partyTotalKills + partyWaveSpawnedV1726 + i + st) % ENEMY_TYPES.length];
+    const enemy = createEnemy(type, x, y, speedBase, 'rain', randRange(-0.45, 0.45), {
+      attackStyle: getEnemyAttackStyle(Math.max(1, Math.min(60, Math.floor(level || 1))), partyTotalKills + partyWaveSpawnedV1726, i),
+      partyEnemy: true
+    });
+    enemy.score = Math.max(100, Math.round((enemy.score || 100) * 0.45 / 100) * 100);
+    enemy.hp = Math.max(12, Math.floor((enemy.maxHp || enemy.hp || 40) * (0.35 + Math.min(0.85, level * 0.0025))));
+    enemy.maxHp = enemy.hp;
+    enemies.push(enemy);
+    partyWaveSpawnedV1726++;
+  }
+};
+
+const registerPartyAiKillBeforeV1726 = registerPartyAiKill;
+registerPartyAiKill = function(enemy, member){
+  const before = partyAiKills || 0;
+  const ret = registerPartyAiKillBeforeV1726.apply(this, arguments);
+  if (partyExpeditionActive && state === 'playing' && (partyAiKills || 0) > before) {
+    partyWaveKillsV1726 += (partyAiKills || 0) - before;
+  }
+  return ret;
+};
+
+const registerEnemyKillBeforeV1726 = registerEnemyKill;
+registerEnemyKill = function(isBoss = false, opts = {}){
+  const before = partyPlayerKills || 0;
+  const ret = registerEnemyKillBeforeV1726.apply(this, arguments);
+  if (partyExpeditionActive && state === 'playing' && !isBoss && !(opts && opts.partyAi) && (partyPlayerKills || 0) > before) {
+    partyWaveKillsV1726 += (partyPlayerKills || 0) - before;
+  }
+  return ret;
+};
+
+function requestPartyStageClearV1726(){
+  if (!partyExpeditionActive || partyExpeditionFinished || partyStageClearTimerV1722 > 0) return;
+  const cur = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  const rule = getPartyWaveRuleV1726(cur);
+  partyStageClearTimerV1722 = PARTY_NEXT_WAVE_WAIT_MS_V1726;
+  partyStageClearTextV1722 = `목표 ${formatNumber(rule.target)}마리 처치 완료! 5초 후 다음 웨이브가 시작됩니다.`;
+  partyStageTimer = 0;
+  partySpawnAcc = 0;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  partyBullets = [];
+  try { spawnExplosion(width/2, height/3, 'rgba(184,255,124,1)', 24); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+  try { showToast(`🤝 파티 원정 ${cur} 웨이브 클리어!`, '#b8ff7c', 1100); } catch(e) {}
+}
+
+const updatePartyExpeditionBeforeV1726 = updatePartyExpedition;
+updatePartyExpedition = function(dt, timestamp){
+  if (!partyExpeditionActive || state !== 'playing' || partyExpeditionFinished) return;
+  if (!partyMembers || partyMembers.length === 0) partyMembers = makePartyMembers();
+
+  if (partyStageIntroTimerV1722 > 0) {
+    partyStageIntroTimerV1722 = Math.max(0, partyStageIntroTimerV1722 - dt);
+    updatePartyMembers(dt);
+    updatePartyBullets(dt);
+    if (partyStageIntroTimerV1722 <= 0 && Math.floor(v171SafeNum(stage, 1)) >= PARTY_MAX_STAGE_V172) {
+      startPartyBossIfNeeded();
+    }
+    return;
+  }
+
+  if (partyStageClearTimerV1722 > 0) {
+    partyStageClearTimerV1722 = Math.max(0, partyStageClearTimerV1722 - dt);
+    updatePartyMembers(dt);
+    updatePartyBullets(dt);
+    if (partyStageClearTimerV1722 <= 0) advancePartyStage();
+    return;
+  }
+
+  const st = Math.max(1, Math.floor(v171SafeNum(stage, 1)));
+  if (st < PARTY_MAX_STAGE_V172) {
+    const rule = getPartyWaveRuleV1726(st);
+    partySpawnAcc += dt;
+    while (partySpawnAcc >= PARTY_SPAWN_INTERVAL_MS_V1726) {
+      partySpawnAcc -= PARTY_SPAWN_INTERVAL_MS_V1726;
+      spawnPartyEnemies();
+    }
+    if (partyWaveKillsV1726 >= rule.target) requestPartyStageClearV1726();
+  } else {
+    startPartyBossIfNeeded();
+  }
+  updatePartyMembers(dt);
+  updatePartyBullets(dt);
+};
+
+const drawPartyWaveNoticeBeforeV1726 = drawPartyWaveNoticeV1722;
+drawPartyWaveNoticeV1722 = function(){
+  if (!partyExpeditionActive || state !== 'playing') return drawPartyWaveNoticeBeforeV1726.apply(this, arguments);
+  const st = Math.max(1, Math.min(PARTY_MAX_STAGE_V172, Math.floor(v171SafeNum(stage, 1))));
+  if (partyStageIntroTimerV1722 > 0) {
+    const a = Math.min(1, partyStageIntroTimerV1722 / 650);
+    const title = st >= PARTY_MAX_STAGE_V172 ? '최종 보스' : `웨이브 ${st}`;
+    const rule = st < PARTY_MAX_STAGE_V172 ? getPartyWaveRuleV1726(st) : null;
+    const line = st >= PARTY_MAX_STAGE_V172
+      ? `보스 Lv.${partyBossLevelV1722 || Math.max(1, level)} · 파티원과 함께 마무리하세요!`
+      : `목표 ${formatNumber(rule.target)}마리 · 1.2초마다 ${rule.batch}마리 리스폰`;
+    drawCanvasCenterNoticeV1722(title, [line], a, st >= PARTY_MAX_STAGE_V172 ? '#ffd36a' : '#9dffea');
+  }
+  if (partyStageClearTimerV1722 > 0) {
+    const a = Math.min(1, partyStageClearTimerV1722 / 700);
+    drawCanvasCenterNoticeV1722('웨이브 클리어!', [partyStageClearTextV1722 || '5초 후 다음 웨이브가 시작됩니다.', '다음 웨이브를 준비해주세요.'], a, '#b8ff7c');
+  }
+};
+
+const updateHUDBeforeV1726 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV1726.apply(this, arguments);
+  if (partyExpeditionActive) {
+    const st = Math.max(1, Math.min(PARTY_MAX_STAGE_V172, Math.floor(v171SafeNum(stage, 1))));
+    if (stageEl) {
+      if (st < PARTY_MAX_STAGE_V172) {
+        const rule = getPartyWaveRuleV1726(st);
+        if (partyStageIntroTimerV1722 > 0) stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 웨이브 준비 중`;
+        else if (partyStageClearTimerV1722 > 0) stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 다음 웨이브 5초 대기`;
+        else stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 처치 ${formatNumber(partyWaveKillsV1726)}/${formatNumber(rule.target)} · 리스폰 ${rule.batch}마리`;
+      } else {
+        stageEl.textContent = `파티 원정 ${st}/${PARTY_MAX_STAGE_V172} · 최종 보스전`;
+      }
+    }
+  }
+  return ret;
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.172.6')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#9dffea;">[v.172.6 파티 원정 웨이브 개편]</b><br>파티 원정 1~19웨이브가 20초 제한 방식에서 목표 처치 수 달성 방식으로 변경되었습니다. 몬스터는 1.2초마다 웨이브별 지정 수량으로 리스폰되며, 웨이브 클리어 후 다음 웨이브 대기 시간은 5초입니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
 loadGameData();
 updateHUD();
 if (isInitialNicknameRequired()) openInitialNicknameModal();
