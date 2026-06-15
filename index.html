@@ -6349,6 +6349,8 @@ function getStageKillTarget(stg) {
   // ✅ [v.161] 배터리 절약형 스테이지 목표 처치 수 조정
   // 1~5: 5 / 6~15: 10 / 16~20: 20 / 21~40: 30 / 41~60: 60 / 61~80: 120 / 81~100: 240
   // 101~120: 30 / 121~140: 60 / 141~160: 100 / 161~180: 175 / 181~200: 350
+  // ✅ [v.173] 201~300 크리스탈 지역 목표 처치 수
+  // 201~220: 50 / 221~240: 120 / 241~260: 250 / 261~280: 375 / 281~300: 500
   if (stg <= 5) return 5;
   if (stg <= 15) return 10;
   if (stg <= 20) return 20;
@@ -6360,13 +6362,19 @@ function getStageKillTarget(stg) {
   if (stg <= 140) return 60;
   if (stg <= 160) return 100;
   if (stg <= 180) return 175;
-  return 350;
+  if (stg <= 200) return 350;
+  if (stg <= 220) return 50;
+  if (stg <= 240) return 120;
+  if (stg <= 260) return 250;
+  if (stg <= 280) return 375;
+  return 500;
 }
 
 
 // ✅ [v.161.2] 스테이지 모드 전용: 목표 처치 수별 초당 생성량
 // - 1~100: 5마리=1.2초당 1 / 10마리=1.2초당 2 / 20마리=1.2초당 4 / 30마리=1.2초당 5 / 60마리=1.2초당 7 / 120마리=1.2초당 10 / 240마리=1.2초당 15
 // - 101~200: 30마리=1.2초당 4 / 60마리=1.2초당 6 / 100마리=1.2초당 10 / 175마리=1.2초당 15 / 350마리=1.2초당 17
+// - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
   return 1200; // 1.2초 단위로 묶어서 생성
@@ -6375,6 +6383,15 @@ function getStageMonsterSpawnIntervalMs(stg) {
 function getStageMonsterSpawnBatchSize(stg) {
   stg = Math.max(1, Math.floor(Number(stg) || 1));
   const target = getStageKillTarget(stg);
+
+  // ✅ [v.173] 201~300 크리스탈 지역 리스폰 수 고정
+  if (stg >= 201) {
+    if (stg <= 220) return 5;
+    if (stg <= 240) return 8;
+    if (stg <= 260) return 12;
+    if (stg <= 280) return 15;
+    return 20;
+  }
 
   if (stg <= 100) {
     if (target <= 5) return 1;
