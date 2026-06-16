@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.174 Battery Saver Effects)</title>
+<title>Slime Shooter - Ultimate Evolution (v.175 Dimension Invasion Countdown)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4767,6 +4767,7 @@ const bgmTracks = {
   itempark: new Audio('bg_itempark.mp3'), // ✅ 아이템 파크 전용
   minigame: new Audio('bg_minigame.mp3'), // ✅ 미니게임 전용
   treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
+  dimension:new Audio('bg_dimension.mp3'),// ✅ [v.175] 디멘션 인베이드 전용
   fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
@@ -4876,7 +4877,7 @@ function getSeasonKeyNow(date = new Date()) {
 
 function resolveBgmName(requested) {
   // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'fever') return requested;
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'dimension' || requested === 'fever') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
@@ -8557,12 +8558,6 @@ function toggleLowPowerFromCanvas() {
   saveGameData();
   updateSettingsUI();
   requestAnimationFrame(() => fitCanvasToViewport());
-}
-function toggleEffectsFromCanvas() {
-  saveData.effectsEnabled = !areEffectsEnabled();
-  if (!areEffectsEnabled()) particles = [];
-  saveGameData();
-  updateSettingsUI();
 }
 
 
@@ -19215,7 +19210,6 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
-if (!areEffectsEnabled()) { particles = []; return; }
 const delta = dt / 16.67;
 particles.forEach(p => {
   // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
@@ -21093,7 +21087,6 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
-  if (!areEffectsEnabled()) return;
   particles.forEach(p => {
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
@@ -24958,6 +24951,617 @@ try {
     noticeBody.prepend(box);
   }
 } catch(e) {}
+
+
+
+// ===============================
+// ✅ [v.175] 디멘션 인베이드 모드
+// - 3초 간격으로 한 번에 20마리 등장
+// - 디멘션 인베이드 중 펫 사용 불가
+// - 총 5개의 웨이브로 구성
+// - 하루 10회 입장 제한
+// - 웨이브별 목표 처치 수 달성 시 다음 웨이브 진행
+// - 스테이지 클리어 보너스 EXP는 해당 웨이브 몬스터 처치 EXP의 15%
+// - 몬스터 EXP는 플레이어 레벨과 웨이브에 따라 지급, 150레벨 이후 고정
+// - 모든 웨이브 시작 전 3, 2, 1 카운트다운 후 시작
+// - 전용 BGM: bg_dimension.mp3
+// ===============================
+const DIMENSION_INVASION_LEVEL_REQ_V175 = 50;
+const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 3000;
+const DIMENSION_INVASION_SPAWN_BATCH_V175 = 20;
+const DIMENSION_INVASION_MAX_ENEMIES_V175 = 80;
+const DIMENSION_INVASION_DAILY_LIMIT_V175 = 10;
+const DIMENSION_INVASION_WAVE_TARGETS_V175 = [300, 400, 500, 750, 1000];
+const DIMENSION_INVASION_FIXED_EXP_V175 = [984, 1125, 1273, 1421, 1577];
+const DIMENSION_INVASION_CLEAR_BONUS_RATE_V175 = 0.15;
+
+let dimensionInvasionActiveV175 = false;
+let dimensionInvasionTimeLeftV175 = 0;
+let dimensionInvasionSpawnIndexV175 = 0;
+let dimensionInvasionLastResultV175 = null;
+let dimensionInvasionCompletingV175 = false;
+let dimensionInvasionWaveV175 = 1;
+let dimensionInvasionWaveStartKillsV175 = 0;
+let dimensionInvasionWaveStartExpV175 = 0;
+let dimensionInvasionBonusExpTotalV175 = 0;
+let dimensionInvasionCountdownUntilV175 = 0;
+let dimensionInvasionCountdownTokenV175 = 0;
+
+function ensureDimensionInvasionSaveV175(){
+  if (!saveData.dimensionInvasion) {
+    saveData.dimensionInvasion = {
+      boxes: 0,
+      crystals: 0,
+      cores: 0,
+      rainbowShards: 0,
+      bestSurvivalMs: 0,
+      clears: 0,
+      entriesToday: 0,
+      dailyDate: '',
+      titles: []
+    };
+  }
+  const d = saveData.dimensionInvasion;
+  d.boxes = Math.max(0, Math.floor(Number(d.boxes) || 0));
+  d.crystals = Math.max(0, Math.floor(Number(d.crystals) || 0));
+  d.cores = Math.max(0, Math.floor(Number(d.cores) || 0));
+  d.rainbowShards = Math.max(0, Math.floor(Number(d.rainbowShards) || 0));
+  d.bestSurvivalMs = Math.max(0, Math.floor(Number(d.bestSurvivalMs) || 0));
+  d.clears = Math.max(0, Math.floor(Number(d.clears) || 0));
+  const today = getDimensionTodayKeyV175();
+  if (d.dailyDate !== today) { d.dailyDate = today; d.entriesToday = 0; }
+  d.entriesToday = Math.max(0, Math.floor(Number(d.entriesToday) || 0));
+  if (!Array.isArray(d.titles)) d.titles = [];
+  return d;
+}
+
+function isDimensionInvasionActiveV175(){
+  return !!dimensionInvasionActiveV175;
+}
+
+function formatDimensionTimeV175(ms){
+  const sec = Math.max(0, Math.ceil((Number(ms) || 0) / 1000));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function getDimensionTodayKeyV175(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDimensionWaveTargetV175(){
+  return DIMENSION_INVASION_WAVE_TARGETS_V175[Math.max(0, Math.min(4, dimensionInvasionWaveV175 - 1))] || 300;
+}
+
+function getDimensionWaveFixedExpV175(wave){
+  return DIMENSION_INVASION_FIXED_EXP_V175[Math.max(0, Math.min(4, (wave || dimensionInvasionWaveV175) - 1))] || 984;
+}
+
+function getDimensionMonsterExpV175(wave){
+  const fixed = getDimensionWaveFixedExpV175(wave);
+  if ((level || 1) >= 150) return fixed;
+  return Math.max(1, Math.floor(fixed * Math.max(1, level || 1) / 150));
+}
+
+function getDimensionWaveKillsV175(){
+  return Math.max(0, Math.floor(stageRunKillCount || 0) - Math.max(0, Math.floor(dimensionInvasionWaveStartKillsV175 || 0)));
+}
+
+function getDimensionInvasionStageV175(){
+  return Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(saveData.maxUnlockedStage || stage || 1) || 1)));
+}
+
+
+function isDimensionCountdownActiveV175(){
+  return !!dimensionInvasionActiveV175 && Date.now() < Math.max(0, dimensionInvasionCountdownUntilV175 || 0);
+}
+
+function getDimensionCountdownLabelV175(){
+  if (!isDimensionCountdownActiveV175()) return '';
+  const remain = Math.max(0, Math.ceil((dimensionInvasionCountdownUntilV175 - Date.now()) / 1000));
+  if (remain >= 4) return '3';
+  if (remain === 3) return '3';
+  if (remain === 2) return '2';
+  if (remain === 1) return '1';
+  return 'START';
+}
+
+function startDimensionWaveCountdownV175(wave){
+  if (!dimensionInvasionActiveV175) return;
+  const token = ++dimensionInvasionCountdownTokenV175;
+  dimensionInvasionCountdownUntilV175 = Date.now() + 4000;
+  enemies = [];
+  try { showToast(`🌀 WAVE ${wave} 준비`, '#d6b8ff', 900); } catch(e) {}
+  const steps = [
+    { delay: 0, text: '3', color: '#ffffff' },
+    { delay: 1000, text: '2', color: '#ffffff' },
+    { delay: 2000, text: '1', color: '#ffffff' },
+    { delay: 3000, text: `WAVE ${wave} 시작`, color: '#d6b8ff' }
+  ];
+  steps.forEach(step => {
+    setTimeout(() => {
+      if (!dimensionInvasionActiveV175 || dimensionInvasionCompletingV175 || token !== dimensionInvasionCountdownTokenV175 || state !== 'playing') return;
+      try { spawnDamageText(width / 2, height * 0.30, step.text, step.color, true); } catch(e) {}
+      try { playTone(step.text === 'WAVE ' + wave + ' 시작' ? 660 : 440, 'square', 0.08, 0.04); } catch(e) {}
+      if (step.delay === 3000) {
+        try { showToast(`🌀 WAVE ${wave} 시작! 목표 ${formatNumber(getDimensionWaveTargetV175())}마리`, '#d6b8ff', 1200); } catch(e) {}
+      }
+    }, step.delay);
+  });
+}
+
+function spawnDimensionInvasionBatchV175(){
+  if (!dimensionInvasionActiveV175 || gameMode !== 'stage' || state !== 'playing') return;
+  if (stageCleared || boss || bossIntro?.active || dimensionInvasionCompletingV175 || isDimensionCountdownActiveV175()) return;
+  if (getDimensionWaveKillsV175() >= getDimensionWaveTargetV175()) return;
+  const alive = enemies.filter(e => e && e.hp > 0).length;
+  const room = Math.max(0, DIMENSION_INVASION_MAX_ENEMIES_V175 - alive);
+  if (room <= 0) return;
+
+  const remaining = Math.max(0, getDimensionWaveTargetV175() - getDimensionWaveKillsV175());
+  const count = Math.min(DIMENSION_INVASION_SPAWN_BATCH_V175, room, remaining);
+  if (count <= 0) return;
+  const wave = Math.max(1, Math.min(5, dimensionInvasionWaveV175 || 1));
+  const hpScale = 0.55 + (wave - 1) * 0.28 + Math.min(0.75, Math.max(0, (level || 1) - 50) * 0.004);
+  const speedBase = 1.45 + Math.min(1.35, (level || 1) * 0.006) + (wave - 1) * 0.08;
+  const cols = 10;
+  const margin = Math.max(28, width * 0.045);
+  for (let i = 0; i < count; i++) {
+    const idx = dimensionInvasionSpawnIndexV175++;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const xBase = margin + ((width - margin * 2) / Math.max(1, cols - 1)) * col;
+    const x = clamp(xBase + randRange(-12, 12), margin, width - margin);
+    const y = -48 - row * 34 - randRange(0, 20);
+    const type = ENEMY_TYPES[(idx + wave + Math.floor(stage || 1)) % ENEMY_TYPES.length];
+    const enemy = createEnemy(type, x, y, speedBase, 'rain', randRange(-0.32, 0.32), {
+      attackStyle: getEnemyAttackStyle(Math.max(1, Math.min(80, Math.floor(level || 1))), idx, i),
+      _dimensionInvasionEnemy: true,
+      _dimensionInvasionWave: wave
+    });
+    enemy.score = Math.max(100, Math.round((enemy.score || 100) * 0.38 / 100) * 100);
+    enemy.hp = Math.max(10, Math.floor((enemy.maxHp || enemy.hp || 40) * hpScale));
+    enemy.maxHp = enemy.hp;
+    enemies.push(enemy);
+  }
+  try { spawnDamageText(width / 2, 82, `디멘션 ${wave}웨이브 +${count}`, '#b79cff', true); } catch(e) {}
+}
+
+function grantDimensionWaveClearBonusV175(){
+  const waveExp = Math.max(0, Math.floor(stageRunExpMonsters || 0) - Math.max(0, Math.floor(dimensionInvasionWaveStartExpV175 || 0)));
+  const bonus = Math.max(0, Math.floor(waveExp * DIMENSION_INVASION_CLEAR_BONUS_RATE_V175));
+  if (bonus > 0) {
+    addExp(bonus, { baseAmount: bonus, hotMultiplier: 1 });
+    dimensionInvasionBonusExpTotalV175 += bonus;
+    try { spawnDamageText(width / 2, height * 0.31, `${dimensionInvasionWaveV175}웨이브 보너스 +${formatNumber(bonus)}EXP`, '#9dffea', true); } catch(e) {}
+    try { showToast(`✨ ${dimensionInvasionWaveV175}웨이브 클리어 보너스 +${formatNumber(bonus)}EXP`, '#9dffea', 1600); } catch(e) {}
+  }
+  return bonus;
+}
+
+function completeDimensionInvasionV175(){
+  if (!dimensionInvasionActiveV175 || dimensionInvasionCompletingV175) return;
+  dimensionInvasionCompletingV175 = true;
+  const d = ensureDimensionInvasionSaveV175();
+  d.boxes += 1;
+  d.clears += 1;
+  saveGameData();
+  dimensionInvasionLastResultV175 = {
+    completed: true,
+    wave: 5,
+    boxes: 1,
+    kills: Math.max(0, Math.floor(stageRunKillCount || 0)),
+    exp: Math.max(0, Math.floor(stageRunExpMonsters || 0)),
+    bonusExp: Math.max(0, Math.floor(dimensionInvasionBonusExpTotalV175 || 0))
+  };
+  try { showToast('🎁 디멘션 인베이드 완주! 디멘션 상자 1개 획득!', '#d6b8ff', 1800); } catch(e) {}
+  try { spawnDamageText(width / 2, height * 0.34, 'DIMENSION CLEAR!', '#ffffff', true); } catch(e) {}
+  setTimeout(() => {
+    try { gameOver(); } catch(e) { state = 'gameover'; }
+  }, 350);
+}
+
+function completeDimensionWaveV175(){
+  if (!dimensionInvasionActiveV175 || dimensionInvasionCompletingV175) return;
+  grantDimensionWaveClearBonusV175();
+  if (dimensionInvasionWaveV175 >= 5) {
+    completeDimensionInvasionV175();
+    return;
+  }
+  dimensionInvasionWaveV175 += 1;
+  dimensionInvasionWaveStartKillsV175 = Math.max(0, Math.floor(stageRunKillCount || 0));
+  dimensionInvasionWaveStartExpV175 = Math.max(0, Math.floor(stageRunExpMonsters || 0));
+  enemies = [];
+  bullets = bullets || [];
+  startDimensionWaveCountdownV175(dimensionInvasionWaveV175);
+}
+
+function updateDimensionInvasionV175(dt){
+  if (!dimensionInvasionActiveV175 || state !== 'playing') return;
+  if (!dimensionInvasionCompletingV175 && getDimensionWaveKillsV175() >= getDimensionWaveTargetV175()) {
+    completeDimensionWaveV175();
+  }
+  if (Math.random() < 0.01) saveGameDataDebounced();
+}
+
+function startDimensionInvasionModeV175(){
+  if (level < DIMENSION_INVASION_LEVEL_REQ_V175) {
+    alert(`디멘션 인베이드는 LV.${DIMENSION_INVASION_LEVEL_REQ_V175}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  const d = ensureDimensionInvasionSaveV175();
+  if (d.entriesToday >= DIMENSION_INVASION_DAILY_LIMIT_V175) {
+    alert(`오늘 디멘션 인베이드 입장 횟수를 모두 사용했습니다.\n(${d.entriesToday}/${DIMENSION_INVASION_DAILY_LIMIT_V175})`);
+    return;
+  }
+  d.entriesToday += 1;
+  saveGameData();
+  dimensionInvasionActiveV175 = true;
+  dimensionInvasionCompletingV175 = false;
+  dimensionInvasionTimeLeftV175 = 0;
+  dimensionInvasionSpawnIndexV175 = 0;
+  dimensionInvasionLastResultV175 = null;
+  dimensionInvasionWaveV175 = 1;
+  dimensionInvasionWaveStartKillsV175 = 0;
+  dimensionInvasionWaveStartExpV175 = 0;
+  dimensionInvasionBonusExpTotalV175 = 0;
+  dimensionInvasionCountdownUntilV175 = 0;
+  dimensionInvasionCountdownTokenV175 = 0;
+  gameMode = 'stage';
+  stage = getDimensionInvasionStageV175();
+  try { if (modeModal) modeModal.classList.add('hidden'); } catch(e) {}
+  startGame(stage);
+  dimensionInvasionWaveStartKillsV175 = Math.max(0, Math.floor(stageRunKillCount || 0));
+  dimensionInvasionWaveStartExpV175 = Math.max(0, Math.floor(stageRunExpMonsters || 0));
+  try { playBgmTrack('dimension'); } catch(e) {}
+  try { showToast(`🌀 디멘션 인베이드 입장! 오늘 ${d.entriesToday}/${DIMENSION_INVASION_DAILY_LIMIT_V175}회 · 펫 OFF`, '#d6b8ff', 1800); } catch(e) {}
+  startDimensionWaveCountdownV175(1);
+}
+
+function rollDimensionBoxRewardV175(){
+  const r = Math.random();
+  if (r < 0.70) {
+    const list = [
+      { rarity:'일반', type:'gold', amount:50000, text:'골드 50,000' },
+      { rarity:'일반', type:'gold', amount:100000, text:'골드 100,000' },
+      { rarity:'일반', type:'exp', amount:500000, text:'경험치 500,000' },
+      { rarity:'일반', type:'exp', amount:1000000, text:'경험치 1,000,000' },
+      { rarity:'일반', type:'crystal', amount:2, text:'디멘션 결정 2개' }
+    ];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  if (r < 0.93) {
+    const list = [
+      { rarity:'희귀', type:'gold', amount:500000, text:'골드 500,000' },
+      { rarity:'희귀', type:'exp', amount:5000000, text:'경험치 5,000,000' },
+      { rarity:'희귀', type:'crystal', amount:5, text:'디멘션 결정 5개' },
+      { rarity:'희귀', type:'reviveTicket', amount:1, text:'부활권 1개' },
+      { rarity:'희귀', type:'feverTicket', amount:1, text:'피버 충전권 1개' }
+    ];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  if (r < 0.99) {
+    const list = [
+      { rarity:'에픽', type:'crystal', amount:10, text:'디멘션 결정 10개' },
+      { rarity:'에픽', type:'exp', amount:50000000, text:'경험치 50,000,000' },
+      { rarity:'에픽', type:'gold', amount:10000000, text:'골드 10,000,000' },
+      { rarity:'에픽', type:'petEgg', amount:1, text:'랜덤 펫 알 1개' },
+      { rarity:'에픽', type:'expCoupon', amount:1, text:'경험치 2배 쿠폰 1개' }
+    ];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  const list = [
+    { rarity:'전설', type:'dimensionPetEgg', amount:1, text:'디멘션 펫 알 1개' },
+    { rarity:'전설', type:'core', amount:1, text:'디멘션 코어 1개' },
+    { rarity:'전설', type:'rainbowShard', amount:1, text:'무지개 슬라임 조각 1개' },
+    { rarity:'전설', type:'title', amount:1, text:'칭호: 균열 생존자' },
+    { rarity:'전설', type:'exp', amount:500000000, text:'경험치 500,000,000' }
+  ];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function applyDimensionBoxRewardV175(reward){
+  const d = ensureDimensionInvasionSaveV175();
+  if (!reward) return;
+  const amount = Math.max(1, Math.floor(Number(reward.amount) || 1));
+  if (reward.type === 'gold') gold += amount;
+  else if (reward.type === 'exp') addExp(amount, { baseAmount: amount, hotMultiplier: 1 });
+  else if (reward.type === 'crystal') d.crystals += amount;
+  else if (reward.type === 'core') d.cores += amount;
+  else if (reward.type === 'rainbowShard') d.rainbowShards += amount;
+  else if (reward.type === 'title') {
+    if (!d.titles.includes('균열 생존자')) d.titles.push('균열 생존자');
+  } else {
+    if (!d.items) d.items = {};
+    d.items[reward.type] = Math.max(0, Math.floor(Number(d.items[reward.type]) || 0)) + amount;
+  }
+}
+
+function openDimensionBoxV175(){
+  const d = ensureDimensionInvasionSaveV175();
+  if (d.boxes <= 0) {
+    alert('개봉할 디멘션 상자가 없습니다.');
+    return;
+  }
+  d.boxes -= 1;
+  const reward = rollDimensionBoxRewardV175();
+  applyDimensionBoxRewardV175(reward);
+  saveGameData();
+  updateHUD();
+  try { showToast(`🎁 ${reward.rarity} 보상: ${reward.text}`, reward.rarity === '전설' ? '#ffd86b' : reward.rarity === '에픽' ? '#d6a8ff' : '#9dffea', 2200); } catch(e) {}
+  alert(`디멘션 상자 개봉!\n[${reward.rarity}] ${reward.text}`);
+  refreshDimensionBoxButtonV175();
+}
+
+function refreshDimensionBoxButtonV175(){
+  const btn = document.getElementById('openDimensionBoxBtnV175');
+  if (!btn) return;
+  const d = ensureDimensionInvasionSaveV175();
+  btn.textContent = `🎁 디멘션 상자 열기 (${d.boxes}개)`;
+}
+
+function installDimensionModeUIV175(){
+  const body = modeModal ? modeModal.querySelector('.modal-body') : null;
+  if (!body || document.getElementById('modeDimensionInvasionBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'modeDimensionInvasionBtn';
+  btn.className = 'ui-btn big-btn';
+  btn.style.cssText = 'width:100%; border-color:#b79cff; color:#f1e8ff; background:linear-gradient(to bottom, #3e246b, #160923);';
+  btn.innerHTML = '🌀 디멘션 인베이드 (LV.50+ · 5웨이브)';
+  btn.addEventListener('click', startDimensionInvasionModeV175);
+
+  const boxBtn = document.createElement('button');
+  boxBtn.id = 'openDimensionBoxBtnV175';
+  boxBtn.className = 'ui-btn big-btn';
+  boxBtn.style.cssText = 'width:100%; border-color:#d6b8ff; color:#ffffff; background:linear-gradient(to bottom, #4b2b77, #180b28);';
+  boxBtn.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); openDimensionBoxV175(); });
+
+  const partyBtn = document.getElementById('modePartyExpeditionBtn');
+  if (partyBtn && partyBtn.parentNode === body) {
+    body.insertBefore(btn, partyBtn.nextSibling);
+    body.insertBefore(boxBtn, btn.nextSibling);
+  } else {
+    body.appendChild(btn);
+    body.appendChild(boxBtn);
+  }
+  refreshDimensionBoxButtonV175();
+}
+
+const getStageMonsterExpRewardForEnemyBeforeV175 = getStageMonsterExpRewardForEnemy;
+getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
+  if (dimensionInvasionActiveV175 || (enemy && enemy._dimensionInvasionEnemy)) {
+    return getDimensionMonsterExpV175((enemy && enemy._dimensionInvasionWave) || dimensionInvasionWaveV175 || 1);
+  }
+  return getStageMonsterExpRewardForEnemyBeforeV175.apply(this, arguments);
+};
+
+const getStageMonsterSpawnIntervalMsBeforeV175 = getStageMonsterSpawnIntervalMs;
+getStageMonsterSpawnIntervalMs = function(stg){
+  if (dimensionInvasionActiveV175) return DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175;
+  return getStageMonsterSpawnIntervalMsBeforeV175.apply(this, arguments);
+};
+
+const getStageMonsterSpawnBatchSizeBeforeV175 = getStageMonsterSpawnBatchSize;
+getStageMonsterSpawnBatchSize = function(stg){
+  if (dimensionInvasionActiveV175) return DIMENSION_INVASION_SPAWN_BATCH_V175;
+  return getStageMonsterSpawnBatchSizeBeforeV175.apply(this, arguments);
+};
+
+const getStageKillTargetBeforeV175 = getStageKillTarget;
+getStageKillTarget = function(stg){
+  if (dimensionInvasionActiveV175) return 999999999;
+  return getStageKillTargetBeforeV175.apply(this, arguments);
+};
+
+const isBossStageBeforeV175 = isBossStage;
+isBossStage = function(s){
+  if (dimensionInvasionActiveV175) return false;
+  return isBossStageBeforeV175.apply(this, arguments);
+};
+
+const spawnNextWaveBeforeV175 = spawnNextWave;
+spawnNextWave = function(){
+  if (dimensionInvasionActiveV175) {
+    spawnDimensionInvasionBatchV175();
+    return;
+  }
+  return spawnNextWaveBeforeV175.apply(this, arguments);
+};
+
+const getEquippedPetBeforeV175 = getEquippedPet;
+getEquippedPet = function(slot){
+  if (dimensionInvasionActiveV175) return null;
+  return getEquippedPetBeforeV175.apply(this, arguments);
+};
+
+const getPetAttackMultiplierBeforeV175 = getPetAttackMultiplier;
+getPetAttackMultiplier = function(){
+  if (dimensionInvasionActiveV175) return 1;
+  return getPetAttackMultiplierBeforeV175.apply(this, arguments);
+};
+
+const getPetScoreMultiplierBeforeV175 = getPetScoreMultiplier;
+getPetScoreMultiplier = function(){
+  if (dimensionInvasionActiveV175) return 1;
+  return getPetScoreMultiplierBeforeV175.apply(this, arguments);
+};
+
+const getPetGoldMultiplierBeforeV175 = getPetGoldMultiplier;
+getPetGoldMultiplier = function(){
+  if (dimensionInvasionActiveV175) return 1;
+  return getPetGoldMultiplierBeforeV175.apply(this, arguments);
+};
+
+const shootPetBulletBeforeV175 = shootPetBullet;
+shootPetBullet = function(){
+  if (dimensionInvasionActiveV175) return;
+  return shootPetBulletBeforeV175.apply(this, arguments);
+};
+
+const shootPet2BulletBeforeV175 = shootPet2Bullet;
+shootPet2Bullet = function(){
+  if (dimensionInvasionActiveV175) return;
+  return shootPet2BulletBeforeV175.apply(this, arguments);
+};
+
+const updatePetProductionBeforeV175 = updatePetProduction;
+updatePetProduction = function(){
+  if (dimensionInvasionActiveV175) return;
+  return updatePetProductionBeforeV175.apply(this, arguments);
+};
+
+const updatePetSkillProjectilesBeforeV175 = updatePetSkillProjectiles;
+updatePetSkillProjectiles = function(){
+  if (dimensionInvasionActiveV175) { petSkillProjectiles = []; return; }
+  return updatePetSkillProjectilesBeforeV175.apply(this, arguments);
+};
+
+const updatePetSkillStreamsBeforeV175 = updatePetSkillStreams;
+updatePetSkillStreams = function(){
+  if (dimensionInvasionActiveV175) { petSkillStreams = []; return; }
+  return updatePetSkillStreamsBeforeV175.apply(this, arguments);
+};
+
+const updatePetSkillBurstsBeforeV175 = updatePetSkillBursts;
+updatePetSkillBursts = function(){
+  if (dimensionInvasionActiveV175) { petSkillBursts = []; return; }
+  return updatePetSkillBurstsBeforeV175.apply(this, arguments);
+};
+
+const drawPetBeforeV175 = drawPet;
+drawPet = function(){
+  if (dimensionInvasionActiveV175) return;
+  return drawPetBeforeV175.apply(this, arguments);
+};
+
+const drawPet2BeforeV175 = drawPet2;
+drawPet2 = function(){
+  if (dimensionInvasionActiveV175) return;
+  return drawPet2BeforeV175.apply(this, arguments);
+};
+
+const drawPetBulletsBeforeV175 = drawPetBullets;
+drawPetBullets = function(){
+  if (dimensionInvasionActiveV175) return;
+  return drawPetBulletsBeforeV175.apply(this, arguments);
+};
+
+const drawPet2BulletsBeforeV175 = drawPet2Bullets;
+drawPet2Bullets = function(){
+  if (dimensionInvasionActiveV175) return;
+  return drawPet2BulletsBeforeV175.apply(this, arguments);
+};
+
+const drawPetSkillEffectsBeforeV175 = drawPetSkillEffects;
+drawPetSkillEffects = function(){
+  if (dimensionInvasionActiveV175) return;
+  return drawPetSkillEffectsBeforeV175.apply(this, arguments);
+};
+
+const startGameBeforeV175 = startGame;
+startGame = function(startStageNum = 1){
+  if (dimensionInvasionActiveV175) {
+    petBullets = [];
+    pet2Bullets = [];
+    petSkillProjectiles = [];
+    petSkillBursts = [];
+    petSkillStreams = [];
+  }
+  return startGameBeforeV175.call(this, startStageNum);
+};
+
+const updateBeforeV175 = update;
+update = function(dt, timestamp){
+  const ret = updateBeforeV175.apply(this, arguments);
+  updateDimensionInvasionV175(dt);
+  return ret;
+};
+
+const getModeBgmNameBeforeV175Dimension = getModeBgmName;
+getModeBgmName = function(){
+  if (dimensionInvasionActiveV175) return 'dimension';
+  return getModeBgmNameBeforeV175Dimension.apply(this, arguments);
+};
+
+const updateHUDBeforeV175 = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV175.apply(this, arguments);
+  try {
+    if (dimensionInvasionActiveV175 && stageText) {
+      const waveKills = getDimensionWaveKillsV175();
+      const target = getDimensionWaveTargetV175();
+      const d = ensureDimensionInvasionSaveV175();
+      stageText.textContent = isDimensionCountdownActiveV175()
+        ? `디멘션 ${dimensionInvasionWaveV175}/5 | 준비 ${getDimensionCountdownLabelV175()} | 오늘 ${d.entriesToday}/${DIMENSION_INVASION_DAILY_LIMIT_V175} | 펫 OFF`
+        : `디멘션 ${dimensionInvasionWaveV175}/5 | ${formatNumber(waveKills)}/${formatNumber(target)} | 오늘 ${d.entriesToday}/${DIMENSION_INVASION_DAILY_LIMIT_V175} | 펫 OFF`;
+    }
+    refreshDimensionBoxButtonV175();
+  } catch(e) {}
+  return ret;
+};
+
+const updateGameOverModalBeforeV175 = updateGameOverModal;
+updateGameOverModal = function(){
+  const wasDimension = dimensionInvasionActiveV175;
+  const resultSnapshot = dimensionInvasionLastResultV175;
+  const ret = updateGameOverModalBeforeV175.apply(this, arguments);
+  if (wasDimension || resultSnapshot) {
+    const completed = !!(resultSnapshot && resultSnapshot.completed);
+    const resultWave = resultSnapshot ? (resultSnapshot.wave || 5) : (dimensionInvasionWaveV175 || 1);
+    const bonusExp = resultSnapshot ? (resultSnapshot.bonusExp || 0) : (dimensionInvasionBonusExpTotalV175 || 0);
+    if (gameOverModeTextEl) gameOverModeTextEl.textContent = '디멘션 인베이드';
+    if (gameOverTitleEl) {
+      gameOverTitleEl.textContent = completed ? 'DIMENSION CLEAR' : 'DIMENSION END';
+      gameOverTitleEl.style.color = completed ? '#d6b8ff' : '#ffb8ef';
+    }
+    if (gameOverDescEl) {
+      gameOverDescEl.textContent = completed
+        ? '5웨이브 완주! 디멘션 상자 1개를 획득했습니다.'
+        : '디멘션 균열에서 쓰러졌습니다. 하루 10회 입장 가능하며 펫은 사용할 수 없습니다.';
+    }
+    try { setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '진행 웨이브', `${resultWave}/5`, { color:'#d6b8ff' }); } catch(e) {}
+    try { setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '처치 수', `${formatNumber(stageRunKillCount || 0)}마리`, { color:'#ffffff' }); } catch(e) {}
+    try { setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', `${formatNumber(stageRunExpMonsters || 0)} + 보너스 ${formatNumber(bonusExp)}`, { color:'#9dffea' }); } catch(e) {}
+    dimensionInvasionActiveV175 = false;
+    dimensionInvasionCompletingV175 = false;
+    dimensionInvasionCountdownUntilV175 = 0;
+    dimensionInvasionCountdownTokenV175++;
+    try { playBgmTrack('title'); } catch(e) {}
+    petBullets = [];
+    pet2Bullets = [];
+    petSkillProjectiles = [];
+    petSkillBursts = [];
+    petSkillStreams = [];
+    saveGameDataDebounced();
+  }
+  return ret;
+};
+
+const openModeSelectBeforeV175 = openModeSelect;
+openModeSelect = function(){
+  installDimensionModeUIV175();
+  refreshDimensionBoxButtonV175();
+  return openModeSelectBeforeV175.apply(this, arguments);
+};
+
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.175.1')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(214,184,255,0.35); border-radius:10px; background:rgba(214,184,255,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#d6b8ff;">[v.175.1 디멘션 인베이드 연출 추가]</b><br>디멘션 인베이드 전용 BGM(bg_dimension.mp3)이 추가되었습니다. 또한 모든 웨이브는 바로 시작되지 않고 3, 2, 1 카운트다운 후 WAVE N 시작 표시와 함께 몬스터가 등장합니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+installDimensionModeUIV175();
 
 loadGameData();
 updateHUD();
