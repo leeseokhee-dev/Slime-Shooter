@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.172 Party Expedition)</title>
+<title>Slime Shooter - Ultimate Evolution (v.174 Battery Saver Effects)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2777,6 +2777,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
         <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
         <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
+        <button id="effectsBtn" class="ui-btn">이펙트 ON</button>
         <select id="fpsSelect" class="ui-btn" title="FPS 선택">
             <option value="15">15FPS</option>
             <option value="20">20FPS</option>
@@ -4463,6 +4464,7 @@ document.addEventListener('visibilitychange', () => {
 const bgmBtn = document.getElementById('bgmBtn');
 const sfxBtn = document.getElementById('sfxBtn');
 const lowPowerBtn = document.getElementById('lowPowerBtn');
+const effectsBtn = document.getElementById('effectsBtn');
 const homingBtn = document.getElementById('homingBtn');
 const laserSkillBtn = document.getElementById('laserSkillBtn');
 const bubbleSkillBtn = document.getElementById('bubbleSkillBtn');
@@ -6150,6 +6152,7 @@ titleSystem: { equipped: 'title_slime' }, // ✅ 칭호 시스템
 bgmEnabled: true,
 sfxEnabled: true,
 lowPower: false,
+effectsEnabled: true, // ✅ [v.174] 이펙트 효과 켬/끔(배터리 절약)
 targetFps: DEFAULT_TARGET_FPS,
 homingEnabled: true,
 fontKey: 'system',
@@ -7675,6 +7678,7 @@ function maybeShowSkillUnlockNotice(oldLv, newLv) {
 
 function randRange(min, max) { return Math.random() * (max - min) + min; }
 function isLowPower() { return !!saveData.lowPower; }
+function areEffectsEnabled() { return saveData.effectsEnabled !== false; }
 // ===== [핫타임 EXP] =====
 // 매일 08:00~12:00, 18:00~22:00
 function isHotTimeNow(date = new Date()) {
@@ -7978,6 +7982,7 @@ if (typeof saveData.petStage !== 'number') saveData.petStage = 0;
 ensurePetSystemState();
 ensurePetDexState();
 if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
+if (typeof saveData.effectsEnabled !== 'boolean') saveData.effectsEnabled = true;
 if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFAULT_TARGET_FPS;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
@@ -8474,6 +8479,11 @@ function updateSettingsUI() {
     lowPowerBtn.textContent = saveData.lowPower ? "저사양 ON" : "저사양 OFF";
     lowPowerBtn.style.color = saveData.lowPower ? "#ffd700" : "#fff";
   }
+  if (effectsBtn) {
+    const on = areEffectsEnabled();
+    effectsBtn.textContent = on ? "이펙트 ON" : "이펙트 OFF";
+    effectsBtn.style.color = on ? "#44ffb8" : "#aaa";
+  }
   if (homingBtn) {
     if (level < 61) {
       homingBtn.textContent = "유도탄 LV.61";
@@ -8548,6 +8558,12 @@ function toggleLowPowerFromCanvas() {
   updateSettingsUI();
   requestAnimationFrame(() => fitCanvasToViewport());
 }
+function toggleEffectsFromCanvas() {
+  saveData.effectsEnabled = !areEffectsEnabled();
+  if (!areEffectsEnabled()) particles = [];
+  saveGameData();
+  updateSettingsUI();
+}
 
 
 
@@ -8608,6 +8624,7 @@ function getCanvasSettingsLayout() {
     { key:'bgm',   label: () => `BGM: ${bgmEnabled ? 'ON' : 'OFF'}`, action: toggleBgmFromCanvas },
     { key:'sfx',   label: () => `SFX: ${sfxEnabled ? 'ON' : 'OFF'}`, action: toggleSfxFromCanvas },
     { key:'lp',    label: () => `저사양: ${saveData.lowPower ? 'ON' : 'OFF'}`, action: toggleLowPowerFromCanvas },
+    { key:'fx',    label: () => `이펙트: ${areEffectsEnabled() ? 'ON' : 'OFF'}`, action: toggleEffectsFromCanvas },
     { key:'hm',    label: () => (level < 61 ? `유도탄: LV.61 필요` : `유도탄: ${(saveData.homingEnabled !== false) ? 'ON' : 'OFF'}`), action: toggleHomingSetting },
     { key:'font',  label: () => `서체: ${FONT_LABELS[saveData.fontKey || 'system'] || '기본'} (탭)`, action: cycleFont },
     { key:'nick',  label: () => `캐릭터 관리`, action: openCharacterModal },
@@ -8771,6 +8788,7 @@ function createCharacterData(name, options = {}) {
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
+  data.effectsEnabled = (saveData.effectsEnabled !== false);
   data.targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
   data.homingEnabled = (saveData.homingEnabled !== false);
   return data;
@@ -9101,6 +9119,13 @@ saveGameData();
   updateSettingsUI();
   saveGameData();
   requestAnimationFrame(() => fitCanvasToViewport());
+});
+
+(effectsBtn && effectsBtn.addEventListener) && effectsBtn.addEventListener('click', () => {
+  saveData.effectsEnabled = !areEffectsEnabled();
+  if (!areEffectsEnabled()) particles = [];
+  updateSettingsUI();
+  saveGameData();
 });
 
 (fpsSelect && fpsSelect.addEventListener) && fpsSelect.addEventListener('change', () => {
@@ -17244,6 +17269,7 @@ function spawnBossIfReady() {
 }
 
 function spawnExplosion(x, y, color, count = 10) {
+  if (!areEffectsEnabled()) return;
   // ✅ 저사양: 파티클 폭주 방지
   if (isLowPower()) {
     if (particles.length > 140) return;         // 이미 많으면 더 생성 안 함
@@ -17265,6 +17291,7 @@ function spawnExplosion(x, y, color, count = 10) {
 // - 저사양 모드에선 자동으로 이펙트 수를 줄임
 // ===============================
 function spawnMeteorImpactFx(x, y, isBossHit = false) {
+  if (!areEffectsEnabled()) return;
   // ✅ 저사양이면 적당히 줄이기
   const low = isLowPower();
 
@@ -19188,6 +19215,7 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
+if (!areEffectsEnabled()) { particles = []; return; }
 const delta = dt / 16.67;
 particles.forEach(p => {
   // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
@@ -21065,6 +21093,7 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
+  if (!areEffectsEnabled()) return;
   particles.forEach(p => {
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
