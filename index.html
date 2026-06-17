@@ -25807,6 +25807,229 @@ try {
   }
 } catch(e) {}
 
+
+// ===============================
+// ✅ [v.181] 파티 인원 선택 + 파티원 슬라임 외형 개선
+// - 파티 원정 입장 전 화살표로 전체 파티 인원 선택
+// - 전체 파티 인원: 2~4명, 기본 4명 (플레이어 포함)
+// - AI 파티원은 플레이어 슬라임과 비슷한 형태로 표시하되 색상은 각자 다르게 표시
+// - 기존 동그라미 + AI 글자 표시 제거
+// ===============================
+const PARTY_MEMBER_COUNT_KEY_V181 = 'slimeShooterPartyMemberCountV181';
+const PARTY_MIN_TOTAL_MEMBERS_V181 = 2;
+const PARTY_MAX_TOTAL_MEMBERS_V181 = 4;
+let selectedPartyTotalMembersV181 = (() => {
+  try {
+    const saved = Number(localStorage.getItem(PARTY_MEMBER_COUNT_KEY_V181));
+    if (Number.isFinite(saved)) return clamp(Math.floor(saved), PARTY_MIN_TOTAL_MEMBERS_V181, PARTY_MAX_TOTAL_MEMBERS_V181);
+  } catch(e) {}
+  return PARTY_MAX_TOTAL_MEMBERS_V181;
+})();
+
+function getSelectedPartyTotalMembersV181(){
+  return clamp(Math.floor(Number(selectedPartyTotalMembersV181) || PARTY_MAX_TOTAL_MEMBERS_V181), PARTY_MIN_TOTAL_MEMBERS_V181, PARTY_MAX_TOTAL_MEMBERS_V181);
+}
+function getSelectedPartyAiCountV181(){
+  return Math.max(1, getSelectedPartyTotalMembersV181() - 1);
+}
+function savePartyTotalMembersV181(){
+  try { localStorage.setItem(PARTY_MEMBER_COUNT_KEY_V181, String(getSelectedPartyTotalMembersV181())); } catch(e) {}
+}
+function setPartyTotalMembersV181(value){
+  selectedPartyTotalMembersV181 = clamp(Math.floor(Number(value) || PARTY_MAX_TOTAL_MEMBERS_V181), PARTY_MIN_TOTAL_MEMBERS_V181, PARTY_MAX_TOTAL_MEMBERS_V181);
+  savePartyTotalMembersV181();
+  refreshPartyMemberSelectorV181();
+}
+
+function refreshPartyMemberSelectorV181(){
+  const total = getSelectedPartyTotalMembersV181();
+  const ai = getSelectedPartyAiCountV181();
+  const valueEl = document.getElementById('partyMemberCountValueV181');
+  const descEl = document.getElementById('partyMemberCountDescV181');
+  const mainBtn = document.getElementById('modePartyExpeditionBtn');
+  if (valueEl) valueEl.textContent = `${total}명`;
+  if (descEl) descEl.textContent = `나 1명 + 슬라임 파티원 ${ai}명`;
+  if (mainBtn) mainBtn.innerHTML = `🤝 파티 원정 시작 (${total}인 파티)`;
+}
+
+function installPartyMemberSelectorV181(){
+  const partyBtn = document.getElementById('modePartyExpeditionBtn');
+  if (!partyBtn || document.getElementById('partyMemberSelectorV181')) {
+    refreshPartyMemberSelectorV181();
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.id = 'partyMemberSelectorV181';
+  wrap.style.cssText = 'width:100%; padding:10px; border:1px solid rgba(157,255,234,0.38); border-radius:12px; background:rgba(157,255,234,0.08); display:flex; flex-direction:column; gap:8px; align-items:center;';
+  wrap.innerHTML = `
+    <div style="font-weight:900; color:#9dffea;">파티 인원 선택</div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
+      <button id="partyMemberMinusV181" class="ui-btn" type="button" style="min-width:42px; font-size:20px; font-weight:900; border-color:#9dffea;">◀</button>
+      <div id="partyMemberCountValueV181" style="min-width:70px; text-align:center; font-size:24px; font-weight:1000; color:#ffffff; text-shadow:0 0 12px rgba(157,255,234,0.45);">4명</div>
+      <button id="partyMemberPlusV181" class="ui-btn" type="button" style="min-width:42px; font-size:20px; font-weight:900; border-color:#9dffea;">▶</button>
+    </div>
+    <div id="partyMemberCountDescV181" style="font-size:12px; color:#d9fffa; text-align:center; line-height:1.4;">나 1명 + 슬라임 파티원 3명</div>
+  `;
+  partyBtn.parentNode.insertBefore(wrap, partyBtn);
+  const minus = document.getElementById('partyMemberMinusV181');
+  const plus = document.getElementById('partyMemberPlusV181');
+  if (minus) minus.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); setPartyTotalMembersV181(getSelectedPartyTotalMembersV181() - 1); }, true);
+  if (plus) plus.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); setPartyTotalMembersV181(getSelectedPartyTotalMembersV181() + 1); }, true);
+  refreshPartyMemberSelectorV181();
+}
+
+const makePartyMembersBeforeV181 = makePartyMembers;
+makePartyMembers = function(){
+  const baseLv = Math.max(1, Math.floor(Number(level) || 1));
+  const aiCount = getSelectedPartyAiCountV181();
+  const offsetsByCount = {
+    1: [0],
+    2: [-1, 1],
+    3: [-2, 0, 2]
+  };
+  const offsets = offsetsByCount[aiCount] || [-2, 0, 2];
+  const colors = ['#7ce7ff', '#b8ff7c', '#ffd36a'];
+  const accent = ['#d9fbff', '#efffd9', '#fff1b0'];
+  const emojis = ['💙', '💚', '💛'];
+  const names = ['푸른 슬라임', '초록 슬라임', '황금 슬라임'];
+  const spacing = aiCount === 1 ? 0 : aiCount === 2 ? 54 : 70;
+  return offsets.map((off, i) => {
+    const lv = Math.max(1, Math.min(300, baseLv + off));
+    const maxHp = getPartyMemberMaxHp(lv);
+    const centerOffset = (i - (aiCount - 1) / 2) * spacing;
+    return {
+      id: i,
+      level: lv,
+      title: getPartyNicknameByLevel(lv),
+      nickname: names[i] || `슬라임 파티원 ${i + 1}`,
+      name: `${names[i] || '슬라임 파티원'} Lv.${lv}`,
+      x: width / 2 + centerOffset,
+      y: height - 118 - i * 22,
+      tx: randRange(60, width - 60),
+      ty: randRange(115, height - 95),
+      vx: 0,
+      vy: 0,
+      maxHp,
+      hp: maxHp,
+      color: colors[i] || '#7ce7ff',
+      accentColor: accent[i] || '#d9fbff',
+      emoji: emojis[i] || '💠',
+      shotTimer: 260 + i * 160,
+      moveTimer: 0,
+      thinkTimer: 80 + i * 120,
+      kills: 0,
+      exp: 0,
+      _slimeCompanionV181: true
+    };
+  });
+};
+
+function drawPartyCompanionSlimeV181(member){
+  if (!member) return;
+  const s = 19;
+  const t = performance.now();
+  const bob = Math.sin(t / 260 + (member.id || 0) * 1.7) * 2.2;
+  const bodyColor = member.color || '#7ce7ff';
+  const accentColor = member.accentColor || '#ffffff';
+  ctx.save();
+  ctx.translate(member.x, member.y + bob);
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = bodyColor;
+
+  // 슬라임 몸체: 플레이어처럼 말랑한 물방울형 실루엣
+  const grad = ctx.createRadialGradient(-s * 0.25, -s * 0.35, s * 0.18, 0, 0, s * 1.25);
+  grad.addColorStop(0, accentColor);
+  grad.addColorStop(0.36, bodyColor);
+  grad.addColorStop(1, 'rgba(4,18,22,0.95)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 1.15);
+  ctx.bezierCurveTo(s * 0.68, -s * 1.03, s * 1.08, -s * 0.38, s * 1.06, s * 0.28);
+  ctx.bezierCurveTo(s * 1.02, s * 0.96, s * 0.42, s * 1.12, 0, s * 1.08);
+  ctx.bezierCurveTo(-s * 0.46, s * 1.14, -s * 1.06, s * 0.96, -s * 1.08, s * 0.30);
+  ctx.bezierCurveTo(-s * 1.10, -s * 0.40, -s * 0.66, -s * 1.05, 0, -s * 1.15);
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.86)';
+  ctx.stroke();
+
+  // 광택
+  ctx.fillStyle = 'rgba(255,255,255,0.42)';
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.36, -s * 0.45, s * 0.30, s * 0.18, -0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  ctx.beginPath();
+  ctx.arc(s * 0.38, -s * 0.08, s * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 표정: 플레이어 동료 느낌, AI 글자 제거
+  ctx.fillStyle = 'rgba(2,12,18,0.92)';
+  ctx.beginPath(); ctx.ellipse(-s * 0.32, -s * 0.08, s * 0.10, s * 0.15, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s * 0.32, -s * 0.08, s * 0.10, s * 0.15, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(2,12,18,0.86)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.arc(0, s * 0.14, s * 0.28, 0.14 * Math.PI, 0.86 * Math.PI);
+  ctx.stroke();
+
+  // 작은 파티 표시 오라
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.72;
+  ctx.beginPath();
+  ctx.arc(0, 0, s * (1.23 + 0.04 * Math.sin(t / 180)), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+drawPartyMembers = function(){
+  if (!partyExpeditionActive || !partyMembers || partyMembers.length === 0 || state === 'title') return;
+  partyMembers.forEach(m => {
+    drawPartyCompanionSlimeV181(m);
+    drawPartyNamePlate(m.x, m.y, m.nickname || m.title, m.level, getPartyRoleIcon(m), m.hp || m.maxHp, m.maxHp || getPartyMemberMaxHp(m.level), m.color, { compact:true });
+  });
+};
+
+const startPartyExpeditionModeBeforeV181 = startPartyExpeditionMode;
+startPartyExpeditionMode = function(){
+  refreshPartyMemberSelectorV181();
+  return startPartyExpeditionModeBeforeV181.apply(this, arguments);
+};
+
+const openModeSelectBeforeV181PartySelector = openModeSelect;
+openModeSelect = function(){
+  const ret = openModeSelectBeforeV181PartySelector.apply(this, arguments);
+  installPartyMemberSelectorV181();
+  return ret;
+};
+
+const updateHUDBeforeV181PartyMemberCount = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV181PartyMemberCount.apply(this, arguments);
+  if (partyExpeditionActive && hotTimeEl) {
+    hotTimeEl.textContent = `🤝 ${getSelectedPartyTotalMembersV181()}인 파티 · 슬라임 파티원 ${getSelectedPartyAiCountV181()}명 · AI 공격력 80% · AI EXP 50%`;
+    hotTimeEl.style.color = '#9dffea';
+  }
+  return ret;
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.181 파티 인원 선택')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#9dffea;">[v.181 파티 인원 선택]</b><br>파티 원정 입장 전 화살표로 전체 파티 인원을 2~4명까지 선택할 수 있습니다. 파티원은 기존 동그라미 AI 표시가 아니라 플레이어 슬라임과 비슷한 동료 슬라임 외형으로 표시되며, 각 파티원마다 색상이 다르게 적용됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+installPartyMemberSelectorV181();
+
 installDimensionModeUIV175();
 
 loadGameData();
@@ -25839,187 +26062,6 @@ requestAnimationFrame(gameLoop);
     </div>
   </div>
 </div>
-
-
-
-<!-- ===============================
-     ✅ [v.181] 파티원 수 선택 + 색상별 슬라임 파티원
-     - 파티원 수: 1~4명, 화살표로 조절
-     - 파티원은 플레이어 슬라임 느낌의 다른 색 슬라임으로 표시
-     =============================== -->
-<script>
-(function(){
-  'use strict';
-  const PARTY_COUNT_KEY_V181 = 'slimeShooterPartyMemberCountV181';
-  const PARTY_MEMBER_COLORS_V181 = ['#7ce7ff', '#b8ff7c', '#ffd36a', '#ff9de8'];
-  const PARTY_MEMBER_NAMES_V181 = ['푸른 슬라임', '초록 슬라임', '황금 슬라임', '분홍 슬라임'];
-  const PARTY_MEMBER_EMOJIS_V181 = ['💧', '🍀', '⭐', '🌸'];
-
-  function clampPartyCountV181(v){
-    v = Math.floor(Number(v) || 3);
-    return Math.max(1, Math.min(4, v));
-  }
-  function getPartyMemberCountV181(){
-    try { return clampPartyCountV181(localStorage.getItem(PARTY_COUNT_KEY_V181) || window.__partyMemberCountV181 || 3); }
-    catch(e){ return clampPartyCountV181(window.__partyMemberCountV181 || 3); }
-  }
-  function setPartyMemberCountV181(v){
-    window.__partyMemberCountV181 = clampPartyCountV181(v);
-    try { localStorage.setItem(PARTY_COUNT_KEY_V181, String(window.__partyMemberCountV181)); } catch(e) {}
-    refreshPartyMemberSelectorV181();
-  }
-  window.__partyMemberCountV181 = getPartyMemberCountV181();
-
-  function refreshPartyMemberSelectorV181(){
-    const count = getPartyMemberCountV181();
-    const countEl = document.getElementById('partyMemberCountValueV181');
-    const descEl = document.getElementById('partyMemberCountDescV181');
-    const partyBtn = document.getElementById('modePartyExpeditionBtn');
-    if (countEl) countEl.textContent = String(count);
-    if (descEl) descEl.textContent = `플레이어 + 파티원 ${count}명 · 총 ${count + 1}인 원정`;
-    if (partyBtn) partyBtn.innerHTML = `🤝 파티 원정 (LV.20+ · 파티원 ${count}명)`;
-  }
-
-  function installPartyMemberSelectorV181(){
-    const partyBtn = document.getElementById('modePartyExpeditionBtn');
-    if (!partyBtn || document.getElementById('partyMemberSelectorV181')) return;
-    const box = document.createElement('div');
-    box.id = 'partyMemberSelectorV181';
-    box.style.cssText = 'width:100%; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:12px; background:rgba(157,255,234,0.08); display:flex; flex-direction:column; gap:8px; align-items:center;';
-    box.innerHTML = `
-      <div style="font-size:13px; color:#dff; font-weight:900;">파티원 수 선택</div>
-      <div style="display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
-        <button id="partyMemberMinusV181" class="ui-btn" type="button" style="min-width:44px; height:36px; border-color:#9dffea; font-size:18px; font-weight:900;">◀</button>
-        <div style="min-width:86px; text-align:center;">
-          <div id="partyMemberCountValueV181" style="font-size:30px; line-height:1; font-weight:1000; color:#9dffea; text-shadow:0 0 12px rgba(157,255,234,0.35);">3</div>
-          <div style="font-size:11px; color:#bfe; margin-top:2px;">최대 4명</div>
-        </div>
-        <button id="partyMemberPlusV181" class="ui-btn" type="button" style="min-width:44px; height:36px; border-color:#9dffea; font-size:18px; font-weight:900;">▶</button>
-      </div>
-      <div id="partyMemberCountDescV181" style="font-size:12px; color:#cfd6ff; line-height:1.45; text-align:center;">플레이어 + 파티원 3명 · 총 4인 원정</div>
-    `;
-    partyBtn.parentNode.insertBefore(box, partyBtn);
-    const minus = document.getElementById('partyMemberMinusV181');
-    const plus = document.getElementById('partyMemberPlusV181');
-    if (minus) minus.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); setPartyMemberCountV181(getPartyMemberCountV181() - 1); });
-    if (plus) plus.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); setPartyMemberCountV181(getPartyMemberCountV181() + 1); });
-    refreshPartyMemberSelectorV181();
-  }
-
-  // 기존 makePartyMembers를 덮어써서 선택한 인원 수만큼 생성
-  window.makePartyMembers = function(){
-    const baseLv = Math.max(1, Math.floor(Number(level) || 1));
-    const count = getPartyMemberCountV181();
-    const centerOffset = (count - 1) / 2;
-    const members = [];
-    for (let i = 0; i < count; i++) {
-      const off = i - centerOffset;
-      const lv = Math.max(1, Math.min(300, baseLv + Math.round(off * 2)));
-      const maxHp = (typeof getPartyMemberMaxHp === 'function') ? getPartyMemberMaxHp(lv) : Math.max(1, 100 + (lv - 1) * 5);
-      const color = PARTY_MEMBER_COLORS_V181[i % PARTY_MEMBER_COLORS_V181.length];
-      const nick = PARTY_MEMBER_NAMES_V181[i % PARTY_MEMBER_NAMES_V181.length];
-      members.push({
-        id: i,
-        level: lv,
-        title: (typeof getPartyNicknameByLevel === 'function') ? getPartyNicknameByLevel(lv) : '파티 슬라임',
-        nickname: nick,
-        name: `${nick} Lv.${lv}`,
-        x: width / 2 + off * 58,
-        y: height - 120 - (i % 2) * 30,
-        tx: randRange(60, width - 60),
-        ty: randRange(115, height - 95),
-        vx: 0,
-        vy: 0,
-        maxHp,
-        hp: maxHp,
-        color,
-        accent: color,
-        emoji: PARTY_MEMBER_EMOJIS_V181[i % PARTY_MEMBER_EMOJIS_V181.length],
-        shotTimer: 260 + i * 130,
-        moveTimer: 0,
-        thinkTimer: 80 + i * 95,
-        kills: 0,
-        exp: 0
-      });
-    }
-    return members;
-  };
-
-  // 기존 drawPartyMembers를 덮어써서 플레이어 슬라임에 가까운 모양으로 표시
-  window.drawPartyMembers = function(){
-    if (!partyExpeditionActive || !partyMembers || partyMembers.length === 0 || state === 'title') return;
-    partyMembers.forEach(function(m){
-      const c = m.color || '#9dffea';
-      const t = performance.now() / 1000 + (m.id || 0) * 0.7;
-      const bob = Math.sin(t * 3.2) * 2.4;
-      ctx.save();
-      ctx.translate(m.x, m.y + bob);
-      ctx.shadowBlur = 16;
-      ctx.shadowColor = c;
-
-      // 말랑한 플레이어 슬라임형 몸체
-      ctx.fillStyle = c;
-      ctx.beginPath();
-      ctx.moveTo(-18, 6);
-      ctx.bezierCurveTo(-18, -12, -9, -22, 0, -22);
-      ctx.bezierCurveTo(10, -22, 20, -10, 20, 6);
-      ctx.bezierCurveTo(20, 18, 10, 24, 0, 24);
-      ctx.bezierCurveTo(-12, 24, -20, 17, -18, 6);
-      ctx.fill();
-
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(255,255,255,0.78)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // 광택
-      ctx.fillStyle = 'rgba(255,255,255,0.38)';
-      ctx.beginPath();
-      ctx.ellipse(-7, -10, 6, 3.5, -0.45, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 표정: 파티원 느낌만 살짝, 플레이어와 구분용
-      ctx.fillStyle = 'rgba(2,16,20,0.82)';
-      ctx.beginPath(); ctx.arc(-6, 0, 2.2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(7, 0, 2.2, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(2,16,20,0.70)';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.arc(1, 6, 5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
-
-      // AI 텍스트 대신 번호 배지
-      ctx.fillStyle = 'rgba(0,0,0,0.42)';
-      ctx.beginPath(); ctx.arc(14, -15, 8, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `900 9px ${typeof getUIFontFamily === 'function' ? getUIFontFamily() : 'sans-serif'}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String((m.id || 0) + 1), 14, -15);
-      ctx.restore();
-
-      if (typeof drawPartyNamePlate === 'function') {
-        drawPartyNamePlate(m.x, m.y + bob, m.nickname || m.title, m.level, m.emoji || 'AI', m.hp || m.maxHp, m.maxHp || getPartyMemberMaxHp(m.level), c, { compact:true });
-      }
-    });
-  };
-
-  // 파티원 수가 바뀌면 보스 체력 계산도 자연스럽게 따라감: 기존 createBoss가 partyMembers.length를 사용함.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', installPartyMemberSelectorV181);
-  } else {
-    installPartyMemberSelectorV181();
-  }
-
-  try {
-    const noticeBody = document.getElementById('noticeBody');
-    if (noticeBody && !noticeBody.textContent.includes('v.181')) {
-      const box = document.createElement('div');
-      box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-      box.innerHTML = '<b style="color:#9dffea;">[v.181 파티원 선택 업데이트]</b><br>파티 원정 입장 전 화살표로 파티원 수를 1~4명까지 조절할 수 있습니다. 파티원은 플레이어 슬라임처럼 보이는 색상별 슬라임으로 등장합니다.';
-      noticeBody.prepend(box);
-    }
-  } catch(e) {}
-})();
-</script>
 
 </body>
 </html>
