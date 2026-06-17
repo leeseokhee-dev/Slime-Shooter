@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.176 Dimension Invasion Boss Box)</title>
+<title>Slime Shooter - Ultimate Evolution (v.177 Dimension Invasion Spawn Countdown)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -24989,8 +24989,8 @@ try {
 // - 전용 BGM: bg_dimension.mp3
 // ===============================
 const DIMENSION_INVASION_LEVEL_REQ_V175 = 50;
-const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 3000;
-const DIMENSION_INVASION_SPAWN_BATCH_V175 = 20;
+const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 300;
+const DIMENSION_INVASION_SPAWN_BATCH_BY_WAVE_V177 = [3, 4, 5, 6, 7];
 const DIMENSION_INVASION_MAX_ENEMIES_V175 = 80;
 const DIMENSION_INVASION_DAILY_LIMIT_V175 = 10;
 const DIMENSION_INVASION_WAVE_TARGETS_V175 = [300, 400, 500, 750, 1000];
@@ -25076,6 +25076,10 @@ function getDimensionTodayKeyV175(){
 
 function getDimensionWaveTargetV175(){
   return DIMENSION_INVASION_WAVE_TARGETS_V175[Math.max(0, Math.min(4, dimensionInvasionWaveV175 - 1))] || 300;
+}
+
+function getDimensionWaveSpawnBatchV177(wave){
+  return DIMENSION_INVASION_SPAWN_BATCH_BY_WAVE_V177[Math.max(0, Math.min(4, (wave || dimensionInvasionWaveV175) - 1))] || 3;
 }
 
 function getDimensionWaveFixedExpV175(wave){
@@ -25172,7 +25176,7 @@ function spawnDimensionInvasionBatchV175(){
   if (room <= 0) return;
 
   const remaining = Math.max(0, getDimensionWaveTargetV175() - getDimensionWaveKillsV175());
-  const count = Math.min(DIMENSION_INVASION_SPAWN_BATCH_V175, room, remaining);
+  const count = Math.min(getDimensionWaveSpawnBatchV177(wave), room, remaining);
   if (count <= 0) return;
   const wave = Math.max(1, Math.min(5, dimensionInvasionWaveV175 || 1));
   const speedBase = 1.45 + Math.min(1.35, (level || 1) * 0.006) + (wave - 1) * 0.08;
@@ -25440,7 +25444,7 @@ getStageMonsterSpawnIntervalMs = function(stg){
 
 const getStageMonsterSpawnBatchSizeBeforeV175 = getStageMonsterSpawnBatchSize;
 getStageMonsterSpawnBatchSize = function(stg){
-  if (dimensionInvasionActiveV175) return DIMENSION_INVASION_SPAWN_BATCH_V175;
+  if (dimensionInvasionActiveV175) return getDimensionWaveSpawnBatchV177(dimensionInvasionWaveV175);
   return getStageMonsterSpawnBatchSizeBeforeV175.apply(this, arguments);
 };
 
@@ -25654,10 +25658,66 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.175.1')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(214,184,255,0.35); border-radius:10px; background:rgba(214,184,255,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#d6b8ff;">[v.176 디멘션 인베이드 보스/상자/클리어 표시]</b><br>일반 몬스터는 모든 웨이브에서 1방 처치되도록 변경되었습니다. 1~4웨이브는 클리어 시 +N EXP를 3초 표시한 뒤 3,2,1 카운트다운 후 다음 웨이브가 시작되며, 5웨이브 클리어 후에는 WARNING 연출과 함께 HP 600,000 보스가 등장합니다. 보스 처치 시 확률에 따라 등급별 디멘션 상자가 인벤토리에 저장됩니다.';
+    box.innerHTML = '<b style="color:#d6b8ff;">[v.177 디멘션 인베이드 생성/카운트다운 개선]</b><br>일반 몬스터는 모든 웨이브에서 1방 처치되며, 디멘션 인베이드 몬스터 등장 패턴이 0.3초 간격으로 변경되었습니다. 웨이브별 생성 수는 1웨이브 3마리, 2웨이브 4마리, 3웨이브 5마리, 4웨이브 6마리, 5웨이브 7마리입니다. 웨이브 시작 전 3,2,1 카운트다운 숫자는 화면 중앙에 크게 표시됩니다. 5웨이브 클리어 후에는 WARNING 연출과 함께 HP 600,000 보스가 등장합니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
+
+
+// ===== [v.177] 디멘션 인베이드 대형 카운트다운 오버레이 =====
+function drawDimensionInvasionCountdownOverlayV177(){
+  if (!isDimensionCountdownActiveV175 || !isDimensionCountdownActiveV175()) return;
+  const label = getDimensionCountdownLabelV175 ? getDimensionCountdownLabelV175() : '';
+  if (!label) return;
+  ctx.save();
+  const remainMs = Math.max(0, (dimensionInvasionCountdownUntilV175 || 0) - Date.now());
+  const pulse = 1 + Math.sin(Date.now() / 90) * 0.045;
+  const isStart = label === 'START';
+  const mainText = isStart ? `WAVE ${dimensionInvasionWaveV175} 시작!` : label;
+  const fontSize = Math.max(isStart ? 46 : 96, Math.min(width, height) * (isStart ? 0.105 : 0.24)) * pulse;
+  const cx = width / 2;
+  const cy = height * 0.42;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  ctx.fillRect(0, 0, width, height);
+
+  const grd = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.min(width, height) * 0.42);
+  grd.addColorStop(0, 'rgba(214,184,255,0.32)');
+  grd.addColorStop(0.55, 'rgba(124,231,255,0.10)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.min(width, height) * 0.42, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.font = `1000 ${fontSize}px ${getUIFontFamily()}`;
+  ctx.lineWidth = Math.max(8, fontSize * 0.08);
+  ctx.strokeStyle = 'rgba(0,0,0,0.88)';
+  ctx.strokeText(mainText, cx, cy);
+  ctx.fillStyle = isStart ? '#d6b8ff' : '#ffffff';
+  ctx.shadowColor = isStart ? 'rgba(214,184,255,0.85)' : 'rgba(255,255,255,0.85)';
+  ctx.shadowBlur = 24;
+  ctx.fillText(mainText, cx, cy);
+
+  ctx.shadowBlur = 0;
+  ctx.font = `900 ${Math.max(19, Math.min(width, height) * 0.04)}px ${getUIFontFamily()}`;
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(0,0,0,0.82)';
+  ctx.fillStyle = '#9dffea';
+  const subText = `디멘션 인베이드 · WAVE ${dimensionInvasionWaveV175}/5`;
+  ctx.strokeText(subText, cx, cy + fontSize * 0.72);
+  ctx.fillText(subText, cx, cy + fontSize * 0.72);
+  ctx.restore();
+}
+
+const drawInfiniteBossCountdownBeforeV177 = drawInfiniteBossCountdown;
+drawInfiniteBossCountdown = function(){
+  try { drawInfiniteBossCountdownBeforeV177.apply(this, arguments); } catch(e) {}
+  try { drawDimensionInvasionCountdownOverlayV177(); } catch(e) {}
+};
 
 installDimensionModeUIV175();
 
