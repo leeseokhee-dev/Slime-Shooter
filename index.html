@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.183 Crystal Slime HP Growth)</title>
+<title>Slime Shooter - Ultimate Evolution (v.183 Crystal Slime Area)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6262,13 +6262,8 @@ let playerStatus = {
   burnTickMs: 5000
 };
 
-// ✅ [v.183] 플레이어 HP 성장 공식
-// - Lv.1 = 50 HP
-// - Lv.100 = 2,400 HP
-// - Lv.200 = 55,900 HP
-// - Lv.300 = 2,800,000 HP
 function getPlayerMaxHpByLevel(lv = level) {
-  const safeLv = Math.max(1, Math.min(300, Math.floor(Number(lv) || 1)));
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL || 300, Math.floor(Number(lv) || 1)));
   const hp1 = 50;
   const hp100 = 2400;
   const hp200 = 55900;
@@ -6282,23 +6277,26 @@ function getPlayerMaxHpByLevel(lv = level) {
     const t = (safeLv - 100) / 100;
     return Math.max(1, Math.round(hp100 * Math.pow(hp200 / hp100, t)));
   }
+
   const t = (safeLv - 200) / 100;
   return Math.max(1, Math.round(hp200 * Math.pow(hp300 / hp200, t)));
 }
 
-function getCrystalMonsterStatScale(stageValue = stage) {
+function getCrystalStagePowerScale(stageValue, kind = 'hp') {
   const s = Math.max(1, Math.floor(Number(stageValue) || 1));
-  if (s < 201) return { hp: 1, atk: 1, size: 1, tierName: '' };
-  if (s <= 220) return { hp: 1.20, atk: 1.15, size: 1.08, tierName: '크리스탈 슬라임' };
-  if (s <= 240) return { hp: 1.30, atk: 1.20, size: 1.10, tierName: '크리스탈 슬라임' };
-  if (s <= 260) return { hp: 1.40, atk: 1.25, size: 1.12, tierName: '강화 크리스탈 슬라임' };
-  if (s <= 280) return { hp: 1.50, atk: 1.30, size: 1.14, tierName: '프리즘 크리스탈 슬라임' };
-  return { hp: 1.60, atk: 1.35, size: 1.16, tierName: '다이아몬드 크리스탈 슬라임' };
-}
-
-function isCrystalStage(stageValue = stage) {
-  const s = Math.max(1, Math.floor(Number(stageValue) || 1));
-  return s >= 201 && s <= 300;
+  if (s < 201) return 1;
+  if (kind === 'attack') {
+    if (s <= 220) return 1.15;
+    if (s <= 240) return 1.20;
+    if (s <= 260) return 1.25;
+    if (s <= 280) return 1.30;
+    return 1.35;
+  }
+  if (s <= 220) return 1.20;
+  if (s <= 240) return 1.30;
+  if (s <= 260) return 1.40;
+  if (s <= 280) return 1.50;
+  return 1.60;
 }
 
 function syncPlayerHealthToLevel(options = {}) {
@@ -6357,11 +6355,8 @@ function getPlayerHitDamage(hitInfo = null) {
     dmg = Math.round(dmg * 1.2);
   }
 
-  // ✅ [v.183] 201~300 크리스탈 구간은 몬스터 공격력이 약간 상승
-  const crystalScale = getCrystalMonsterStatScale(stageLevel);
-  if (crystalScale && crystalScale.atk > 1) {
-    dmg = Math.round(dmg * crystalScale.atk);
-  }
+  // ✅ [v.183] 201~300 크리스탈 슬라임 구간: 몬스터 공격력 소폭 증가
+  dmg = Math.round(dmg * getCrystalStagePowerScale(stageLevel, 'attack'));
 
   return Math.max(2, dmg);
 }
@@ -16691,17 +16686,8 @@ function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
         hp = cfg.baseHp + 3000 + (stage - 101) * 90;
     }
 
-    // ✅ [v.183] 201~300 스테이지 일반 몬스터를 크리스탈 슬라임으로 강화
-    const crystalScale = getCrystalMonsterStatScale(stage);
-    const isCrystalMonster = isCrystalStage(stage);
-    if (isCrystalMonster) {
-        hp = Math.round(hp * crystalScale.hp);
-        size *= crystalScale.size;
-    }
-
     let evo = 1;
-if (stage >= 201) evo = 7;
-else if (stage >= 25) evo = 6;
+if (stage >= 25) evo = 6;
 else if (stage >= 20) evo = 5;
 else if (stage >= 15) evo = 4;
 else if (stage >= 10) evo = 3;
@@ -16724,6 +16710,19 @@ if (stage <= 100) {
 
 let finalScore = cfg.score + stageBonus;
 
+    // ✅ [v.183] 201~300 스테이지: 크리스탈 슬라임으로 변경 + 체력 소폭 증가
+    if (stage >= 201) {
+        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
+        size *= 1.10;
+        extra = {
+          ...extra,
+          isCrystalSlime: true,
+          evoStage: 7,
+          displayName: stage >= 281 ? '다이아몬드 크리스탈 슬라임' : '크리스탈 슬라임',
+          crystalTier: stage >= 281 ? 'diamond' : 'crystal'
+        };
+    }
+
     // [추가] 정예(Elite) 몬스터 보정
     if (extra.isElite) {
         hp *= 3;           // 체력 3배
@@ -16736,13 +16735,7 @@ let finalScore = cfg.score + stageBonus;
     const element = sanitizeElementKey(extra.element || getStageElementKey(stage, Math.abs(Math.floor(x + y + (cfg.score || 0))) % ELEMENT_ORDER.length));
 
     return {
-        type: isCrystalMonster ? 'crystalSlime' : type,
-        originalType: type,
-        name: isCrystalMonster ? crystalScale.tierName : undefined,
-        isCrystalSlime: isCrystalMonster,
-        crystalTierName: isCrystalMonster ? crystalScale.tierName : '',
-        crystalStatScale: crystalScale,
-        x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
+        type, x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
         pattern, hitTimer: 0,
         shootTimer: randRange(1000, 3000),
         ...extra
@@ -16845,10 +16838,10 @@ function createBoss() {
         // 101부터는 일반 몹 HP가 5000대이므로, 보스는 최소 8만 단위여야 긴장감이 듦
         hp += 100000 + (stage - 100) * 4000; 
     }
-    // ✅ [v.183] 201~300 크리스탈 보스 체력도 일반 몬스터 강화율에 맞춰 상승
-    if (isCrystalStage(stage)) {
-        const crystalScale = getCrystalMonsterStatScale(stage);
-        hp = Math.round(hp * crystalScale.hp);
+
+    // ✅ [v.183] 201~300 크리스탈 보스 구간: 보스 체력도 일반 몬스터와 같은 구간 배율 적용
+    if (stage >= 201) {
+        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
     }
 
     // ✅ [v.76] 특수 보스(팬텀 슬라임): 15스테이지마다 등장(보스 스테이지에서만)
@@ -17174,7 +17167,7 @@ function getBossProfileByEvoStage(evoStage, kind = 'slime') {
     7: {
       name: '크리스탈 슬라임',
       title: '크리스탈 지역 보스',
-      desc: '수정처럼 단단한 외형과 강한 체력을 가진 201~300 스테이지 전용 보스입니다. 반짝이는 움직임에 속지 말고 꾸준히 공격해 주세요.'
+      desc: '201~300 스테이지에서 등장하는 수정화된 보스입니다. 체력과 공격력이 한 단계 올라가므로 후반 성장과 스킬 운용이 중요합니다.'
     }
   };
 
@@ -20490,8 +20483,137 @@ ctx.restore();
 
 
 
+function drawCrystalEnemyShape(e) {
+    const { x, y, size, hitTimer, hp, maxHp, isElite } = e;
+    const tier = e.crystalTier === 'diamond' ? 'diamond' : 'crystal';
+    const t = Date.now();
+    const pulse = 1 + Math.sin(t / 230 + x * 0.02) * 0.035;
+    const glowColor = tier === 'diamond' ? 'rgba(210,245,255,0.58)' : 'rgba(124,231,255,0.50)';
+    const edgeColor = tier === 'diamond' ? '#f8fdff' : '#b8f7ff';
+    const midColor = tier === 'diamond' ? '#94eaff' : '#7d35ff';
+    const coreColor = tier === 'diamond' ? '#ffffff' : '#d6fbff';
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(pulse, pulse);
+
+    // 외곽 오라와 반짝임
+    ctx.save();
+    ctx.globalAlpha = hitTimer > 0 ? 0.75 : 0.42;
+    const aura = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size * 1.65);
+    aura.addColorStop(0, glowColor);
+    aura.addColorStop(1, 'rgba(80,80,255,0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 1.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if (isElite) {
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.55, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.26 + Math.sin(t / 120) * 0.08})`;
+        ctx.fill();
+    }
+
+    // 크리스탈 슬라임 본체: 물방울 형태 + 각진 수정 면
+    const grad = ctx.createRadialGradient(-size * 0.35, -size * 0.45, size * 0.14, 0, 0, size * 1.1);
+    grad.addColorStop(0, hitTimer > 0 ? '#ffffff' : coreColor);
+    grad.addColorStop(0.42, hitTimer > 0 ? '#ffffff' : '#65e9ff');
+    grad.addColorStop(0.72, hitTimer > 0 ? '#ffffff' : midColor);
+    grad.addColorStop(1, '#21105f');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 1.05);
+    ctx.bezierCurveTo(-size * 1.18, -size * 0.22, -size * 1.05, size * 0.78, 0, size * 0.86);
+    ctx.bezierCurveTo(size * 1.05, size * 0.78, size * 1.18, -size * 0.22, 0, -size * 1.05);
+    ctx.fill();
+
+    ctx.lineWidth = isElite ? 3.4 : 2.5;
+    ctx.strokeStyle = hitTimer > 0 ? '#ffffff' : edgeColor;
+    ctx.stroke();
+
+    // 수정 면 라인
+    ctx.save();
+    ctx.globalAlpha = 0.52;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.95); ctx.lineTo(-size * 0.32, size * 0.18); ctx.lineTo(0, size * 0.82);
+    ctx.moveTo(0, -size * 0.95); ctx.lineTo(size * 0.32, size * 0.18); ctx.lineTo(0, size * 0.82);
+    ctx.moveTo(-size * 0.72, -size * 0.08); ctx.lineTo(-size * 0.32, size * 0.18); ctx.lineTo(size * 0.32, size * 0.18); ctx.lineTo(size * 0.72, -size * 0.08);
+    ctx.stroke();
+    ctx.restore();
+
+    // 눈
+    ctx.fillStyle = '#f8feff';
+    const eyeY = -size * 0.13;
+    const eyeR = size * 0.20;
+    ctx.beginPath();
+    ctx.ellipse(-size * 0.36, eyeY, eyeR * 0.78, eyeR, 0, 0, Math.PI * 2);
+    ctx.ellipse(size * 0.36, eyeY, eyeR * 0.78, eyeR, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#09243a';
+    ctx.beginPath();
+    ctx.ellipse(-size * 0.36, eyeY, eyeR * 0.28, eyeR * 0.72, 0, 0, Math.PI * 2);
+    ctx.ellipse(size * 0.36, eyeY, eyeR * 0.28, eyeR * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 반짝이 파편
+    ctx.save();
+    ctx.fillStyle = tier === 'diamond' ? '#ffffff' : '#9ff7ff';
+    for (let i = 0; i < 4; i++) {
+      const a = t / 520 + i * Math.PI * 0.5 + x * 0.01;
+      const sx = Math.cos(a) * size * 1.22;
+      const sy = Math.sin(a) * size * 0.92;
+      ctx.globalAlpha = 0.42 + 0.35 * Math.sin(t / 180 + i);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 4); ctx.lineTo(sx + 3, sy); ctx.lineTo(sx, sy + 4); ctx.lineTo(sx - 3, sy);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
+    if (isElite) {
+      ctx.save();
+      ctx.fillStyle = '#ffcc00'; ctx.strokeStyle = '#aa7700'; ctx.lineWidth = 1;
+      ctx.translate(0, -size - 6);
+      ctx.beginPath();
+      ctx.moveTo(-7, 0); ctx.lineTo(-3, -9); ctx.lineTo(0, -4); ctx.lineTo(3, -9); ctx.lineTo(7, 0);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // 이름 + 체력바
+    const displayName = e.displayName || (tier === 'diamond' ? '다이아몬드 크리스탈 슬라임' : '크리스탈 슬라임');
+    ctx.save();
+    ctx.font = fontStr(10, 'bold');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineWidth = 3;
+    ctx.fillStyle = edgeColor;
+    ctx.strokeText(displayName, x, y - size - 32);
+    ctx.fillText(displayName, x, y - size - 32);
+    ctx.restore();
+
+    const barWidth = size * 1.75;
+    const bx = x - barWidth / 2;
+    const by = y - size - 14;
+    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(bx, by, barWidth, 4);
+    const ratio = Math.max(0, hp / maxHp);
+    ctx.fillStyle = isElite ? '#ffaa00' : (tier === 'diamond' ? '#d7fbff' : '#7ce7ff');
+    ctx.fillRect(bx + 1, by + 1, (barWidth - 2) * ratio, 2);
+}
+
 function drawEnemyShape(e) {
     const { x, y, size, hitTimer, hp, maxHp, isElite } = e;
+    if (e && (e.isCrystalSlime || e.evoStage === 7 || stage >= 201)) {
+        drawCrystalEnemyShape(e);
+        return;
+    }
     const visualPalette = getVisualElementPalette(e.element || getStageElementKey(stage), stage);
     const elementMeta = getElementMeta(getVisualElementKey(e.element || getStageElementKey(stage), stage));
 
@@ -20512,52 +20634,25 @@ function drawEnemyShape(e) {
     }
 
     let evo = 1;
-    const crystalVisual = !!(e && e.isCrystalSlime) || isCrystalStage(stage);
-    if (crystalVisual) evo = 7;
-    else if (stage >= 25) evo = 6;
+    if (stage >= 25) evo = 6;
     else if (stage >= 20) evo = 5;
     else if (stage >= 15) evo = 4;
     else if (stage >= 10) evo = 3;
     else if (stage >= 5) evo = 2;
 
-    if (crystalVisual && !isLowPower()) {
-        const glowPulse = 0.55 + Math.sin(t / 180 + x * 0.03) * 0.18;
-        ctx.save();
-        ctx.globalAlpha = 0.22 + glowPulse * 0.18;
-        ctx.strokeStyle = 'rgba(150,245,255,0.85)';
-        ctx.lineWidth = Math.max(1.5, size * 0.08);
-        ctx.beginPath();
-        ctx.moveTo(0, -size * 1.65);
-        ctx.lineTo(size * 1.22, -size * 0.18);
-        ctx.lineTo(size * 0.62, size * 1.18);
-        ctx.lineTo(-size * 0.62, size * 1.18);
-        ctx.lineTo(-size * 1.22, -size * 0.18);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.restore();
-    }
-
     let bodyStyle = (hitTimer > 0) ? '#ffffff' : null;
     if (!bodyStyle) {
         const grad = ctx.createRadialGradient(-size * 0.32, -size * 0.34, size * 0.16, 0, 0, size * 1.15);
-        if (crystalVisual) {
-            grad.addColorStop(0, 'rgba(255,255,255,0.98)');
-            grad.addColorStop(0.22, 'rgba(126,246,255,0.92)');
-            grad.addColorStop(0.54, 'rgba(91,175,255,0.78)');
-            grad.addColorStop(0.78, 'rgba(162,102,255,0.76)');
-            grad.addColorStop(1, 'rgba(24,20,78,0.92)');
+        grad.addColorStop(0, visualPalette.outline || '#ffffff');
+        if (visualPalette.key === 'space') {
+            grad.addColorStop(0.18, visualPalette.accent || '#57d5ff');
+            grad.addColorStop(0.42, visualPalette.mid);
+            grad.addColorStop(0.72, '#ff67c8');
+            grad.addColorStop(1, visualPalette.edge);
         } else {
-            grad.addColorStop(0, visualPalette.outline || '#ffffff');
-            if (visualPalette.key === 'space') {
-                grad.addColorStop(0.18, visualPalette.accent || '#57d5ff');
-                grad.addColorStop(0.42, visualPalette.mid);
-                grad.addColorStop(0.72, '#ff67c8');
-                grad.addColorStop(1, visualPalette.edge);
-            } else {
-                grad.addColorStop(0.22, visualPalette.core);
-                grad.addColorStop(0.56, visualPalette.mid);
-                grad.addColorStop(1, visualPalette.edge);
-            }
+            grad.addColorStop(0.22, visualPalette.core);
+            grad.addColorStop(0.56, visualPalette.mid);
+            grad.addColorStop(1, visualPalette.edge);
         }
         bodyStyle = grad;
     }
@@ -20575,12 +20670,6 @@ function drawEnemyShape(e) {
             ctx.moveTo(0, -size*0.55); ctx.lineTo(0, -size*1.75);
             ctx.moveTo(-size*0.22, -size*0.2); ctx.lineTo(-size*0.85, -size*1.35);
             ctx.moveTo(size*0.22, -size*0.2); ctx.lineTo(size*0.85, -size*1.35);
-        } else if (evo === 7) {
-            ctx.moveTo(0, -size*0.68); ctx.lineTo(0, -size*1.95);
-            ctx.moveTo(-size*0.28, -size*0.32); ctx.lineTo(-size*1.04, -size*1.58);
-            ctx.moveTo(size*0.28, -size*0.32); ctx.lineTo(size*1.04, -size*1.58);
-            ctx.moveTo(-size*0.50, size*0.20); ctx.lineTo(-size*1.26, size*0.92);
-            ctx.moveTo(size*0.50, size*0.20); ctx.lineTo(size*1.26, size*0.92);
         }
     }
     ctx.fill();
@@ -20595,26 +20684,9 @@ function drawEnemyShape(e) {
     }
     ctx.fill();
 
-    ctx.lineWidth = isElite ? 3.2 : (evo >= 6 ? 2.8 : 1.8);
-    ctx.strokeStyle = isElite ? '#ffd700' : (hitTimer > 0 ? '#ffffff' : (crystalVisual ? 'rgba(205,250,255,0.95)' : (visualPalette.outline || '#f6f6f6')));
+    ctx.lineWidth = isElite ? 3.2 : (evo === 6 ? 2.8 : 1.8);
+    ctx.strokeStyle = isElite ? '#ffd700' : (hitTimer > 0 ? '#ffffff' : (visualPalette.outline || '#f6f6f6'));
     ctx.stroke();
-
-    if (crystalVisual && !isLowPower()) {
-        ctx.save();
-        ctx.globalAlpha = 0.50 + Math.sin(t / 140 + x * 0.02) * 0.18;
-        ctx.strokeStyle = 'rgba(255,255,255,0.70)';
-        ctx.lineWidth = Math.max(1, size * 0.045);
-        ctx.beginPath();
-        ctx.moveTo(-size * 0.22, -size * 0.70);
-        ctx.lineTo(size * 0.18, -size * 0.20);
-        ctx.lineTo(-size * 0.08, size * 0.48);
-        ctx.moveTo(size * 0.34, -size * 0.58);
-        ctx.lineTo(size * 0.58, size * 0.18);
-        ctx.moveTo(-size * 0.48, -size * 0.08);
-        ctx.lineTo(-size * 0.62, size * 0.34);
-        ctx.stroke();
-        ctx.restore();
-    }
 
     ctx.fillStyle = '#ffffff';
     let eyeY = -size * 0.1; let eyeR = size * 0.25;
@@ -20624,8 +20696,7 @@ function drawEnemyShape(e) {
 
     ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#081018';
-    if (evo >= 6) {
-        ctx.fillStyle = crystalVisual ? '#14325c' : '#081018';
+    if (evo === 6) {
         ctx.beginPath(); ctx.ellipse(-size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.ellipse(size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.fill();
     } else {
         ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.fill();
@@ -20648,12 +20719,11 @@ function drawEnemyShape(e) {
     ctx.font = fontStr(9, 'bold');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelText = crystalVisual ? (e.crystalTierName || '크리스탈 슬라임') : elementMeta.name;
-    ctx.fillStyle = crystalVisual ? '#bff7ff' : (visualPalette.outline || elementMeta.color);
+    ctx.fillStyle = visualPalette.outline || elementMeta.color;
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 2;
-    ctx.strokeText(labelText, x, y - size - 37);
-    ctx.fillText(labelText, x, y - size - 37);
+    ctx.strokeText(elementMeta.name, x, y - size - 37);
+    ctx.fillText(elementMeta.name, x, y - size - 37);
     ctx.restore();
 
     const barWidth = size * 1.6; const bx = x - barWidth / 2; const by = y - size - 12;
