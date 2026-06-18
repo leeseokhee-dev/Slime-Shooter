@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.189 Time Attack Spawn + BGM)</title>
+<title>Slime Shooter - Ultimate Evolution (v.183 Crystal Slime HP Growth)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3060,7 +3060,6 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
           </div>
         </div>
         <div class="gameover-btns" style="display:flex; flex-direction: column; gap: 10px;">
-            <button id="manualReviveBtn" class="gameover-btn" style="width:100%; background:linear-gradient(to bottom,#ff8fc2,#8a2550); border-color:#ffb0d0; color:#fff; font-weight:900; display:none;">❤️‍🔥 부활권으로 부활</button>
             <button id="restartBtn" class="gameover-btn btn-restart" style="width:100%;">다시 하기</button>
             <button id="toTitleBtn" class="gameover-btn btn-title" style="width:100%;">타이틀로</button>
         </div>
@@ -4769,7 +4768,6 @@ const bgmTracks = {
   minigame: new Audio('bg_minigame.mp3'), // ✅ 미니게임 전용
   treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
   dimension:new Audio('bg_dimension.mp3'),// ✅ [v.175] 디멘션 인베이드 전용
-  timeattack:new Audio('bg_timeattack.mp3'),// ✅ [v.189] 타임어택 전용
   fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
@@ -6264,8 +6262,13 @@ let playerStatus = {
   burnTickMs: 5000
 };
 
+// ✅ [v.183] 플레이어 HP 성장 공식
+// - Lv.1 = 50 HP
+// - Lv.100 = 2,400 HP
+// - Lv.200 = 55,900 HP
+// - Lv.300 = 2,800,000 HP
 function getPlayerMaxHpByLevel(lv = level) {
-  const safeLv = Math.max(1, Math.min(MAX_LEVEL || 300, Math.floor(Number(lv) || 1)));
+  const safeLv = Math.max(1, Math.min(300, Math.floor(Number(lv) || 1)));
   const hp1 = 50;
   const hp100 = 2400;
   const hp200 = 55900;
@@ -6279,26 +6282,23 @@ function getPlayerMaxHpByLevel(lv = level) {
     const t = (safeLv - 100) / 100;
     return Math.max(1, Math.round(hp100 * Math.pow(hp200 / hp100, t)));
   }
-
   const t = (safeLv - 200) / 100;
   return Math.max(1, Math.round(hp200 * Math.pow(hp300 / hp200, t)));
 }
 
-function getCrystalStagePowerScale(stageValue, kind = 'hp') {
+function getCrystalMonsterStatScale(stageValue = stage) {
   const s = Math.max(1, Math.floor(Number(stageValue) || 1));
-  if (s < 201) return 1;
-  if (kind === 'attack') {
-    if (s <= 220) return 1.15;
-    if (s <= 240) return 1.20;
-    if (s <= 260) return 1.25;
-    if (s <= 280) return 1.30;
-    return 1.35;
-  }
-  if (s <= 220) return 1.20;
-  if (s <= 240) return 1.30;
-  if (s <= 260) return 1.40;
-  if (s <= 280) return 1.50;
-  return 1.60;
+  if (s < 201) return { hp: 1, atk: 1, size: 1, tierName: '' };
+  if (s <= 220) return { hp: 1.20, atk: 1.15, size: 1.08, tierName: '크리스탈 슬라임' };
+  if (s <= 240) return { hp: 1.30, atk: 1.20, size: 1.10, tierName: '크리스탈 슬라임' };
+  if (s <= 260) return { hp: 1.40, atk: 1.25, size: 1.12, tierName: '강화 크리스탈 슬라임' };
+  if (s <= 280) return { hp: 1.50, atk: 1.30, size: 1.14, tierName: '프리즘 크리스탈 슬라임' };
+  return { hp: 1.60, atk: 1.35, size: 1.16, tierName: '다이아몬드 크리스탈 슬라임' };
+}
+
+function isCrystalStage(stageValue = stage) {
+  const s = Math.max(1, Math.floor(Number(stageValue) || 1));
+  return s >= 201 && s <= 300;
 }
 
 function syncPlayerHealthToLevel(options = {}) {
@@ -6357,8 +6357,11 @@ function getPlayerHitDamage(hitInfo = null) {
     dmg = Math.round(dmg * 1.2);
   }
 
-  // ✅ [v.183] 201~300 크리스탈 슬라임 구간: 몬스터 공격력 소폭 증가
-  dmg = Math.round(dmg * getCrystalStagePowerScale(stageLevel, 'attack'));
+  // ✅ [v.183] 201~300 크리스탈 구간은 몬스터 공격력이 약간 상승
+  const crystalScale = getCrystalMonsterStatScale(stageLevel);
+  if (crystalScale && crystalScale.atk > 1) {
+    dmg = Math.round(dmg * crystalScale.atk);
+  }
 
   return Math.max(2, dmg);
 }
@@ -14567,12 +14570,11 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
   const safeFinal = Math.max(0, Math.round(Number(finalAmount) || 0));
   if (safeFinal <= 0 && safeBaseRaw <= 0) return;
 
-  const timeAttackNoExpPenalty = (typeof timeAttackActiveV188 !== 'undefined' && timeAttackActiveV188);
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
-  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty && !timeAttackNoExpPenalty)
+  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
-  const lostRate = (gameMode === 'stage' && !dimensionNoExpPenalty && !timeAttackNoExpPenalty) ? (1 - stageHitRate) : 0;
+  const lostRate = (gameMode === 'stage' && !dimensionNoExpPenalty) ? (1 - stageHitRate) : 0;
 
   const combinedHotMult = Math.max(1, Number(hotMult) || 1);
   const feverExpMult = getFeverExpMultiplier();
@@ -14717,9 +14719,8 @@ function addExp(amount, opts = {}) {
 
 
   // ✅ [v.41+] EXP 획득률 보정(피격/상점버프/핫타임/펫)
-  const timeAttackNoExpPenalty = (typeof timeAttackActiveV188 !== 'undefined' && timeAttackActiveV188);
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
-  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty && !timeAttackNoExpPenalty)
+  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
   const expBuffMult = getBuffMult('exp');
@@ -16690,8 +16691,17 @@ function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
         hp = cfg.baseHp + 3000 + (stage - 101) * 90;
     }
 
+    // ✅ [v.183] 201~300 스테이지 일반 몬스터를 크리스탈 슬라임으로 강화
+    const crystalScale = getCrystalMonsterStatScale(stage);
+    const isCrystalMonster = isCrystalStage(stage);
+    if (isCrystalMonster) {
+        hp = Math.round(hp * crystalScale.hp);
+        size *= crystalScale.size;
+    }
+
     let evo = 1;
-if (stage >= 25) evo = 6;
+if (stage >= 201) evo = 7;
+else if (stage >= 25) evo = 6;
 else if (stage >= 20) evo = 5;
 else if (stage >= 15) evo = 4;
 else if (stage >= 10) evo = 3;
@@ -16714,19 +16724,6 @@ if (stage <= 100) {
 
 let finalScore = cfg.score + stageBonus;
 
-    // ✅ [v.183] 201~300 스테이지: 크리스탈 슬라임으로 변경 + 체력 소폭 증가
-    if (stage >= 201) {
-        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
-        size *= 1.10;
-        extra = {
-          ...extra,
-          isCrystalSlime: true,
-          evoStage: 7,
-          displayName: stage >= 281 ? '다이아몬드 크리스탈 슬라임' : '크리스탈 슬라임',
-          crystalTier: stage >= 281 ? 'diamond' : 'crystal'
-        };
-    }
-
     // [추가] 정예(Elite) 몬스터 보정
     if (extra.isElite) {
         hp *= 3;           // 체력 3배
@@ -16739,7 +16736,13 @@ let finalScore = cfg.score + stageBonus;
     const element = sanitizeElementKey(extra.element || getStageElementKey(stage, Math.abs(Math.floor(x + y + (cfg.score || 0))) % ELEMENT_ORDER.length));
 
     return {
-        type, x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
+        type: isCrystalMonster ? 'crystalSlime' : type,
+        originalType: type,
+        name: isCrystalMonster ? crystalScale.tierName : undefined,
+        isCrystalSlime: isCrystalMonster,
+        crystalTierName: isCrystalMonster ? crystalScale.tierName : '',
+        crystalStatScale: crystalScale,
+        x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
         pattern, hitTimer: 0,
         shootTimer: randRange(1000, 3000),
         ...extra
@@ -16842,10 +16845,10 @@ function createBoss() {
         // 101부터는 일반 몹 HP가 5000대이므로, 보스는 최소 8만 단위여야 긴장감이 듦
         hp += 100000 + (stage - 100) * 4000; 
     }
-
-    // ✅ [v.183] 201~300 크리스탈 보스 구간: 보스 체력도 일반 몬스터와 같은 구간 배율 적용
-    if (stage >= 201) {
-        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
+    // ✅ [v.183] 201~300 크리스탈 보스 체력도 일반 몬스터 강화율에 맞춰 상승
+    if (isCrystalStage(stage)) {
+        const crystalScale = getCrystalMonsterStatScale(stage);
+        hp = Math.round(hp * crystalScale.hp);
     }
 
     // ✅ [v.76] 특수 보스(팬텀 슬라임): 15스테이지마다 등장(보스 스테이지에서만)
@@ -17171,7 +17174,7 @@ function getBossProfileByEvoStage(evoStage, kind = 'slime') {
     7: {
       name: '크리스탈 슬라임',
       title: '크리스탈 지역 보스',
-      desc: '201~300 스테이지에서 등장하는 수정화된 보스입니다. 체력과 공격력이 한 단계 올라가므로 후반 성장과 스킬 운용이 중요합니다.'
+      desc: '수정처럼 단단한 외형과 강한 체력을 가진 201~300 스테이지 전용 보스입니다. 반짝이는 움직임에 속지 말고 꾸준히 공격해 주세요.'
     }
   };
 
@@ -18004,9 +18007,24 @@ if (isPlayerDying || !player.alive) return;
 isPlayerDying = true;
   document.body.classList.add('dead-mode');
 player.alive = false;
-// ✅ [v.185] 경험치 패널티는 여기서 즉시 적용하지 않음
-// 부활권으로 부활하면 경험치가 감소하지 않아야 하므로,
-// 최종적으로 부활하지 않고 GAME OVER가 확정될 때만 applyDeathExpPenaltyV185()에서 처리합니다.
+if (gameMode === 'stage' && level >= 31 && !(typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175())) {
+  let penaltyRate = 0;
+  if (level <= 60) penaltyRate = 0.10;
+  else if (level <= 100) penaltyRate = 0.05;
+  else if (level <= 200) penaltyRate = 0.03;
+  else penaltyRate = 0.01;
+
+  const curLevel = Math.max(1, Math.min(MAX_LEVEL - 1, level || 1));
+  const neededExp = Math.max(0, Number(EXP_TABLE?.[curLevel]?.needed || 0));
+  const penaltyExp = Math.floor(neededExp * penaltyRate);
+  if (penaltyExp > 0) {
+    exp = Math.max(0, exp - penaltyExp);
+    level = getLevelFromExp(exp);
+    syncPlayerHealthToLevel({ keepRatio: true });
+    saveGameDataDebounced();
+    updateHUD();
+  }
+}
 deathAnimationTimer = 2000;
 petBullets = [];
 pet2Bullets = [];
@@ -20472,137 +20490,8 @@ ctx.restore();
 
 
 
-function drawCrystalEnemyShape(e) {
-    const { x, y, size, hitTimer, hp, maxHp, isElite } = e;
-    const tier = e.crystalTier === 'diamond' ? 'diamond' : 'crystal';
-    const t = Date.now();
-    const pulse = 1 + Math.sin(t / 230 + x * 0.02) * 0.035;
-    const glowColor = tier === 'diamond' ? 'rgba(210,245,255,0.58)' : 'rgba(124,231,255,0.50)';
-    const edgeColor = tier === 'diamond' ? '#f8fdff' : '#b8f7ff';
-    const midColor = tier === 'diamond' ? '#94eaff' : '#7d35ff';
-    const coreColor = tier === 'diamond' ? '#ffffff' : '#d6fbff';
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(pulse, pulse);
-
-    // 외곽 오라와 반짝임
-    ctx.save();
-    ctx.globalAlpha = hitTimer > 0 ? 0.75 : 0.42;
-    const aura = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size * 1.65);
-    aura.addColorStop(0, glowColor);
-    aura.addColorStop(1, 'rgba(80,80,255,0)');
-    ctx.fillStyle = aura;
-    ctx.beginPath();
-    ctx.arc(0, 0, size * 1.65, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    if (isElite) {
-        ctx.beginPath();
-        ctx.arc(0, 0, size * 1.55, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 215, 0, ${0.26 + Math.sin(t / 120) * 0.08})`;
-        ctx.fill();
-    }
-
-    // 크리스탈 슬라임 본체: 물방울 형태 + 각진 수정 면
-    const grad = ctx.createRadialGradient(-size * 0.35, -size * 0.45, size * 0.14, 0, 0, size * 1.1);
-    grad.addColorStop(0, hitTimer > 0 ? '#ffffff' : coreColor);
-    grad.addColorStop(0.42, hitTimer > 0 ? '#ffffff' : '#65e9ff');
-    grad.addColorStop(0.72, hitTimer > 0 ? '#ffffff' : midColor);
-    grad.addColorStop(1, '#21105f');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(0, -size * 1.05);
-    ctx.bezierCurveTo(-size * 1.18, -size * 0.22, -size * 1.05, size * 0.78, 0, size * 0.86);
-    ctx.bezierCurveTo(size * 1.05, size * 0.78, size * 1.18, -size * 0.22, 0, -size * 1.05);
-    ctx.fill();
-
-    ctx.lineWidth = isElite ? 3.4 : 2.5;
-    ctx.strokeStyle = hitTimer > 0 ? '#ffffff' : edgeColor;
-    ctx.stroke();
-
-    // 수정 면 라인
-    ctx.save();
-    ctx.globalAlpha = 0.52;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(0, -size * 0.95); ctx.lineTo(-size * 0.32, size * 0.18); ctx.lineTo(0, size * 0.82);
-    ctx.moveTo(0, -size * 0.95); ctx.lineTo(size * 0.32, size * 0.18); ctx.lineTo(0, size * 0.82);
-    ctx.moveTo(-size * 0.72, -size * 0.08); ctx.lineTo(-size * 0.32, size * 0.18); ctx.lineTo(size * 0.32, size * 0.18); ctx.lineTo(size * 0.72, -size * 0.08);
-    ctx.stroke();
-    ctx.restore();
-
-    // 눈
-    ctx.fillStyle = '#f8feff';
-    const eyeY = -size * 0.13;
-    const eyeR = size * 0.20;
-    ctx.beginPath();
-    ctx.ellipse(-size * 0.36, eyeY, eyeR * 0.78, eyeR, 0, 0, Math.PI * 2);
-    ctx.ellipse(size * 0.36, eyeY, eyeR * 0.78, eyeR, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#09243a';
-    ctx.beginPath();
-    ctx.ellipse(-size * 0.36, eyeY, eyeR * 0.28, eyeR * 0.72, 0, 0, Math.PI * 2);
-    ctx.ellipse(size * 0.36, eyeY, eyeR * 0.28, eyeR * 0.72, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 반짝이 파편
-    ctx.save();
-    ctx.fillStyle = tier === 'diamond' ? '#ffffff' : '#9ff7ff';
-    for (let i = 0; i < 4; i++) {
-      const a = t / 520 + i * Math.PI * 0.5 + x * 0.01;
-      const sx = Math.cos(a) * size * 1.22;
-      const sy = Math.sin(a) * size * 0.92;
-      ctx.globalAlpha = 0.42 + 0.35 * Math.sin(t / 180 + i);
-      ctx.beginPath();
-      ctx.moveTo(sx, sy - 4); ctx.lineTo(sx + 3, sy); ctx.lineTo(sx, sy + 4); ctx.lineTo(sx - 3, sy);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-
-    if (isElite) {
-      ctx.save();
-      ctx.fillStyle = '#ffcc00'; ctx.strokeStyle = '#aa7700'; ctx.lineWidth = 1;
-      ctx.translate(0, -size - 6);
-      ctx.beginPath();
-      ctx.moveTo(-7, 0); ctx.lineTo(-3, -9); ctx.lineTo(0, -4); ctx.lineTo(3, -9); ctx.lineTo(7, 0);
-      ctx.fill(); ctx.stroke();
-      ctx.restore();
-    }
-
-    ctx.restore();
-
-    // 이름 + 체력바
-    const displayName = e.displayName || (tier === 'diamond' ? '다이아몬드 크리스탈 슬라임' : '크리스탈 슬라임');
-    ctx.save();
-    ctx.font = fontStr(10, 'bold');
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-    ctx.lineWidth = 3;
-    ctx.fillStyle = edgeColor;
-    ctx.strokeText(displayName, x, y - size - 32);
-    ctx.fillText(displayName, x, y - size - 32);
-    ctx.restore();
-
-    const barWidth = size * 1.75;
-    const bx = x - barWidth / 2;
-    const by = y - size - 14;
-    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(bx, by, barWidth, 4);
-    const ratio = Math.max(0, hp / maxHp);
-    ctx.fillStyle = isElite ? '#ffaa00' : (tier === 'diamond' ? '#d7fbff' : '#7ce7ff');
-    ctx.fillRect(bx + 1, by + 1, (barWidth - 2) * ratio, 2);
-}
-
 function drawEnemyShape(e) {
     const { x, y, size, hitTimer, hp, maxHp, isElite } = e;
-    if (e && (e.isCrystalSlime || e.evoStage === 7 || stage >= 201)) {
-        drawCrystalEnemyShape(e);
-        return;
-    }
     const visualPalette = getVisualElementPalette(e.element || getStageElementKey(stage), stage);
     const elementMeta = getElementMeta(getVisualElementKey(e.element || getStageElementKey(stage), stage));
 
@@ -20623,25 +20512,52 @@ function drawEnemyShape(e) {
     }
 
     let evo = 1;
-    if (stage >= 25) evo = 6;
+    const crystalVisual = !!(e && e.isCrystalSlime) || isCrystalStage(stage);
+    if (crystalVisual) evo = 7;
+    else if (stage >= 25) evo = 6;
     else if (stage >= 20) evo = 5;
     else if (stage >= 15) evo = 4;
     else if (stage >= 10) evo = 3;
     else if (stage >= 5) evo = 2;
 
+    if (crystalVisual && !isLowPower()) {
+        const glowPulse = 0.55 + Math.sin(t / 180 + x * 0.03) * 0.18;
+        ctx.save();
+        ctx.globalAlpha = 0.22 + glowPulse * 0.18;
+        ctx.strokeStyle = 'rgba(150,245,255,0.85)';
+        ctx.lineWidth = Math.max(1.5, size * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 1.65);
+        ctx.lineTo(size * 1.22, -size * 0.18);
+        ctx.lineTo(size * 0.62, size * 1.18);
+        ctx.lineTo(-size * 0.62, size * 1.18);
+        ctx.lineTo(-size * 1.22, -size * 0.18);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+    }
+
     let bodyStyle = (hitTimer > 0) ? '#ffffff' : null;
     if (!bodyStyle) {
         const grad = ctx.createRadialGradient(-size * 0.32, -size * 0.34, size * 0.16, 0, 0, size * 1.15);
-        grad.addColorStop(0, visualPalette.outline || '#ffffff');
-        if (visualPalette.key === 'space') {
-            grad.addColorStop(0.18, visualPalette.accent || '#57d5ff');
-            grad.addColorStop(0.42, visualPalette.mid);
-            grad.addColorStop(0.72, '#ff67c8');
-            grad.addColorStop(1, visualPalette.edge);
+        if (crystalVisual) {
+            grad.addColorStop(0, 'rgba(255,255,255,0.98)');
+            grad.addColorStop(0.22, 'rgba(126,246,255,0.92)');
+            grad.addColorStop(0.54, 'rgba(91,175,255,0.78)');
+            grad.addColorStop(0.78, 'rgba(162,102,255,0.76)');
+            grad.addColorStop(1, 'rgba(24,20,78,0.92)');
         } else {
-            grad.addColorStop(0.22, visualPalette.core);
-            grad.addColorStop(0.56, visualPalette.mid);
-            grad.addColorStop(1, visualPalette.edge);
+            grad.addColorStop(0, visualPalette.outline || '#ffffff');
+            if (visualPalette.key === 'space') {
+                grad.addColorStop(0.18, visualPalette.accent || '#57d5ff');
+                grad.addColorStop(0.42, visualPalette.mid);
+                grad.addColorStop(0.72, '#ff67c8');
+                grad.addColorStop(1, visualPalette.edge);
+            } else {
+                grad.addColorStop(0.22, visualPalette.core);
+                grad.addColorStop(0.56, visualPalette.mid);
+                grad.addColorStop(1, visualPalette.edge);
+            }
         }
         bodyStyle = grad;
     }
@@ -20659,6 +20575,12 @@ function drawEnemyShape(e) {
             ctx.moveTo(0, -size*0.55); ctx.lineTo(0, -size*1.75);
             ctx.moveTo(-size*0.22, -size*0.2); ctx.lineTo(-size*0.85, -size*1.35);
             ctx.moveTo(size*0.22, -size*0.2); ctx.lineTo(size*0.85, -size*1.35);
+        } else if (evo === 7) {
+            ctx.moveTo(0, -size*0.68); ctx.lineTo(0, -size*1.95);
+            ctx.moveTo(-size*0.28, -size*0.32); ctx.lineTo(-size*1.04, -size*1.58);
+            ctx.moveTo(size*0.28, -size*0.32); ctx.lineTo(size*1.04, -size*1.58);
+            ctx.moveTo(-size*0.50, size*0.20); ctx.lineTo(-size*1.26, size*0.92);
+            ctx.moveTo(size*0.50, size*0.20); ctx.lineTo(size*1.26, size*0.92);
         }
     }
     ctx.fill();
@@ -20673,9 +20595,26 @@ function drawEnemyShape(e) {
     }
     ctx.fill();
 
-    ctx.lineWidth = isElite ? 3.2 : (evo === 6 ? 2.8 : 1.8);
-    ctx.strokeStyle = isElite ? '#ffd700' : (hitTimer > 0 ? '#ffffff' : (visualPalette.outline || '#f6f6f6'));
+    ctx.lineWidth = isElite ? 3.2 : (evo >= 6 ? 2.8 : 1.8);
+    ctx.strokeStyle = isElite ? '#ffd700' : (hitTimer > 0 ? '#ffffff' : (crystalVisual ? 'rgba(205,250,255,0.95)' : (visualPalette.outline || '#f6f6f6')));
     ctx.stroke();
+
+    if (crystalVisual && !isLowPower()) {
+        ctx.save();
+        ctx.globalAlpha = 0.50 + Math.sin(t / 140 + x * 0.02) * 0.18;
+        ctx.strokeStyle = 'rgba(255,255,255,0.70)';
+        ctx.lineWidth = Math.max(1, size * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.22, -size * 0.70);
+        ctx.lineTo(size * 0.18, -size * 0.20);
+        ctx.lineTo(-size * 0.08, size * 0.48);
+        ctx.moveTo(size * 0.34, -size * 0.58);
+        ctx.lineTo(size * 0.58, size * 0.18);
+        ctx.moveTo(-size * 0.48, -size * 0.08);
+        ctx.lineTo(-size * 0.62, size * 0.34);
+        ctx.stroke();
+        ctx.restore();
+    }
 
     ctx.fillStyle = '#ffffff';
     let eyeY = -size * 0.1; let eyeR = size * 0.25;
@@ -20685,7 +20624,8 @@ function drawEnemyShape(e) {
 
     ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#081018';
-    if (evo === 6) {
+    if (evo >= 6) {
+        ctx.fillStyle = crystalVisual ? '#14325c' : '#081018';
         ctx.beginPath(); ctx.ellipse(-size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.ellipse(size*0.35, eyeY, eyeR*0.3, eyeR*0.8, 0, 0, Math.PI*2); ctx.fill();
     } else {
         ctx.beginPath(); ctx.arc(-size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.arc(size*0.35, eyeY, eyeR*0.5, 0, Math.PI*2); ctx.fill();
@@ -20708,11 +20648,12 @@ function drawEnemyShape(e) {
     ctx.font = fontStr(9, 'bold');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = visualPalette.outline || elementMeta.color;
+    const labelText = crystalVisual ? (e.crystalTierName || '크리스탈 슬라임') : elementMeta.name;
+    ctx.fillStyle = crystalVisual ? '#bff7ff' : (visualPalette.outline || elementMeta.color);
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 2;
-    ctx.strokeText(elementMeta.name, x, y - size - 37);
-    ctx.fillText(elementMeta.name, x, y - size - 37);
+    ctx.strokeText(labelText, x, y - size - 37);
+    ctx.fillText(labelText, x, y - size - 37);
     ctx.restore();
 
     const barWidth = size * 1.6; const bx = x - barWidth / 2; const by = y - size - 12;
@@ -26215,7 +26156,7 @@ installPartyMemberSelectorV181();
 // ===============================
 const DIMENSION_ITEM_DEFS_V182 = {
   reviveTicket: {
-    icon:'❤️‍🔥', name:'부활권', desc:'HP가 0이 될 때 자동으로 1개 소모되어 전체 HP의 50%로 부활합니다. 게임오버 화면에서는 수동 부활도 가능합니다.', category:'consumable', useLabel:'자동 사용'
+    icon:'❤️‍🔥', name:'부활권', desc:'HP가 0이 될 때 자동으로 1개 소모되어 HP 70%로 부활합니다.', category:'consumable', useLabel:'자동 사용'
   },
   feverTicket: {
     icon:'🔥', name:'피버 충전권', desc:'사용 시 피버 게이지를 100%로 충전합니다.', category:'consumable', useLabel:'사용',
@@ -26353,7 +26294,7 @@ function renderDimensionInventorySectionV182(){
   return `
     <div id="dimensionInventorySectionV182" style="margin:10px 0 12px; padding:10px 12px; border:1px solid rgba(157,255,234,0.32); border-radius:14px; background:rgba(157,255,234,0.08);">
       <div style="font-weight:1000; font-size:15px; color:#9dffea; margin-bottom:8px;">🌀 디멘션 보상 인벤토리</div>
-      <div style="font-size:12px; color:#cfd6ff; line-height:1.55; margin-bottom:8px;">디멘션 상자와 차원 상점에서 획득한 특수 상품입니다. 부활권은 사망 직전에 자동 사용되며, 게임오버 화면에서는 수동 사용도 가능합니다.</div>
+      <div style="font-size:12px; color:#cfd6ff; line-height:1.55; margin-bottom:8px;">디멘션 상자와 차원 상점에서 획득한 특수 상품입니다. 부활권은 사망 직전에 자동 사용됩니다.</div>
       <div style="display:flex; flex-direction:column; gap:8px;">${rows}</div>
     </div>
   `;
@@ -26381,43 +26322,17 @@ renderInventoryContent = function(){
   });
 };
 
-function isReviveTicketUsableNowV184(manual = false){
-  if (!player) return false;
-  const hpNow = Math.max(0, Number(playerHp) || 0);
-  const deadLike = isPlayerDying || !player.alive || hpNow <= 0 || document.body.classList.contains('dead-mode') || state === 'gameover';
-  if (!deadLike) return false;
-  // 클리어/시간 종료처럼 플레이어가 쓰러진 것이 아닌 결과 화면에서는 부활권을 소모하지 않음
-  if (manual && player.alive && hpNow > 0 && !isPlayerDying && state === 'gameover') return false;
-  return true;
-}
-
-function consumeReviveTicketIfPossibleV182(options = {}){
-  const manual = !!options.manual;
-  if (!isReviveTicketUsableNowV184(manual)) return false;
+function consumeReviveTicketIfPossibleV182(){
   const items = ensureDimensionItemsV182();
   if (Math.max(0, Math.floor(Number(items.reviveTicket) || 0)) <= 0) return false;
-
   items.reviveTicket = Math.max(0, Math.floor(Number(items.reviveTicket) || 0) - 1);
-  playerMaxHp = Math.max(1, Math.floor(Number(playerMaxHp) || getPlayerMaxHpByLevel(level)));
-  playerHp = Math.max(1, Math.round(playerMaxHp * 0.50));
-
-  if (player) {
-    player.alive = true;
-    player.invincibleTimer = Math.max(Number(player.invincibleTimer) || 0, 1800);
-  }
+  playerHp = Math.max(1, Math.round(playerMaxHp * 0.70));
   isPlayerDying = false;
-  deathAnimationTimer = 0;
   gameOverCooldown = 0;
-  playerInvulnTimer = Math.max(Number(playerInvulnTimer) || 0, 1800);
-  document.body.classList.remove('dead-mode');
-  if (gameOverUI) gameOverUI.classList.add('hidden');
-  if (state === 'gameover') state = 'playing';
-
   saveGameData();
   updateHUD();
-  try { playBgmTrack(getModeBgmName()); } catch(e) {}
-  try { showToast(`❤️‍🔥 부활권 ${manual ? '수동' : '자동'} 사용! HP ${formatNumber(playerHp)} / ${formatNumber(playerMaxHp)} · 남은 부활권 ${formatNumber(items.reviveTicket)}개`, '#ffb0d0', 2400); } catch(e) {}
-  try { spawnDamageText(player.x, player.y - 42, 'REVIVE 50%!', '#ffb0d0', true); } catch(e) {}
+  try { showToast(`❤️‍🔥 부활권 자동 사용! 남은 부활권 ${formatNumber(items.reviveTicket)}개`, '#ffb0d0', 2200); } catch(e) {}
+  try { spawnDamageText(player.x, player.y - 42, 'REVIVE!', '#ffb0d0', true); } catch(e) {}
   return true;
 }
 
@@ -26439,604 +26354,6 @@ function appendDimensionShopItemsV182(){
   });
 }
 appendDimensionShopItemsV182();
-
-// ===============================
-// ✅ [v.184] 부활권 공통 부활 규칙
-// - 모든 모드에서 사망 시 부활 가능
-// - 부활 시 HP는 전체 체력의 50%
-// - 자동 부활: 실제 사망 처리 직후
-// - 수동 부활: 게임오버 화면에서 버튼으로 사용
-// ===============================
-const triggerDeathBeforeV184Revive = triggerDeath;
-triggerDeath = function(){
-  triggerDeathBeforeV184Revive.apply(this, arguments);
-  // 기존 사망 연출/패널 진입 전에 부활권이 있으면 즉시 복귀
-  if (consumeReviveTicketIfPossibleV182({ manual:false })) return;
-};
-
-const updateGameOverModalBeforeV184Revive = updateGameOverModal;
-updateGameOverModal = function(){
-  const ret = updateGameOverModalBeforeV184Revive.apply(this, arguments);
-  try {
-    const btn = document.getElementById('manualReviveBtn');
-    if (btn) {
-      const items = ensureDimensionItemsV182();
-      const count = Math.max(0, Math.floor(Number(items.reviveTicket) || 0));
-      const usable = count > 0 && isReviveTicketUsableNowV184(true);
-      btn.style.display = usable ? 'block' : 'none';
-      btn.textContent = `❤️‍🔥 부활권으로 부활 (보유 ${formatNumber(count)}개 / HP 50%)`;
-    }
-  } catch(e) {}
-  return ret;
-};
-
-try {
-  const manualReviveBtnV184 = document.getElementById('manualReviveBtn');
-  if (manualReviveBtnV184) {
-    manualReviveBtnV184.addEventListener('click', () => {
-      const ok = consumeReviveTicketIfPossibleV182({ manual:true });
-      if (!ok) {
-        try { showToast('지금은 부활권을 사용할 수 없습니다.', '#ffb0b0', 1600); } catch(e) { alert('지금은 부활권을 사용할 수 없습니다.'); }
-      }
-    });
-  }
-} catch(e) {}
-
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.184 부활권 50%')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,176,208,0.35); border-radius:10px; background:rgba(255,176,208,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb0d0;">[v.184 부활권 50%]</b><br>부활권 사용 시 어느 모드에서든 부활하며, 부활 HP는 전체 체력의 50%로 적용됩니다. 사망 직후에는 자동 부활하고, 게임오버 화면에서는 상황에 따라 수동 부활 버튼이 표시됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
-// ===============================
-// ✅ [v.185] 부활/포기 기준 경험치 패널티 정리
-// - 부활권으로 자동/수동 부활 성공 시 경험치 감소 없음
-// - 부활권이 없거나, 부활을 포기해서 최종 GAME OVER가 확정될 때만 경험치 감소
-// - 디멘션 인베이드에서는 기존 규칙대로 경험치 감소 없음
-// ===============================
-let expPenaltyAppliedForThisDeathV185 = false;
-
-function canApplyDeathExpPenaltyV185(){
-  if (gameMode !== 'stage') return false;
-  if (level < 31) return false;
-  if (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175()) return false;
-  return true;
-}
-
-function getDeathExpPenaltyInfoV185(){
-  let penaltyRate = 0;
-  if (level <= 60) penaltyRate = 0.10;
-  else if (level <= 100) penaltyRate = 0.05;
-  else if (level <= 200) penaltyRate = 0.03;
-  else penaltyRate = 0.01;
-
-  const curLevel = Math.max(1, Math.min(MAX_LEVEL - 1, level || 1));
-  const neededExp = Math.max(0, Number(EXP_TABLE?.[curLevel]?.needed || 0));
-  const penaltyExp = Math.floor(neededExp * penaltyRate);
-  return { penaltyRate, penaltyExp };
-}
-
-function applyDeathExpPenaltyV185(reason = 'gameover'){
-  if (expPenaltyAppliedForThisDeathV185) return 0;
-  if (!canApplyDeathExpPenaltyV185()) return 0;
-
-  const info = getDeathExpPenaltyInfoV185();
-  const penaltyExp = Math.max(0, Math.floor(Number(info.penaltyExp) || 0));
-  if (penaltyExp <= 0) return 0;
-
-  expPenaltyAppliedForThisDeathV185 = true;
-  exp = Math.max(0, exp - penaltyExp);
-  level = getLevelFromExp(exp);
-  syncPlayerHealthToLevel({ keepRatio: true });
-  saveGameDataDebounced();
-  updateHUD();
-  try { showToast(`💥 부활하지 않아 경험치 ${formatNumber(penaltyExp)} 감소`, '#ffb0b0', 2200); } catch(e) {}
-  return penaltyExp;
-}
-
-const startGameBeforeV185PenaltyReset = startGame;
-startGame = function(){
-  expPenaltyAppliedForThisDeathV185 = false;
-  return startGameBeforeV185PenaltyReset.apply(this, arguments);
-};
-
-const consumeReviveTicketIfPossibleBeforeV185Penalty = consumeReviveTicketIfPossibleV182;
-consumeReviveTicketIfPossibleV182 = function(options = {}){
-  const revived = consumeReviveTicketIfPossibleBeforeV185Penalty.apply(this, arguments);
-  if (revived) {
-    expPenaltyAppliedForThisDeathV185 = false;
-    try { showToast('❤️‍🔥 부활 성공! 경험치 패널티가 적용되지 않습니다.', '#ffb0d0', 1800); } catch(e) {}
-  }
-  return revived;
-};
-
-const gameOverBeforeV185Penalty = gameOver;
-gameOver = function(){
-  const items = ensureDimensionItemsV182();
-  const hasReviveTicket = Math.max(0, Math.floor(Number(items.reviveTicket) || 0)) > 0;
-  const canReviveNow = hasReviveTicket && isReviveTicketUsableNowV184(false);
-
-  // 기존 v.184 gameOver 래퍼가 먼저 자동 부활을 시도하므로, 실제 GAME OVER로 넘어간 경우만 패널티 적용
-  const beforeState = state;
-  const ret = gameOverBeforeV185Penalty.apply(this, arguments);
-  const revived = state === 'playing' && beforeState !== 'playing';
-  if (!revived && state === 'gameover') {
-    applyDeathExpPenaltyV185(canReviveNow ? 'giveup' : 'no_ticket');
-    try { updateGameOverModal(); } catch(e) {}
-  }
-  return ret;
-};
-
-try {
-  const toTitleBtnV185 = document.getElementById('toTitleBtn');
-  if (toTitleBtnV185) {
-    toTitleBtnV185.addEventListener('click', () => {
-      if (state === 'gameover') applyDeathExpPenaltyV185('giveup_to_title');
-    }, true);
-  }
-  const restartBtnV185 = document.getElementById('restartBtn');
-  if (restartBtnV185) {
-    restartBtnV185.addEventListener('click', () => {
-      if (state === 'gameover') applyDeathExpPenaltyV185('giveup_restart');
-    }, true);
-  }
-} catch(e) {}
-
-const updateGameOverModalBeforeV185PenaltyText = updateGameOverModal;
-updateGameOverModal = function(){
-  const ret = updateGameOverModalBeforeV185PenaltyText.apply(this, arguments);
-  try {
-    if (gameOverDescEl && state === 'gameover' && canApplyDeathExpPenaltyV185()) {
-      const info = getDeathExpPenaltyInfoV185();
-      const txt = `부활하지 않으면 경험치 ${formatNumber(info.penaltyExp)} 감소가 적용됩니다. 부활권으로 부활하면 감소하지 않습니다.`;
-      if (!gameOverDescEl.textContent.includes('부활하지 않으면')) gameOverDescEl.textContent += ' ' + txt;
-    }
-  } catch(e) {}
-  return ret;
-};
-
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.185 부활 패널티')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,176,176,0.35); border-radius:10px; background:rgba(255,176,176,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb0b0;">[v.185 부활 패널티]</b><br>부활권으로 자동/수동 부활하면 경험치가 감소하지 않습니다. 부활권이 없거나 부활을 포기해 GAME OVER가 확정될 때만 경험치 패널티가 적용됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
-
-// ===============================
-// ✅ [v.191] 타임어택 EXP 지급 기준 수정
-// - 기존: 타임어택 진행 시간/보스 레벨 기준으로 계산되어 저레벨 EXP가 적용될 수 있음
-// - 변경: 플레이어 현재 레벨(level) 기준으로 마리당 EXP 지급
-// - Lv.15=13, Lv.30=35, Lv.60=189, Lv.100=487, Lv.200=9,745, Lv.299=123,194
-// ===============================
-
-// ===============================
-// ✅ [v.188] 타임어택 모드 추가
-// - LV.15+ / 하루 15회
-// - 시작 제한 시간 60초
-// - 몬스터 0.1초마다 2마리, 1분마다 +1마리
-// - 몬스터 처치 보너스: 기본 100마리, 1분마다 필요 처치 수 +75 / 보스 처치 +20초
-// - 보스 레벨 15~300, 스테이지 모드 데미지 계산식 사용
-// - HUD: 플레이 시간/남은 시간/획득 EXP/획득 Gold/처치 몬스터/처치 보스
-// ===============================
-const TIME_ATTACK_LEVEL_REQ_V188 = 15;
-const TIME_ATTACK_DAILY_LIMIT_V188 = 15;
-const TIME_ATTACK_START_MS_V188 = 60000;
-const TIME_ATTACK_SPAWN_INTERVAL_MS_V188 = 200;
-const TIME_ATTACK_KILL_TIME_BONUS_UNIT_V188 = 100;
-const TIME_ATTACK_KILL_TIME_BONUS_EXTRA_PER_MIN_V192 = 75;
-const TIME_ATTACK_KILL_TIME_BONUS_MS_V188 = 10000;
-const TIME_ATTACK_BOSS_TIME_BONUS_MS_V188 = 20000;
-const TIME_ATTACK_MAX_BOSS_LEVEL_V188 = 300;
-
-let timeAttackActiveV188 = false;
-let timeAttackFinishedV188 = false;
-let timeAttackStateV188 = {
-  playMs: 0,
-  timeLeftMs: TIME_ATTACK_START_MS_V188,
-  spawnAcc: 0,
-  nextBossMinute: 1,
-  monsterKills: 0,
-  nextKillBonusTarget: 100,
-  bossKills: 0,
-  expGained: 0,
-  goldGained: 0,
-  startExp: 0,
-  startGold: 0,
-  bestMs: 0,
-  lastResult: null
-};
-
-function ensureTimeAttackSaveV188(){
-  if (!saveData.timeAttack || typeof saveData.timeAttack !== 'object') {
-    saveData.timeAttack = { dayKey: getLocalDateKey(), entriesToday: 0, bestMs: 0, bestKills: 0, totalKills: 0, totalBossKills: 0 };
-  }
-  const today = getLocalDateKey();
-  if (saveData.timeAttack.dayKey !== today) {
-    saveData.timeAttack.dayKey = today;
-    saveData.timeAttack.entriesToday = 0;
-  }
-  saveData.timeAttack.bestMs = Math.max(0, Number(saveData.timeAttack.bestMs || 0));
-  saveData.timeAttack.bestKills = Math.max(0, Number(saveData.timeAttack.bestKills || 0));
-  saveData.timeAttack.totalKills = Math.max(0, Number(saveData.timeAttack.totalKills || 0));
-  saveData.timeAttack.totalBossKills = Math.max(0, Number(saveData.timeAttack.totalBossKills || 0));
-  return saveData.timeAttack;
-}
-
-function formatTimeAttackClockV188(ms){
-  const total = Math.max(0, Math.floor(Number(ms || 0) / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-function getTimeAttackLevelV188(){
-  const minute = Math.max(0, Math.floor(timeAttackStateV188.playMs / 60000));
-  return Math.max(TIME_ATTACK_LEVEL_REQ_V188, Math.min(TIME_ATTACK_MAX_BOSS_LEVEL_V188, TIME_ATTACK_LEVEL_REQ_V188 + minute));
-}
-
-function getTimeAttackSpawnCountV188(){
-  return Math.max(2, 2 + Math.floor(timeAttackStateV188.playMs / 60000));
-}
-
-function getTimeAttackKillBonusTargetV192(){
-  const minute = Math.max(0, Math.floor((timeAttackStateV188 && timeAttackStateV188.playMs || 0) / 60000));
-  return Math.max(100, TIME_ATTACK_KILL_TIME_BONUS_UNIT_V188 + (minute * TIME_ATTACK_KILL_TIME_BONUS_EXTRA_PER_MIN_V192));
-}
-
-function getTimeAttackMonsterExpV188(lv){
-  // ✅ [v.190] 타임어택 몬스터 EXP: 플레이어 레벨 기준 고정 기준값 + 구간 보간
-  // Lv.15=13, Lv.30=35, Lv.60=189, Lv.100=487, Lv.200=9,745, Lv.299=123,194
-  const points = [
-    [15, 13],
-    [30, 35],
-    [60, 189],
-    [100, 487],
-    [200, 9745],
-    [299, 123194],
-    [300, 123194]
-  ];
-  const n = Math.max(1, Math.min(300, Math.floor(Number(lv) || 1)));
-  if (n <= 15) return 13;
-  for (let i = 0; i < points.length - 1; i++) {
-    const [aLv, aExp] = points[i];
-    const [bLv, bExp] = points[i + 1];
-    if (n <= bLv) {
-      const t = Math.max(0, Math.min(1, (n - aLv) / Math.max(1, bLv - aLv)));
-      return Math.max(1, Math.round(aExp + (bExp - aExp) * t));
-    }
-  }
-  return 123194;
-}
-
-function getTimeAttackGoldV188(lv){
-  const n = Math.max(1, Math.min(300, Math.floor(Number(lv) || 1)));
-  if (n < 30) return 3;
-  if (n < 60) return 5;
-  if (n < 100) return 10;
-  if (n < 200) return 20;
-  if (n < 299) return 80;
-  return 300;
-}
-
-function grantTimeAttackGoldV188(amount){
-  const v = Math.max(0, Math.floor(Number(amount) || 0));
-  if (v <= 0) return 0;
-  gold = Math.max(0, Math.floor(Number(gold || 0))) + v;
-  timeAttackStateV188.goldGained += v;
-  stageRunGoldEarned = Math.max(0, Math.floor(Number(stageRunGoldEarned || 0))) + v;
-  try { addGoldEarnedStat(v); } catch(e) {}
-  try { pushGainMessage(`타임어택 골드 (+${formatNumber(v)})`, '#ffd86b'); } catch(e) {}
-  saveGameDataDebounced();
-  return v;
-}
-
-function installTimeAttackModeButtonV188(){
-  const body = document.querySelector('#modeModal .modal-body');
-  if (!body || document.getElementById('modeTimeAttackBtn')) return;
-  const btn = document.createElement('button');
-  btn.id = 'modeTimeAttackBtn';
-  btn.className = 'ui-btn big-btn';
-  btn.style.cssText = 'width:100%; border-color:#ffdf7c; color:#fff3c2; background:linear-gradient(to bottom, #5a4510, #201606);';
-  btn.innerHTML = '⏱️ 타임어택 (LV.15+ · 하루 15회)';
-  const ref = document.getElementById('modeDimensionInvasionBtn') || document.getElementById('modePartyExpeditionBtn') || document.getElementById('modeMonsterParkBtn');
-  if (ref && ref.parentNode === body) body.insertBefore(btn, ref);
-  else body.appendChild(btn);
-  btn.addEventListener('click', startTimeAttackModeV188);
-}
-
-function startTimeAttackModeV188(){
-  if (level < TIME_ATTACK_LEVEL_REQ_V188) {
-    alert(`타임어택은 LV.${TIME_ATTACK_LEVEL_REQ_V188}부터 입장 가능합니다.\n(현재 LV.${level})`);
-    return;
-  }
-  const d = ensureTimeAttackSaveV188();
-  if (d.entriesToday >= TIME_ATTACK_DAILY_LIMIT_V188) {
-    alert(`오늘 타임어택 입장 횟수를 모두 사용했습니다.\n(${d.entriesToday}/${TIME_ATTACK_DAILY_LIMIT_V188})`);
-    return;
-  }
-  d.entriesToday += 1;
-  timeAttackActiveV188 = true;
-  timeAttackFinishedV188 = false;
-  timeAttackStateV188 = {
-    playMs: 0,
-    timeLeftMs: TIME_ATTACK_START_MS_V188,
-    spawnAcc: 0,
-    nextBossMinute: 1,
-    monsterKills: 0,
-    nextKillBonusTarget: getTimeAttackKillBonusTargetV192(),
-    bossKills: 0,
-    expGained: 0,
-    goldGained: 0,
-    startExp: Math.max(0, Math.floor(Number(exp || 0))),
-    startGold: Math.max(0, Math.floor(Number(gold || 0))),
-    bestMs: Math.max(0, Number(d.bestMs || 0)),
-    lastResult: null
-  };
-  try { setAdventureMode(false); } catch(e) {}
-  try { setMonsterParkMode(false); } catch(e) {}
-  try { setPartyExpeditionMode(false); } catch(e) {}
-  try { dimensionInvasionActiveV175 = false; } catch(e) {}
-  gameMode = 'stage';
-  stage = getTimeAttackLevelV188();
-  runStartStage = stage;
-  lastSelectedStage = stage;
-  if (modeModal) modeModal.classList.add('hidden');
-  saveGameData();
-  startGame(stage);
-  stage = getTimeAttackLevelV188();
-  bossSpawned = true; // 기본 스테이지 자동 스폰/클리어를 막고 타임어택 전용 스폰만 사용
-  stageCleared = false;
-  stageTransitionTimer = 0;
-  enemies.length = 0;
-  enemyBullets.length = 0;
-  boss = null;
-  try { playBgmTrack('timeattack'); } catch(e) {}
-  try { showToast(`⏱️ 타임어택 시작! 오늘 ${d.entriesToday}/${TIME_ATTACK_DAILY_LIMIT_V188}회`, '#ffdf7c', 1800); } catch(e) {}
-}
-
-function spawnTimeAttackEnemiesV188(count){
-  const keys = Object.keys(ENEMY_CONFIG || {});
-  const types = keys.length ? keys : ['normal'];
-  const lvNow = getTimeAttackLevelV188();
-  stage = lvNow;
-  const cap = isFeverActive() ? 70 : 55;
-  for (let i=0; i<count && enemies.length < cap; i++) {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const sizeGuess = 26;
-    const x = clamp(randRange(sizeGuess, width - sizeGuess), sizeGuess, width - sizeGuess);
-    const y = -randRange(20, 110);
-    const vy = randRange(2.5, 4.2) * (lvNow >= 150 ? 1.18 : 1);
-    const patterns = ['straight','fan','diagonal','zigzag','sine','rain'];
-    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-    const vx = pattern === 'straight' ? 0 : randRange(-1.7, 1.7);
-    const e = createEnemy(type, x, y, vy, pattern, vx, {
-      level: lvNow,
-      stage: lvNow,
-      timeAttack: true,
-      attackStyle: (typeof getEnemyAttackStyleForStage === 'function') ? getEnemyAttackStyleForStage(lvNow) : 'single'
-    });
-    enemies.push(e);
-  }
-}
-
-function maybeSpawnTimeAttackBossV188(){
-  const minute = Math.floor(timeAttackStateV188.playMs / 60000);
-  if (minute < timeAttackStateV188.nextBossMinute) return;
-  if (boss || (bossIntro && bossIntro.active)) return;
-  const bossLv = Math.min(TIME_ATTACK_MAX_BOSS_LEVEL_V188, TIME_ATTACK_LEVEL_REQ_V188 + minute);
-  stage = bossLv;
-  currentBossLevel = bossLv;
-  bossSpawned = true;
-  try { showToast(`👑 타임어택 보스 LV.${bossLv} 등장!`, '#ffd86b', 1400); } catch(e) {}
-  try { startBossIntro(); } catch(e) {
-    try { boss = createBoss(); } catch(_) {}
-  }
-  timeAttackStateV188.nextBossMinute = minute + 1;
-}
-
-function finishTimeAttackModeV188(reason = 'timeup'){
-  if (!timeAttackActiveV188 || timeAttackFinishedV188) return;
-  timeAttackFinishedV188 = true;
-  const d = ensureTimeAttackSaveV188();
-  const result = {
-    reason,
-    playMs: Math.max(0, Math.floor(timeAttackStateV188.playMs || 0)),
-    monsterKills: Math.max(0, Math.floor(timeAttackStateV188.monsterKills || 0)),
-    bossKills: Math.max(0, Math.floor(timeAttackStateV188.bossKills || 0)),
-    expGained: Math.max(0, Math.floor((Number(exp || 0) - Number(timeAttackStateV188.startExp || 0)) || timeAttackStateV188.expGained || 0)),
-    goldGained: Math.max(0, Math.floor(timeAttackStateV188.goldGained || 0)),
-    isBest: false
-  };
-  if (result.playMs > Math.max(0, Number(d.bestMs || 0))) {
-    d.bestMs = result.playMs;
-    result.isBest = true;
-  }
-  d.bestKills = Math.max(Math.max(0, Number(d.bestKills || 0)), result.monsterKills);
-  d.totalKills = Math.max(0, Number(d.totalKills || 0)) + result.monsterKills;
-  d.totalBossKills = Math.max(0, Number(d.totalBossKills || 0)) + result.bossKills;
-  timeAttackStateV188.lastResult = result;
-  enemies.length = 0;
-  enemyBullets.length = 0;
-  boss = null;
-  bossIntro.active = false;
-  saveGameData();
-}
-
-function updateTimeAttackModeV188(dt){
-  if (!timeAttackActiveV188 || timeAttackFinishedV188 || state !== 'playing') return;
-  const beforeExp = Math.max(0, Math.floor(Number(exp || 0)));
-  timeAttackStateV188.playMs += dt;
-  timeAttackStateV188.timeLeftMs = Math.max(0, timeAttackStateV188.timeLeftMs - dt);
-  stage = getTimeAttackLevelV188();
-  bossSpawned = true;
-  stageCleared = false;
-
-  timeAttackStateV188.spawnAcc += dt;
-  while (timeAttackStateV188.spawnAcc >= TIME_ATTACK_SPAWN_INTERVAL_MS_V188) {
-    timeAttackStateV188.spawnAcc -= TIME_ATTACK_SPAWN_INTERVAL_MS_V188;
-    spawnTimeAttackEnemiesV188(getTimeAttackSpawnCountV188());
-  }
-  maybeSpawnTimeAttackBossV188();
-
-  const afterExp = Math.max(0, Math.floor(Number(exp || 0)));
-  if (afterExp > beforeExp) timeAttackStateV188.expGained += (afterExp - beforeExp);
-  if (timeAttackStateV188.timeLeftMs <= 0) {
-    finishTimeAttackModeV188('timeup');
-    gameOver();
-  }
-}
-
-const checkStageKillClearNowBeforeV188TimeAttack = checkStageKillClearNow;
-checkStageKillClearNow = function(){
-  if (timeAttackActiveV188) return false;
-  return checkStageKillClearNowBeforeV188TimeAttack.apply(this, arguments);
-};
-
-const getStageKillTargetBeforeV188TimeAttack = getStageKillTarget;
-getStageKillTarget = function(stageValue){
-  if (timeAttackActiveV188) return 999999999;
-  return getStageKillTargetBeforeV188TimeAttack.apply(this, arguments);
-};
-
-const getStageMonsterExpRewardBeforeV188TimeAttack = getStageMonsterExpReward;
-getStageMonsterExpReward = function(stageValue){
-  // ✅ [v.191] 타임어택 EXP는 몬스터/보스 레벨이 아니라 플레이어 현재 레벨 기준으로 지급
-  if (timeAttackActiveV188) return getTimeAttackMonsterExpV188(level);
-  return getStageMonsterExpRewardBeforeV188TimeAttack.apply(this, arguments);
-};
-
-const registerEnemyKillBeforeV188TimeAttack = registerEnemyKill;
-registerEnemyKill = function(isBoss = false, opts = {}){
-  const ret = registerEnemyKillBeforeV188TimeAttack.apply(this, arguments);
-  if (timeAttackActiveV188 && !timeAttackFinishedV188 && state === 'playing') {
-    if (isBoss) {
-      timeAttackStateV188.bossKills += 1;
-      timeAttackStateV188.timeLeftMs += TIME_ATTACK_BOSS_TIME_BONUS_MS_V188;
-      grantTimeAttackGoldV188(getTimeAttackGoldV188(getTimeAttackLevelV188()) * 50);
-      try { spawnDamageText(width / 2, height * 0.24, '+20초', '#ffd86b', true); } catch(e) {}
-    } else {
-      timeAttackStateV188.monsterKills += 1;
-      grantTimeAttackGoldV188(getTimeAttackGoldV188(getTimeAttackLevelV188()));
-      if (!timeAttackStateV188.nextKillBonusTarget || timeAttackStateV188.nextKillBonusTarget < 1) {
-        timeAttackStateV188.nextKillBonusTarget = getTimeAttackKillBonusTargetV192();
-      }
-      while (timeAttackStateV188.monsterKills >= timeAttackStateV188.nextKillBonusTarget) {
-        const step = getTimeAttackKillBonusTargetV192();
-        timeAttackStateV188.timeLeftMs += TIME_ATTACK_KILL_TIME_BONUS_MS_V188;
-        try { spawnDamageText(width / 2, height * 0.24, `${formatNumber(step)}킬 +10초`, '#ffef9d', true); } catch(e) {}
-        timeAttackStateV188.nextKillBonusTarget += step;
-      }
-    }
-  }
-  return ret;
-};
-
-const handleBossKilledBySkillBeforeV188TimeAttack = handleBossKilledBySkill;
-handleBossKilledBySkill = function(){
-  const wasTimeAttack = !!(timeAttackActiveV188 && boss && !boss._deadHandled);
-  const ret = handleBossKilledBySkillBeforeV188TimeAttack.apply(this, arguments);
-  if (wasTimeAttack) {
-    try { stage = getTimeAttackLevelV188(); } catch(e) {}
-  }
-  return ret;
-};
-
-const updateBeforeV188TimeAttack = update;
-update = function(dt, currentTime){
-  const ret = updateBeforeV188TimeAttack.apply(this, arguments);
-  updateTimeAttackModeV188(dt);
-  return ret;
-};
-
-const updateHUDBeforeV188TimeAttack = updateHUD;
-updateHUD = function(){
-  const ret = updateHUDBeforeV188TimeAttack.apply(this, arguments);
-  try {
-    if (timeAttackActiveV188 && state === 'playing') {
-      const best = Math.max(timeAttackStateV188.bestMs || 0, Number(saveData?.timeAttack?.bestMs || 0));
-      if (scoreEl) scoreEl.style.display = '';
-      if (highScoreEl) highScoreEl.style.display = '';
-      scoreEl.textContent = `⏱ 플레이 ${formatTimeAttackClockV188(timeAttackStateV188.playMs)} · 제한 ${(timeAttackStateV188.timeLeftMs/1000).toFixed(1)}초`;
-      highScoreEl.textContent = `획득 EXP ${formatNumber(timeAttackStateV188.expGained)} · Gold ${formatNumber(timeAttackStateV188.goldGained)}`;
-      stageText.textContent = `타임어택 LV.${getTimeAttackLevelV188()} · 몬스터 ${formatNumber(timeAttackStateV188.monsterKills)} · 보스 ${formatNumber(timeAttackStateV188.bossKills)} · 최고 ${formatTimeAttackClockV188(best)}`;
-    }
-  } catch(e) {}
-  return ret;
-};
-
-const gameOverBeforeV188TimeAttack = gameOver;
-gameOver = function(){
-  if (timeAttackActiveV188 && !timeAttackFinishedV188) finishTimeAttackModeV188('dead');
-  return gameOverBeforeV188TimeAttack.apply(this, arguments);
-};
-
-const updateGameOverModalBeforeV188TimeAttack = updateGameOverModal;
-updateGameOverModal = function(){
-  const ret = updateGameOverModalBeforeV188TimeAttack.apply(this, arguments);
-  try {
-    if (timeAttackActiveV188 && timeAttackStateV188.lastResult) {
-      const r = timeAttackStateV188.lastResult;
-      if (gameOverModeTextEl) gameOverModeTextEl.textContent = '타임어택 모드';
-      if (gameOverTitleEl) {
-        gameOverTitleEl.textContent = r.reason === 'timeup' ? 'TIME ATTACK FINISH' : 'TIME ATTACK OVER';
-        gameOverTitleEl.style.color = '#ffdf7c';
-      }
-      if (gameOverDescEl) gameOverDescEl.textContent = r.isBest ? '최고 기록 갱신! 레전드 찍었습니다.' : '타임어택 결과입니다.';
-      if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `생존 ${formatTimeAttackClockV188(r.playMs)}`;
-      setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '획득 EXP', formatNumber(r.expGained), { color:'#aef' });
-      setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '획득 Gold', formatNumber(r.goldGained), { color:'#ffd86b' });
-      setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '처치 몬스터', `${formatNumber(r.monsterKills)}마리`);
-      setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '처치 보스', `${formatNumber(r.bossKills)}마리`);
-    }
-  } catch(e) {}
-  return ret;
-};
-
-const goToTitleBeforeV188TimeAttack = goToTitle;
-goToTitle = function(){
-  timeAttackActiveV188 = false;
-  timeAttackFinishedV188 = false;
-  return goToTitleBeforeV188TimeAttack.apply(this, arguments);
-};
-
-const getModeBgmNameBeforeV188TimeAttack = getModeBgmName;
-getModeBgmName = function(){
-  if (timeAttackActiveV188) return 'timeattack';
-  return getModeBgmNameBeforeV188TimeAttack.apply(this, arguments);
-};
-
-
-
-try {
-  const noticeBodyV190 = document.getElementById('noticeBody');
-  if (noticeBodyV190 && !noticeBodyV190.textContent.includes('v.190 타임어택 EXP')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(124,231,255,0.35); border-radius:10px; background:rgba(124,231,255,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#7ce7ff;">[v.190 타임어택 EXP]</b><br>타임어택 몬스터 경험치가 플레이어 레벨 기준으로 조정되었습니다. 기준값: LV.15 13EXP, LV.30 35EXP, LV.60 189EXP, LV.100 487EXP, LV.200 9,745EXP, LV.299 123,194EXP.';
-    noticeBodyV190.prepend(box);
-  }
-} catch(e) {}
-
-try {
-  installTimeAttackModeButtonV188();
-  const noticeBodyV188 = document.getElementById('noticeBody');
-  if (noticeBodyV188 && !noticeBodyV188.textContent.includes('v.188 타임어택')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,223,124,0.35); border-radius:10px; background:rgba(255,223,124,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffdf7c;">[v.188 타임어택]</b><br>LV.15부터 하루 15회 입장할 수 있습니다. 시작 시간은 60초이며, 몬스터 100마리 처치마다 +10초, 보스 처치마다 +20초가 추가됩니다. 몬스터는 0.2초마다 2마리씩 등장하고 1분마다 등장 수와 적 레벨이 상승합니다.';
-    noticeBodyV188.prepend(box);
-  }
-} catch(e) {}
 
 installDimensionModeUIV175();
 
@@ -27070,21 +26387,6 @@ requestAnimationFrame(gameLoop);
     </div>
   </div>
 </div>
-
-
-
-<!-- v192 TimeAttack Balance Patch -->
-<script>
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.192 타임어택 밸런스')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,223,124,0.35); border-radius:10px; background:rgba(255,223,124,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffdf7c;">[v.192 타임어택 밸런스]</b><br>타임어택 모드에서는 피격 경험치 감소가 적용되지 않습니다. 시간 보너스 필요 처치 수는 기본 100마리이며, 생존 1분마다 75마리씩 증가합니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-</script>
 
 </body>
 </html>
