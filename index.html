@@ -25259,13 +25259,6 @@ function ensureDimensionInvasionSaveV175(){
   const d = saveData.dimensionInvasion;
   d.boxes = Math.max(0, Math.floor(Number(d.boxes) || 0));
   if (!d.boxRarities || typeof d.boxRarities !== 'object') d.boxRarities = {};
-  // ✅ [v.184] 기존 일반 디멘션 상자 저장값이 있다면 일반 상자로 이전
-  try {
-    const rarityTotal = Object.values(d.boxRarities).reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v) || 0)), 0);
-    const legacyBoxes = Math.max(0, Math.floor(Number(d.boxes) || 0));
-    if (legacyBoxes > rarityTotal) d.boxRarities.normal = Math.max(0, Math.floor(Number(d.boxRarities.normal) || 0)) + (legacyBoxes - rarityTotal);
-    d.boxes = Object.values(d.boxRarities).reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v) || 0)), 0);
-  } catch(e) {}
   if (!d.inventory || typeof d.inventory !== 'object') d.inventory = { consumables:{}, equipment:{}, pets:{}, materials:{} };
   ['consumables','equipment','pets','materials'].forEach(k => { if (!d.inventory[k] || typeof d.inventory[k] !== 'object') d.inventory[k] = {}; });
   d.crystals = Math.max(0, Math.floor(Number(d.crystals) || 0));
@@ -25631,8 +25624,7 @@ const DIMENSION_CRYSTAL_SHOP_V1791 = [
   { id:'gold_small', name:'골드 1,000,000', cost:10, type:'gold', amount:1000000, desc:'상점 강화 자금 확보' },
   { id:'dimension_box', name:'디멘션 상자 1개', cost:25, type:'box', amount:1, desc:'보상을 다시 노릴 수 있는 상자' },
   { id:'fever_ticket', name:'피버 충전권 1개', cost:40, type:'item', itemType:'feverTicket', amount:1, desc:'피버 게이지 충전용' },
-  { id:'exp_big', name:'경험치 50,000,000', cost:80, type:'exp', amount:50000000, desc:'고레벨 성장 보조용' },
-  { id:'core', name:'디멘션 코어 1개', cost:100, type:'core', amount:1, desc:'상위 제작 재료' }
+  { id:'exp_big', name:'경험치 50,000,000', cost:80, type:'exp', amount:50000000, desc:'고레벨 성장 보조용' }
 ];
 
 function getDimensionShopItemV1791(id){
@@ -25641,7 +25633,7 @@ function getDimensionShopItemV1791(id){
 
 function getDimensionShopStatusTextV1791(){
   const d = ensureDimensionInvasionSaveV175();
-  return `보유: 결정 ${formatNumber(d.crystals)}개 · 상자 ${formatNumber(d.boxes)}개 · 코어 ${formatNumber(d.cores)}개`;
+  return `보유: 결정 ${formatNumber(d.crystals)}개 · 상자 ${formatNumber(d.boxes)}개`;
 }
 
 function applyDimensionCrystalShopRewardV1791(item){
@@ -25653,10 +25645,6 @@ function applyDimensionCrystalShopRewardV1791(item){
     addExp(amount, { baseAmount: amount, hotMultiplier: 1 });
   } else if (item.type === 'box') {
     d.boxes += amount;
-  } else if (item.type === 'core') {
-    d.cores += amount;
-    if (!d.inventory.materials) d.inventory.materials = {};
-    d.inventory.materials['디멘션 코어'] = Math.max(0, Math.floor(Number(d.inventory.materials['디멘션 코어']) || 0)) + amount;
   } else if (item.type === 'item') {
     if (!d.items) d.items = {};
     d.items[item.itemType] = Math.max(0, Math.floor(Number(d.items[item.itemType]) || 0)) + amount;
@@ -26295,7 +26283,7 @@ function ensureDimensionItemsV182(){
     d.items[k] = Math.max(0, Math.floor(Number(d.items[k]) || 0));
   });
   if (d.rainbowShards > 0) d.items.rainbowShard = Math.max(d.items.rainbowShard || 0, Math.floor(d.rainbowShards));
-  if (d.cores > 0) d.items.core = Math.max(d.items.core || 0, Math.floor(d.cores));
+  delete d.items.core;
   return d.items;
 }
 
@@ -26305,8 +26293,8 @@ function addDimensionItemV182(type, amount){
   const n = Math.max(1, Math.floor(Number(amount) || 1));
   d.items[type] = Math.max(0, Math.floor(Number(d.items[type]) || 0)) + n;
   if (type === 'rainbowShard') d.rainbowShards = Math.max(d.rainbowShards || 0, d.items[type]);
-  if (type === 'core') d.cores = Math.max(d.cores || 0, d.items[type]);
 }
+
 
 const ensureDimensionInvasionSaveBeforeV182 = ensureDimensionInvasionSaveV175;
 ensureDimensionInvasionSaveV175 = function(){
@@ -26422,8 +26410,33 @@ appendDimensionShopItemsV182();
 // ===============================
 // ✅ [v.184] 디멘션 상자 보상 개편 / 스폰 주기 1초 통일
 // - 디멘션 상자는 일반/레어/유니크/에픽 4종만 사용합니다.
-// - 부활권은 삭제되며, 상자 보상과 차원 상점 추가 목록에서 제외됩니다.
+// - 부활권/코어는 삭제되며, 상자 보상과 차원 상점 목록에서 제외됩니다.
 // - 무한 모드를 제외한 몬스터 출현 주기는 1초당 N마리 방식으로 통일합니다.
+// ===============================
+// ✅ [v.185] 코어 정리
+// - 디멘션 코어는 상자 보상/차원 상점/인벤토리 표시에서 제외합니다.
+// - 기존 저장 데이터에 남아 있던 코어 수량과 재료 표시는 자동으로 숨깁니다.
+// ===============================
+function cleanupDimensionCoreV185(){
+  try {
+    const d = ensureDimensionInvasionSaveV175();
+    d.cores = 0;
+    if (d.items && typeof d.items === 'object') delete d.items.core;
+    if (d.inventory && d.inventory.materials && typeof d.inventory.materials === 'object') delete d.inventory.materials['디멘션 코어'];
+  } catch(e) {}
+}
+const ensureDimensionInvasionSaveBeforeV185 = ensureDimensionInvasionSaveV175;
+ensureDimensionInvasionSaveV175 = function(){
+  const d = ensureDimensionInvasionSaveBeforeV185.apply(this, arguments);
+  try {
+    d.cores = 0;
+    if (d.items && typeof d.items === 'object') delete d.items.core;
+    if (d.inventory && d.inventory.materials && typeof d.inventory.materials === 'object') delete d.inventory.materials['디멘션 코어'];
+  } catch(e) {}
+  return d;
+};
+cleanupDimensionCoreV185();
+
 // ===============================
 try {
   const noticeBody = document.getElementById('noticeBody');
