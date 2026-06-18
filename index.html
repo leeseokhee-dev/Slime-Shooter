@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.183 Crystal Slime Area)</title>
+<title>Slime Shooter - Ultimate Evolution (v.184 Dimension Box Rework)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6416,7 +6416,7 @@ function getStageKillTarget(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  return 1200; // 1.2초 단위로 묶어서 생성
+  return 1000; // ✅ [v.184] 무한 모드를 제외한 모든 일반 스테이지 몬스터 출현 주기 1초 통일
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -18735,7 +18735,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     } else if (gameMode === 'mission') {
       if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared) {
         missionState.spawnAcc = Math.max(0, Number(missionState.spawnAcc) || 0) + dt;
-        const missionSpawnInterval = isFeverActive() ? 70 : 100;
+        const missionSpawnInterval = 1000; // ✅ [v.184] 무한 모드를 제외한 모든 모드 몬스터 출현 주기 1초 통일
         while (missionState.spawnAcc >= missionSpawnInterval) {
           missionState.spawnAcc -= missionSpawnInterval;
           spawnNextWave();
@@ -24659,7 +24659,7 @@ try {
 // - 1·2·4스테이지: 100마리 처치 시 클리어
 // - 3·5스테이지: 100마리 처치 후 보스 1마리 처치 시 클리어
 // ===============================
-const MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 = 200;
+const MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 = 1000; // ✅ [v.184] 1초당 1마리
 const MONSTER_PARK_MAX_ENEMIES_V1723 = 30;
 const MONSTER_PARK_KILL_TARGET_V1723 = 100;
 
@@ -24996,7 +24996,7 @@ const PARTY_WAVE_RULES_V1726 = [
   { target:200, batch:10 },
   { target:250, batch:12 }
 ];
-const PARTY_SPAWN_INTERVAL_MS_V1726 = 1200;
+const PARTY_SPAWN_INTERVAL_MS_V1726 = 1000; // ✅ [v.184] 1초당 N마리 통일
 const PARTY_NEXT_WAVE_WAIT_MS_V1726 = 5000;
 let partyWaveKillsV1726 = 0;
 let partyWaveSpawnedV1726 = 0;
@@ -25204,7 +25204,7 @@ try {
 // - 전용 BGM: bg_dimension.mp3
 // ===============================
 const DIMENSION_INVASION_LEVEL_REQ_V175 = 50;
-const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 300;
+const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 1000; // ✅ [v.184] 1초당 N마리 통일
 const DIMENSION_INVASION_SPAWN_BATCHES_V177 = [3, 4, 5, 6, 7];
 const DIMENSION_INVASION_SPAWN_BATCH_V175 = 3; // v.177: 기본값, 실제 생성 수는 웨이브별 배열 사용
 const DIMENSION_INVASION_FALL_SPEED_MULTIPLIER_V178 = 2;
@@ -25218,10 +25218,9 @@ const DIMENSION_INVASION_BOSS_HP_V176 = 600000;
 const DIMENSION_INVASION_CLEAR_EXP_POPUP_MS_V176 = 3000;
 const DIMENSION_INVASION_BOX_RARITIES_V176 = [
   { key:'normal', name:'일반', rate:0.60, color:'#d8ebff' },
-  { key:'advanced', name:'고급', rate:0.25, color:'#9dffea' },
-  { key:'rare', name:'희귀', rate:0.10, color:'#86b7ff' },
-  { key:'hero', name:'영웅', rate:0.04, color:'#d6a8ff' },
-  { key:'legend', name:'전설', rate:0.01, color:'#ffd86b' }
+  { key:'rare', name:'레어', rate:0.25, color:'#86b7ff' },
+  { key:'unique', name:'유니크', rate:0.10, color:'#d6a8ff' },
+  { key:'epic', name:'에픽', rate:0.05, color:'#ffd86b' }
 ];
 
 let dimensionInvasionActiveV175 = false;
@@ -25260,6 +25259,13 @@ function ensureDimensionInvasionSaveV175(){
   const d = saveData.dimensionInvasion;
   d.boxes = Math.max(0, Math.floor(Number(d.boxes) || 0));
   if (!d.boxRarities || typeof d.boxRarities !== 'object') d.boxRarities = {};
+  // ✅ [v.184] 기존 일반 디멘션 상자 저장값이 있다면 일반 상자로 이전
+  try {
+    const rarityTotal = Object.values(d.boxRarities).reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v) || 0)), 0);
+    const legacyBoxes = Math.max(0, Math.floor(Number(d.boxes) || 0));
+    if (legacyBoxes > rarityTotal) d.boxRarities.normal = Math.max(0, Math.floor(Number(d.boxRarities.normal) || 0)) + (legacyBoxes - rarityTotal);
+    d.boxes = Object.values(d.boxRarities).reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v) || 0)), 0);
+  } catch(e) {}
   if (!d.inventory || typeof d.inventory !== 'object') d.inventory = { consumables:{}, equipment:{}, pets:{}, materials:{} };
   ['consumables','equipment','pets','materials'].forEach(k => { if (!d.inventory[k] || typeof d.inventory[k] !== 'object') d.inventory[k] = {}; });
   d.crystals = Math.max(0, Math.floor(Number(d.crystals) || 0));
@@ -25563,45 +25569,36 @@ function startDimensionInvasionModeV175(){
   startDimensionWaveCountdownV175(1);
 }
 
-function rollDimensionBoxRewardV175(){
-  const r = Math.random();
-  if (r < 0.70) {
-    const list = [
-      { rarity:'일반', type:'gold', amount:50000, text:'골드 50,000' },
-      { rarity:'일반', type:'gold', amount:100000, text:'골드 100,000' },
-      { rarity:'일반', type:'exp', amount:500000, text:'경험치 500,000' },
-      { rarity:'일반', type:'exp', amount:1000000, text:'경험치 1,000,000' },
-      { rarity:'일반', type:'crystal', amount:2, text:'디멘션 결정 2개' }
-    ];
-    return list[Math.floor(Math.random() * list.length)];
-  }
-  if (r < 0.93) {
-    const list = [
-      { rarity:'희귀', type:'gold', amount:500000, text:'골드 500,000' },
-      { rarity:'희귀', type:'exp', amount:5000000, text:'경험치 5,000,000' },
-      { rarity:'희귀', type:'crystal', amount:5, text:'디멘션 결정 5개' },
-      { rarity:'희귀', type:'reviveTicket', amount:1, text:'부활권 1개' },
-      { rarity:'희귀', type:'feverTicket', amount:1, text:'피버 충전권 1개' }
-    ];
-    return list[Math.floor(Math.random() * list.length)];
-  }
-  if (r < 0.99) {
-    const list = [
-      { rarity:'에픽', type:'crystal', amount:10, text:'디멘션 결정 10개' },
-      { rarity:'에픽', type:'exp', amount:50000000, text:'경험치 50,000,000' },
-      { rarity:'에픽', type:'gold', amount:10000000, text:'골드 10,000,000' },
-      { rarity:'에픽', type:'petEgg', amount:1, text:'랜덤 펫 알 1개' },
-      { rarity:'에픽', type:'expCoupon', amount:1, text:'경험치 2배 쿠폰 1개' }
-    ];
-    return list[Math.floor(Math.random() * list.length)];
-  }
-  const list = [
-    { rarity:'전설', type:'dimensionPetEgg', amount:1, text:'디멘션 펫 알 1개' },
-    { rarity:'전설', type:'core', amount:1, text:'디멘션 코어 1개' },
-    { rarity:'전설', type:'rainbowShard', amount:1, text:'무지개 슬라임 조각 1개' },
-    { rarity:'전설', type:'title', amount:1, text:'칭호: 균열 생존자' },
-    { rarity:'전설', type:'exp', amount:500000000, text:'경험치 500,000,000' }
-  ];
+function rollDimensionBoxRewardV175(boxKey){
+  // ✅ [v.184] 디멘션 상자 4종 전용 보상표
+  // 부활권/결정/코어/펫 알/칭호 등 기존 보상은 제외합니다.
+  const key = String(boxKey || 'normal');
+  const tables = {
+    normal: [
+      { rarity:'일반', type:'exp', amount:30000, text:'경험치 30,000' },
+      { rarity:'일반', type:'gold', amount:5000, text:'골드 5,000' },
+      { rarity:'일반', type:'feverTicket', amount:1, text:'피버 충전권 1개' }
+    ],
+    rare: [
+      { rarity:'레어', type:'exp', amount:100000, text:'경험치 100,000' },
+      { rarity:'레어', type:'gold', amount:10000, text:'골드 10,000' },
+      { rarity:'레어', type:'expCoupon15', amount:1, text:'경험치 1.5배 쿠폰 10분' },
+      { rarity:'레어', type:'feverTicket', amount:1, text:'피버 충전권 1개' }
+    ],
+    unique: [
+      { rarity:'유니크', type:'exp', amount:500000, text:'경험치 500,000' },
+      { rarity:'유니크', type:'gold', amount:30000, text:'골드 30,000' },
+      { rarity:'유니크', type:'expCoupon2', amount:1, text:'경험치 2배 쿠폰 10분' },
+      { rarity:'유니크', type:'feverTicket', amount:1, text:'피버 충전권 1개' }
+    ],
+    epic: [
+      { rarity:'에픽', type:'exp', amount:2000000, text:'경험치 2,000,000' },
+      { rarity:'에픽', type:'gold', amount:100000, text:'골드 100,000' },
+      { rarity:'에픽', type:'expCoupon3', amount:1, text:'경험치 3배 쿠폰 10분' },
+      { rarity:'에픽', type:'feverTicket', amount:2, text:'피버 충전권 2개' }
+    ]
+  };
+  const list = tables[key] || tables.normal;
   return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -25633,7 +25630,6 @@ const DIMENSION_CRYSTAL_SHOP_V1791 = [
   { id:'exp_small', name:'경험치 3,000,000', cost:5, type:'exp', amount:3000000, desc:'초반 레벨업 보조용' },
   { id:'gold_small', name:'골드 1,000,000', cost:10, type:'gold', amount:1000000, desc:'상점 강화 자금 확보' },
   { id:'dimension_box', name:'디멘션 상자 1개', cost:25, type:'box', amount:1, desc:'보상을 다시 노릴 수 있는 상자' },
-  { id:'revive_ticket', name:'부활권 1개', cost:30, type:'item', itemType:'reviveTicket', amount:1, desc:'위험한 스테이지 대비' },
   { id:'fever_ticket', name:'피버 충전권 1개', cost:40, type:'item', itemType:'feverTicket', amount:1, desc:'피버 게이지 충전용' },
   { id:'exp_big', name:'경험치 50,000,000', cost:80, type:'exp', amount:50000000, desc:'고레벨 성장 보조용' },
   { id:'core', name:'디멘션 코어 1개', cost:100, type:'core', amount:1, desc:'상위 제작 재료' }
@@ -25701,17 +25697,35 @@ function openDimensionCrystalShopV1791(){
 
 function openDimensionBoxV175(){
   const d = ensureDimensionInvasionSaveV175();
-  if (d.boxes <= 0) {
+  const rarities = DIMENSION_INVASION_BOX_RARITIES_V176;
+  const total = rarities.reduce((sum, r) => sum + Math.max(0, Math.floor(Number(d.boxRarities?.[r.key]) || 0)), 0);
+  if (total <= 0) {
     alert('개봉할 디멘션 상자가 없습니다.');
     return;
   }
-  d.boxes -= 1;
-  const reward = rollDimensionBoxRewardV175();
+
+  let selected = rarities.find(r => Math.max(0, Math.floor(Number(d.boxRarities?.[r.key]) || 0)) > 0);
+  const ownedKinds = rarities.filter(r => Math.max(0, Math.floor(Number(d.boxRarities?.[r.key]) || 0)) > 0);
+  if (ownedKinds.length > 1) {
+    const lines = ownedKinds.map((r, idx) => `${idx + 1}. ${r.name} 디멘션 상자 ${formatNumber(d.boxRarities[r.key])}개`).join('\n');
+    const input = prompt(`열 상자를 선택하세요.\n\n${lines}`);
+    if (input === null) return;
+    const n = Math.floor(Number(String(input).trim()));
+    if (!Number.isFinite(n) || n < 1 || n > ownedKinds.length) {
+      alert('올바른 번호를 입력해주세요.');
+      return;
+    }
+    selected = ownedKinds[n - 1];
+  }
+
+  d.boxRarities[selected.key] = Math.max(0, Math.floor(Number(d.boxRarities[selected.key]) || 0) - 1);
+  d.boxes = Math.max(0, total - 1);
+  const reward = rollDimensionBoxRewardV175(selected.key);
   applyDimensionBoxRewardV175(reward);
   saveGameData();
   updateHUD();
-  try { showToast(`🎁 ${reward.rarity} 보상: ${reward.text}`, reward.rarity === '전설' ? '#ffd86b' : reward.rarity === '에픽' ? '#d6a8ff' : '#9dffea', 2200); } catch(e) {}
-  alert(`디멘션 상자 개봉!\n[${reward.rarity}] ${reward.text}`);
+  try { showToast(`🎁 ${selected.name} 상자: ${reward.text}`, selected.color || '#9dffea', 2200); } catch(e) {}
+  alert(`${selected.name} 디멘션 상자 개봉!\n[${reward.rarity}] ${reward.text}`);
   refreshDimensionBoxButtonV175();
 }
 
@@ -25719,7 +25733,10 @@ function refreshDimensionBoxButtonV175(){
   const btn = document.getElementById('openDimensionBoxBtnV175');
   const shopBtn = document.getElementById('openDimensionCrystalShopBtnV1791');
   const d = ensureDimensionInvasionSaveV175();
-  if (btn) btn.textContent = `🎁 디멘션 상자 열기 (${d.boxes}개)`;
+  const totalBoxes = DIMENSION_INVASION_BOX_RARITIES_V176.reduce((sum, r) => sum + Math.max(0, Math.floor(Number(d.boxRarities?.[r.key]) || 0)), 0);
+  d.boxes = totalBoxes;
+  const detail = DIMENSION_INVASION_BOX_RARITIES_V176.map(r => `${r.name} ${Math.max(0, Math.floor(Number(d.boxRarities?.[r.key]) || 0))}`).join(' / ');
+  if (btn) btn.textContent = `🎁 디멘션 상자 열기 (${totalBoxes}개 · ${detail})`;
   if (shopBtn) shopBtn.textContent = `💎 차원 상점 (결정 ${d.crystals}개)`;
 }
 
@@ -26225,9 +26242,6 @@ installPartyMemberSelectorV181();
 // - 부활권은 게임 오버 직전에 자동 사용되어 즉시 부활
 // ===============================
 const DIMENSION_ITEM_DEFS_V182 = {
-  reviveTicket: {
-    icon:'❤️‍🔥', name:'부활권', desc:'HP가 0이 될 때 자동으로 1개 소모되어 HP 70%로 부활합니다.', category:'consumable', useLabel:'자동 사용'
-  },
   feverTicket: {
     icon:'🔥', name:'피버 충전권', desc:'사용 시 피버 게이지를 100%로 충전합니다.', category:'consumable', useLabel:'사용',
     use(){
@@ -26236,46 +26250,41 @@ const DIMENSION_ITEM_DEFS_V182 = {
       return { ok:true, msg:'피버 충전권 사용! 피버 게이지 100%' };
     }
   },
-  expCoupon: {
-    icon:'🎟️', name:'경험치 2배 쿠폰', desc:'다음 업데이트용 성장 쿠폰입니다. 현재는 보관만 가능합니다.', category:'coupon', useLabel:'보관'
-  },
-  petEgg: {
-    icon:'🥚', name:'랜덤 펫 알', desc:'사용 시 상점 펫 알과 같은 방식으로 랜덤 펫 1마리를 획득합니다.', category:'pet', useLabel:'부화',
+  expCoupon15: {
+    icon:'🎟️', name:'경험치 1.5배 쿠폰', desc:'사용 시 10분 동안 경험치 획득량이 1.5배가 됩니다.', category:'coupon', useLabel:'사용',
     use(){
-      ensurePetSystemState();
-      const pet = {
-        uid: 'pet_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-        type: rollPetType(),
-        star: rollPetStar(getMaxPetStarByLevel(level)),
-        obtainedAt: Date.now()
-      };
-      saveData.pets.owned.push(pet);
-      registerPetDexEntry(pet);
-      playPetBirthAnimation(pet);
-      return { ok:true, msg:`${pet.star}성 ${getPetDef(pet.type).name} 획득!` };
+      ensureBuffContainer();
+      const now = Date.now();
+      const cur = saveData.buffs.exp;
+      const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
+      saveData.buffs.exp = { mult:1.5, until: baseUntil + 10 * 60 * 1000 };
+      try { showToast('🎟️ 경험치 1.5배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
+      return { ok:true, msg:'경험치 1.5배 쿠폰 10분 적용!' };
     }
   },
-  dimensionPetEgg: {
-    icon:'🌀🥚', name:'디멘션 펫 알', desc:'사용 시 3성 이상 랜덤 펫 1마리를 획득합니다.', category:'pet', useLabel:'부화',
+  expCoupon2: {
+    icon:'🎟️', name:'경험치 2배 쿠폰', desc:'사용 시 10분 동안 경험치 획득량이 2배가 됩니다.', category:'coupon', useLabel:'사용',
     use(){
-      ensurePetSystemState();
-      const pet = {
-        uid: 'pet_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-        type: rollPetType(),
-        star: Math.max(3, rollPetStar(getMaxPetStarByLevel(Math.max(level, 200)))),
-        obtainedAt: Date.now()
-      };
-      saveData.pets.owned.push(pet);
-      registerPetDexEntry(pet);
-      playPetBirthAnimation(pet);
-      return { ok:true, msg:`디멘션 펫 알 부화! ${pet.star}성 ${getPetDef(pet.type).name} 획득!` };
+      ensureBuffContainer();
+      const now = Date.now();
+      const cur = saveData.buffs.exp;
+      const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
+      saveData.buffs.exp = { mult:2, until: baseUntil + 10 * 60 * 1000 };
+      try { showToast('🎟️ 경험치 2배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
+      return { ok:true, msg:'경험치 2배 쿠폰 10분 적용!' };
     }
   },
-  rainbowShard: {
-    icon:'🌈', name:'무지개 슬라임 조각', desc:'전설급 제작 재료입니다. 추후 상위 제작/교환 콘텐츠에 사용됩니다.', category:'material', useLabel:'재료'
-  },
-  core: {
-    icon:'💠', name:'디멘션 코어', desc:'상위 제작 재료입니다. 차원 상점에서도 획득할 수 있습니다.', category:'material', useLabel:'재료'
+  expCoupon3: {
+    icon:'🎟️', name:'경험치 3배 쿠폰', desc:'사용 시 10분 동안 경험치 획득량이 3배가 됩니다.', category:'coupon', useLabel:'사용',
+    use(){
+      ensureBuffContainer();
+      const now = Date.now();
+      const cur = saveData.buffs.exp;
+      const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
+      saveData.buffs.exp = { mult:3, until: baseUntil + 10 * 60 * 1000 };
+      try { showToast('🎟️ 경험치 3배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
+      return { ok:true, msg:'경험치 3배 쿠폰 10분 적용!' };
+    }
   }
 };
 
@@ -26364,7 +26373,7 @@ function renderDimensionInventorySectionV182(){
   return `
     <div id="dimensionInventorySectionV182" style="margin:10px 0 12px; padding:10px 12px; border:1px solid rgba(157,255,234,0.32); border-radius:14px; background:rgba(157,255,234,0.08);">
       <div style="font-weight:1000; font-size:15px; color:#9dffea; margin-bottom:8px;">🌀 디멘션 보상 인벤토리</div>
-      <div style="font-size:12px; color:#cfd6ff; line-height:1.55; margin-bottom:8px;">디멘션 상자와 차원 상점에서 획득한 특수 상품입니다. 부활권은 사망 직전에 자동 사용됩니다.</div>
+      <div style="font-size:12px; color:#cfd6ff; line-height:1.55; margin-bottom:8px;">디멘션 상자에서 획득한 특수 상품입니다. 부활권은 등장하지 않습니다.</div>
       <div style="display:flex; flex-direction:column; gap:8px;">${rows}</div>
     </div>
   `;
@@ -26393,18 +26402,10 @@ renderInventoryContent = function(){
 };
 
 function consumeReviveTicketIfPossibleV182(){
-  const items = ensureDimensionItemsV182();
-  if (Math.max(0, Math.floor(Number(items.reviveTicket) || 0)) <= 0) return false;
-  items.reviveTicket = Math.max(0, Math.floor(Number(items.reviveTicket) || 0) - 1);
-  playerHp = Math.max(1, Math.round(playerMaxHp * 0.70));
-  isPlayerDying = false;
-  gameOverCooldown = 0;
-  saveGameData();
-  updateHUD();
-  try { showToast(`❤️‍🔥 부활권 자동 사용! 남은 부활권 ${formatNumber(items.reviveTicket)}개`, '#ffb0d0', 2200); } catch(e) {}
-  try { spawnDamageText(player.x, player.y - 42, 'REVIVE!', '#ffb0d0', true); } catch(e) {}
-  return true;
+  // ✅ [v.184] 부활권 삭제: 자동 부활 기능을 사용하지 않습니다.
+  return false;
 }
+
 
 const gameOverBeforeV182 = gameOver;
 gameOver = function(){
@@ -26413,17 +26414,26 @@ gameOver = function(){
 };
 
 function appendDimensionShopItemsV182(){
-  const add = [
-    { id:'exp_coupon', name:'경험치 2배 쿠폰 1개', cost:60, type:'item', itemType:'expCoupon', amount:1, desc:'다음 성장 이벤트용 쿠폰 보관' },
-    { id:'pet_egg', name:'랜덤 펫 알 1개', cost:70, type:'item', itemType:'petEgg', amount:1, desc:'랜덤 펫 1마리 부화' },
-    { id:'dimension_pet_egg', name:'디멘션 펫 알 1개', cost:160, type:'item', itemType:'dimensionPetEgg', amount:1, desc:'3성 이상 랜덤 펫 부화' },
-    { id:'rainbow_shard', name:'무지개 슬라임 조각 1개', cost:120, type:'item', itemType:'rainbowShard', amount:1, desc:'전설급 제작 재료' }
-  ];
-  add.forEach(it => {
-    if (!DIMENSION_CRYSTAL_SHOP_V1791.some(x => x.id === it.id)) DIMENSION_CRYSTAL_SHOP_V1791.push(it);
-  });
+  // ✅ [v.184] 차원 상점 추가 상품 없음: 부활권/펫 알/재료류는 더 이상 추가하지 않습니다.
 }
 appendDimensionShopItemsV182();
+
+
+// ===============================
+// ✅ [v.184] 디멘션 상자 보상 개편 / 스폰 주기 1초 통일
+// - 디멘션 상자는 일반/레어/유니크/에픽 4종만 사용합니다.
+// - 부활권은 삭제되며, 상자 보상과 차원 상점 추가 목록에서 제외됩니다.
+// - 무한 모드를 제외한 몬스터 출현 주기는 1초당 N마리 방식으로 통일합니다.
+// ===============================
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.184 디멘션 상자 보상 개편')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,216,107,0.35); border-radius:10px; background:rgba(255,216,107,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffd86b;">[v.184 디멘션 상자 보상 개편]</b><br>디멘션 상자는 일반/레어/유니크/에픽 4종으로 정리되었습니다. 부활권은 삭제되며, 각 상자는 지정된 경험치/골드/경험치 쿠폰/피버 충전권 중 하나를 랜덤으로 지급합니다. 무한 모드를 제외한 몬스터 출현 주기는 1초당 N마리 방식으로 통일됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 installDimensionModeUIV175();
 
