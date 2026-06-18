@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.181 Party Member Select)</title>
+<title>Slime Shooter - Ultimate Evolution (v.182 Dimension Item Inventory)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -26028,7 +26028,215 @@ try {
   }
 } catch(e) {}
 
+
 installPartyMemberSelectorV181();
+
+// ===============================
+// ✅ [v.182] 디멘션 보상 아이템 표시/사용/상점 누락 보완
+// - 디멘션 상자 보상으로 획득한 부활권/피버 충전권/경험치 2배 쿠폰/펫 알 표시
+// - 차원 상점에 누락 보상 교환 항목 추가
+// - 부활권은 게임 오버 직전에 자동 사용되어 즉시 부활
+// ===============================
+const DIMENSION_ITEM_DEFS_V182 = {
+  reviveTicket: {
+    icon:'❤️‍🔥', name:'부활권', desc:'HP가 0이 될 때 자동으로 1개 소모되어 HP 70%로 부활합니다.', category:'consumable', useLabel:'자동 사용'
+  },
+  feverTicket: {
+    icon:'🔥', name:'피버 충전권', desc:'사용 시 피버 게이지를 100%로 충전합니다.', category:'consumable', useLabel:'사용',
+    use(){
+      feverGauge = 100;
+      try { showToast('🔥 피버 게이지가 100% 충전되었습니다!', '#ffd86b', 1600); } catch(e) {}
+      return { ok:true, msg:'피버 충전권 사용! 피버 게이지 100%' };
+    }
+  },
+  expCoupon: {
+    icon:'🎟️', name:'경험치 2배 쿠폰', desc:'다음 업데이트용 성장 쿠폰입니다. 현재는 보관만 가능합니다.', category:'coupon', useLabel:'보관'
+  },
+  petEgg: {
+    icon:'🥚', name:'랜덤 펫 알', desc:'사용 시 상점 펫 알과 같은 방식으로 랜덤 펫 1마리를 획득합니다.', category:'pet', useLabel:'부화',
+    use(){
+      ensurePetSystemState();
+      const pet = {
+        uid: 'pet_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: rollPetType(),
+        star: rollPetStar(getMaxPetStarByLevel(level)),
+        obtainedAt: Date.now()
+      };
+      saveData.pets.owned.push(pet);
+      registerPetDexEntry(pet);
+      playPetBirthAnimation(pet);
+      return { ok:true, msg:`${pet.star}성 ${getPetDef(pet.type).name} 획득!` };
+    }
+  },
+  dimensionPetEgg: {
+    icon:'🌀🥚', name:'디멘션 펫 알', desc:'사용 시 3성 이상 랜덤 펫 1마리를 획득합니다.', category:'pet', useLabel:'부화',
+    use(){
+      ensurePetSystemState();
+      const pet = {
+        uid: 'pet_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+        type: rollPetType(),
+        star: Math.max(3, rollPetStar(getMaxPetStarByLevel(Math.max(level, 200)))),
+        obtainedAt: Date.now()
+      };
+      saveData.pets.owned.push(pet);
+      registerPetDexEntry(pet);
+      playPetBirthAnimation(pet);
+      return { ok:true, msg:`디멘션 펫 알 부화! ${pet.star}성 ${getPetDef(pet.type).name} 획득!` };
+    }
+  },
+  rainbowShard: {
+    icon:'🌈', name:'무지개 슬라임 조각', desc:'전설급 제작 재료입니다. 추후 상위 제작/교환 콘텐츠에 사용됩니다.', category:'material', useLabel:'재료'
+  },
+  core: {
+    icon:'💠', name:'디멘션 코어', desc:'상위 제작 재료입니다. 차원 상점에서도 획득할 수 있습니다.', category:'material', useLabel:'재료'
+  }
+};
+
+function ensureDimensionItemsV182(){
+  const d = ensureDimensionInvasionSaveV175();
+  if (!d.items || typeof d.items !== 'object') d.items = {};
+  Object.keys(DIMENSION_ITEM_DEFS_V182).forEach(k => {
+    d.items[k] = Math.max(0, Math.floor(Number(d.items[k]) || 0));
+  });
+  if (d.rainbowShards > 0) d.items.rainbowShard = Math.max(d.items.rainbowShard || 0, Math.floor(d.rainbowShards));
+  if (d.cores > 0) d.items.core = Math.max(d.items.core || 0, Math.floor(d.cores));
+  return d.items;
+}
+
+function addDimensionItemV182(type, amount){
+  const d = ensureDimensionInvasionSaveV175();
+  if (!d.items || typeof d.items !== 'object') d.items = {};
+  const n = Math.max(1, Math.floor(Number(amount) || 1));
+  d.items[type] = Math.max(0, Math.floor(Number(d.items[type]) || 0)) + n;
+  if (type === 'rainbowShard') d.rainbowShards = Math.max(d.rainbowShards || 0, d.items[type]);
+  if (type === 'core') d.cores = Math.max(d.cores || 0, d.items[type]);
+}
+
+const ensureDimensionInvasionSaveBeforeV182 = ensureDimensionInvasionSaveV175;
+ensureDimensionInvasionSaveV175 = function(){
+  const d = ensureDimensionInvasionSaveBeforeV182.apply(this, arguments);
+  if (!d.items || typeof d.items !== 'object') d.items = {};
+  Object.keys(DIMENSION_ITEM_DEFS_V182).forEach(k => { d.items[k] = Math.max(0, Math.floor(Number(d.items[k]) || 0)); });
+  return d;
+};
+
+const applyDimensionBoxRewardBeforeV182 = applyDimensionBoxRewardV175;
+applyDimensionBoxRewardV175 = function(reward){
+  if (!reward) return applyDimensionBoxRewardBeforeV182.apply(this, arguments);
+  if (DIMENSION_ITEM_DEFS_V182[reward.type]) {
+    addDimensionItemV182(reward.type, reward.amount || 1);
+    return;
+  }
+  return applyDimensionBoxRewardBeforeV182.apply(this, arguments);
+};
+
+const applyDimensionCrystalShopRewardBeforeV182 = applyDimensionCrystalShopRewardV1791;
+applyDimensionCrystalShopRewardV1791 = function(item){
+  if (item && item.type === 'item' && DIMENSION_ITEM_DEFS_V182[item.itemType]) {
+    addDimensionItemV182(item.itemType, item.amount || 1);
+    return;
+  }
+  return applyDimensionCrystalShopRewardBeforeV182.apply(this, arguments);
+};
+
+function useDimensionItemV182(type){
+  const items = ensureDimensionItemsV182();
+  const def = DIMENSION_ITEM_DEFS_V182[type];
+  const owned = Math.max(0, Math.floor(Number(items[type]) || 0));
+  if (!def) return { ok:false, msg:'알 수 없는 디멘션 아이템입니다.' };
+  if (owned <= 0) return { ok:false, msg:'보유 수량이 없습니다.' };
+  if (typeof def.use !== 'function') return { ok:false, msg:`${def.name}은(는) 현재 보관용 아이템입니다.` };
+  const r = def.use();
+  if (!r || !r.ok) return r || { ok:false, msg:'사용할 수 없습니다.' };
+  items[type] = Math.max(0, owned - 1);
+  saveGameData();
+  updateHUD();
+  try { renderInventoryContent(); } catch(e) {}
+  try { renderShop(); } catch(e) {}
+  return r;
+}
+
+function renderDimensionInventorySectionV182(){
+  const items = ensureDimensionItemsV182();
+  const rows = Object.entries(DIMENSION_ITEM_DEFS_V182).map(([key, def]) => {
+    const count = Math.max(0, Math.floor(Number(items[key]) || 0));
+    const canUse = count > 0 && typeof def.use === 'function';
+    return `
+      <div style="padding:10px 12px; border:1px solid rgba(157,255,234,0.20); border-radius:12px; background:rgba(157,255,234,0.06);">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+          <div>
+            <div style="font-weight:900; font-size:14px; color:#eaffff;">${def.icon} ${def.name}</div>
+            <div style="margin-top:3px; font-size:12px; color:#cfd6ff; line-height:1.45;">${def.desc}</div>
+            <div style="margin-top:5px; font-size:12px; color:#9dffea;">보유 ${formatNumber(count)}개 · 분류 ${def.category}</div>
+          </div>
+          <button class="ui-btn" data-use-dimension-item-v182="${key}" ${canUse ? '' : 'disabled'} style="min-width:76px; ${canUse ? 'border-color:#9dffea; color:#eaffff;' : 'opacity:0.45;'}">${canUse ? def.useLabel : (count > 0 ? def.useLabel : '없음')}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div id="dimensionInventorySectionV182" style="margin:10px 0 12px; padding:10px 12px; border:1px solid rgba(157,255,234,0.32); border-radius:14px; background:rgba(157,255,234,0.08);">
+      <div style="font-weight:1000; font-size:15px; color:#9dffea; margin-bottom:8px;">🌀 디멘션 보상 인벤토리</div>
+      <div style="font-size:12px; color:#cfd6ff; line-height:1.55; margin-bottom:8px;">디멘션 상자와 차원 상점에서 획득한 특수 상품입니다. 부활권은 사망 직전에 자동 사용됩니다.</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">${rows}</div>
+    </div>
+  `;
+}
+
+const renderInventoryContentBeforeV182 = renderInventoryContent;
+renderInventoryContent = function(){
+  renderInventoryContentBeforeV182.apply(this, arguments);
+  if (!inventoryBodyEl) return;
+  const html = renderDimensionInventorySectionV182();
+  const firstConsumableCard = inventoryBodyEl.querySelector('[data-use-item]')?.closest('div[style*="padding:10px 12px"]');
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const section = wrap.firstElementChild;
+  if (firstConsumableCard && firstConsumableCard.parentNode) firstConsumableCard.parentNode.insertBefore(section, firstConsumableCard);
+  else inventoryBodyEl.prepend(section);
+  inventoryBodyEl.querySelectorAll('[data-use-dimension-item-v182]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-use-dimension-item-v182');
+      const r = useDimensionItemV182(type);
+      if (r && !r.cancelled) {
+        try { showToast(r.msg || '사용 완료', r.ok ? '#9dffea' : '#ffb0b0', 1600); } catch(e) { alert(r.msg || '사용 완료'); }
+      }
+    });
+  });
+};
+
+function consumeReviveTicketIfPossibleV182(){
+  const items = ensureDimensionItemsV182();
+  if (Math.max(0, Math.floor(Number(items.reviveTicket) || 0)) <= 0) return false;
+  items.reviveTicket = Math.max(0, Math.floor(Number(items.reviveTicket) || 0) - 1);
+  playerHp = Math.max(1, Math.round(playerMaxHp * 0.70));
+  isPlayerDying = false;
+  gameOverCooldown = 0;
+  saveGameData();
+  updateHUD();
+  try { showToast(`❤️‍🔥 부활권 자동 사용! 남은 부활권 ${formatNumber(items.reviveTicket)}개`, '#ffb0d0', 2200); } catch(e) {}
+  try { spawnDamageText(player.x, player.y - 42, 'REVIVE!', '#ffb0d0', true); } catch(e) {}
+  return true;
+}
+
+const gameOverBeforeV182 = gameOver;
+gameOver = function(){
+  if (consumeReviveTicketIfPossibleV182()) return;
+  return gameOverBeforeV182.apply(this, arguments);
+};
+
+function appendDimensionShopItemsV182(){
+  const add = [
+    { id:'exp_coupon', name:'경험치 2배 쿠폰 1개', cost:60, type:'item', itemType:'expCoupon', amount:1, desc:'다음 성장 이벤트용 쿠폰 보관' },
+    { id:'pet_egg', name:'랜덤 펫 알 1개', cost:70, type:'item', itemType:'petEgg', amount:1, desc:'랜덤 펫 1마리 부화' },
+    { id:'dimension_pet_egg', name:'디멘션 펫 알 1개', cost:160, type:'item', itemType:'dimensionPetEgg', amount:1, desc:'3성 이상 랜덤 펫 부화' },
+    { id:'rainbow_shard', name:'무지개 슬라임 조각 1개', cost:120, type:'item', itemType:'rainbowShard', amount:1, desc:'전설급 제작 재료' }
+  ];
+  add.forEach(it => {
+    if (!DIMENSION_CRYSTAL_SHOP_V1791.some(x => x.id === it.id)) DIMENSION_CRYSTAL_SHOP_V1791.push(it);
+  });
+}
+appendDimensionShopItemsV182();
 
 installDimensionModeUIV175();
 
