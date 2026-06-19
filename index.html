@@ -26468,6 +26468,76 @@ try {
 
 installDimensionModeUIV175();
 
+
+// ===============================
+// ✅ [v.186] 모드별 결과창 표시 오류 수정
+// - 디멘션 인베이드 결과 스냅샷이 남아 다른 모드 결과창을 덮어쓰던 문제 수정
+// - 몬스터 파크/모험 모드/파티 원정/일반 모드 클리어 시 각 모드에 맞는 결과창이 유지됩니다.
+// ===============================
+function clearDimensionResultSnapshotV186(){
+  try {
+    if (typeof dimensionInvasionActiveV175 !== 'undefined' && !dimensionInvasionActiveV175) {
+      dimensionInvasionLastResultV175 = null;
+    }
+  } catch(e) {}
+}
+
+const startMonsterParkModeBeforeV186 = startMonsterParkMode;
+startMonsterParkMode = function(){
+  clearDimensionResultSnapshotV186();
+  return startMonsterParkModeBeforeV186.apply(this, arguments);
+};
+
+const startAdventureModeBeforeV186 = startAdventureMode;
+startAdventureMode = function(){
+  clearDimensionResultSnapshotV186();
+  return startAdventureModeBeforeV186.apply(this, arguments);
+};
+
+const startPartyExpeditionModeBeforeV186 = startPartyExpeditionMode;
+startPartyExpeditionMode = function(){
+  clearDimensionResultSnapshotV186();
+  return startPartyExpeditionModeBeforeV186.apply(this, arguments);
+};
+
+const startGameBeforeV186 = startGame;
+startGame = function(startStageNum = 1){
+  if (typeof dimensionInvasionActiveV175 !== 'undefined' && !dimensionInvasionActiveV175) {
+    const isOtherSpecialModeV186 =
+      (typeof monsterParkActive !== 'undefined' && monsterParkActive) ||
+      (typeof adventureModeActive !== 'undefined' && adventureModeActive) ||
+      (typeof partyExpeditionActive !== 'undefined' && partyExpeditionActive);
+    if (isOtherSpecialModeV186) clearDimensionResultSnapshotV186();
+  }
+  return startGameBeforeV186.call(this, startStageNum);
+};
+
+const updateGameOverModalBeforeV186 = updateGameOverModal;
+updateGameOverModal = function(){
+  try {
+    const isDimensionNowV186 = (typeof dimensionInvasionActiveV175 !== 'undefined' && dimensionInvasionActiveV175);
+    const isOtherModeNowV186 =
+      (typeof monsterParkActive !== 'undefined' && monsterParkActive) ||
+      (typeof adventureModeActive !== 'undefined' && adventureModeActive) ||
+      (typeof partyExpeditionActive !== 'undefined' && partyExpeditionActive);
+    if (!isDimensionNowV186 && isOtherModeNowV186 && typeof dimensionInvasionLastResultV175 !== 'undefined') {
+      dimensionInvasionLastResultV175 = null;
+    }
+  } catch(e) {}
+  return updateGameOverModalBeforeV186.apply(this, arguments);
+};
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.186 결과창 모드 판별 수정')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffb8ef;">[v.186 결과창 모드 판별 수정]</b><br>몬스터 파크를 클리어했을 때 디멘션 인베이드 결과창이 표시되던 문제를 수정했습니다. 이제 몬스터 파크, 디멘션 인베이드, 파티 원정, 모험 모드가 각각 자기 모드에 맞는 결과창을 표시합니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+
 loadGameData();
 updateHUD();
 if (isInitialNicknameRequired()) openInitialNicknameModal();
