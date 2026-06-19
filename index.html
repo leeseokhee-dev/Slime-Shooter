@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.184 Dimension Box Rework)</title>
+<title>Slime Shooter - Ultimate Evolution (v.185 Spawn Timing Adjust)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -24659,7 +24659,7 @@ try {
 // - 1·2·4스테이지: 100마리 처치 시 클리어
 // - 3·5스테이지: 100마리 처치 후 보스 1마리 처치 시 클리어
 // ===============================
-const MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 = 1000; // ✅ [v.184] 1초당 1마리
+const MONSTER_PARK_SPAWN_INTERVAL_MS_V1723 = 200; // ✅ [v.185] 몬스터 파크: 0.2초당 1마리
 const MONSTER_PARK_MAX_ENEMIES_V1723 = 30;
 const MONSTER_PARK_KILL_TARGET_V1723 = 100;
 
@@ -24972,7 +24972,7 @@ try {
 // - 기존 20초 타이머 클리어 제거
 // - 웨이브별 목표 처치 수 달성 시 클리어
 // - 다음 웨이브 대기 시간 5초
-// - 몬스터 리스폰 1.2초 간격
+// - 몬스터 리스폰 0.6초 간격
 // - 괄호 값은 1회 리스폰 수
 // ===============================
 const PARTY_WAVE_RULES_V1726 = [
@@ -24996,7 +24996,7 @@ const PARTY_WAVE_RULES_V1726 = [
   { target:200, batch:10 },
   { target:250, batch:12 }
 ];
-const PARTY_SPAWN_INTERVAL_MS_V1726 = 1000; // ✅ [v.184] 1초당 N마리 통일
+const PARTY_SPAWN_INTERVAL_MS_V1726 = 600; // ✅ [v.185] 파티 원정: 0.6초당 N마리
 const PARTY_NEXT_WAVE_WAIT_MS_V1726 = 5000;
 let partyWaveKillsV1726 = 0;
 let partyWaveSpawnedV1726 = 0;
@@ -25145,7 +25145,7 @@ drawPartyWaveNoticeV1722 = function(){
     const rule = st < PARTY_MAX_STAGE_V172 ? getPartyWaveRuleV1726(st) : null;
     const line = st >= PARTY_MAX_STAGE_V172
       ? `보스 Lv.${partyBossLevelV1722 || Math.max(1, level)} · 파티원과 함께 마무리하세요!`
-      : `목표 ${formatNumber(rule.target)}마리 · 1.2초마다 ${rule.batch}마리 리스폰`;
+      : `목표 ${formatNumber(rule.target)}마리 · 0.6초마다 ${rule.batch}마리 리스폰`;
     drawCanvasCenterNoticeV1722(title, [line], a, st >= PARTY_MAX_STAGE_V172 ? '#ffd36a' : '#9dffea');
   }
   if (partyStageClearTimerV1722 > 0) {
@@ -25178,7 +25178,7 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.172.6')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#9dffea;">[v.172.6 파티 원정 웨이브 개편]</b><br>파티 원정 1~19웨이브가 20초 제한 방식에서 목표 처치 수 달성 방식으로 변경되었습니다. 몬스터는 1.2초마다 웨이브별 지정 수량으로 리스폰되며, 웨이브 클리어 후 다음 웨이브 대기 시간은 5초입니다.';
+    box.innerHTML = '<b style="color:#9dffea;">[v.172.6 파티 원정 웨이브 개편]</b><br>파티 원정 1~19웨이브가 20초 제한 방식에서 목표 처치 수 달성 방식으로 변경되었습니다. 몬스터는 0.6초마다 웨이브별 지정 수량으로 리스폰되며, 웨이브 클리어 후 다음 웨이브 대기 시간은 5초입니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
@@ -25204,7 +25204,7 @@ try {
 // - 전용 BGM: bg_dimension.mp3
 // ===============================
 const DIMENSION_INVASION_LEVEL_REQ_V175 = 50;
-const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 1000; // ✅ [v.184] 1초당 N마리 통일
+const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 500; // ✅ [v.185] 디멘션 인베이드: 0.5초당 N마리
 const DIMENSION_INVASION_SPAWN_BATCHES_V177 = [3, 4, 5, 6, 7];
 const DIMENSION_INVASION_SPAWN_BATCH_V175 = 3; // v.177: 기본값, 실제 생성 수는 웨이브별 배열 사용
 const DIMENSION_INVASION_FALL_SPEED_MULTIPLIER_V178 = 2;
@@ -25983,7 +25983,25 @@ updateGameOverModal = function(){
 
 const openModeSelectBeforeV175 = openModeSelect;
 openModeSelect = function(){
-  installDimensionModeUIV175();
+  
+// ===============================
+// ✅ [v.185] 모드별 몬스터 스폰 시간 조정
+// - 스테이지 / 무한 모드 / 모험 모드: 기존 유지
+// - 디멘션 인베이드: 0.5초당 기존 마리수 생성
+// - 몬스터 파크: 0.2초당 1마리 생성
+// - 파티 원정: 0.6초당 웨이브별 기존 마리수 생성
+// ===============================
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.185 모드별 스폰 시간 조정')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(124,231,255,0.35); border-radius:10px; background:rgba(124,231,255,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#7ce7ff;">[v.185 모드별 스폰 시간 조정]</b><br>스테이지/무한/모험 모드는 기존 값을 유지합니다. 디멘션 인베이드는 0.5초당 기존 마리수, 몬스터 파크는 0.2초당 1마리, 파티 원정은 0.6초당 웨이브별 기존 마리수로 생성됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+installDimensionModeUIV175();
   refreshDimensionBoxButtonV175();
   return openModeSelectBeforeV175.apply(this, arguments);
 };
@@ -26408,10 +26426,10 @@ appendDimensionShopItemsV182();
 
 
 // ===============================
-// ✅ [v.184] 디멘션 상자 보상 개편 / 스폰 주기 1초 통일
+// ✅ [v.184] 디멘션 상자 보상 개편 / 스폰 주기 정리
 // - 디멘션 상자는 일반/레어/유니크/에픽 4종만 사용합니다.
 // - 부활권/코어는 삭제되며, 상자 보상과 차원 상점 목록에서 제외됩니다.
-// - 무한 모드를 제외한 몬스터 출현 주기는 1초당 N마리 방식으로 통일합니다.
+// - v.185에서 모드별 스폰 주기는 별도 설정으로 조정되었습니다.
 // ===============================
 // ✅ [v.185] 코어 정리
 // - 디멘션 코어는 상자 보상/차원 상점/인벤토리 표시에서 제외합니다.
@@ -26443,7 +26461,7 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.184 디멘션 상자 보상 개편')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,216,107,0.35); border-radius:10px; background:rgba(255,216,107,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffd86b;">[v.184 디멘션 상자 보상 개편]</b><br>디멘션 상자는 일반/레어/유니크/에픽 4종으로 정리되었습니다. 부활권은 삭제되며, 각 상자는 지정된 경험치/골드/경험치 쿠폰/피버 충전권 중 하나를 랜덤으로 지급합니다. 무한 모드를 제외한 몬스터 출현 주기는 1초당 N마리 방식으로 통일됩니다.';
+    box.innerHTML = '<b style="color:#ffd86b;">[v.184 디멘션 상자 보상 개편]</b><br>디멘션 상자는 일반/레어/유니크/에픽 4종으로 정리되었습니다. 부활권은 삭제되며, 각 상자는 지정된 경험치/골드/경험치 쿠폰/피버 충전권 중 하나를 랜덤으로 지급합니다. v.185에서 디멘션/몬스터 파크/파티 원정 스폰 주기는 별도 조정되었습니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
