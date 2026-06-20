@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.188 Evolution Mode)</title>
+<title>Slime Shooter - Ultimate Evolution (v.188.2 Gold Accounting Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -8114,7 +8114,8 @@ if (typeof saveData.petCollector !== 'boolean') saveData.petCollector = false;
 if (!saveData.stageRanks || typeof saveData.stageRanks !== 'object') saveData.stageRanks = {};
 exp = saveData.exp;
 level = getLevelFromExp(exp);
-gold = saveData.gold || 0;
+gold = Math.max(0, Math.floor(Number(saveData.gold) || 0));
+syncGoldAccountingStrict();
 ensurePetSystemState();
 bgmEnabled = saveData.bgmEnabled;
 sfxEnabled = saveData.sfxEnabled;
@@ -8129,7 +8130,8 @@ saveData.exp = exp;
 saveData.level = level;
 saveData.bgmEnabled = bgmEnabled;
 saveData.sfxEnabled = sfxEnabled;
-saveData.gold = gold;
+saveData.gold = Math.max(0, Math.floor(Number(gold) || 0));
+syncGoldAccountingStrict();
 saveData.petCollector = !!saveData.petCollector;
 saveData.stageRanks = saveData.stageRanks || {};
 saveData.petDex = saveData.petDex || {};
@@ -9477,7 +9479,18 @@ function getBestInfiniteDistanceSafe() {
   const live = (gameMode === 'infinite' && state === 'playing') ? Math.max(0, Math.floor(infiniteDistance || 0)) : 0;
   return Math.max(cur, live);
 }
+function syncGoldAccountingStrict() {
+  try {
+    if (!saveData || typeof saveData !== 'object') return;
+    gold = Math.max(0, Math.floor(Number(gold) || 0));
+    saveData.gold = gold;
+    saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0));
+    // ✅ 골드 회계 원칙: 보유 골드 + 사용 골드 = 획득 골드
+    saveData.goldEarned = gold + saveData.goldSpent;
+  } catch(e) {}
+}
 function getGoldEarnedSafe() {
+  syncGoldAccountingStrict();
   return Math.max(0, Math.floor(saveData.goldEarned || 0));
 }
 function getOwnedPetCountSafe() {
@@ -10098,9 +10111,10 @@ function openProfile(isRefresh = false) {
   const playSec = Math.floor(saveData.playTimeSec || 0);
   const totalExp = Math.floor(exp || 0);
   const curLv = Math.floor(level || 1);
-  const earned = Math.floor(saveData.goldEarned || 0);
-  const spent = Math.floor(saveData.goldSpent || 0);
-  const curGold = Math.floor(gold || 0);
+  syncGoldAccountingStrict();
+  const spent = Math.max(0, Math.floor(saveData.goldSpent || 0));
+  const curGold = Math.max(0, Math.floor(gold || 0));
+  const earned = curGold + spent;
   const bestStage = getBestStage();
   const bestInfiniteDistance = getBestInfiniteDistanceSafe();
   const atk = getPlayerAttackPower();
@@ -19698,6 +19712,7 @@ if (boss && !bossInvincible) {
 }
 
 function updateHUD() {
+  try { syncGoldAccountingStrict(); } catch(e) {}
   try { updateConsumableQuickBar(); } catch(e){}
   try { updateFeverUI(); } catch(e){}
 scoreEl.textContent = '점수: ' + formatNumber(score);
@@ -27351,81 +27366,3 @@ playBgmTrack('title');
 
 requestAnimationFrame(gameLoop);
 })();
-
-
-
-// ===============================
-// ✅ [v.188.1] 골드 회계 보정
-// - 반드시 보유 골드 + 사용 골드 = 획득 골드가 되도록 저장/표시 전 동기화
-// - 디멘션 상자/차원 상점 골드 보상도 누적 획득 골드와 퀘스트에 반영
-// ===============================
-function syncGoldAccountingV1881(){
-  try {
-    gold = Math.max(0, Math.floor(Number(gold) || 0));
-    if (!saveData || typeof saveData !== 'object') return;
-    saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0));
-    saveData.goldEarned = gold + saveData.goldSpent;
-  } catch(e) {}
-}
-
-try {
-  syncGoldAccountingV1881();
-
-  if (typeof saveGameData === 'function' && !saveGameData.__goldAccountingV1881) {
-    const saveGameDataBeforeGoldAccountingV1881 = saveGameData;
-    saveGameData = function(){
-      try { syncGoldAccountingV1881(); } catch(e) {}
-      return saveGameDataBeforeGoldAccountingV1881.apply(this, arguments);
-    };
-    saveGameData.__goldAccountingV1881 = true;
-  }
-
-  if (typeof saveGameDataDebounced === 'function' && !saveGameDataDebounced.__goldAccountingV1881) {
-    const saveGameDataDebouncedBeforeGoldAccountingV1881 = saveGameDataDebounced;
-    saveGameDataDebounced = function(){
-      try { syncGoldAccountingV1881(); } catch(e) {}
-      return saveGameDataDebouncedBeforeGoldAccountingV1881.apply(this, arguments);
-    };
-    saveGameDataDebounced.__goldAccountingV1881 = true;
-  }
-
-  if (typeof updateHUD === 'function' && !updateHUD.__goldAccountingV1881) {
-    const updateHUDBeforeGoldAccountingV1881 = updateHUD;
-    updateHUD = function(){
-      try { syncGoldAccountingV1881(); } catch(e) {}
-      return updateHUDBeforeGoldAccountingV1881.apply(this, arguments);
-    };
-    updateHUD.__goldAccountingV1881 = true;
-  }
-
-  if (typeof openProfile === 'function' && !openProfile.__goldAccountingV1881) {
-    const openProfileBeforeGoldAccountingV1881 = openProfile;
-    openProfile = function(){
-      try { syncGoldAccountingV1881(); } catch(e) {}
-      return openProfileBeforeGoldAccountingV1881.apply(this, arguments);
-    };
-    openProfile.__goldAccountingV1881 = true;
-  }
-} catch(e) {}
-</script>
-
-<!-- ===============================
-     ✅ [v.58+] 경험치 뽑기 연출 오버레이
-     =============================== -->
-<div id="gachaFxOverlay" aria-hidden="true">
-  <div id="gachaFxCard" role="dialog" aria-modal="true">
-    <div id="gachaFxTop">
-      <div id="gachaFxTitle">🎁 경험치 상자 등장!</div>
-      <button id="gachaFxSkip" type="button">스킵</button>
-    </div>
-    <div id="gachaFxBody">
-      <div id="gachaFxBox">📦</div>
-      <div id="gachaFxRarity">등급</div>
-      <div id="gachaFxExp">+0 EXP</div>
-      <div id="gachaFxHint">터치/클릭으로 빠르게 넘길 수 있어요</div>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
