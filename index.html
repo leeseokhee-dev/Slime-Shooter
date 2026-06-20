@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.187.2 Slime Rush Cluster Spawn)</title>
+<title>Slime Shooter - Ultimate Evolution (v.188 Evolution Mode)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4769,6 +4769,7 @@ const bgmTracks = {
   treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
   dimension:new Audio('bg_dimension.mp3'),// ✅ [v.175] 디멘션 인베이드 전용
   slimerush:new Audio('bg_slimerush.mp3'),// ✅ [v.187.1] 슬라임 러시 전용
+  evolution:new Audio('bg_evolution.mp3'),// ✅ [v.188] 에볼루션 모드 전용
   fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
@@ -26985,6 +26986,347 @@ try {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(141,255,177,0.35); border-radius:10px; background:rgba(141,255,177,0.08); line-height:1.6;';
     box.innerHTML = '<b style="color:#8dffb1;">[v.187 슬라임 러시]</b><br>LV.5부터 하루 5회 입장 가능한 신규 모드입니다. 10초마다 스폰량이 증가하여 최대 초당 20마리까지 등장하며, 10,000마리를 모두 처치하면 획득 EXP의 25%가 클리어 보상으로 추가 지급됩니다.<br>전용 BGM bg_slimerush.mp3가 슬라임 러시 진입 시 자동 재생되며, 피격 후에도 EXP 반감이 적용되지 않습니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+
+
+// ===============================
+// ✅ [v.188] 에볼루션 모드
+// - LV.40부터 입장
+// - 0.2초마다 몬스터 1마리 등장
+// - 몬스터 Lv.1부터 시작, 3초마다 +1레벨
+// - 사망 시 총 획득 EXP / 처치 수 / 생존 시간 결과창 표시
+// ===============================
+const EVOLUTION_LEVEL_REQ_V188 = 40;
+const EVOLUTION_SPAWN_INTERVAL_MS_V188 = 200;
+const EVOLUTION_LEVEL_UP_SEC_V188 = 3;
+const EVOLUTION_MAX_ENEMIES_V188 = 80;
+const EVOLUTION_TARGET_KILLS_V188 = 999999999;
+
+const EVOLUTION_EXP_TABLE_V188 = [
+  { lv: 250, exp: 57119 },
+  { lv: 240, exp: 46014 },
+  { lv: 230, exp: 37283 },
+  { lv: 220, exp: 28516 },
+  { lv: 210, exp: 21718 },
+  { lv: 200, exp: 14097 },
+  { lv: 190, exp: 9223 },
+  { lv: 180, exp: 7468 },
+  { lv: 170, exp: 5981 },
+  { lv: 160, exp: 4872 },
+  { lv: 150, exp: 4015 },
+  { lv: 140, exp: 3290 },
+  { lv: 130, exp: 2571 },
+  { lv: 120, exp: 2147 },
+  { lv: 110, exp: 1688 },
+  { lv: 100, exp: 1279 },
+  { lv: 90, exp: 920 },
+  { lv: 80, exp: 771 },
+  { lv: 70, exp: 633 },
+  { lv: 60, exp: 514 },
+  { lv: 50, exp: 387 },
+  { lv: 40, exp: 271 },
+  { lv: 30, exp: 92 },
+  { lv: 20, exp: 57 },
+  { lv: 10, exp: 31 },
+  { lv: 5, exp: 15 },
+  { lv: 1, exp: 3 }
+];
+
+let evolutionActiveV188 = false;
+let evolutionStartTimeV188 = 0;
+let evolutionSpawnIndexV188 = 0;
+let evolutionResultSnapshotV188 = null;
+
+function isEvolutionActiveV188(){
+  return !!evolutionActiveV188;
+}
+
+function setEvolutionModeV188(active){
+  evolutionActiveV188 = !!active;
+  try { window.__evolutionActiveV188 = evolutionActiveV188; } catch(e) {}
+}
+
+function getEvolutionElapsedSecV188(){
+  if (!evolutionStartTimeV188) return 0;
+  return Math.max(0, Math.floor((performance.now() - evolutionStartTimeV188) / 1000));
+}
+
+function getEvolutionMonsterLevelV188(){
+  return 1 + Math.floor(getEvolutionElapsedSecV188() / EVOLUTION_LEVEL_UP_SEC_V188);
+}
+
+function calcEvolutionMonsterExpV188(monsterLv){
+  const lv = Math.max(1, Math.floor(v171SafeNum(monsterLv, 1)));
+  for (const row of EVOLUTION_EXP_TABLE_V188) {
+    if (lv >= row.lv) return row.exp;
+  }
+  return 3;
+}
+
+function calcEvolutionMonsterHpV188(monsterLv){
+  const lv = Math.max(1, Math.floor(v171SafeNum(monsterLv, 1)));
+  const base = 12 + lv * 4;
+  const highLvBonus = lv >= 100 ? Math.pow(lv - 90, 1.18) * 3.5 : 0;
+  return Math.max(8, Math.floor(base + highLvBonus));
+}
+
+function calcEvolutionMonsterSpeedV188(monsterLv){
+  const lv = Math.max(1, Math.floor(v171SafeNum(monsterLv, 1)));
+  return 1.05 + Math.min(2.25, lv * 0.009);
+}
+
+function resetEvolutionRuntimeV188(){
+  evolutionStartTimeV188 = performance.now();
+  evolutionSpawnIndexV188 = 0;
+  evolutionResultSnapshotV188 = null;
+}
+
+function startEvolutionModeV188(){
+  if (v171SafeNum(level, 1) < EVOLUTION_LEVEL_REQ_V188) {
+    alert(`에볼루션 모드는 LV.${EVOLUTION_LEVEL_REQ_V188}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+
+  try { setAdventureMode(false); } catch(e) {}
+  try { setMonsterParkMode(false); } catch(e) {}
+  try { setPartyExpeditionMode(false); } catch(e) {}
+  try { dimensionInvasionActiveV175 = false; } catch(e) {}
+  try { clearDimensionResultSnapshotV186(); } catch(e) {}
+  try { setSlimeRushModeV187(false); } catch(e) {}
+  try { slimeRushCompletedV187 = false; } catch(e) {}
+  try { slimeRushResultSnapshotV187 = null; } catch(e) {}
+
+  setEvolutionModeV188(true);
+  resetEvolutionRuntimeV188();
+  gameMode = 'stage';
+  stage = 1;
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  if (modeModal) modeModal.classList.add('hidden');
+  startGame(1);
+  try { playBgmTrack('evolution'); } catch(e) {}
+  evolutionStartTimeV188 = performance.now();
+  try { showToast('🧬 에볼루션 모드 시작! 몬스터 레벨이 3초마다 상승합니다.', '#b8ff7a', 1800); } catch(e) {}
+}
+
+function spawnEvolutionMonsterV188(){
+  if (!evolutionActiveV188 || gameMode !== 'stage' || state !== 'playing' || stageCleared || boss || bossIntro?.active) return;
+  const alive = enemies.filter(e => e && e.hp > 0).length;
+  if (alive >= EVOLUTION_MAX_ENEMIES_V188) return;
+
+  const idx = evolutionSpawnIndexV188++;
+  const monsterLv = getEvolutionMonsterLevelV188();
+  const type = ENEMY_TYPES[idx % ENEMY_TYPES.length];
+  const sizePad = 38;
+  const x = randRange(sizePad, width - sizePad);
+  const y = -40 - Math.random() * 30;
+  const vx = randRange(-0.14, 0.14);
+  const hp = calcEvolutionMonsterHpV188(monsterLv);
+  const enemy = createEnemy(type, x, y, calcEvolutionMonsterSpeedV188(monsterLv), 'rain', vx, {
+    hp,
+    maxHp: hp,
+    attackStyle: 'none',
+    drift: vx,
+    _evolutionEnemy: true,
+    _evolutionLevel: monsterLv,
+    displayName: `에볼루션 슬라임 Lv.${monsterLv}`,
+    evoStage: getBossEvoStageByLevel(Math.min(300, monsterLv))
+  });
+  enemies.push(enemy);
+}
+
+function installEvolutionModeButtonV188(){
+  const body = modeModal ? modeModal.querySelector('.modal-body') : null;
+  if (!body || document.getElementById('modeEvolutionBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'modeEvolutionBtn';
+  btn.className = 'ui-btn big-btn';
+  btn.style.cssText = 'width:100%; border-color:#b8ff7a; color:#f2ffe8; background:linear-gradient(to bottom, #4b7818, #182907);';
+  btn.textContent = '🧬 에볼루션 모드 (LV.40+ · 무한 성장)';
+  btn.addEventListener('click', startEvolutionModeV188);
+
+  const slimeRushBtn = document.getElementById('modeSlimeRushBtn');
+  const monsterParkBtn = document.getElementById('modeMonsterParkBtn');
+  if (slimeRushBtn && slimeRushBtn.parentNode === body) body.insertBefore(btn, slimeRushBtn.nextSibling);
+  else if (monsterParkBtn && monsterParkBtn.parentNode === body) body.insertBefore(btn, monsterParkBtn);
+  else body.appendChild(btn);
+
+  const info = Array.from(body.querySelectorAll('div')).find(el => String(el.innerHTML || '').includes('스테이지 모드:'));
+  if (info && !String(info.innerHTML || '').includes('에볼루션 모드:')) {
+    info.innerHTML = String(info.innerHTML).replace('몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>', '에볼루션 모드: LV.40부터 0.2초마다 1마리 · 3초마다 몬스터 Lv.+1<br>몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>');
+  }
+}
+
+installEvolutionModeButtonV188();
+
+['modeStageBtn','modeInfiniteBtn','modeAdventureBtn','modeMonsterParkBtn','modePartyExpeditionBtn','modeItemParkBtn','modeMiniGameBtn','modeTreasureRushBtn','modeDungeonBtn','modeSlimeRushBtn'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', () => { setEvolutionModeV188(false); evolutionResultSnapshotV188 = null; }, true);
+});
+
+const goToTitleBeforeV188Evolution = goToTitle;
+goToTitle = function(){
+  setEvolutionModeV188(false);
+  evolutionResultSnapshotV188 = null;
+  return goToTitleBeforeV188Evolution.apply(this, arguments);
+};
+
+const startGameBeforeV188Evolution = startGame;
+startGame = function(startStageNum = 1){
+  if (evolutionActiveV188) {
+    gameMode = 'stage';
+    startStageNum = 1;
+  }
+  return startGameBeforeV188Evolution.call(this, startStageNum || 1);
+};
+
+const getStageKillTargetBeforeV188Evolution = getStageKillTarget;
+getStageKillTarget = function(stg){
+  if (evolutionActiveV188) return EVOLUTION_TARGET_KILLS_V188;
+  return getStageKillTargetBeforeV188Evolution.apply(this, arguments);
+};
+
+const isBossStageBeforeV188Evolution = isBossStage;
+isBossStage = function(s){
+  if (evolutionActiveV188) return false;
+  return isBossStageBeforeV188Evolution.apply(this, arguments);
+};
+
+const getStageMonsterExpRewardBeforeV188Evolution = getStageMonsterExpReward;
+getStageMonsterExpReward = function(stageValue){
+  if (evolutionActiveV188) return calcEvolutionMonsterExpV188(getEvolutionMonsterLevelV188());
+  return getStageMonsterExpRewardBeforeV188Evolution.apply(this, arguments);
+};
+
+const getStageMonsterExpRewardForEnemyBeforeV188Evolution = getStageMonsterExpRewardForEnemy;
+getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
+  if (evolutionActiveV188 || (enemy && enemy._evolutionEnemy)) {
+    return calcEvolutionMonsterExpV188(enemy && enemy._evolutionLevel ? enemy._evolutionLevel : getEvolutionMonsterLevelV188());
+  }
+  return getStageMonsterExpRewardForEnemyBeforeV188Evolution.apply(this, arguments);
+};
+
+const getStageMonsterSpawnIntervalMsBeforeV188Evolution = getStageMonsterSpawnIntervalMs;
+getStageMonsterSpawnIntervalMs = function(stg){
+  if (evolutionActiveV188) return EVOLUTION_SPAWN_INTERVAL_MS_V188;
+  return getStageMonsterSpawnIntervalMsBeforeV188Evolution.apply(this, arguments);
+};
+
+const getStageMonsterSpawnBatchSizeBeforeV188Evolution = getStageMonsterSpawnBatchSize;
+getStageMonsterSpawnBatchSize = function(stg){
+  if (evolutionActiveV188) return 1;
+  return getStageMonsterSpawnBatchSizeBeforeV188Evolution.apply(this, arguments);
+};
+
+const spawnNextWaveBeforeV188Evolution = spawnNextWave;
+spawnNextWave = function(){
+  if (evolutionActiveV188) {
+    spawnEvolutionMonsterV188();
+    return;
+  }
+  return spawnNextWaveBeforeV188Evolution.apply(this, arguments);
+};
+
+const spawnExpItemFromEnemyBeforeV188Evolution = spawnExpItemFromEnemy;
+spawnExpItemFromEnemy = function(enemy){
+  if (evolutionActiveV188 || (enemy && enemy._evolutionEnemy)) return;
+  return spawnExpItemFromEnemyBeforeV188Evolution.apply(this, arguments);
+};
+
+const spawnGoldDropBeforeV188Evolution = spawnGoldDrop;
+spawnGoldDrop = function(x, y, amount){
+  if (evolutionActiveV188) return;
+  return spawnGoldDropBeforeV188Evolution.apply(this, arguments);
+};
+
+const isFeverActiveBeforeV188Evolution = isFeverActive;
+isFeverActive = function(){
+  if (evolutionActiveV188) return false;
+  return isFeverActiveBeforeV188Evolution.apply(this, arguments);
+};
+
+const getPlayerHitDamageBeforeV188Evolution = getPlayerHitDamage;
+getPlayerHitDamage = function(hitInfo = null){
+  if (!evolutionActiveV188) return getPlayerHitDamageBeforeV188Evolution.apply(this, arguments);
+  const evoLv = Math.max(1, Math.floor((hitInfo && (hitInfo._evolutionLevel || hitInfo.enemyLevel || hitInfo.level)) || getEvolutionMonsterLevelV188()));
+  const info = Object.assign({}, hitInfo || {}, { stageLevel: evoLv, enemyLevel: evoLv });
+  return getPlayerHitDamageBeforeV188Evolution.call(this, info);
+};
+
+const checkStageKillClearNowBeforeV188Evolution = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (evolutionActiveV188) return false;
+  return checkStageKillClearNowBeforeV188Evolution.apply(this, arguments);
+};
+
+const updateHUDBeforeV188Evolution = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV188Evolution.apply(this, arguments);
+  if (evolutionActiveV188) {
+    const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+    const elapsed = getEvolutionElapsedSecV188();
+    const mLv = getEvolutionMonsterLevelV188();
+    if (scoreEl) { scoreEl.style.display = ''; scoreEl.textContent = `에볼루션 EXP: ${formatNumber(stageRunExpMonsters || 0)}`; }
+    if (highScoreEl) { highScoreEl.style.display = ''; highScoreEl.textContent = `처치 ${formatNumber(killed)}마리`; }
+    if (stageEl) stageEl.textContent = `에볼루션 · ${formatPlayTime(elapsed)} · 몬스터 Lv.${formatNumber(mLv)}`;
+    if (hotTimeEl) {
+      hotTimeEl.textContent = `🧬 0.2초마다 1마리 · 3초마다 Lv.+1 · 현재 EXP ${formatNumber(calcEvolutionMonsterExpV188(mLv))}`;
+      hotTimeEl.style.color = '#b8ff7a';
+    }
+  }
+  return ret;
+};
+
+const gameOverBeforeV188Evolution = gameOver;
+gameOver = function(){
+  if (evolutionActiveV188) {
+    evolutionResultSnapshotV188 = {
+      kills: Math.max(0, Math.floor(stageRunKillCount || 0)),
+      playSec: getEvolutionElapsedSecV188(),
+      expGained: Math.max(0, Math.floor((typeof stageRunExpEarned === 'number' && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (stageRunExpMonsters || 0))),
+      monsterLevel: getEvolutionMonsterLevelV188()
+    };
+  }
+  return gameOverBeforeV188Evolution.apply(this, arguments);
+};
+
+const updateGameOverModalBeforeV188Evolution = updateGameOverModal;
+updateGameOverModal = function(){
+  const ret = updateGameOverModalBeforeV188Evolution.apply(this, arguments);
+  if (evolutionActiveV188 || evolutionResultSnapshotV188) {
+    const r = evolutionResultSnapshotV188 || {
+      kills: stageRunKillCount || 0,
+      playSec: getEvolutionElapsedSecV188(),
+      expGained: stageRunExpEarned || stageRunExpMonsters || 0,
+      monsterLevel: getEvolutionMonsterLevelV188()
+    };
+    try { if (gameOverTitleEl) { gameOverTitleEl.textContent = 'EVOLUTION RESULT'; gameOverTitleEl.style.color = '#b8ff7a'; } } catch(e) {}
+    try { if (gameOverDescEl) gameOverDescEl.textContent = '에볼루션 모드 도전 결과입니다.'; } catch(e) {}
+    try { setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '총 획득 EXP', `${formatNumber(r.expGained || 0)} EXP`, { color:'#b8ff7a' }); } catch(e) {}
+    try { setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '총 처치 수', `${formatNumber(r.kills || 0)}마리`); } catch(e) {}
+    try { setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '생존 시간', formatPlayTime(r.playSec || 0)); } catch(e) {}
+    try { setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '도달 몬스터 레벨', `Lv.${formatNumber(r.monsterLevel || 1)}`); } catch(e) {}
+  }
+  return ret;
+};
+
+if (restartBtn) {
+  restartBtn.addEventListener('click', function(ev){
+    if (!evolutionActiveV188 && !evolutionResultSnapshotV188) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    startEvolutionModeV188();
+  }, true);
+}
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.188 에볼루션 모드')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,122,0.35); border-radius:10px; background:rgba(184,255,122,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#b8ff7a;">[v.188 에볼루션 모드]</b><br>LV.40부터 입장 가능한 무한 성장 모드입니다. 몬스터는 Lv.1부터 시작하고 0.2초마다 1마리씩 등장하며, 3초마다 몬스터 레벨이 1씩 상승합니다.<br>몬스터 레벨에 따라 경험치와 공격력이 증가하고, 사망 시 총 획득 EXP, 총 처치 수, 생존 시간이 결과창에 표시됩니다.<br>전용 BGM 파일명은 bg_evolution.mp3입니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
