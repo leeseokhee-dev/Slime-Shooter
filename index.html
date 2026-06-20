@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.185 Spawn Timing Adjust)</title>
+<title>Slime Shooter - Ultimate Evolution (v.187.2 Slime Rush Cluster Spawn)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -26557,9 +26557,12 @@ const SLIME_RUSH_LEVEL_REQ_V187 = 5;
 const SLIME_RUSH_DAILY_LIMIT_V187 = 5;
 const SLIME_RUSH_TARGET_KILLS_V187 = 10000;
 const SLIME_RUSH_MAX_SPAWN_PER_SEC_V187 = 40;
-const SLIME_RUSH_SPAWN_STEP_SEC_V187 = 10;
+const SLIME_RUSH_SPAWN_STEP_SEC_V187 = 5;
 const SLIME_RUSH_CLEAR_BONUS_RATE_V187 = 0.25;
 const SLIME_RUSH_MAX_ENEMIES_V187 = 80;
+// ✅ [v.187.2] 슬라임 러시: 몬스터가 따로 흩어지지 않고 한 덩어리처럼 등장하도록 묶음 스폰 범위 지정
+const SLIME_RUSH_CLUSTER_SPREAD_X_V187 = 46;
+const SLIME_RUSH_CLUSTER_SPREAD_Y_V187 = 26;
 const SLIME_RUSH_EXP_TABLE_V187 = [
   { lv: 150, exp: 16293 },
   { lv: 140, exp: 11939 },
@@ -26695,16 +26698,28 @@ function spawnSlimeRushBatchV187(){
   const remaining = Math.max(0, SLIME_RUSH_TARGET_KILLS_V187 - killed);
   const count = Math.min(getSlimeRushSpawnPerSecV187(), room, remaining);
   const speedBase = 1.15 + Math.min(1.45, Math.max(1, v171SafeNum(level, 1)) * 0.008);
+
+  // ✅ [v.187.2] 이번 스폰 묶음의 중심점을 먼저 정하고, 모든 몬스터를 그 주변에 촘촘히 배치
+  const centerX = randRange(70, width - 70);
+  const centerY = -54 - Math.random() * 18;
+  const spreadX = Math.min(SLIME_RUSH_CLUSTER_SPREAD_X_V187, 18 + count * 1.15);
+  const spreadY = Math.min(SLIME_RUSH_CLUSTER_SPREAD_Y_V187, 10 + count * 0.75);
+
   for (let i = 0; i < count; i++) {
     const idx = slimeRushSpawnIndexV187++;
     const type = ENEMY_TYPES[idx % ENEMY_TYPES.length];
-    const x = randRange(34, width - 34);
-    const y = -42 - (i * 10) - Math.random() * 24;
-    const vx = randRange(-0.55, 0.55);
+    const angle = i * 2.399963229728653; // 골든 앵글: 겹침을 줄이면서도 덩어리 유지
+    const radius = Math.sqrt((i + 0.5) / Math.max(1, count));
+    const offsetX = Math.cos(angle) * spreadX * radius + randRange(-5, 5);
+    const offsetY = Math.sin(angle) * spreadY * radius + randRange(-3, 3);
+    const x = Math.max(34, Math.min(width - 34, centerX + offsetX));
+    const y = centerY + offsetY;
+    const vx = randRange(-0.18, 0.18);
     const enemy = createEnemy(type, x, y, speedBase, 'rain', vx, {
       attackStyle: 'none',
       drift: vx,
-      _slimeRushEnemy: true
+      _slimeRushEnemy: true,
+      _slimeRushClusterSpawn: true
     });
     enemies.push(enemy);
   }
