@@ -4768,6 +4768,7 @@ const bgmTracks = {
   minigame: new Audio('bg_minigame.mp3'), // ✅ 미니게임 전용
   treasure: new Audio('bg_treasure.mp3'), // ✅ [v.170.1] 보물 슬라임 러시 전용
   dimension:new Audio('bg_dimension.mp3'),// ✅ [v.175] 디멘션 인베이드 전용
+  slimerush:new Audio('bg_slimerush.mp3'),// ✅ [v.187.1] 슬라임 러시 전용
   fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
@@ -4877,7 +4878,7 @@ function getSeasonKeyNow(date = new Date()) {
 
 function resolveBgmName(requested) {
   // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'dimension' || requested === 'fever') return requested;
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'dimension' || requested === 'slimerush' || requested === 'fever') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
@@ -4892,6 +4893,7 @@ function getModeBgmName() {
   if (gameMode === 'itempark') return 'itempark';
   if (gameMode === 'minigame') return 'minigame';
   if (gameMode === 'treasure') return 'treasure';
+  if (typeof slimeRushActiveV187 !== 'undefined' && slimeRushActiveV187) return 'slimerush';
   return 'game';
 }
 
@@ -14566,10 +14568,12 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
   if (safeFinal <= 0 && safeBaseRaw <= 0) return;
 
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
-  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty)
+  const slimeRushNoExpPenalty = (typeof window !== 'undefined' && !!window.__slimeRushActiveV187);
+  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty;
+  const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
-  const lostRate = (gameMode === 'stage' && !dimensionNoExpPenalty) ? (1 - stageHitRate) : 0;
+  const lostRate = (gameMode === 'stage' && !noStageExpPenalty) ? (1 - stageHitRate) : 0;
 
   const combinedHotMult = Math.max(1, Number(hotMult) || 1);
   const feverExpMult = getFeverExpMultiplier();
@@ -14715,7 +14719,9 @@ function addExp(amount, opts = {}) {
 
   // ✅ [v.41+] EXP 획득률 보정(피격/상점버프/핫타임/펫)
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
-  const stageHitRate = (gameMode === 'stage' && !dimensionNoExpPenalty)
+  const slimeRushNoExpPenalty = (typeof window !== 'undefined' && !!window.__slimeRushActiveV187);
+  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty;
+  const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
   const expBuffMult = getBuffMult('exp');
@@ -26537,6 +26543,436 @@ try {
   }
 } catch(e) {}
 
+
+
+// ===============================
+// ✅ [v.187] 슬라임 러시 모드 추가
+// - LV.5부터 입장, 하루 5회
+// - 10,000마리 처치 시 클리어
+// - 10초마다 초당 스폰 수 +1, 최대 초당 20마리
+// - 보스/골드/상자/EXP 구슬 없이 처치 EXP 중심
+// - 클리어 시 획득 EXP의 25% 추가 지급
+// ===============================
+const SLIME_RUSH_LEVEL_REQ_V187 = 5;
+const SLIME_RUSH_DAILY_LIMIT_V187 = 5;
+const SLIME_RUSH_TARGET_KILLS_V187 = 10000;
+const SLIME_RUSH_MAX_SPAWN_PER_SEC_V187 = 20;
+const SLIME_RUSH_SPAWN_STEP_SEC_V187 = 10;
+const SLIME_RUSH_CLEAR_BONUS_RATE_V187 = 0.25;
+const SLIME_RUSH_MAX_ENEMIES_V187 = 80;
+const SLIME_RUSH_EXP_TABLE_V187 = [
+  { lv: 150, exp: 16293 },
+  { lv: 140, exp: 11939 },
+  { lv: 130, exp: 8013 },
+  { lv: 120, exp: 5984 },
+  { lv: 110, exp: 4136 },
+  { lv: 100, exp: 2943 },
+  { lv: 90, exp: 2016 },
+  { lv: 80, exp: 1402 },
+  { lv: 70, exp: 911 },
+  { lv: 60, exp: 574 },
+  { lv: 50, exp: 316 },
+  { lv: 40, exp: 187 },
+  { lv: 30, exp: 109 },
+  { lv: 20, exp: 53 },
+  { lv: 10, exp: 26 },
+  { lv: 5, exp: 12 }
+];
+
+let slimeRushActiveV187 = false;
+let slimeRushCompletedV187 = false;
+let slimeRushStartTimeV187 = 0;
+let slimeRushSpawnIndexV187 = 0;
+let slimeRushResultSnapshotV187 = null;
+
+function isSlimeRushActiveV187(){
+  return !!slimeRushActiveV187;
+}
+
+function getSlimeRushTodayKeyV187(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function ensureSlimeRushSaveV187(){
+  if (!saveData.slimeRush || typeof saveData.slimeRush !== 'object') {
+    saveData.slimeRush = {
+      entryDate: '', entriesUsed: 0, clears: 0,
+      bestTimeSec: 0, bestExp: 0, bestKills: 0, totalBonusExp: 0
+    };
+  }
+  const d = saveData.slimeRush;
+  const today = getSlimeRushTodayKeyV187();
+  if (d.entryDate !== today) {
+    d.entryDate = today;
+    d.entriesUsed = 0;
+  }
+  d.entriesUsed = Math.max(0, Math.floor(v171SafeNum(d.entriesUsed, 0)));
+  d.clears = Math.max(0, Math.floor(v171SafeNum(d.clears, 0)));
+  d.bestTimeSec = Math.max(0, Math.floor(v171SafeNum(d.bestTimeSec, 0)));
+  d.bestExp = Math.max(0, Math.floor(v171SafeNum(d.bestExp, 0)));
+  d.bestKills = Math.max(0, Math.floor(v171SafeNum(d.bestKills, 0)));
+  d.totalBonusExp = Math.max(0, Math.floor(v171SafeNum(d.totalBonusExp, 0)));
+  return d;
+}
+
+function getSlimeRushEntriesLeftV187(){
+  const d = ensureSlimeRushSaveV187();
+  return Math.max(0, SLIME_RUSH_DAILY_LIMIT_V187 - v171SafeNum(d.entriesUsed, 0));
+}
+
+function getSlimeRushElapsedSecV187(){
+  if (!slimeRushStartTimeV187) return 0;
+  return Math.max(0, Math.floor((performance.now() - slimeRushStartTimeV187) / 1000));
+}
+
+function getSlimeRushSpawnPerSecV187(){
+  const elapsed = getSlimeRushElapsedSecV187();
+  return Math.max(1, Math.min(SLIME_RUSH_MAX_SPAWN_PER_SEC_V187, 1 + Math.floor(elapsed / SLIME_RUSH_SPAWN_STEP_SEC_V187)));
+}
+
+function calcSlimeRushMonsterExpV187(lv){
+  const currentLv = Math.max(SLIME_RUSH_LEVEL_REQ_V187, Math.floor(v171SafeNum(lv, 1)));
+  for (const row of SLIME_RUSH_EXP_TABLE_V187) {
+    if (currentLv >= row.lv) return row.exp;
+  }
+  return 12;
+}
+
+function resetSlimeRushRuntimeV187(){
+  slimeRushCompletedV187 = false;
+  slimeRushStartTimeV187 = performance.now();
+  slimeRushSpawnIndexV187 = 0;
+  slimeRushResultSnapshotV187 = null;
+}
+
+function setSlimeRushModeV187(active){
+  slimeRushActiveV187 = !!active;
+  try { window.__slimeRushActiveV187 = slimeRushActiveV187; } catch(e) {}
+}
+
+function startSlimeRushModeV187(){
+  if (v171SafeNum(level, 1) < SLIME_RUSH_LEVEL_REQ_V187) {
+    alert(`슬라임 러시는 LV.${SLIME_RUSH_LEVEL_REQ_V187}부터 입장 가능합니다.\n(현재 LV.${level})`);
+    return;
+  }
+  const d = ensureSlimeRushSaveV187();
+  if (d.entriesUsed >= SLIME_RUSH_DAILY_LIMIT_V187) {
+    alert(`오늘 슬라임 러시 입장 횟수를 모두 사용했습니다.\n(${d.entriesUsed}/${SLIME_RUSH_DAILY_LIMIT_V187})`);
+    saveGameDataDebounced();
+    return;
+  }
+
+  d.entriesUsed += 1;
+  saveGameData();
+
+  try { setAdventureMode(false); } catch(e) {}
+  try { setMonsterParkMode(false); } catch(e) {}
+  try { setPartyExpeditionMode(false); } catch(e) {}
+  try { dimensionInvasionActiveV175 = false; } catch(e) {}
+  try { clearDimensionResultSnapshotV186(); } catch(e) {}
+
+  setSlimeRushModeV187(true);
+  resetSlimeRushRuntimeV187();
+  gameMode = 'stage';
+  stage = 1;
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  if (modeModal) modeModal.classList.add('hidden');
+  startGame(1);
+  try { playBgmTrack('slimerush'); } catch(e) {}
+  slimeRushStartTimeV187 = performance.now();
+  try { showToast(`🟢 슬라임 러시 입장! 오늘 ${d.entriesUsed}/${SLIME_RUSH_DAILY_LIMIT_V187}회`, '#8dffb1', 1600); } catch(e) {}
+}
+
+function spawnSlimeRushBatchV187(){
+  if (!slimeRushActiveV187 || gameMode !== 'stage' || state !== 'playing' || stageCleared || boss || bossIntro?.active) return;
+  const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+  if (killed >= SLIME_RUSH_TARGET_KILLS_V187) return;
+  const alive = enemies.filter(e => e && e.hp > 0).length;
+  const room = Math.max(0, SLIME_RUSH_MAX_ENEMIES_V187 - alive);
+  if (room <= 0) return;
+  const remaining = Math.max(0, SLIME_RUSH_TARGET_KILLS_V187 - killed);
+  const count = Math.min(getSlimeRushSpawnPerSecV187(), room, remaining);
+  const speedBase = 1.15 + Math.min(1.45, Math.max(1, v171SafeNum(level, 1)) * 0.008);
+  for (let i = 0; i < count; i++) {
+    const idx = slimeRushSpawnIndexV187++;
+    const type = ENEMY_TYPES[idx % ENEMY_TYPES.length];
+    const x = randRange(34, width - 34);
+    const y = -42 - (i * 10) - Math.random() * 24;
+    const vx = randRange(-0.55, 0.55);
+    const enemy = createEnemy(type, x, y, speedBase, 'rain', vx, {
+      attackStyle: 'none',
+      drift: vx,
+      _slimeRushEnemy: true
+    });
+    enemies.push(enemy);
+  }
+}
+
+function completeSlimeRushV187(){
+  if (!slimeRushActiveV187 || slimeRushCompletedV187) return;
+  slimeRushCompletedV187 = true;
+  const playSec = getSlimeRushElapsedSecV187();
+  const mExp = Math.max(0, Math.floor(stageRunExpMonsters || 0));
+  const oExp = Math.max(0, Math.floor(stageRunExpOrbs || 0));
+  const expGained = Math.max(0, Math.floor((typeof stageRunExpEarned === 'number' && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + oExp)));
+  const bonus = Math.max(0, Math.floor(expGained * SLIME_RUSH_CLEAR_BONUS_RATE_V187));
+  slimeRushResultSnapshotV187 = {
+    kills: Math.max(0, Math.floor(stageRunKillCount || 0)),
+    playSec, expGained, bonus
+  };
+  try { spawnDamageText(width / 2, height * 0.32, 'SLIME RUSH CLEAR!', '#8dffb1', true); } catch(e) {}
+}
+
+function installSlimeRushModeButtonV187(){
+  const body = modeModal ? modeModal.querySelector('.modal-body') : null;
+  if (!body || document.getElementById('modeSlimeRushBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'modeSlimeRushBtn';
+  btn.className = 'ui-btn big-btn';
+  btn.style.cssText = 'width:100%; border-color:#8dffb1; color:#edfff4; background:linear-gradient(to bottom, #126b38, #062614);';
+  btn.textContent = '🟢 슬라임 러시 (LV.5+ · 하루 5회)';
+  btn.addEventListener('click', startSlimeRushModeV187);
+  const monsterParkBtn = document.getElementById('modeMonsterParkBtn');
+  if (monsterParkBtn && monsterParkBtn.parentNode === body) body.insertBefore(btn, monsterParkBtn);
+  else body.appendChild(btn);
+
+  const info = Array.from(body.querySelectorAll('div')).find(el => String(el.innerHTML || '').includes('스테이지 모드:'));
+  if (info && !String(info.innerHTML || '').includes('슬라임 러시:')) {
+    info.innerHTML = String(info.innerHTML).replace('몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>', '슬라임 러시: LV.5부터 10,000마리 처치 · 클리어 보너스 25%<br>몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>');
+  }
+}
+
+installSlimeRushModeButtonV187();
+
+['modeStageBtn','modeInfiniteBtn','modeAdventureBtn','modeMonsterParkBtn','modePartyExpeditionBtn','modeItemParkBtn','modeMiniGameBtn','modeTreasureRushBtn','modeDungeonBtn'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', () => { setSlimeRushModeV187(false); slimeRushCompletedV187 = false; }, true);
+});
+
+const goToTitleBeforeV187SlimeRush = goToTitle;
+goToTitle = function(){
+  setSlimeRushModeV187(false);
+  slimeRushCompletedV187 = false;
+  slimeRushResultSnapshotV187 = null;
+  try {
+    if (nextStageBtn) nextStageBtn.textContent = '다음 스테이지로 ▶';
+  } catch(e) {}
+  return goToTitleBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const startGameBeforeV187SlimeRush = startGame;
+startGame = function(startStageNum = 1){
+  if (slimeRushActiveV187) {
+    gameMode = 'stage';
+    startStageNum = 1;
+  }
+  return startGameBeforeV187SlimeRush.call(this, startStageNum || 1);
+};
+
+const getStageKillTargetBeforeV187SlimeRush = getStageKillTarget;
+getStageKillTarget = function(stg){
+  if (slimeRushActiveV187) return SLIME_RUSH_TARGET_KILLS_V187;
+  return getStageKillTargetBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const isBossStageBeforeV187SlimeRush = isBossStage;
+isBossStage = function(s){
+  if (slimeRushActiveV187) return false;
+  return isBossStageBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const getStageMonsterExpRewardBeforeV187SlimeRush = getStageMonsterExpReward;
+getStageMonsterExpReward = function(stageValue){
+  if (slimeRushActiveV187) return calcSlimeRushMonsterExpV187(level);
+  return getStageMonsterExpRewardBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const getStageMonsterExpRewardForEnemyBeforeV187SlimeRush = getStageMonsterExpRewardForEnemy;
+getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
+  if (slimeRushActiveV187 || (enemy && enemy._slimeRushEnemy)) return calcSlimeRushMonsterExpV187(level);
+  return getStageMonsterExpRewardForEnemyBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const getStageMonsterSpawnIntervalMsBeforeV187SlimeRush = getStageMonsterSpawnIntervalMs;
+getStageMonsterSpawnIntervalMs = function(stg){
+  if (slimeRushActiveV187) return 1000;
+  return getStageMonsterSpawnIntervalMsBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const getStageMonsterSpawnBatchSizeBeforeV187SlimeRush = getStageMonsterSpawnBatchSize;
+getStageMonsterSpawnBatchSize = function(stg){
+  if (slimeRushActiveV187) return getSlimeRushSpawnPerSecV187();
+  return getStageMonsterSpawnBatchSizeBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const spawnNextWaveBeforeV187SlimeRush = spawnNextWave;
+spawnNextWave = function(){
+  if (slimeRushActiveV187) {
+    spawnSlimeRushBatchV187();
+    return;
+  }
+  return spawnNextWaveBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const spawnExpItemFromEnemyBeforeV187SlimeRush = spawnExpItemFromEnemy;
+spawnExpItemFromEnemy = function(enemy){
+  if (slimeRushActiveV187 || (enemy && enemy._slimeRushEnemy)) return;
+  return spawnExpItemFromEnemyBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const spawnGoldDropBeforeV187SlimeRush = spawnGoldDrop;
+spawnGoldDrop = function(x, y, amount){
+  if (slimeRushActiveV187) return;
+  return spawnGoldDropBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const isFeverActiveBeforeV187SlimeRush = isFeverActive;
+isFeverActive = function(){
+  if (slimeRushActiveV187) return false;
+  return isFeverActiveBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const checkStageKillClearNowBeforeV187SlimeRush = checkStageKillClearNow;
+checkStageKillClearNow = function(){
+  if (!slimeRushActiveV187) return checkStageKillClearNowBeforeV187SlimeRush.apply(this, arguments);
+  if (gameMode !== 'stage' || stageCleared) return false;
+  if ((stageRunKillCount || 0) < SLIME_RUSH_TARGET_KILLS_V187) return false;
+  completeSlimeRushV187();
+  stageCleared = true;
+  stageTransitionTimer = 1000;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  boss = null;
+  bossSpawned = false;
+  try { spawnExplosion(width / 2, height / 3, 'rgba(141,255,177,1)', 36); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+  try { addQuestStat('stageClears', 1); } catch(e) {}
+  return true;
+};
+
+const finalizeStageClearStatsBeforeV187SlimeRush = finalizeStageClearStats;
+finalizeStageClearStats = function(){
+  if (!slimeRushActiveV187) return finalizeStageClearStatsBeforeV187SlimeRush.apply(this, arguments);
+  const now = performance.now();
+  const timeMs = Math.max(0, now - (stageRunStartTime || now));
+  const timeSec = Math.max(0, Math.floor(timeMs / 1000));
+  const mExp = Math.max(0, Math.floor(stageRunExpMonsters || 0));
+  const oExp = Math.max(0, Math.floor(stageRunExpOrbs || 0));
+  const expGained = Math.max(0, Math.floor((typeof stageRunExpEarned === 'number' && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + oExp)));
+  const clearBonusExp = Math.max(0, Math.floor(expGained * SLIME_RUSH_CLEAR_BONUS_RATE_V187));
+  const grantedBonusExp = clearBonusExp > 0 ? addExpDirect(clearBonusExp) : 0;
+  const kills = Math.max(0, Math.floor(stageRunKillCount || 0));
+  const d = ensureSlimeRushSaveV187();
+  d.clears += 1;
+  d.bestTimeSec = d.bestTimeSec > 0 ? Math.min(d.bestTimeSec, timeSec) : timeSec;
+  d.bestExp = Math.max(d.bestExp, expGained + grantedBonusExp);
+  d.bestKills = Math.max(d.bestKills, kills);
+  d.totalBonusExp += Math.max(0, Math.floor(grantedBonusExp || clearBonusExp));
+  saveGameDataDebounced();
+
+  const header = stageClearModal ? stageClearModal.querySelector('.modal-header') : null;
+  const intro = document.getElementById('stageClearIntroText');
+  const mini = document.getElementById('stageClearMiniTitle');
+  const stageClearStageEl = document.getElementById('stageClearStageText');
+  const stageClearDurationEl = document.getElementById('stageClearDurationText');
+  const stageClearKillsEl = document.getElementById('stageClearKillsText');
+  const stageClearGoldRowEl = document.getElementById('stageClearGoldRow');
+  const stageClearBestEl = document.getElementById('stageClearBestText');
+  const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
+  const stageClearPetBonusTitleEl = document.getElementById('stageClearPetBonusTitle');
+  if (header) header.textContent = 'SLIME RUSH CLEAR!';
+  if (intro) intro.innerHTML = '슬라임 러시 10,000마리를 모두 처치했습니다.<br>획득한 경험치의 25%가 추가 지급됩니다.';
+  if (mini) mini.textContent = 'Slime Rush Result';
+  if (stageClearStageEl) stageClearStageEl.textContent = '슬라임 러시';
+  if (stageClearDurationEl) stageClearDurationEl.textContent = formatPlayTime(timeSec);
+  if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)} / ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}마리`;
+  if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = 'none';
+  if (stageClearBestEl) stageClearBestEl.textContent = d.bestTimeSec > 0 ? `최단 ${formatPlayTime(d.bestTimeSec)} · 최고 EXP ${formatNumber(d.bestExp)}` : '첫 기록';
+  if (stageClearExpDetailEl) stageClearExpDetailEl.textContent = `몬스터 ${formatNumber(mExp)} · 구슬 없음 · 클리어 보너스 25% +${formatNumber(grantedBonusExp || clearBonusExp)}`;
+  if (stageClearPetBonusTitleEl) stageClearPetBonusTitleEl.textContent = '슬라임 러시 보너스';
+  if (stageClearPetBonusEl) stageClearPetBonusEl.textContent = `현재 1마리 EXP ${formatNumber(calcSlimeRushMonsterExpV187(level))} · 최대 초당 ${SLIME_RUSH_MAX_SPAWN_PER_SEC_V187}마리`;
+  try { applyStageClearRank('S'); } catch(e) {}
+  try { animateStageClearExp(expGained + (grantedBonusExp || clearBonusExp)); } catch(e) {}
+  try { if (nextStageBtn) nextStageBtn.textContent = '타이틀로 돌아가기'; } catch(e) {}
+  return { bonusExp: grantedBonusExp || clearBonusExp, rank: 'S', expGained };
+};
+
+const updateHUDBeforeV187SlimeRush = updateHUD;
+updateHUD = function(){
+  const ret = updateHUDBeforeV187SlimeRush.apply(this, arguments);
+  if (slimeRushActiveV187) {
+    const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+    const elapsed = getSlimeRushElapsedSecV187();
+    const spawnRate = getSlimeRushSpawnPerSecV187();
+    if (scoreEl) { scoreEl.style.display = ''; scoreEl.textContent = `슬라임 러시 EXP: ${formatNumber(stageRunExpMonsters || 0)}`; }
+    if (highScoreEl) { highScoreEl.style.display = ''; highScoreEl.textContent = `처치 ${formatNumber(killed)} / ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}`; }
+    if (stageEl) stageEl.textContent = `슬라임 러시 · ${formatPlayTime(elapsed)} · 초당 ${spawnRate}마리`;
+    if (hotTimeEl) {
+      hotTimeEl.textContent = `🟢 남은 입장 ${getSlimeRushEntriesLeftV187()}/${SLIME_RUSH_DAILY_LIMIT_V187} · 1마리 EXP ${formatNumber(calcSlimeRushMonsterExpV187(level))} · 클리어 +25%`;
+      hotTimeEl.style.color = '#8dffb1';
+    }
+  }
+  return ret;
+};
+
+const gameOverBeforeV187SlimeRush = gameOver;
+gameOver = function(){
+  if (slimeRushActiveV187 && !slimeRushCompletedV187) {
+    slimeRushResultSnapshotV187 = {
+      kills: Math.max(0, Math.floor(stageRunKillCount || 0)),
+      playSec: getSlimeRushElapsedSecV187(),
+      expGained: Math.max(0, Math.floor(stageRunExpMonsters || 0)),
+      bonus: 0
+    };
+  }
+  return gameOverBeforeV187SlimeRush.apply(this, arguments);
+};
+
+const updateGameOverModalBeforeV187SlimeRush = updateGameOverModal;
+updateGameOverModal = function(){
+  const ret = updateGameOverModalBeforeV187SlimeRush.apply(this, arguments);
+  if (slimeRushActiveV187 || slimeRushResultSnapshotV187) {
+    const r = slimeRushResultSnapshotV187 || { kills: stageRunKillCount || 0, playSec: getSlimeRushElapsedSecV187(), expGained: stageRunExpMonsters || 0, bonus: 0 };
+    try { if (gameOverTitleEl) { gameOverTitleEl.textContent = slimeRushCompletedV187 ? 'SLIME RUSH CLEAR' : 'SLIME RUSH END'; gameOverTitleEl.style.color = '#8dffb1'; } } catch(e) {}
+    try { if (gameOverDescEl) gameOverDescEl.textContent = slimeRushCompletedV187 ? '10,000마리 처치 완료! 클리어 보상이 지급되었습니다.' : '슬라임 러시 도전 결과입니다.'; } catch(e) {}
+    try { setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '처치 수', `${formatNumber(r.kills || 0)} / ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}마리`); } catch(e) {}
+    try { setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '플레이 시간', formatPlayTime(r.playSec || 0)); } catch(e) {}
+    try { setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', `${formatNumber(r.expGained || 0)}${(r.bonus || 0) > 0 ? ' + 보너스 ' + formatNumber(r.bonus || 0) : ''}`, { color:'#8dffb1' }); } catch(e) {}
+    try { setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '현재 스폰', `초당 ${getSlimeRushSpawnPerSecV187()}마리`); } catch(e) {}
+  }
+  return ret;
+};
+
+if (nextStageBtn) {
+  nextStageBtn.addEventListener('click', function(ev){
+    if (!slimeRushActiveV187 && !slimeRushCompletedV187) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    goToTitle();
+  }, true);
+}
+
+if (restartBtn) {
+  restartBtn.addEventListener('click', function(ev){
+    if (!slimeRushActiveV187 && !slimeRushResultSnapshotV187) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    startSlimeRushModeV187();
+  }, true);
+}
+
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.187 슬라임 러시')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(141,255,177,0.35); border-radius:10px; background:rgba(141,255,177,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#8dffb1;">[v.187 슬라임 러시]</b><br>LV.5부터 하루 5회 입장 가능한 신규 모드입니다. 10초마다 스폰량이 증가하여 최대 초당 20마리까지 등장하며, 10,000마리를 모두 처치하면 획득 EXP의 25%가 클리어 보상으로 추가 지급됩니다.<br>전용 BGM bg_slimerush.mp3가 슬라임 러시 진입 시 자동 재생되며, 피격 후에도 EXP 반감이 적용되지 않습니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 loadGameData();
 updateHUD();
