@@ -27081,8 +27081,21 @@ function getEvolutionMonsterLevelV188(){
 
 function calcEvolutionMonsterExpV188(monsterLv){
   const lv = Math.max(1, Math.floor(v171SafeNum(monsterLv, 1)));
-  for (const row of EVOLUTION_EXP_TABLE_V188) {
-    if (lv >= row.lv) return row.exp;
+  const points = EVOLUTION_EXP_TABLE_V188
+    .slice()
+    .sort((a, b) => a.lv - b.lv);
+
+  if (lv <= points[0].lv) return points[0].exp;
+  if (lv >= points[points.length - 1].lv) return points[points.length - 1].exp;
+
+  // 기준표 사이 구간을 선형 보간하여 1레벨마다 경험치가 완만하게 증가하도록 처리
+  for (let i = 0; i < points.length - 1; i++) {
+    const from = points[i];
+    const to = points[i + 1];
+    if (lv >= from.lv && lv <= to.lv) {
+      const t = (lv - from.lv) / Math.max(1, to.lv - from.lv);
+      return Math.max(1, Math.round(from.exp + (to.exp - from.exp) * t));
+    }
   }
   return 3;
 }
