@@ -14592,7 +14592,8 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
 
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
   const slimeRushNoExpPenalty = (typeof window !== 'undefined' && !!window.__slimeRushActiveV187);
-  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty;
+  const evolutionNoExpPenalty = (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188());
+  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty || evolutionNoExpPenalty;
   const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
@@ -14743,7 +14744,8 @@ function addExp(amount, opts = {}) {
   // ✅ [v.41+] EXP 획득률 보정(피격/상점버프/핫타임/펫)
   const dimensionNoExpPenalty = (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175());
   const slimeRushNoExpPenalty = (typeof window !== 'undefined' && !!window.__slimeRushActiveV187);
-  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty;
+  const evolutionNoExpPenalty = (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188());
+  const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty || evolutionNoExpPenalty;
   const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
@@ -18029,7 +18031,9 @@ if (isPlayerDying || !player.alive) return;
 isPlayerDying = true;
   document.body.classList.add('dead-mode');
 player.alive = false;
-if (gameMode === 'stage' && level >= 31 && !(typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175()) && !(typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188())) {
+if (gameMode === 'stage' && level >= 31
+  && !(typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175())
+  && !(typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188())) {
   let penaltyRate = 0;
   if (level <= 60) penaltyRate = 0.10;
   else if (level <= 100) penaltyRate = 0.05;
@@ -19434,7 +19438,7 @@ if (circleCollision(px, py, pr, e.x, e.y, enemyContactRadius)) {
     }
     continue;
   }
-  applyPlayerHit(px, py, { contactType: 'enemy', enemy: e, _evolutionEnemy: !!e._evolutionEnemy, _evolutionLevel: e._evolutionLevel, enemyLevel: e._evolutionLevel || e.level });
+  applyPlayerHit(px, py, { contactType: 'enemy', enemy: e, enemyLevel: e._evolutionLevel || e.level });
   return;
 }
 }
@@ -27304,7 +27308,7 @@ getPlayerHitDamage = function(hitInfo = null){
   if (!evolutionActiveV188) return getPlayerHitDamageBeforeV188Evolution.apply(this, arguments);
   const evoLv = getEvolutionHitMonsterLevelV188(hitInfo);
 
-  // 플레이어보다 몬스터 레벨이 10 이상 높으면 데미지 표시는 1로 고정하고 즉사 판정
+  // 몬스터 레벨이 플레이어보다 10 이상 높으면 데미지 표시는 1, 실제 처리는 즉사
   if (isEvolutionOverpowerHitV188(hitInfo)) {
     try { if (hitInfo) hitInfo.__evolutionOverpowerV188 = true; } catch(e) {}
     return 1;
@@ -27327,6 +27331,7 @@ damagePlayer = function(amount, px, py, hitInfo = null){
   }
   return damagePlayerBeforeV188Evolution.apply(this, arguments);
 };
+
 
 const checkStageKillClearNowBeforeV188Evolution = checkStageKillClearNow;
 checkStageKillClearNow = function(){
@@ -27399,7 +27404,7 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.188 에볼루션 모드')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,122,0.35); border-radius:10px; background:rgba(184,255,122,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#b8ff7a;">[v.188 에볼루션 모드]</b><br>LV.40부터 입장 가능한 무한 성장 모드입니다. 몬스터는 Lv.1부터 시작하고 0.2초마다 1마리씩 등장하며, 3초마다 몬스터 레벨이 1씩 상승합니다.<br>몬스터 레벨에 따라 경험치와 공격력이 증가하고, 경험치 반감은 적용되지 않습니다.<br>몬스터 레벨이 플레이어보다 10 이상 높으면 데미지는 1로 표시되지만 즉사합니다.<br>사망 시 총 획득 EXP, 총 처치 수, 생존 시간이 결과창에 표시됩니다.<br>전용 BGM 파일명은 bg_evolution.mp3입니다.';
+    box.innerHTML = '<b style="color:#b8ff7a;">[v.188 에볼루션 모드]</b><br>LV.40부터 입장 가능한 무한 성장 모드입니다. 몬스터는 Lv.1부터 시작하고 0.2초마다 1마리씩 등장하며, 3초마다 몬스터 레벨이 1씩 상승합니다.<br>몬스터 레벨에 따라 경험치와 공격력이 증가하고, 사망 시 총 획득 EXP, 총 처치 수, 생존 시간이 결과창에 표시됩니다.<br>전용 BGM 파일명은 bg_evolution.mp3입니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
