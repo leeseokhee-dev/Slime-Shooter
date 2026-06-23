@@ -6419,7 +6419,10 @@ function getStageKillTarget(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  return 1000; // ✅ [v.184] 무한 모드를 제외한 모든 일반 스테이지 몬스터 출현 주기 1초 통일
+  // ✅ 리스폰 속도 자동 계산
+  // 1마리 = 1초, 2마리 = 0.5초, 20마리 = 0.05초
+  const batch = Math.max(1, getStageMonsterSpawnBatchSize(stg));
+  return Math.max(50, Math.floor(1000 / batch));
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -17067,6 +17070,18 @@ if (stage <= 100) {
 }
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
+// ✅ [v.189.2] 스테이지 모드 낙하 속도 소폭 보정
+// - 1스테이지처럼 너무 느린 초반 구간만 살짝 빠르게
+// - 후반 스테이지는 기존 체감이 크게 바뀌지 않도록 보정폭을 점점 줄임
+// - 무한 모드/몬스터 파크/디멘션/슬라임 러시 등 다른 모드는 영향 없음
+if (gameMode === 'stage') {
+  if (stage <= 30) {
+    speedBase = Math.max(1.28, speedBase * 1.16);
+  } else if (stage <= 100) {
+    speedBase *= 1.08;
+  }
+}
+
 
     // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
     if (gameMode === 'mission') enemyCount = 1;
@@ -17077,6 +17092,14 @@ if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
     // ✅ 피버 중에는 같은 모드에서 몬스터가 좀 더 많이 쏟아집니다.
     if (isFeverActive()) {
       enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
+    }
+
+    // ✅ [v.189.1] 무한 모드를 제외한 모든 모드는 '한 번 호출당 1마리' 고정
+    // - 6스테이지처럼 속도 계산값이 2여도 실제 생성은 1마리
+    // - 속도는 getStageMonsterSpawnIntervalMs()에서만 0.5초처럼 반영
+    // - 여러 마리가 화면에 쌓인 뒤 한 번에 처치되면 기존 멀티킬은 그대로 작동
+    if (gameMode !== 'infinite') {
+      enemyCount = 1;
     }
 
     // ✅ [v.117 패치] 1웨이브 최대 제한(피버 중에는 조금 완화)
@@ -23859,7 +23882,7 @@ function spawnPartyEnemies(){
   const alive = enemies.filter(e => e && e.hp > 0).length;
   const room = Math.max(0, PARTY_MAX_ENEMIES_V172 - alive);
   if (room <= 0) return;
-  const count = Math.min(PARTY_SPAWN_BATCH_V172, room);
+  const count = Math.min(1, room); // ✅ [v.189] 무한 모드 제외: 한 번에는 무조건 1마리만 생성
   const speedBase = 1.0 + Math.min(2.2, Math.max(1, level || 1) * 0.008) + stage * 0.018;
   for (let i = 0; i < count; i++) {
     const x = randRange(34, width - 34);
@@ -25075,7 +25098,7 @@ spawnPartyEnemies = function(){
   if (room <= 0) return;
 
   const remainingToTarget = Math.max(0, rule.target - partyWaveKillsV1726 - alive);
-  const count = Math.min(rule.batch, room, Math.max(1, remainingToTarget));
+  const count = Math.min(1, room, Math.max(1, remainingToTarget)); // ✅ [v.189] 무한 모드 제외: 한 번에는 무조건 1마리만 생성
   const speedBase = 1.0 + Math.min(2.2, Math.max(1, level || 1) * 0.008) + st * 0.018;
   for (let i = 0; i < count; i++) {
     const x = randRange(34, width - 34);
@@ -25444,7 +25467,7 @@ function spawnDimensionInvasionBatchV175(){
   if (room <= 0) return;
 
   const remaining = Math.max(0, getDimensionWaveTargetV175() - getDimensionWaveKillsV175());
-  const count = Math.min(getDimensionWaveSpawnBatchV177(dimensionInvasionWaveV175), room, remaining);
+  const count = Math.min(1, room, remaining); // ✅ [v.189] 디멘션 인베이드도 한 번에는 1마리씩 생성
   if (count <= 0) return;
   const wave = Math.max(1, Math.min(5, dimensionInvasionWaveV175 || 1));
   const speedBase = (1.45 + Math.min(1.35, (level || 1) * 0.006) + (wave - 1) * 0.08) * DIMENSION_INVASION_FALL_SPEED_MULTIPLIER_V178;
@@ -26723,7 +26746,7 @@ function spawnSlimeRushBatchV187(){
   const room = Math.max(0, SLIME_RUSH_MAX_ENEMIES_V187 - alive);
   if (room <= 0) return;
   const remaining = Math.max(0, SLIME_RUSH_TARGET_KILLS_V187 - killed);
-  const count = Math.min(getSlimeRushSpawnPerSecV187(), room, remaining);
+  const count = Math.min(1, room, remaining); // ✅ [v.189] 슬라임 러시도 한 번에는 1마리씩 생성
   const speedBase = 1.15 + Math.min(1.45, Math.max(1, v171SafeNum(level, 1)) * 0.008);
 
   // ✅ [v.187.2] 이번 스폰 묶음의 중심점을 먼저 정하고, 모든 몬스터를 그 주변에 촘촘히 배치
@@ -27420,6 +27443,62 @@ playBgmTrack('title');
 
 requestAnimationFrame(gameLoop);
 })();
+
+
+
+// ===============================
+// ✅ [v.189] 전체 모드 단일 리스폰 규칙
+// - 무한 모드만 기존 한 줄/묶음 스폰 유지
+// - 그 외 스테이지/미션/몬스터 파크/파티 원정/디멘션 인베이드/슬라임 러시/에볼루션은 한 번에 1마리만 생성
+// - 기존 N마리 리스폰 값은 “초당 생성 속도”로만 사용합니다.
+//   예: 2마리 = 0.5초당 1마리, 20마리 = 0.05초당 1마리
+// - 몬스터가 화면에 여러 마리 쌓인 뒤 동시에 처치되면 기존 멀티킬 로직은 그대로 발동합니다.
+// ===============================
+const getStageMonsterSpawnIntervalMsBeforeV189SingleRespawn = getStageMonsterSpawnIntervalMs;
+const getStageMonsterSpawnBatchSizeBeforeV189SingleRespawn = getStageMonsterSpawnBatchSize;
+
+function getSingleRespawnSpeedCountV189(stg){
+  if (gameMode === 'infinite') return 1;
+  try {
+    if (typeof dimensionInvasionActiveV175 !== 'undefined' && dimensionInvasionActiveV175 && typeof getDimensionWaveSpawnBatchV177 === 'function') {
+      return Math.max(1, Math.floor(getDimensionWaveSpawnBatchV177(dimensionInvasionWaveV175) || 1));
+    }
+  } catch(e) {}
+  try {
+    if (typeof slimeRushActiveV187 !== 'undefined' && slimeRushActiveV187 && typeof getSlimeRushSpawnPerSecV187 === 'function') {
+      return Math.max(1, Math.floor(getSlimeRushSpawnPerSecV187() || 1));
+    }
+  } catch(e) {}
+  try {
+    if (typeof partyExpeditionActive !== 'undefined' && partyExpeditionActive) {
+      if (typeof getPartyWaveRuleV1726 === 'function') {
+        const rule = getPartyWaveRuleV1726(Math.max(1, Math.floor(Number(stage) || 1))) || {};
+        return Math.max(1, Math.floor(rule.batch || 1));
+      }
+      if (typeof PARTY_SPAWN_BATCH_V172 !== 'undefined') return Math.max(1, Math.floor(PARTY_SPAWN_BATCH_V172 || 1));
+    }
+  } catch(e) {}
+  try {
+    return Math.max(1, Math.floor(getStageMonsterSpawnBatchSizeBeforeV189SingleRespawn.call(this, stg) || 1));
+  } catch(e) {
+    return 1;
+  }
+}
+
+getStageMonsterSpawnIntervalMs = function(stg){
+  if (gameMode === 'infinite') {
+    return getStageMonsterSpawnIntervalMsBeforeV189SingleRespawn.apply(this, arguments);
+  }
+  const speedCount = Math.max(1, Math.min(20, getSingleRespawnSpeedCountV189.call(this, stg)));
+  return Math.max(50, Math.floor(1000 / speedCount));
+};
+
+getStageMonsterSpawnBatchSize = function(stg){
+  if (gameMode === 'infinite') {
+    return getStageMonsterSpawnBatchSizeBeforeV189SingleRespawn.apply(this, arguments);
+  }
+  return 1;
+};
 
 </script>
 
