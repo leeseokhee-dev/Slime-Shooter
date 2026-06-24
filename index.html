@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.190 Spawn Damage Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.191 HP Attack Curve Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6265,24 +6265,40 @@ let playerStatus = {
   burnTickMs: 5000
 };
 
+// ✅ [v.191] 플레이어 HP 기준점 테이블 + 1레벨 단위 완만한 상승 보간
+// - 사용자가 지정한 기준점 사이를 선형 보간하여 모든 레벨의 최대 HP를 계산
+const PLAYER_HP_POINT_TABLE_V191 = [
+  [1, 50], [10, 100], [20, 300], [30, 500], [40, 750], [50, 1000],
+  [60, 1400], [70, 1800], [80, 2200], [90, 2600], [100, 3000],
+  [110, 4000], [150, 8000], [160, 10000], [180, 14000], [190, 17000],
+  [200, 20000], [210, 25000], [240, 40000], [250, 45000], [260, 50000],
+  [270, 57500], [280, 65000], [290, 80000], [300, 100000]
+];
+
+function interpolatePointTableValue(points, rawValue) {
+  const value = Math.max(1, Math.floor(Number(rawValue) || 1));
+  if (!Array.isArray(points) || points.length <= 0) return 1;
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (value <= first[0]) return Math.round(first[1]);
+  if (value >= last[0]) return Math.round(last[1]);
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[i + 1];
+    if (value >= x1 && value <= x2) {
+      const t = (value - x1) / Math.max(1, x2 - x1);
+      return Math.max(1, Math.round(y1 + (y2 - y1) * t));
+    }
+  }
+
+  return Math.max(1, Math.round(last[1]));
+}
+
 function getPlayerMaxHpByLevel(lv = level) {
   const safeLv = Math.max(1, Math.min(MAX_LEVEL || 300, Math.floor(Number(lv) || 1)));
-  const hp1 = 50;
-  const hp100 = 2400;
-  const hp200 = 55900;
-  const hp300 = 2800000;
-
-  if (safeLv <= 100) {
-    const t = (safeLv - 1) / 99;
-    return Math.max(1, Math.round(hp1 * Math.pow(hp100 / hp1, t)));
-  }
-  if (safeLv <= 200) {
-    const t = (safeLv - 100) / 100;
-    return Math.max(1, Math.round(hp100 * Math.pow(hp200 / hp100, t)));
-  }
-
-  const t = (safeLv - 200) / 100;
-  return Math.max(1, Math.round(hp200 * Math.pow(hp300 / hp200, t)));
+  return interpolatePointTableValue(PLAYER_HP_POINT_TABLE_V191, safeLv);
 }
 
 function getCrystalStagePowerScale(stageValue, kind = 'hp') {
@@ -6326,47 +6342,80 @@ function syncPlayerHealthToLevel(options = {}) {
 }
 
 
-// ✅ [v.190] 스테이지 모드 플레이어 총알 데미지 테이블
-// - 1~300 스테이지를 10스테이지 단위로 고정 데미지 적용
-const STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190 = [
-  5, 22, 73, 197, 381, 784, 1372, 2294, 3256, 4394,
-  6792, 8984, 11296, 13794, 16292, 18790, 22146, 24278, 26385, 28927,
-  43977, 48136, 52364, 56619, 60937, 65027, 69281, 73384, 77487, 81592
+// ✅ [v.192] 플레이어 기본 공격력
+// - 1레벨 기준 5 데미지
+// - 2~10레벨: 레벨당 +5
+// - 11~30레벨: 레벨당 +6
+// - 31~60레벨: 레벨당 +7
+// - 61~100레벨: 레벨당 +8
+// - 101~199레벨: 레벨당 +9
+// - 200레벨부터: 레벨당 +10
+function getPlayerBaseDamageByLevelV192(lv = level){
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL || 300, Math.floor(Number(lv) || 1)));
+  let dmg = 5;
+  for (let l = 2; l <= safeLv; l++) {
+    if (l >= 200) dmg += 10;
+    else if (l >= 101) dmg += 9;
+    else if (l >= 61) dmg += 8;
+    else if (l >= 31) dmg += 7;
+    else if (l >= 11) dmg += 6;
+    else dmg += 5;
+  }
+  return Math.max(1, Math.round(dmg));
+}
+
+// ✅ [v.192] 스테이지 몬스터 체력 곡선
+// - 사용자가 지정한 기준 HP를 우선 적용
+// - 기준점 사이는 1스테이지마다 완만하게 보간
+// - 30스테이지 이후는 사실상 +40, 201스테이지 이후는 +100 흐름과 일치
+const STAGE_MONSTER_HP_POINT_TABLE_V192 = [
+  [1, 25], [5, 85], [6, 119], [10, 179], [11, 250], [15, 310],
+  [16, 434], [20, 494], [21, 692], [25, 752], [26, 1053],
+  [30, 1113], [40, 1513], [100, 3913], [101, 5478],
+  [150, 7438], [200, 9438], [201, 13213], [250, 18113], [300, 23113]
 ];
 
+function getStageMonsterMaxHpV192(stageValue = stage){
+  const targetStage = Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(stageValue) || 1)));
+  return interpolatePointTableValue(STAGE_MONSTER_HP_POINT_TABLE_V192, targetStage);
+}
+
+function getStageBossMaxHpV192(stageValue = stage){
+  return Math.max(1, Math.round(getStageMonsterMaxHpV192(stageValue) * 75));
+}
+
+// 기존 함수명 호환: 스테이지 모드에서도 이제 레벨 기반 공격력 사용
 function getStagePlayerBulletDamageV190(stageValue = stage){
-  const s = Math.max(1, Math.min(300, Math.floor(Number(stageValue) || 1)));
-  const idx = Math.max(0, Math.min(STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190.length - 1, Math.floor((s - 1) / 10)));
-  return STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190[idx];
+  return getPlayerBaseDamageByLevelV192(level);
 }
 
 function getStageMonsterBulletHitsToDeathV190(stageValue = stage){
-  const s = Math.max(1, Math.min(300, Math.floor(Number(stageValue) || 1)));
-  if (s <= 100) {
-    // 초반 1~100: 약 20~25발 사망. 중간값 23발 기준.
-    return 23;
-  }
-  if (s <= 200) {
-    // 중반 101~200: 12발 안팎.
-    return 12;
-  }
-  // 후반 201~300: 7발 안팎.
-  return 7;
+  const hp = getStageMonsterMaxHpV192(stageValue);
+  const dmg = Math.max(1, getPlayerBaseDamageByLevelV192(level));
+  return Math.max(1, Math.ceil(hp / dmg));
+}
+
+// ✅ [v.191] 몬스터 공격력 기준점 테이블 + 1스테이지 단위 완만한 상승 보간
+const STAGE_MONSTER_ATTACK_POINT_TABLE_V191 = [
+  [1, 4], [5, 9], [10, 23], [20, 44], [30, 71], [40, 102], [50, 124],
+  [60, 163], [70, 202], [80, 241], [90, 280], [100, 320],
+  [110, 689], [120, 744], [130, 802], [140, 861], [150, 933], [160, 1004],
+  [170, 1093], [180, 1186], [190, 1307], [200, 1663],
+  [210, 3489], [220, 3702], [230, 3915], [240, 4128], [250, 4443],
+  [260, 4702], [270, 4961], [280, 5220], [290, 5500], [300, 6000]
+];
+
+function getStageMonsterAttackByStageV191(stageValue = stage){
+  const safeStage = Math.max(1, Math.min(300, Math.floor(Number(stageValue) || 1)));
+  return interpolatePointTableValue(STAGE_MONSTER_ATTACK_POINT_TABLE_V191, safeStage);
 }
 
 function getStageMonsterBulletDamageV190(stageValue = stage){
-  const maxHp = Math.max(1, Math.floor(Number(playerMaxHp) || getPlayerMaxHpByLevel(level)));
-  const hits = getStageMonsterBulletHitsToDeathV190(stageValue);
-  return Math.max(1, Math.ceil(maxHp / hits));
+  return getStageMonsterAttackByStageV191(stageValue);
 }
 
 function rollStageDamage(stageLevel = stage) {
-  const safeStage = Math.max(1, Math.floor(Number(stageLevel) || 1));
-  let dmg = 2; // 1레벨 몬스터 기본 데미지
-  for (let i = 2; i <= safeStage; i++) {
-    dmg += randInt(1, 2); // 스테이지가 1 오를 때마다 1~2씩 증가
-  }
-  return dmg;
+  return getStageMonsterAttackByStageV191(stageLevel);
 }
 
 function getPlayerHitDamage(hitInfo = null) {
@@ -6378,12 +6427,12 @@ function getPlayerHitDamage(hitInfo = null) {
     )
   );
 
-  // ✅ [v.190] 스테이지 모드 몬스터 공격 데미지 재조정
-  // - 몬스터 탄환: 플레이어 체력 기준 초반 20~25발, 중반 12발, 후반 7발 안팎 사망
-  // - 몬스터 몸통 접촉: 탄환보다 3배 강함
+  // ✅ [v.191] 스테이지 모드 몬스터 공격 데미지
+  // - 사용자가 지정한 스테이지별 공격력 기준점을 1스테이지 단위로 보간
+  // - 몸통 접촉은 탄환보다 3배 강함
   // - 보스 탄환/접촉은 기존처럼 살짝 더 강하게 보정
   if (gameMode === 'stage') {
-    let dmg = getStageMonsterBulletDamageV190(stageLevel);
+    let dmg = getStageMonsterAttackByStageV191(stageLevel);
     if (hitInfo && hitInfo.contactType === 'enemy') dmg *= 3;
     if (hitInfo && (hitInfo.contactType === 'boss' || hitInfo.fromBoss)) dmg = Math.round(dmg * 1.35);
     if (hitInfo && hitInfo.contactType === 'boss') dmg *= 3;
@@ -9641,7 +9690,7 @@ function getBestStage() {
 
 function getPlayerAttackPower() {
   try {
-    const base = (gameMode === 'stage') ? getStagePlayerBulletDamageV190(stage) : ((typeof BASE_PLAYER_DAMAGE === 'number' ? BASE_PLAYER_DAMAGE : 10) + (Math.max(1, level) - 1) * 10);
+    const base = getPlayerBaseDamageByLevelV192(level);
     const mul = (typeof getBuffMult === 'function') ? getBuffMult('dmg') : 1;
     return Math.round(base * mul * getPetAttackMultiplier());
   } catch(e) {
@@ -14845,7 +14894,7 @@ function shootBullet(currentTime) {
   if (currentTime - lastShotTime < FIRE_INTERVAL) return;
   lastShotTime = currentTime;
 
-  let bulletDamage = (gameMode === 'stage') ? getStagePlayerBulletDamageV190(stage) : (BASE_PLAYER_DAMAGE + (level - 1) * 10);
+  let bulletDamage = getPlayerBaseDamageByLevelV192(level);
   bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier()));
   const shotCount = Math.min(5, 1 + Math.floor(level / 10));
   SFX.shoot();
@@ -14891,7 +14940,7 @@ function shootPetBullet(currentTime) {
   if (currentTime - lastPetShotTime < PET_FIRE_INTERVAL) return;
   lastPetShotTime = currentTime;
 
-  let petDamage = level * 3;
+  let petDamage = Math.max(1, Math.floor(getPlayerBaseDamageByLevelV192(level) * 0.35));
   petDamage = Math.max(1, Math.floor(petDamage * getBuffMult('dmg') * getBuffMult('pet') * getPetAttackMultiplier() * (1 + equipped.star * 0.08)));
 
   const shots = clamp(equipped.star, 1, 5);
@@ -16758,14 +16807,8 @@ function createEnemy(type, x, y, vy, pattern = 'straight', vx = 0, extra = {}) {
         x = clamp(x, size, width - size);
     }
     
-    // [업데이트] HP 계산 로직 분기 (101 스테이지부터 급상승)
-    let hp;
-    if (stage <= 100) {
-        hp = cfg.baseHp + (stage - 1) * 30;
-    } else {
-        // 고수 모드: 기본 3000 + 스테이지별 60 증가
-        hp = cfg.baseHp + 3000 + (stage - 101) * 90;
-    }
+    // ✅ [v.192] 몬스터 HP: 제공 기준값 기반 곡선 적용
+    let hp = getStageMonsterMaxHpV192(stage);
 
     let evo = 1;
 if (stage >= 25) evo = 6;
@@ -16793,7 +16836,6 @@ let finalScore = cfg.score + stageBonus;
 
     // ✅ [v.183] 201~300 스테이지: 크리스탈 슬라임으로 변경 + 체력 소폭 증가
     if (stage >= 201) {
-        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
         size *= 1.10;
         extra = {
           ...extra,
@@ -16817,6 +16859,7 @@ let finalScore = cfg.score + stageBonus;
 
     return {
         type, x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
+        level: stage, stage,
         pattern, hitTimer: 0,
         shootTimer: randRange(1000, 3000),
         ...extra
@@ -16912,18 +16955,8 @@ function createBoss() {
     currentBossLevel = getBossDisplayLevelByStage(stage);
     let evoStage = getBossEvoStageByLevel(currentBossLevel);
 
-    // [수정] HP 계산: 101단계부터는 '고수 모드'에 맞춰 대폭 상향
-    let hp = 300 * stage + (stage - 1) * 60;
-    
-    if (stage >= 101) {
-        // 101부터는 일반 몹 HP가 5000대이므로, 보스는 최소 8만 단위여야 긴장감이 듦
-        hp += 100000 + (stage - 100) * 4000; 
-    }
-
-    // ✅ [v.183] 201~300 크리스탈 보스 구간: 보스 체력도 일반 몬스터와 같은 구간 배율 적용
-    if (stage >= 201) {
-        hp = Math.round(hp * getCrystalStagePowerScale(stage, 'hp'));
-    }
+    // ✅ [v.192] 보스 HP: 해당 스테이지 일반 몬스터 HP의 75배
+    let hp = getStageBossMaxHpV192(stage);
 
     // ✅ [v.76] 특수 보스(팬텀 슬라임): 15스테이지마다 등장(보스 스테이지에서만)
     let kind = 'slime';
