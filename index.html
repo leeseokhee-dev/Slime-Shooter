@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.188 Evolution Mode)</title>
+<title>Slime Shooter - Ultimate Evolution (v.190 Spawn Damage Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6325,6 +6325,41 @@ function syncPlayerHealthToLevel(options = {}) {
   playerHp = Math.max(0, Math.min(nextMax, prevHp + Math.max(0, grown)));
 }
 
+
+// ✅ [v.190] 스테이지 모드 플레이어 총알 데미지 테이블
+// - 1~300 스테이지를 10스테이지 단위로 고정 데미지 적용
+const STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190 = [
+  5, 22, 73, 197, 381, 784, 1372, 2294, 3256, 4394,
+  6792, 8984, 11296, 13794, 16292, 18790, 22146, 24278, 26385, 28927,
+  43977, 48136, 52364, 56619, 60937, 65027, 69281, 73384, 77487, 81592
+];
+
+function getStagePlayerBulletDamageV190(stageValue = stage){
+  const s = Math.max(1, Math.min(300, Math.floor(Number(stageValue) || 1)));
+  const idx = Math.max(0, Math.min(STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190.length - 1, Math.floor((s - 1) / 10)));
+  return STAGE_PLAYER_BULLET_DAMAGE_TABLE_V190[idx];
+}
+
+function getStageMonsterBulletHitsToDeathV190(stageValue = stage){
+  const s = Math.max(1, Math.min(300, Math.floor(Number(stageValue) || 1)));
+  if (s <= 100) {
+    // 초반 1~100: 약 20~25발 사망. 중간값 23발 기준.
+    return 23;
+  }
+  if (s <= 200) {
+    // 중반 101~200: 12발 안팎.
+    return 12;
+  }
+  // 후반 201~300: 7발 안팎.
+  return 7;
+}
+
+function getStageMonsterBulletDamageV190(stageValue = stage){
+  const maxHp = Math.max(1, Math.floor(Number(playerMaxHp) || getPlayerMaxHpByLevel(level)));
+  const hits = getStageMonsterBulletHitsToDeathV190(stageValue);
+  return Math.max(1, Math.ceil(maxHp / hits));
+}
+
 function rollStageDamage(stageLevel = stage) {
   const safeStage = Math.max(1, Math.floor(Number(stageLevel) || 1));
   let dmg = 2; // 1레벨 몬스터 기본 데미지
@@ -6343,6 +6378,18 @@ function getPlayerHitDamage(hitInfo = null) {
     )
   );
 
+  // ✅ [v.190] 스테이지 모드 몬스터 공격 데미지 재조정
+  // - 몬스터 탄환: 플레이어 체력 기준 초반 20~25발, 중반 12발, 후반 7발 안팎 사망
+  // - 몬스터 몸통 접촉: 탄환보다 3배 강함
+  // - 보스 탄환/접촉은 기존처럼 살짝 더 강하게 보정
+  if (gameMode === 'stage') {
+    let dmg = getStageMonsterBulletDamageV190(stageLevel);
+    if (hitInfo && hitInfo.contactType === 'enemy') dmg *= 3;
+    if (hitInfo && (hitInfo.contactType === 'boss' || hitInfo.fromBoss)) dmg = Math.round(dmg * 1.35);
+    if (hitInfo && hitInfo.contactType === 'boss') dmg *= 3;
+    return Math.max(1, Math.round(dmg));
+  }
+
   let dmg = rollStageDamage(stageLevel);
 
   // 보스는 같은 스테이지에서도 더 아프게
@@ -6350,12 +6397,12 @@ function getPlayerHitDamage(hitInfo = null) {
     dmg = Math.round(dmg * 1.35);
   }
 
-  // 몸통 충돌은 탄환보다 조금 더 아프게
+  // 몸통 충돌은 탄환보다 강하게
   if (hitInfo && hitInfo.contactType === 'enemy') {
-    dmg = Math.round(dmg * 1.15);
+    dmg = Math.round(dmg * 3);
   }
   if (hitInfo && hitInfo.contactType === 'boss') {
-    dmg = Math.round(dmg * 1.2);
+    dmg = Math.round(dmg * 3);
   }
 
   // ✅ [v.183] 201~300 크리스탈 슬라임 구간: 몬스터 공격력 소폭 증가
@@ -9594,7 +9641,7 @@ function getBestStage() {
 
 function getPlayerAttackPower() {
   try {
-    const base = (typeof BASE_PLAYER_DAMAGE === 'number' ? BASE_PLAYER_DAMAGE : 10) + (Math.max(1, level) - 1) * 10;
+    const base = (gameMode === 'stage') ? getStagePlayerBulletDamageV190(stage) : ((typeof BASE_PLAYER_DAMAGE === 'number' ? BASE_PLAYER_DAMAGE : 10) + (Math.max(1, level) - 1) * 10);
     const mul = (typeof getBuffMult === 'function') ? getBuffMult('dmg') : 1;
     return Math.round(base * mul * getPetAttackMultiplier());
   } catch(e) {
@@ -14798,7 +14845,7 @@ function shootBullet(currentTime) {
   if (currentTime - lastShotTime < FIRE_INTERVAL) return;
   lastShotTime = currentTime;
 
-  let bulletDamage = BASE_PLAYER_DAMAGE + (level - 1) * 10;
+  let bulletDamage = (gameMode === 'stage') ? getStagePlayerBulletDamageV190(stage) : (BASE_PLAYER_DAMAGE + (level - 1) * 10);
   bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier()));
   const shotCount = Math.min(5, 1 + Math.floor(level / 10));
   SFX.shoot();
@@ -17121,16 +17168,13 @@ if (gameMode === 'stage') {
             isElite = true;
         }
 
-        if (gameMode === 'stage') {
-            // ✅ [v.161.2] 스테이지 모드 전용 부채꼴 등장
-            // 중앙 위쪽에서 펼쳐지듯 내려오며, 무한 모드 한 줄 스폰보다 간격을 살짝 좁게 유지합니다.
-            const mid = (enemyCount - 1) / 2;
-            const t = (enemyCount <= 1) ? 0 : (i - mid) / mid; // -1 ~ 1
-            const fanWidth = Math.min(width * 0.58, 420);
-            x = (width / 2) + t * (fanWidth / 2);
-            y = -42 - (Math.abs(i - mid) * 10);
-            pattern = 'fan';
-            vx = t * (0.45 + Math.min(0.75, stage * 0.006));
+        if (gameMode !== 'infinite') {
+            // ✅ [v.190] 무한 모드를 제외한 모든 일반 몬스터는 1마리씩 랜덤 X 위치에서 위에서 출현
+            // 출현 후에는 아래로 낙하하면서 기존 공격 패턴으로 플레이어를 공격합니다.
+            x = randRange(34, width - 34);
+            y = -42 - Math.random() * 18;
+            pattern = 'rain';
+            vx = randRange(-0.12, 0.12);
         } else if (patternIndex === 0) {
             x = (width / (enemyCount + 1)) * (i + 1);
             y = -40 - i * 8;
@@ -26598,15 +26642,15 @@ try {
 // ===============================
 // ✅ [v.187] 슬라임 러시 모드 추가
 // - LV.5부터 입장, 하루 5회
-// - 10,000마리 처치 시 클리어
-// - 10초마다 초당 스폰 수 +1, 최대 초당 40마리
+// - 4,000마리 처치 시 클리어
+// - 5초마다 초당 스폰 수 +1, 최대 초당 20마리
 // - 보스/골드/상자/EXP 구슬 없이 처치 EXP 중심
 // - 클리어 시 획득 EXP의 25% 추가 지급
 // ===============================
 const SLIME_RUSH_LEVEL_REQ_V187 = 5;
 const SLIME_RUSH_DAILY_LIMIT_V187 = 5;
-const SLIME_RUSH_TARGET_KILLS_V187 = 10000;
-const SLIME_RUSH_MAX_SPAWN_PER_SEC_V187 = 40;
+const SLIME_RUSH_TARGET_KILLS_V187 = 4000;
+const SLIME_RUSH_MAX_SPAWN_PER_SEC_V187 = 20;
 const SLIME_RUSH_SPAWN_STEP_SEC_V187 = 5;
 const SLIME_RUSH_CLEAR_BONUS_RATE_V187 = 0.25;
 const SLIME_RUSH_MAX_ENEMIES_V187 = 80;
@@ -26746,30 +26790,20 @@ function spawnSlimeRushBatchV187(){
   const room = Math.max(0, SLIME_RUSH_MAX_ENEMIES_V187 - alive);
   if (room <= 0) return;
   const remaining = Math.max(0, SLIME_RUSH_TARGET_KILLS_V187 - killed);
-  const count = Math.min(1, room, remaining); // ✅ [v.189] 슬라임 러시도 한 번에는 1마리씩 생성
+  const count = Math.min(1, room, remaining); // ✅ [v.190] 무조건 한 번에 1마리
   const speedBase = 1.15 + Math.min(1.45, Math.max(1, v171SafeNum(level, 1)) * 0.008);
-
-  // ✅ [v.187.2] 이번 스폰 묶음의 중심점을 먼저 정하고, 모든 몬스터를 그 주변에 촘촘히 배치
-  const centerX = randRange(70, width - 70);
-  const centerY = -54 - Math.random() * 18;
-  const spreadX = Math.min(SLIME_RUSH_CLUSTER_SPREAD_X_V187, 18 + count * 1.15);
-  const spreadY = Math.min(SLIME_RUSH_CLUSTER_SPREAD_Y_V187, 10 + count * 0.75);
 
   for (let i = 0; i < count; i++) {
     const idx = slimeRushSpawnIndexV187++;
     const type = ENEMY_TYPES[idx % ENEMY_TYPES.length];
-    const angle = i * 2.399963229728653; // 골든 앵글: 겹침을 줄이면서도 덩어리 유지
-    const radius = Math.sqrt((i + 0.5) / Math.max(1, count));
-    const offsetX = Math.cos(angle) * spreadX * radius + randRange(-5, 5);
-    const offsetY = Math.sin(angle) * spreadY * radius + randRange(-3, 3);
-    const x = Math.max(34, Math.min(width - 34, centerX + offsetX));
-    const y = centerY + offsetY;
-    const vx = randRange(-0.18, 0.18);
+    const x = randRange(34, width - 34);
+    const y = -42 - Math.random() * 18;
+    const vx = randRange(-0.12, 0.12);
     const enemy = createEnemy(type, x, y, speedBase, 'rain', vx, {
       attackStyle: 'none',
       drift: vx,
       _slimeRushEnemy: true,
-      _slimeRushClusterSpawn: true
+      _slimeRushRandomTopSpawn: true
     });
     enemies.push(enemy);
   }
@@ -26805,7 +26839,7 @@ function installSlimeRushModeButtonV187(){
 
   const info = Array.from(body.querySelectorAll('div')).find(el => String(el.innerHTML || '').includes('스테이지 모드:'));
   if (info && !String(info.innerHTML || '').includes('슬라임 러시:')) {
-    info.innerHTML = String(info.innerHTML).replace('몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>', '슬라임 러시: LV.5부터 10,000마리 처치 · 클리어 보너스 25%<br>몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>');
+    info.innerHTML = String(info.innerHTML).replace('몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>', '슬라임 러시: LV.5부터 4,000마리 처치 · 5초마다 스폰 증가 · 최대 초당 20마리 · 클리어 보너스 25%<br>몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>');
   }
 }
 
@@ -26862,7 +26896,7 @@ getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
 
 const getStageMonsterSpawnIntervalMsBeforeV187SlimeRush = getStageMonsterSpawnIntervalMs;
 getStageMonsterSpawnIntervalMs = function(stg){
-  if (slimeRushActiveV187) return 1000;
+  if (slimeRushActiveV187) return Math.max(50, Math.floor(1000 / Math.max(1, getSlimeRushSpawnPerSecV187())));
   return getStageMonsterSpawnIntervalMsBeforeV187SlimeRush.apply(this, arguments);
 };
 
@@ -27499,6 +27533,25 @@ getStageMonsterSpawnBatchSize = function(stg){
   }
   return 1;
 };
+
+
+
+// ===============================
+// ✅ [v.190] 스폰/데미지/슬라임 러시 밸런스 업데이트
+// - 무한 모드 제외: 몬스터 1마리씩 랜덤 X 위치 상단 출현
+// - 스테이지 플레이어 총알 데미지 10스테이지 단위 테이블 적용
+// - 몬스터 탄환/접촉 데미지: 초반 20~25발, 중반 12발, 후반 7발 기준
+// - 슬라임 러시: 5초마다 초당 마릿수 +1, 최대 20마리/초(0.05초 간격)
+// ===============================
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.190 스폰/데미지 밸런스')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(141,255,177,0.35); border-radius:10px; background:rgba(141,255,177,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#8dffb1;">[v.190 스폰/데미지 밸런스]</b><br>무한 모드를 제외한 몬스터는 1마리씩 랜덤한 가로 위치의 상단에서 출현합니다. 스테이지 모드 총알 데미지 테이블과 몬스터 탄환/접촉 데미지를 재조정했으며, 슬라임 러시는 5초마다 초당 마릿수가 증가해 최대 초당 20마리까지 빨라집니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
 
 </script>
 
