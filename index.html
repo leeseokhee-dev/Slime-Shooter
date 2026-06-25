@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.191 HP Attack Curve Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.193 Boss HP Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3159,6 +3159,9 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
         </button>
+        <button id="modeTrainingBtn" class="ui-btn big-btn" style="width:100%; border-color:#a8ffcb; color:#eafff2; background:linear-gradient(to bottom, #145a35, #061f12);">
+            🌱 수련 모드 (LV.10+ · 2분 · 하루 20회)
+        </button>
         <button id="modeAdventureBtn" class="ui-btn big-btn" style="width:100%; border-color:#b8ff7c; color:#efffdc; background:linear-gradient(to bottom, #275a10, #102406);">
             🧭 모험 모드 (LV.25+ · 1~100)
         </button>
@@ -3183,6 +3186,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
+            수련 모드: 5초마다 자동 EXP 획득<br>
             모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
             몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>
             파티 원정: LV.20부터 AI 파티원 3명과 20스테이지 협동 사냥<br>
@@ -4672,6 +4676,7 @@ const closeDungeonBtn = document.getElementById('closeDungeonBtn');
 const modeModal = document.getElementById('modeModal');
 const modeStageBtn = document.getElementById('modeStageBtn');
 const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
+const modeTrainingBtn = document.getElementById('modeTrainingBtn');
 const modeDungeonBtn = document.getElementById('modeDungeonBtn');
 const modeItemParkBtn = document.getElementById('modeItemParkBtn');
 const modeMiniGameBtn = document.getElementById('modeMiniGameBtn');
@@ -5798,17 +5803,30 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'infinite' | 'itempark' | 'minigame' | 'treasure' | 'dungeon'
+let gameMode = 'stage';      // 'stage' | 'infinite' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon'
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
 
 // ===== 아이템 파크 / 미니게임 =====
 const ITEM_PARK_MAX_DAILY_RUNS = 10;
 const MINIGAME_MAX_DAILY_RUNS = 5;
+const TRAINING_MAX_DAILY_RUNS = 20;
 const ITEM_PARK_DURATION_MS = 60 * 1000;
 const MINIGAME_DURATION_MS = 60 * 1000;
+const TRAINING_DURATION_MS = 2 * 60 * 1000;
+const TRAINING_TICK_MS = 5 * 1000;
 
 let parkItems = [];
+let trainingState = {
+  active: false,
+  timeLeft: TRAINING_DURATION_MS,
+  tickAcc: 0,
+  tickCount: 0,
+  expGained: 0,
+  runStartExp: 0,
+  endedNaturally: false,
+  lastGain: 0
+};
 let itemParkState = {
   active: false,
   timeLeft: ITEM_PARK_DURATION_MS,
@@ -6173,6 +6191,7 @@ cosmetic: { mode: 'auto', manual: 'none' },
 dungeon: { dayKey: '', used: 0, unlockedTier: 1 },
 itemPark: { dayKey: '', used: 0 },
 miniGame: { dayKey: '', used: 0 },
+training: { dayKey: '', used: 0 },
 dailyAttendance: { dateKey: '' },
 
 // ✅ 펫 단계(0=없음, 1~5=보유 단계)
@@ -6380,8 +6399,19 @@ function getStageMonsterMaxHpV192(stageValue = stage){
   return interpolatePointTableValue(STAGE_MONSTER_HP_POINT_TABLE_V192, targetStage);
 }
 
+function getStageBossHpMultiplierV193(stageValue = stage){
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(stageValue) || 1)));
+  if (s <= 10) return 10;       // 아기 슬라임
+  if (s <= 20) return 15;       // 어린이 슬라임
+  if (s <= 30) return 25;       // 청소년 슬라임
+  if (s <= 50) return 37;       // 왕 슬라임
+  if (s <= 100) return 50;      // 신 슬라임
+  if (s <= 200) return 75;      // 우주 슬라임
+  return 100;                   // 크리스탈 슬라임
+}
+
 function getStageBossMaxHpV192(stageValue = stage){
-  return Math.max(1, Math.round(getStageMonsterMaxHpV192(stageValue) * 75));
+  return Math.max(1, Math.round(getStageMonsterMaxHpV192(stageValue) * getStageBossHpMultiplierV193(stageValue)));
 }
 
 // 기존 함수명 호환: 스테이지 모드에서도 이제 레벨 기반 공격력 사용
@@ -8208,7 +8238,11 @@ if (!saveData.dungeon || typeof saveData.dungeon !== 'object') saveData.dungeon 
 if (typeof saveData.dungeon.dayKey !== 'string') saveData.dungeon.dayKey = '';
 if (typeof saveData.dungeon.used !== 'number') saveData.dungeon.used = 0;
 if (typeof saveData.dungeon.unlockedTier !== 'number' || saveData.dungeon.unlockedTier < 1) saveData.dungeon.unlockedTier = 1;
+if (!saveData.training || typeof saveData.training !== 'object') saveData.training = { dayKey: '', used: 0 };
+if (typeof saveData.training.dayKey !== 'string') saveData.training.dayKey = '';
+if (typeof saveData.training.used !== 'number' || !isFinite(saveData.training.used)) saveData.training.used = 0;
 ensureDungeonDailyReset();
+ensureTrainingDailyReset();
 
 // ✅ [추가] 시즌/의상 저장값 보정(구버전 호환)
 if (!saveData.cosmetic || typeof saveData.cosmetic !== 'object') {
@@ -11953,6 +11987,26 @@ if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
   startInfiniteMode();
 });
 
+if (modeTrainingBtn) modeTrainingBtn.addEventListener('click', () => {
+  if (level < 10) {
+    alert(`수련 모드는 LV.10부터 입장 가능합니다.
+(현재 LV.${level})`);
+    return;
+  }
+  ensureTrainingDailyReset();
+  const used = Math.max(0, Number(saveData?.training?.used || 0));
+  if (used >= TRAINING_MAX_DAILY_RUNS) {
+    alert(`수련 모드는 하루 ${TRAINING_MAX_DAILY_RUNS}회까지 입장할 수 있습니다.`);
+    return;
+  }
+  if (!saveData.training) saveData.training = { dayKey: getLocalDateKey(), used: 0 };
+  saveData.training.used = used + 1;
+  saveGameDataDebounced();
+  gameMode = 'training';
+  modeModal.classList.add('hidden');
+  startTrainingMode();
+});
+
 
 function renderMiniGameSelect() {
   if (!miniGameSelectList) return;
@@ -12055,6 +12109,130 @@ if (closeDungeonBtn) closeDungeonBtn.addEventListener('click', () => {
   dungeonModal.classList.add('hidden');
 });
 
+
+
+// ===============================
+// ✅ [v.194] 수련 모드
+// - LV.10부터 입장, 2분 동안 5초마다 자동 EXP 지급
+// - 몬스터/보스 없이 진행, 하루 20회 제한
+// ===============================
+function startTrainingMode() {
+  gameMode = 'training';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  playBgmTrack('game');
+  startGame(1);
+}
+
+function initTrainingRun() {
+  trainingState.active = true;
+  trainingState.timeLeft = TRAINING_DURATION_MS;
+  trainingState.tickAcc = 0;
+  trainingState.tickCount = 0;
+  trainingState.expGained = 0;
+  trainingState.runStartExp = exp;
+  trainingState.endedNaturally = false;
+  trainingState.lastGain = 0;
+  enemies = [];
+  boss = null;
+  bossSpawned = false;
+  stageCleared = false;
+  enemyBullets = [];
+  bullets = [];
+  expItems = [];
+  goldDrops = [];
+  fieldItems = [];
+  stageRunStartTime = performance.now();
+}
+
+function getTrainingPercentRange(lv) {
+  lv = Math.max(1, Math.floor(Number(lv) || 1));
+  if (lv >= 200) return [0.0018, 0.0022];
+  if (lv >= 101) return [0.10, 0.40];
+  if (lv >= 61) return [0.50, 1.50];
+  if (lv >= 30) return [1.00, 3.00];
+  if (lv >= 10) return [5.00, 7.00];
+  return [0, 0];
+}
+
+function calcTrainingTickExp() {
+  if (level >= MAX_LEVEL) return 0;
+  const curLv = Math.max(1, Math.min(MAX_LEVEL - 1, Math.floor(level || 1)));
+  const needed = Math.max(1, Number(EXP_TABLE?.[curLv]?.needed || 1));
+  const range = getTrainingPercentRange(curLv);
+  const pct = range[0] + Math.random() * Math.max(0, range[1] - range[0]);
+  return Math.max(1, Math.floor(needed * (pct / 100)));
+}
+
+function grantTrainingTickExp() {
+  if (!trainingState.active || state !== 'playing') return;
+  const amount = calcTrainingTickExp();
+  if (amount <= 0) return;
+  const beforeExp = Math.max(0, Number(exp || 0));
+  addExpDirect(amount);
+  const gained = Math.max(0, Math.floor((Number(exp || 0) - beforeExp)));
+  trainingState.lastGain = gained;
+  trainingState.expGained += gained;
+  trainingState.tickCount += 1;
+  try { spawnDamageText(width / 2, height * 0.35, `수련 EXP +${formatNumber(gained)}`, '#a8ffcb', true); } catch(e) {}
+  try { showToast(`🌱 수련 EXP +${formatNumber(gained)}`, '#a8ffcb', 900); } catch(e) {}
+}
+
+function updateTrainingMode(dt) {
+  if (!trainingState.active) initTrainingRun();
+  trainingState.timeLeft = Math.max(0, trainingState.timeLeft - dt);
+  trainingState.tickAcc += dt;
+  if (levelUpTimer > 0) levelUpTimer -= dt;
+  updatePlayerStatusEffects(dt);
+  handlePlayerMovement(dt);
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  updatePetProduction(dt);
+  while (trainingState.tickAcc >= TRAINING_TICK_MS) {
+    trainingState.tickAcc -= TRAINING_TICK_MS;
+    grantTrainingTickExp();
+  }
+  if (trainingState.timeLeft <= 0) finishTrainingMode(true);
+}
+
+function finishTrainingMode(natural = true) {
+  if (!trainingState.active) return;
+  trainingState.active = false;
+  trainingState.endedNaturally = !!natural;
+  enemies = [];
+  boss = null;
+  enemyBullets = [];
+  bullets = [];
+  saveGameData();
+  gameOver();
+}
+
+function drawTrainingOverlay() {
+  if (gameMode !== 'training' || state !== 'playing') return;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(0,0,0,0.38)';
+  if (ctx.roundRect) ctx.roundRect(width * 0.18, 28, width * 0.64, 92, 18);
+  else ctx.rect(width * 0.18, 28, width * 0.64, 92);
+  ctx.fill();
+  ctx.font = `900 28px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#a8ffcb';
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 5;
+  ctx.strokeText('🌱 수련 모드', width / 2, 58);
+  ctx.fillText('🌱 수련 모드', width / 2, 58);
+  ctx.font = `900 16px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  const text = `남은 시간 ${formatMMSS(trainingState.timeLeft || 0)} · 획득 EXP ${formatNumber(trainingState.expGained || 0)}`;
+  ctx.strokeText(text, width / 2, 91);
+  ctx.fillText(text, width / 2, 91);
+  ctx.font = `800 13px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#d8ffe8';
+  const next = Math.max(0, Math.ceil((TRAINING_TICK_MS - (trainingState.tickAcc || 0)) / 1000));
+  ctx.fillText(`다음 수련 보상까지 ${next}초`, width / 2, 112);
+  ctx.restore();
+}
 
 // ===============================
 // ✅ [v.170] 보물 슬라임 러시 모드
@@ -12375,6 +12553,7 @@ function startInfiniteMode() {
 function startMissionMode() {
   missionState.currentStage = 1;
   missionState.bonusActive = false;
+if (trainingState) trainingState.active = false;
   missionState.bonusTimeLeft = MISSION_BONUS_STAGE_DURATION_MS;
   missionState.bonusSpawnAcc = 0;
   missionState.bonusSpawnBatchAcc = 0;
@@ -12498,6 +12677,16 @@ function ensureMiniGameDailyReset() {
   if (saveData.miniGame.dayKey !== todayKey) {
     saveData.miniGame.dayKey = todayKey;
     saveData.miniGame.used = 0;
+    saveGameDataDebounced();
+  }
+}
+
+function ensureTrainingDailyReset() {
+  if (!saveData.training) saveData.training = { dayKey: '', used: 0 };
+  const todayKey = getLocalDateKey();
+  if (saveData.training.dayKey !== todayKey) {
+    saveData.training.dayKey = todayKey;
+    saveData.training.used = 0;
     saveGameDataDebounced();
   }
 }
@@ -16955,7 +17144,7 @@ function createBoss() {
     currentBossLevel = getBossDisplayLevelByStage(stage);
     let evoStage = getBossEvoStageByLevel(currentBossLevel);
 
-    // ✅ [v.192] 보스 HP: 해당 스테이지 일반 몬스터 HP의 75배
+    // ✅ [v.193] 보스 HP: 보스 종류/스테이지 구간별 배율 적용
     let hp = getStageBossMaxHpV192(stage);
 
     // ✅ [v.76] 특수 보스(팬텀 슬라임): 15스테이지마다 등장(보스 스테이지에서만)
@@ -18051,6 +18240,7 @@ if (gameMode === 'dungeon') startDungeon();
 else if (gameMode === 'itempark') initItemParkRun();
 else if (gameMode === 'minigame') initMiniGameRun();
 else if (gameMode === 'treasure') initTreasureRushRun();
+else if (gameMode === 'training') initTrainingRun();
 else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
@@ -18119,6 +18309,15 @@ restartBtn.addEventListener('click', () => {
     }
   } else if (gameMode === 'treasure') {
     startTreasureRushMode();
+  } else if (gameMode === 'training') {
+    ensureTrainingDailyReset();
+    if (Number(saveData?.training?.used || 0) >= TRAINING_MAX_DAILY_RUNS) {
+      goToTitle();
+    } else {
+      saveData.training.used = Number(saveData?.training?.used || 0) + 1;
+      saveGameDataDebounced();
+      startTrainingMode();
+    }
   } else {
     startGame(1);
   }
@@ -18494,10 +18693,11 @@ function updateGameOverModal() {
   const isItemPark = gameMode === 'itempark';
   const isMiniGame = gameMode === 'minigame';
   const isTreasure = gameMode === 'treasure';
+  const isTraining = gameMode === 'training';
   const levelText = `LV.${formatNumber(level || 1)}`;
 
   if (gameOverModeTextEl) {
-    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드')))));
+    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isTraining ? '수련 모드' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드'))))));
   }
   if (gameOverLevelTextEl) gameOverLevelTextEl.textContent = levelText;
 
@@ -18547,6 +18747,18 @@ function updateGameOverModal() {
     setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '획득 보석', `${formatNumber(treasureRushState.gemsGained || 0)}개`, { color: '#7ce7ff' });
     setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', formatNumber(treasureRushState.expGained || 0), { color: '#aef' });
     setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '최고 기록', `${formatNumber(getTreasureRushBestKills())}마리`, { color: '#fff0c2' });
+    return;
+  }
+
+  if (isTraining) {
+    if (gameOverTitleEl) gameOverTitleEl.textContent = 'TRAINING CLEAR';
+    if (gameOverTitleEl) gameOverTitleEl.style.color = '#a8ffcb';
+    if (gameOverDescEl) gameOverDescEl.textContent = trainingState.endedNaturally ? '2분 수련이 완료되었습니다.' : '수련이 종료되었습니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `수련 ${formatNumber(trainingState.tickCount || 0)}회 진행`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '획득 EXP', formatNumber(trainingState.expGained || 0), { color: '#a8ffcb' });
+    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '진행 시간', formatMMSS(TRAINING_DURATION_MS - Math.max(0, trainingState.timeLeft || 0)));
+    setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '남은 횟수', `${Math.max(0, TRAINING_MAX_DAILY_RUNS - Number(saveData?.training?.used || 0))}회`);
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '최근 획득', `+${formatNumber(trainingState.lastGain || 0)} EXP`, { color: '#d8ffe8' });
     return;
   }
 
@@ -18689,6 +18901,11 @@ function update(dt, currentTime) {
   }
   if (gameMode === 'treasure') {
     updateTreasureRush(dt, currentTime);
+    updateHUD();
+    return;
+  }
+  if (gameMode === 'training') {
+    updateTrainingMode(dt);
     updateHUD();
     return;
   }
@@ -19830,7 +20047,7 @@ scoreEl.textContent = '점수: ' + formatNumber(score);
 highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
   // ✅ 스테이지 모드에서는 점수 UI 숨김 (무한 모드에서만 표시)
-  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame' || gameMode === 'treasure');
+  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame' || gameMode === 'treasure' || gameMode === 'training');
   if (scoreEl) scoreEl.style.display = showScoreUI ? '' : 'none';
   if (highScoreEl) highScoreEl.style.display = showScoreUI ? '' : 'none';
   if (gameMode === 'mission') {
@@ -19850,6 +20067,9 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
   } else if (gameMode === 'treasure') {
     if (scoreEl) scoreEl.textContent = '처치 수: ' + formatNumber(treasureRushState.kills || 0);
     if (highScoreEl) highScoreEl.textContent = `획득: ${formatNumber(treasureRushState.goldGained || 0)}G · 보석 ${formatNumber(treasureRushState.gemsGained || 0)}`;
+  } else if (gameMode === 'training') {
+    if (scoreEl) scoreEl.textContent = `수련 EXP: ${formatNumber(trainingState.expGained || 0)}`;
+    if (highScoreEl) highScoreEl.textContent = `틱 ${formatNumber(trainingState.tickCount || 0)}회 · 최근 +${formatNumber(trainingState.lastGain || 0)}`;
   }
 
   if (goldEl) goldEl.textContent = '골드: ' + formatNumber(gold);
@@ -19902,6 +20122,9 @@ if (gameMode === 'dungeon') {
   stageEl.textContent = `미니게임 · ${getMiniGameTypeLabel(miniGameState.type)} · 최고 ${formatNumber(miniGameState.bestCombo || 0)}콤보 · 남은 ${left}회`;
 } else if (gameMode === 'treasure') {
   stageEl.textContent = `보물 슬라임 러시 · 남은 ${formatMMSS(treasureRushState.timeLeft || 0)} · 최고 ${formatNumber(getTreasureRushBestKills())}`;
+} else if (gameMode === 'training') {
+  const left = Math.max(0, TRAINING_MAX_DAILY_RUNS - Number(saveData?.training?.used || 0));
+  stageEl.textContent = `수련 모드 · 남은 ${formatMMSS(trainingState.timeLeft || 0)} · 오늘 ${left}회 남음`;
 } else {
   if (gameMode === 'stage') {
     const t = getStageKillTarget(stage);
@@ -19933,6 +20156,9 @@ if (hotTimeEl) {
     } else if (gameMode === 'treasure') {
       hotTimeEl.textContent = `💰 보물 러시 · EXP ${formatNumber(treasureRushState.expGained || 0)} · 남은 ${formatMMSS(treasureRushState.timeLeft || 0)}`;
       hotTimeEl.style.color = '#ffd86b';
+    } else if (gameMode === 'training') {
+      hotTimeEl.textContent = `🌱 자동 수련 · 5초마다 EXP · 남은 ${formatMMSS(trainingState.timeLeft || 0)}`;
+      hotTimeEl.style.color = '#a8ffcb';
     } else if (gameMode === 'mission') {
       hotTimeEl.textContent = isMissionBonusStage(stage)
         ? `🎁 보너스 스테이지 · 남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}`
@@ -21779,6 +22005,7 @@ requestAnimationFrame(gameLoop);
     // ✅ 튜토리얼/스킬 해금 안내(오버레이)
     drawTutorialOverlay();
     drawActiveBuffPanel();
+    drawTrainingOverlay();
 
     drawInfiniteBossCountdown();
 
