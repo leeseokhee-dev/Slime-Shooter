@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.193 Boss HP Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.191.1 Crystal Bullet Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -19322,10 +19322,19 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
                 const dx = player.x - e.x;
                 const dy = player.y - e.y;
 
-                // ✅ 탄속: 스테이지가 오를수록 증가, 101+ 구간은 완만하게
-                let speed = (stage >= 101)
-                  ? (2.6 + (stage - 100) * 0.035)
-                  : (2.4 + stage * 0.045);
+                // ✅ [v.191.1] 몬스터 탄속 보정
+                // - 101~200 구간은 기존처럼 완만하게 증가
+                // - 201~300 크리스탈 슬라임 구간은 201스테이지에서 다시 느리게 시작
+                //   101스테이지와 비슷한 체감으로 출발한 뒤, 후반으로 갈수록 점차 빨라짐
+                let speed;
+                if (stage <= 100) {
+                  speed = 2.4 + stage * 0.045;
+                } else if (stage <= 200) {
+                  speed = 2.6 + (stage - 100) * 0.035;
+                } else {
+                  const t = clamp((stage - 201) / 99, 0, 1);
+                  speed = 2.65 + t * 2.05; // 201: 2.65 → 300: 4.70
+                }
 
                 // ✅ 패턴별 발사체 구성
                 if (style === 'radial') {
