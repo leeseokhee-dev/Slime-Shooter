@@ -5805,9 +5805,9 @@ let autoBackgroundPaused = false;
 // ===== 모드 =====
 let gameMode = 'stage';      // 'stage' | 'infinite' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon'
 
-// ✅ [v.194.1] 10마리 묶음형 리스폰 적용 대상
+// ✅ [v.194.2] 5마리 묶음형 리스폰 적용 대상
 // - 무한 모드와 던전 모드는 기존 스폰 시스템 유지
-// - 나머지 일반 몬스터 사용 모드는 화면에 몬스터가 모두 사라진 뒤 다음 10마리 생성
+// - 나머지 일반 몬스터 사용 모드는 화면에 몬스터가 모두 사라진 뒤 다음 5마리 생성
 function useTenMonsterBatchRespawn() {
   return gameMode !== 'infinite' && gameMode !== 'dungeon';
 }
@@ -17303,7 +17303,7 @@ function spawnNextWave() {
       }
     }
 
-    // ✅ [v.194.1] 무한/던전을 제외한 모드: 기존 시간 누적 스폰 대신 10마리 묶음 리스폰
+    // ✅ [v.194.2] 무한/던전을 제외한 모드: 기존 시간 누적 스폰 대신 5마리 묶음 리스폰
     // 화면에 남은 몬스터가 1마리라도 있으면 새 몬스터를 만들지 않습니다.
     // 바닥 밑으로 완전히 사라진 몬스터는 updateEnemies()에서 제거되고, 이후 다음 묶음이 생성됩니다.
     if (useTenMonsterBatchRespawn() && enemies.length > 0) return;
@@ -17396,11 +17396,11 @@ if (gameMode === 'stage') {
       enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
     }
 
-    // ✅ [v.194.1] 무한/던전을 제외한 모드: 10마리 고정 묶음형 리스폰
-    // 기존 시간 리스폰(0.5초/1초 등)은 사용하지 않고, 화면의 10마리가 전부 처치되거나
-    // 바닥 밑으로 완전히 사라져 제거된 뒤에만 다음 10마리를 생성합니다.
+    // ✅ [v.194.2] 무한/던전을 제외한 모드: 5마리 고정 묶음형 리스폰
+    // 기존 시간 리스폰(0.5초/1초 등)은 사용하지 않고, 화면의 5마리가 전부 처치되거나
+    // 바닥 밑으로 완전히 사라져 제거된 뒤에만 다음 5마리를 생성합니다.
     if (useTenMonsterBatchRespawn()) {
-      enemyCount = 10;
+      enemyCount = 5;
     }
 
     // ✅ [v.117 패치] 1웨이브 최대 제한(피버 중에는 조금 완화)
@@ -17409,7 +17409,7 @@ if (gameMode === 'stage') {
     }
 
     // ✅ [v.101/v.154.2/v.194.1] 화면 내 몬스터 과밀 방지
-    const MAX_ENEMIES_ON_SCREEN = useTenMonsterBatchRespawn() ? 10 : ((gameMode === 'stage') ? 20 : ((gameMode === 'mission') ? 55 : 70));
+    const MAX_ENEMIES_ON_SCREEN = useTenMonsterBatchRespawn() ? 5 : ((gameMode === 'stage') ? 20 : ((gameMode === 'mission') ? 55 : 70));
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
@@ -19117,7 +19117,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
         }
       }
     } else if (useTenMonsterBatchRespawn()) {
-      // ✅ [v.194.1] 무한/던전 제외: 시간 리스폰 제거, 10마리 전멸/이탈 후 다음 10마리 생성
+      // ✅ [v.194.2] 무한/던전 제외: 시간 리스폰 제거, 5마리 전멸/이탈 후 다음 5마리 생성
       if (!bossSpawned && !(bossIntro && bossIntro.active) && !stageCleared && enemies.length === 0) {
         missionState.spawnAcc = 0;
         stageWaveSpawnAcc = 0;
