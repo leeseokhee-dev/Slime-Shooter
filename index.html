@@ -25368,6 +25368,7 @@ try {
 // - 다음 웨이브 대기 시간 5초
 // - 몬스터 리스폰 0.6초 간격
 // - 괄호 값은 1회 리스폰 수
+// - v.193.1: 파티 원정은 1초마다 웨이브별 N마리 동시 생성
 // ===============================
 const PARTY_WAVE_RULES_V1726 = [
   { target:30, batch:3 },
@@ -25390,7 +25391,7 @@ const PARTY_WAVE_RULES_V1726 = [
   { target:175, batch:10 },
   { target:200, batch:10 }
 ];
-const PARTY_SPAWN_INTERVAL_MS_V1726 = 600; // ✅ [v.185] 파티 원정: 0.6초당 N마리
+const PARTY_SPAWN_INTERVAL_MS_V1726 = 1000; // ✅ [v.193.1] 파티 원정: 1초마다 웨이브별 N마리 동시 생성
 const PARTY_NEXT_WAVE_WAIT_MS_V1726 = 5000;
 let partyWaveKillsV1726 = 0;
 let partyWaveSpawnedV1726 = 0;
@@ -25436,7 +25437,7 @@ spawnPartyEnemies = function(){
   if (room <= 0) return;
 
   const remainingToTarget = Math.max(0, rule.target - partyWaveKillsV1726 - alive);
-  const count = Math.min(1, room, Math.max(1, remainingToTarget)); // ✅ [v.189] 무한 모드 제외: 한 번에는 무조건 1마리만 생성
+  const count = Math.min(Math.max(1, Math.floor(rule.batch || 1)), room, Math.max(1, remainingToTarget)); // ✅ [v.193.1] 파티 원정 한정: 1초마다 웨이브별 N마리 동시 생성
   const speedBase = 1.0 + Math.min(2.2, Math.max(1, level || 1) * 0.008) + st * 0.018;
   for (let i = 0; i < count; i++) {
     const x = randRange(34, width - 34);
