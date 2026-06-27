@@ -17080,45 +17080,17 @@ function getBossDisplayLevelByStage(stageValue) {
 
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    // ✅ [v.154/v.169] 보스 EXP: 5스테이지 단위 구간 × 현재 스테이지 레벨
-    const table = [
-        [5, 10], [10, 36], [15, 107], [20, 230], [25, 496],
-        [30, 525], [35, 556], [40, 587], [45, 1113], [50, 1145],
-        [55, 1177], [60, 1209], [65, 2648], [70, 2701], [75, 2754],
-        [80, 2809], [85, 6000], [90, 6101], [95, 6202], [100, 6303],
-        [105, 3591], [110, 3616], [115, 3644], [120, 3673], [125, 7411],
-        [130, 7494], [135, 7553], [140, 7622], [145, 15446], [150, 15583],
-        [155, 15741], [160, 15905], [165, 32004], [170, 32309], [175, 32610],
-        [180, 32937], [185, 67130], [190, 67715], [195, 68301], [200, 68876]
+    const bands = [
+      [1,5,10],[6,15,25],[16,20,72],[21,40,221],[41,60,449],
+      [61,80,916],[81,100,1846],[101,120,3928],[121,140,8007],
+      [141,160,16245],[161,180,33697],[181,200,68198],
+      [201,220,143795],[221,240,312894],[241,260,641883],
+      [261,280,1362141],[281,300,2859337]
     ];
-    for (const [maxLv, expPerLevel] of table) {
-        if (lv <= maxLv) return lv * expPerLevel;
+    for (const [a,b,per] of bands){
+      if(lv>=a && lv<=b) return lv*per;
     }
-
-    // ✅ [v.192.2] 201~300 크리스탈 보스 EXP 기준표
-    // 201: 13,291,294 / 221: 35,567,138 / 241: 97,981,749
-    // 261: 209,518,425 / 281: 434,381,596 / 300: 875,198,374
-    // 중간 스테이지는 각 기준점 사이를 부드럽게 이어서 계산합니다.
-    const crystalBossExpAnchors = [
-        [201, 13291294],
-        [221, 35567138],
-        [241, 97981749],
-        [261, 209518425],
-        [281, 434381596],
-        [300, 875198374]
-    ];
-    for (let i = 0; i < crystalBossExpAnchors.length; i++) {
-        if (lv === crystalBossExpAnchors[i][0]) return crystalBossExpAnchors[i][1];
-    }
-    for (let i = 0; i < crystalBossExpAnchors.length - 1; i++) {
-        const [fromStage, fromExp] = crystalBossExpAnchors[i];
-        const [toStage, toExp] = crystalBossExpAnchors[i + 1];
-        if (lv >= fromStage && lv <= toStage) {
-            const t = (lv - fromStage) / Math.max(1, toStage - fromStage);
-            return Math.max(1, Math.round(fromExp * Math.pow(toExp / fromExp, t)));
-        }
-    }
-    return 75198374;
+    return lv;
 }
 
 function getStageMonsterExpReward(stageValue) {
