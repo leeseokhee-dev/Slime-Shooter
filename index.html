@@ -2744,7 +2744,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 #expWrapper::after{
   background:
     repeating-linear-gradient(90deg,
-      rgba(255,255,255,0.70) 0 2px,
+      rgba(255,255,255,0.95) 0 1px,
       rgba(255,255,255,0.00) 1px 10%
     ) !important;
   mix-blend-mode:screen !important;
@@ -17081,11 +17081,11 @@ function getBossDisplayLevelByStage(stageValue) {
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     const bands = [
-      [1,5,10],[6,15,25],[16,20,72],[21,40,221],[41,60,449],
-      [61,80,916],[81,100,1846],[101,120,3928],[121,140,8007],
-      [141,160,16245],[161,180,33697],[181,200,68198],
-      [201,220,143795],[221,240,312894],[241,260,641883],
-      [261,280,1362141],[281,300,2859337]
+      [1,5,10],[6,15,43],[16,20,109],[21,40,235],[41,60,498],
+      [61,80,1023],[81,100,2109],[101,120,2704],[121,140,5501],
+      [141,160,11245],[161,180,23697],[181,200,48198],
+      [201,220,73795],[221,240,152894],[241,260,321883],
+      [261,280,662141],[281,300,1419337]
     ];
     for (const [a,b,per] of bands){
       if(lv>=a && lv<=b) return lv*per;
