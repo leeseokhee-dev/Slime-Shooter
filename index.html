@@ -3272,7 +3272,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
           <div id="stageClearExpValueWrap">
             <div id="stageClearExpLabel">획득 경험치</div>
             <span id="stageClearExpText">+0</span>
-            <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 구슬 0 · 클리어 보너스 +0</div>
+            <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 보너스 구슬 0</div>
             <div id="stageClearPetBonusRow">
               <div id="stageClearPetBonusTitle">장착 펫 보너스</div>
               <div id="stageClearPetBonusText">EXP +0% · 골드 +0% · 점수 +0% · 공격력 +0%</div>
@@ -6278,7 +6278,26 @@ let infiniteWaveSpawnAcc = 0; // 무한 모드 전용: 1.5초마다 새 줄 강�
 let stageWaveSpawnAcc = 0; // ✅ [v.154.3] 스테이지 모드: 목표 마릿수별 생성 간격 누적
 
 // ✅ [v.79] 스테이지 클리어 연출: 3초(보너스 EXP + 랭크) → 결과 모달
-let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D', formulaText: '', formulaText2: '' };
+let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D', formulaText: '', formulaText2: '', hasBonusStage: false, resultExp: 0 };
+let stageBonusState = {
+  active: false,
+  countdownMs: 0,
+  timeLeft: 0,
+  spawnAcc: 0,
+  bonusExp: 0,
+  rank: 'D',
+  resultExp: 0,
+  baseMonsterExp: 0
+};
+const STAGE_BONUS_CHANCE = 0.20;
+const STAGE_BONUS_COUNTDOWN_MS = 4000;
+const STAGE_BONUS_DURATION_MS = 15000;
+const STAGE_BONUS_SPAWN_INTERVAL_MS = 200;
+const STAGE_BONUS_EXP_GRADES = {
+  low:  { label: '하', mult: 0.50, color: '#44ffb8', r: 10 },
+  mid:  { label: '중', mult: 1.50, color: '#66aaff', r: 12 },
+  high: { label: '상', mult: 3.00, color: '#ffd700', r: 14 }
+};
 let missionAutoAdvanceTimer = null;
 function clearMissionAutoAdvanceTimer() {
   if (missionAutoAdvanceTimer) { clearTimeout(missionAutoAdvanceTimer); missionAutoAdvanceTimer = null; }
@@ -6625,13 +6644,9 @@ function checkStageKillClearNow() {
   }
 
   // ===== 클리어 공통 처리 =====
-  // ✅ 보스 처치 직후에는 1.0초 뒤에 클리어 연출(박스) 시작
-  stageTransitionTimer = 1000; // ✅ 몬스터/보스 클리어 공통: 1초 뒤 클리어 연출(보너스 EXP 박스) 시작
-
-  enemies.length = 0;
-  enemyBullets.length = 0;
-  boss = null;
-  bossSpawned = false;
+  // ✅ 클리어 즉시 결과/보너스 판정으로 넘어가며, 화면에 남은 전투 오브젝트는 모두 제거
+  stageTransitionTimer = 0;
+  clearStageCombatObjects({ clearDrops: false });
 
   spawnExplosion(width/2, height/3, 'rgba(255, 240, 150, 1)', 25);
   if (SFX && SFX.stageClear) SFX.stageClear();
@@ -6712,6 +6727,38 @@ let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
 let goldDrops = []; // ✅ [v.79] 무한 모드 전용 골드 드랍(수동 획득)
 let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 10줄)
+
+// ✅ [v.196 bonus] 스테이지 클리어/보너스 진입 시 전투 오브젝트 즉시 정리
+// - 클리어 후 플레이어만 움직이고 총알/적탄이 남는 어색함 방지
+function clearStageCombatObjects(options = {}) {
+  const clearDrops = !!options.clearDrops;
+
+  if (Array.isArray(enemies)) enemies.length = 0;
+  if (Array.isArray(enemyBullets)) enemyBullets.length = 0;
+  if (Array.isArray(bullets)) bullets.length = 0;
+  if (Array.isArray(petBullets)) petBullets.length = 0;
+  if (Array.isArray(pet2Bullets)) pet2Bullets.length = 0;
+  if (Array.isArray(petSkillProjectiles)) petSkillProjectiles.length = 0;
+  if (Array.isArray(petSkillStreams)) petSkillStreams.length = 0;
+  if (Array.isArray(petSkillBursts)) petSkillBursts.length = 0;
+  if (Array.isArray(lasers)) lasers.length = 0;
+  if (Array.isArray(bubbles)) bubbles.length = 0;
+  if (Array.isArray(meteors)) meteors.length = 0;
+  if (Array.isArray(lightningFx)) lightningFx.length = 0;
+
+  lightningStorm = null;
+  quake = null;
+  try { blizzard = null; } catch(e) {}
+  try { bubble = null; } catch(e) {}
+  boss = null;
+  bossSpawned = false;
+
+  if (clearDrops) {
+    if (Array.isArray(expItems)) expItems.length = 0;
+    if (Array.isArray(goldDrops)) goldDrops.length = 0;
+    if (Array.isArray(fieldItems)) fieldItems.length = 0;
+  }
+}
 const GAIN_MESSAGE_MAX = 10;
 const GAIN_MESSAGE_DURATION = 2000;
 const GAIN_MESSAGE_MIN_DURATION = 100;
@@ -8096,7 +8143,7 @@ function tryPickupExpItems() {
       it.x, it.y, it.r
     )) {
       const hotMult = getHotMultiplier() * getFeverExpMultiplier();
-      const baseExp = Math.max(0, Math.floor(it.baseExp * (it.gradeMult || 1)));
+      const baseExp = Math.max(0, it.roundReward ? Math.round(it.baseExp * (it.gradeMult || 1)) : Math.floor(it.baseExp * (it.gradeMult || 1)));
       const gained = Math.floor(baseExp * hotMult);
       if (gained > 0) {
         if (gameMode === 'mission') {
@@ -17081,11 +17128,11 @@ function getBossDisplayLevelByStage(stageValue) {
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     const bands = [
-      [1,5,10],[6,15,43],[16,20,152],[21,40,311],[41,60,637],
-      [61,80,1305],[81,100,2639],[101,120,5324],[121,140,10783],
-      [141,160,21634],[161,180,43481],[181,200,87094],
-      [201,220,139381],[221,240,283677],[241,260,570987],
-      [261,280,1150965],[281,300,2323864]
+      [1,5,10],[6,15,43],[16,20,109],[21,40,235],[41,60,498],
+      [61,80,1023],[81,100,2109],[101,120,2704],[121,140,5501],
+      [141,160,11245],[161,180,23697],[181,200,48198],
+      [201,220,73795],[221,240,152894],[241,260,321883],
+      [261,280,662141],[281,300,1419337]
     ];
     for (const [a,b,per] of bands){
       if(lv>=a && lv<=b) return lv*per;
@@ -18415,22 +18462,11 @@ function finalizeStageClearStats() {
   else if (hits === 3) rank = 'C';
   else rank = 'D';
 
-  // ✅ [v.78] 스테이지 클리어 보너스 EXP
-  // - 기본: 이번 스테이지 획득 EXP의 30%
-  // - 랭크 추가 보정: S +20%, A +10%, B +5%, C +0%, D -10% (최소 0%)
-  let extra = 0;
-  if (rank === 'S') extra = 0.20;
-  else if (rank === 'A') extra = 0.10;
-  else if (rank === 'B') extra = 0.05;
-  else if (rank === 'C') extra = 0.00;
-  else extra = -0.10;
-
-  const bonusRate = Math.max(0, 0.30 + extra);
-  // ✅ [v.172.5] 몬스터 파크는 스테이지 클리어 보너스 EXP 없음
-  // - 몬스터/보스 처치로 누적된 EXP만 최종 [경험치 받기!]에서 지급
+  // ✅ [v.196.1] 스테이지 클리어 EXP 제거
+  // - 클리어 보너스 EXP는 더 이상 지급하지 않습니다.
+  // - 20% 확률 보너스 스테이지에서 획득한 구슬 EXP만 별도로 stageRunExpOrbs에 누적됩니다.
   const isMonsterParkClear = (typeof monsterParkActive !== 'undefined' && monsterParkActive);
-  const clearBonusExp = isMonsterParkClear ? 0 : Math.max(0, Math.floor(expGained * bonusRate));
-  const grantedBonusExp = isMonsterParkClear ? 0 : addExpDirect(clearBonusExp);
+  const grantedBonusExp = 0;
 
   // 모달 반영(요청 형식)
   const goldGained = Math.max(0, Math.floor(stageRunGoldEarned || 0));
@@ -18450,8 +18486,8 @@ function finalizeStageClearStats() {
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${timeSec}초`;
   if (stageClearExpDetailEl) {
     stageClearExpDetailEl.textContent = isMonsterParkClear
-      ? `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 클리어 보너스 없음`
-      : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 구슬 ${formatNumber(oExp)} · 클리어 보너스 +${formatNumber(grantedBonusExp)}`;
+      ? `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 경험치 없음`
+      : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
   }
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = goldGained > 0 ? 'flex' : 'none';
@@ -18468,7 +18504,7 @@ function finalizeStageClearStats() {
     stageClearPetBonusEl.textContent = `EXP +${Math.round((petBonus.exp || 0) * 100)}% · 골드 +${Math.round((petBonus.gold || 0) * 100)}% · 점수 +${Math.round((petBonus.score || 0) * 100)}% · 공격력 +${Math.round((petBonus.attack || 0) * 100)}% · HP +${formatNumber(petBonus.hp || 0)}`;
   }
   applyStageClearRank(rank);
-  animateStageClearExp(expGained + grantedBonusExp);
+  animateStageClearExp(expGained);
   // 저장(스테이지별 최고 랭크/최단 시간)
   saveData.stageRanks = saveData.stageRanks || {};
   const prev = saveData.stageRanks[String(stage)] || null;
@@ -18487,7 +18523,7 @@ function finalizeStageClearStats() {
   if (shouldSave) saveData.stageRanks[String(stage)] = next;
   saveGameDataDebounced();
 
-  return { bonusExp: grantedBonusExp, rank, expGained };
+  return { bonusExp: 0, rank, expGained };
 }
 
 
@@ -18843,6 +18879,11 @@ return distSq <= r * r;
 }
 
 function update(dt, currentTime) {
+  // ✅ [v.196.1] 스테이지 클리어 후 20% 확률 보너스 스테이지 진행
+  if (gameMode === 'stage' && stageBonusState && stageBonusState.active) {
+    if (updateStageBonusStage(dt)) return;
+  }
+
   // ✅ [v.79] 스테이지 클리어 연출(3초) 동안은 전투 진행을 멈추고 카운트만 진행
   if ((gameMode === 'stage' || gameMode === 'mission') && stageClearSeq && stageClearSeq.active) {
     stageClearSeq.timer -= dt;
@@ -18857,10 +18898,14 @@ function update(dt, currentTime) {
         return;
       }
 
-      showStageClearModalAnimated((gameMode === 'stage' ? Number((document.getElementById('stageClearExpText')?.textContent || '0').replace(/[^0-9]/g,'')) : Number((document.getElementById('stageClearExpText')?.textContent || '0').replace(/[^0-9]/g,''))), stageClearSeq.rank);
-      // ✅ [v.93.3] 튜토리얼: 1스테이지 클리어 보상/랭크 안내
-      maybeStartPostClearTutorial();
-      if (SFX && SFX.stageClear) SFX.stageClear();
+      if (gameMode === 'stage' && stageClearSeq.hasBonusStage) {
+        startStageBonusStageAfterClear({ rank: stageClearSeq.rank, expGained: stageClearSeq.resultExp });
+      } else {
+        showStageClearModalAnimated(Math.max(0, Math.floor(stageClearSeq.resultExp || 0)), stageClearSeq.rank);
+        // ✅ [v.93.3] 튜토리얼: 1스테이지 클리어 보상/랭크 안내
+        maybeStartPostClearTutorial();
+        if (SFX && SFX.stageClear) SFX.stageClear();
+      }
     }
     return;
   }
@@ -19167,15 +19212,27 @@ if (stageCleared) {
         }catch(e){}
       })();
 
-      // ✅ [v.79] 결과 모달을 바로 띄우지 않고, 3초 동안 "보너스 EXP + 랭크" 연출
-      stageClearModal.classList.add('hidden');
-      stageClearSeq.active = true;
-      stageClearSeq.timer = 1200; // 1.2초 표시
-
-      stageClearSeq.bonusExp = Math.max(0, Math.floor(res.bonusExp || 0));
+      // ✅ [v.196 bonus] 클리어 박스/중간 연출 없이 즉시 분기
+      // - 보너스 미발동: 결과창 바로 표시
+      // - 보너스 발동: 곧바로 보너스 스테이지 카운트다운 진입
+      stageClearSeq.active = false;
+      stageClearSeq.timer = 0;
+      stageClearSeq.bonusExp = 0;
       stageClearSeq.rank = String(res.rank || 'D');
       stageClearSeq.formulaText = '';
       stageClearSeq.formulaText2 = '';
+      stageClearSeq.resultExp = Math.max(0, Math.floor(res.expGained || 0));
+      stageClearSeq.hasBonusStage = !(typeof monsterParkActive !== 'undefined' && monsterParkActive) && Math.random() < STAGE_BONUS_CHANCE;
+      clearStageCombatObjects({ clearDrops: false });
+      stageClearModal.classList.add('hidden');
+
+      if (stageClearSeq.hasBonusStage) {
+        startStageBonusStageAfterClear({ rank: stageClearSeq.rank, expGained: stageClearSeq.resultExp });
+      } else {
+        showStageClearModalAnimated(stageClearSeq.resultExp, stageClearSeq.rank);
+        maybeStartPostClearTutorial();
+        if (SFX && SFX.stageClear) SFX.stageClear();
+      }
     } else if (gameMode === 'mission') {
       const res = finalizeMissionClearStats() || { bonusExp: 0, rank: 'CLEAR', expGained: 0 };
       stageClearModal.classList.add('hidden');
@@ -19185,6 +19242,8 @@ if (stageCleared) {
       stageClearSeq.rank = String(res.rank || 'CLEAR');
       stageClearSeq.formulaText = String(res.formulaText || '');
       stageClearSeq.formulaText2 = String(res.formulaText2 || '');
+      stageClearSeq.resultExp = Math.max(0, Math.floor(res.expGained || 0));
+      stageClearSeq.hasBonusStage = false;
       clearMissionAutoAdvanceTimer();
       missionAutoAdvanceTimer = setTimeout(() => {
         missionAutoAdvanceTimer = null;
@@ -21802,6 +21861,168 @@ ctx.fillText(`스테이지 ${stage} 완료`, width/2, height/2 - 6);
 ctx.restore();
 }
 
+
+function rollStageBonusExpGrade() {
+  const r = Math.random();
+  if (r < 0.60) return 'low';
+  if (r < 0.95) return 'mid';
+  return 'high';
+}
+
+function getStageBonusBaseMonsterExp() {
+  try {
+    if (typeof getStageMonsterExpReward === 'function') {
+      return Math.max(1, Math.round(Number(getStageMonsterExpReward(stage)) || 1));
+    }
+  } catch(e) {}
+  return 1;
+}
+
+function updateStageClearModalBonusResult() {
+  const mExp = Math.max(0, Math.floor(stageRunExpMonsters || 0));
+  const bExp = Math.max(0, Math.floor(stageRunExpBoss || 0));
+  const oExp = Math.max(0, Math.floor(stageRunExpOrbs || 0));
+  const total = Math.max(0, Math.floor((typeof stageRunExpEarned === "number" && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + bExp + oExp)));
+  const detailEl = document.getElementById('stageClearExpDetail');
+  if (detailEl) detailEl.textContent = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
+  animateStageClearExp(total);
+  return total;
+}
+
+function spawnStageBonusExpItem() {
+  if (!stageBonusState || !stageBonusState.active) return;
+  const gradeKey = rollStageBonusExpGrade();
+  const g = STAGE_BONUS_EXP_GRADES[gradeKey] || STAGE_BONUS_EXP_GRADES.low;
+  const baseExp = Math.max(1, Math.round(stageBonusState.baseMonsterExp || getStageBonusBaseMonsterExp()));
+  if (isLowPower() && expItems.length > 50) return;
+
+  expItems.push({
+    x: 24 + Math.random() * Math.max(1, width - 48),
+    y: -18,
+    r: g.r,
+    vy: 1.8 + Math.random() * 1.1,
+    life: 18000,
+    baseExp,
+    gradeKey,
+    gradeMult: g.mult,
+    gradeLabel: g.label,
+    color: g.color,
+    sourceType: 'stageBonus',
+    roundReward: true
+  });
+}
+
+function startStageBonusStageAfterClear(res) {
+  if (!stageBonusState) return false;
+
+  stageBonusState.active = true;
+  stageBonusState.countdownMs = STAGE_BONUS_COUNTDOWN_MS;
+  stageBonusState.timeLeft = STAGE_BONUS_DURATION_MS;
+  stageBonusState.spawnAcc = 0;
+  stageBonusState.bonusExp = 0;
+  stageBonusState.rank = String(res?.rank || 'D');
+  stageBonusState.resultExp = Math.max(0, Math.floor(res?.expGained || 0));
+  stageBonusState.baseMonsterExp = getStageBonusBaseMonsterExp();
+
+  clearStageCombatObjects({ clearDrops: true });
+
+  try { initAudio(); playBgmTrack('bonus'); } catch(e) {}
+  return true;
+}
+
+function finishStageBonusStage() {
+  if (!stageBonusState || !stageBonusState.active) return;
+  stageBonusState.active = false;
+  stageBonusState.countdownMs = 0;
+  stageBonusState.timeLeft = 0;
+  stageBonusState.spawnAcc = 0;
+  clearStageCombatObjects({ clearDrops: true });
+
+  try { playBgmTrack(getModeBgmName()); } catch(e) {}
+
+  const totalExp = updateStageClearModalBonusResult();
+  showStageClearModalAnimated(totalExp, stageBonusState.rank || 'D');
+  maybeStartPostClearTutorial();
+  if (SFX && SFX.stageClear) SFX.stageClear();
+}
+
+function updateStageBonusStage(dt) {
+  if (!stageBonusState || !stageBonusState.active) return false;
+
+  // 보너스 스테이지 중에는 전투 발사체가 남거나 새로 움직이지 않도록 계속 정리
+  clearStageCombatObjects({ clearDrops: false });
+
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  handlePlayerMovement(dt);
+
+  if (stageBonusState.countdownMs > 0) {
+    stageBonusState.countdownMs = Math.max(0, stageBonusState.countdownMs - dt);
+    updateExpItems(dt);
+    tryPickupExpItems();
+    updateHUD();
+    return true;
+  }
+
+  stageBonusState.timeLeft = Math.max(0, stageBonusState.timeLeft - dt);
+  stageBonusState.spawnAcc += dt;
+  while (stageBonusState.spawnAcc >= STAGE_BONUS_SPAWN_INTERVAL_MS && stageBonusState.timeLeft > 0) {
+    stageBonusState.spawnAcc -= STAGE_BONUS_SPAWN_INTERVAL_MS;
+    spawnStageBonusExpItem();
+  }
+
+  updateExpItems(dt);
+  tryPickupExpItems();
+  updateHUD();
+
+  if (stageBonusState.timeLeft <= 0) {
+    finishStageBonusStage();
+  }
+  return true;
+}
+
+function drawStageBonusOverlay() {
+  if (!stageBonusState || !stageBonusState.active) return;
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (stageBonusState.countdownMs > 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.58)';
+    ctx.fillRect(0, 0, width, height);
+
+    const c = stageBonusState.countdownMs;
+    let msg = '3';
+    if (c <= 1000) msg = 'BONUS STAGE START!';
+    else if (c <= 2000) msg = '1';
+    else if (c <= 3000) msg = '2';
+
+    ctx.font = `bold ${msg.length > 3 ? 38 : 72}px ${getUIFontFamily()}`;
+    ctx.fillStyle = '#ffe86b';
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#ffd700';
+    ctx.fillText(msg, width / 2, height / 2);
+  } else {
+    const sec = Math.ceil(Math.max(0, stageBonusState.timeLeft || 0) / 1000);
+    ctx.fillStyle = 'rgba(0,0,0,0.36)';
+    ctx.fillRect(0, 0, width, 54);
+
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ffd700';
+    ctx.font = `bold 22px ${getUIFontFamily()}`;
+    ctx.fillStyle = '#ffe86b';
+    ctx.fillText(`BONUS STAGE · ${sec}초`, width / 2, 19);
+
+    ctx.shadowBlur = 0;
+    ctx.font = `bold 13px ${getUIFontFamily()}`;
+    ctx.fillStyle = '#bfffe8';
+    ctx.fillText(`구슬 EXP: 하 50% · 중 150% · 상 300%`, width / 2, 40);
+  }
+
+  ctx.restore();
+}
+
 // ✅ [v.79] 스테이지 클리어 연출(보너스 EXP/랭크 3초 표시)
 function drawStageClearSeqOverlay() {
   if (!stageClearSeq || !stageClearSeq.active) return;
@@ -21830,8 +22051,14 @@ function drawStageClearSeqOverlay() {
   ] : [
     { text: '스테이지 클리어!',                size: 22, weight: 'bold',  color: '#ffe8a0', gap: 6  },
     { text: `스테이지 ${stage} 완료`,          size: 14, weight: 'normal',color: '#ffffff', gap: 14 },
-    { text: '보너스 경험치!',                 size: 24, weight: 'bold',  color: '#ffe8a0', gap: 8  },
-    { text: `+${formatNumber(bonusExpVal)} EXP`, size: 22, weight: 'bold',  color: '#44ffb8', gap: (formulaText || formulaText2) ? 8 : 10 },
+    ...(stageClearSeq.hasBonusStage
+      ? [
+          { text: '✨ BONUS STAGE 발견!',      size: 24, weight: 'bold',  color: '#ffe86b', gap: 8  },
+          { text: '잠시 후 보너스 구슬이 떨어집니다', size: 15, weight: 'normal', color: '#bfffe8', gap: 10 },
+        ]
+      : [
+          { text: '보너스 스테이지 미발동',     size: 20, weight: 'bold',  color: '#cfe7ff', gap: 10 },
+        ]),
     ...(formulaText ? [{ text: formulaText, size: 13, weight: 'normal', color: '#cfe7ff', gap: 4 }] : []),
     ...(formulaText2 ? [{ text: formulaText2, size: 13, weight: 'normal', color: '#9fffd0', gap: 8 }] : []),
     { text: `획득 랭크: ${rankVal}`,           size: 18, weight: 'normal',color: '#ffffff', gap: 0  },
@@ -22025,6 +22252,9 @@ requestAnimationFrame(gameLoop);
     drawEvolutionOverlay();
     drawMaxLevelCelebrationOverlay();
 
+    // ✅ [v.196.1] 스테이지 클리어 후 보너스 스테이지 연출
+    drawStageBonusOverlay();
+
     // ✅ [v.79] 보너스 EXP/랭크 3초 연출
     drawStageClearSeqOverlay();
 
@@ -22037,7 +22267,10 @@ requestAnimationFrame(gameLoop);
 
     /* canvas settings disabled */
 
-    if (stageCleared && state === 'playing' && !(stageClearSeq && stageClearSeq.active)) drawStageClearOverlay();
+    // ✅ [v.196.2] 스테이지 모드는 클리어 박스가 보너스 스테이지/결과창과 겹치지 않도록 제거
+    // - stage: 클리어 후 바로 결과창 또는 보너스 스테이지로 분기
+    // - mission 등 기존 모드는 기존 클리어 오버레이 유지
+    if (stageCleared && state === 'playing' && gameMode !== 'stage' && !(stageClearSeq && stageClearSeq.active)) drawStageClearOverlay();
     if (isPaused) {
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
@@ -27859,6 +28092,22 @@ try {
     </div>
   </div>
 </div>
+
+
+<script>
+/* ===============================
+   ✅ [v.196.1] 스테이지 보너스 스테이지 업데이트 안내
+   =============================== */
+try {
+  const noticeBody = document.getElementById('noticeBody');
+  if (noticeBody && !noticeBody.textContent.includes('v.196.1')) {
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,232,107,0.35); border-radius:10px; background:rgba(255,232,107,0.08); line-height:1.6;';
+    box.innerHTML = '<b style="color:#ffe86b;">[v.196.1 보너스 스테이지 업데이트]</b><br>스테이지 클리어 EXP가 제거되고, 일반 스테이지 클리어 후 20% 확률로 15초 보너스 스테이지가 등장합니다.<br>보너스 스테이지에서는 bg_bonus.mp3가 재생되며, 0.2초마다 EXP 구슬이 떨어집니다. 구슬 EXP는 해당 스테이지 몬스터 EXP 기준 하 50%, 중 150%, 상 300%로 반올림 적용됩니다.';
+    noticeBody.prepend(box);
+  }
+} catch(e) {}
+</script>
 
 </body>
 </html>
