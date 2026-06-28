@@ -16054,9 +16054,24 @@ let meteors = [];         // [{x,y,vx,vy,r,alive}]
 let blizzardFlakes = [];   // 싸락눈 파티클
 
 
+// ✅ [v.197.1 FIX] 스킬 처치 후 스테이지/미션 클리어 판정을 즉시 보강
+// - 일반 탄환 처치처럼 registerEnemyKill() 이후 목표 처치 수를 다시 확인
+// - 스킬 틱/다중 히트로 같은 몬스터가 중복 처리되는 것도 방지
+function resolveClearAfterSkillKillV1971() {
+  try {
+    if (state !== 'playing') return;
+    if (gameMode === 'stage' || gameMode === 'mission') {
+      checkStageKillClearNow();
+      if (stageCleared) stageTransitionTimer = 0;
+    }
+  } catch(e) {}
+}
+
 // ✅ 스킬로 처치해도 기존 보상(점수/EXP/퀘스트)이 들어가게 공통 처리
 function handleEnemyKilledBySkill(e) {
-  if (!e) return;
+  if (!e || e._deadHandled) return;
+  e._deadHandled = true;
+  e.dead = true;
 
   // 던전은 즉시 EXP 지급, 그 외는 EXP 구슬 드랍(기존 로직과 동일)
   if (gameMode === 'dungeon') {
@@ -16085,6 +16100,7 @@ function handleEnemyKilledBySkill(e) {
 
   // 퀘스트/통계
   registerEnemyKill(false, { skill:true });
+  resolveClearAfterSkillKillV1971();
 }
 
 
@@ -16172,6 +16188,7 @@ function handleBossKilledBySkill() {
   }
 
   boss = null;
+  resolveClearAfterSkillKillV1971();
   playBgmTrack(getModeBgmName());
 }
 function canUseBlizzardSkill() {
