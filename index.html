@@ -16058,13 +16058,6 @@ let blizzardFlakes = [];   // 싸락눈 파티클
 function handleEnemyKilledBySkill(e) {
   if (!e) return;
 
-  // ✅ [v.197.1 FIX] 스킬 지속/범위 공격에서 같은 몬스터가 한 프레임에 중복 처치 처리되는 것 방지
-  // - 번개/지진/눈보라처럼 루프 도중 스테이지 클리어가 발생하면 전투 오브젝트가 즉시 정리됩니다.
-  // - 이때 같은 몬스터가 다시 보상/클리어 판정을 타면 클리어 UI 분기가 끊길 수 있어 먼저 잠급니다.
-  if (e._deadHandled) return;
-  e._deadHandled = true;
-  e.hp = Math.min(0, Number(e.hp) || 0);
-
   // 던전은 즉시 EXP 지급, 그 외는 EXP 구슬 드랍(기존 로직과 동일)
   if (gameMode === 'dungeon') {
     const gained = calcDungeonKillExp(dungeonState.tier, level);
@@ -16092,6 +16085,13 @@ function handleEnemyKilledBySkill(e) {
 
   // 퀘스트/통계
   registerEnemyKill(false, { skill:true });
+
+  // ✅ [v.197.1 FIX] 스킬 처치도 기본 공격과 동일하게 즉시 클리어 판정을 보장
+  try {
+    if ((gameMode === 'stage' || gameMode === 'mission') && !stageCleared) checkStageKillClearNow();
+  } catch(err) {
+    console.error('[Slime Shooter] skill kill clear check failed:', err);
+  }
 }
 
 
@@ -16277,6 +16277,13 @@ function updateBlizzard(dt) {
     }
   }
 
+  // ✅ [v.197.1 FIX] 스킬 처치로 스테이지 클리어가 발생하면
+  // clearStageCombatObjects()가 blizzard를 null로 바꿀 수 있으므로 즉시 종료
+  if (!blizzard || stageCleared || (stageBonusState && stageBonusState.active)) {
+    blizzardFlakes = [];
+    return;
+  }
+
 // ✅ 싸락눈 이동(눈보라 지속 중 자연스러운 흐름)
 const s = dt / 1000;
 for (const f of blizzardFlakes) {
@@ -16291,8 +16298,6 @@ for (const f of blizzardFlakes) {
 }
 
 
-  // ✅ [v.197.1 FIX] 눈보라 처치 직후 스테이지 클리어가 blizzard를 null로 정리할 수 있음
-  if (!blizzard) return;
   if (blizzard.life <= 0) { blizzard = null; blizzardFlakes = []; }
 }
 
@@ -16435,7 +16440,6 @@ function updateLightning(dt) {
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.25, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
           if (e.hp <= 0) {
   handleEnemyKilledBySkill(e);
-  e.hp = 0;
 }
         }
       });
@@ -16454,8 +16458,9 @@ function updateLightning(dt) {
     }
   }
 
-  // ✅ [v.197.1 FIX] 스킬 처치로 클리어되면 clearStageCombatObjects()가 lightningStorm을 null로 바꿀 수 있음
-  if (!lightningStorm) {
+  // ✅ [v.197.1 FIX] 스킬 처치로 클리어되면 clearStageCombatObjects()가
+  // lightningStorm을 null로 만들 수 있으므로 아래 접근 전에 안전 확인
+  if (!lightningStorm || stageCleared || (stageBonusState && stageBonusState.active)) {
     enemies = enemies.filter(e => e && e.hp > 0);
     return;
   }
@@ -16543,7 +16548,6 @@ function updateQuake(dt) {
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.25, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
       if (e.hp <= 0) {
         handleEnemyKilledBySkill(e);
-        e.hp = 0;
       }
       break;
     }
@@ -16551,8 +16555,10 @@ function updateQuake(dt) {
 
   enemies = enemies.filter(e => e && e.hp > 0);
 
-  // ✅ [v.197.1 FIX] 지진 처치 직후 스테이지 클리어가 전투 오브젝트를 정리하면 quake가 null일 수 있음
-  if (!quake) return;
+  // ✅ [v.197.1 FIX] 지진 처치로 클리어되면 clearStageCombatObjects()가
+  // quake를 null로 바꾸므로 life 접근 전에 안전 확인
+  if (!quake || stageCleared || (stageBonusState && stageBonusState.active)) return;
+
   if (quake.life <= 0) quake = null;
 }
 
@@ -22221,8 +22227,16 @@ requestAnimationFrame(gameLoop);
     }
     // 업데이트
     if (!isPaused && (!tutorialActive || tutorialNonBlocking)) {
-      update(dt, timestamp);
-      updateFeverMode(dt);
+      try {
+        update(dt, timestamp);
+        updateFeverMode(dt);
+      } catch (err) {
+        // ✅ [v.197.1 SAFETY] 전투 중 예외가 나도 게임 루프가 완전히 멈추지 않도록 보호
+        console.error('[Slime Shooter] update loop recovered:', err);
+        if (gameMode === 'stage' && state === 'playing' && !stageCleared) {
+          try { checkStageKillClearNow(); } catch(e) {}
+        }
+      }
     }
     // 그리기(프레임마다!)
     // - 배경/경고/오버레이(UI)는 고정
