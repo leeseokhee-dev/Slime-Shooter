@@ -3595,7 +3595,13 @@ function addFeverGaugeByKill() {
   if (!isFeverEligibleMode()) return;
   if (state !== 'playing') return;
   if (feverActive) return;
-  const gain = (gameMode === 'tutorial' && tutorialModeActive) ? 25 : FEVER_GAIN_PER_KILL;
+  const tutorialFeverQuestActive = (() => {
+    try {
+      const q = (typeof getTutorialActiveQuest === 'function') ? getTutorialActiveQuest() : null;
+      return !!(gameMode === 'tutorial' && tutorialModeActive && q && q.type === 'fever');
+    } catch(e) { return false; }
+  })();
+  const gain = tutorialFeverQuestActive ? 25 : FEVER_GAIN_PER_KILL;
   feverGauge = Math.min(100, Math.max(0, feverGauge + gain));
   if (feverGauge >= 100) startFeverMode();
   updateFeverUI();
@@ -12188,7 +12194,6 @@ const BEGINNER_TUTORIAL_QUEST_POOL = [
   { id:'guide_survival_1', type:'survival', title:'회피 익히기', target:5, beginnerLevelUp:true, fixedExp:165, gold:()=>120, item:null, dialogue:'공격만큼 중요한 것이 생존입니다. 적과 탄환을 피하면서 5초 동안 버텨보세요.' },
   { id:'guide_boss_1', type:'bossKills', title:'보스 익히기', target:1, beginnerLevelUp:true, fixedExp:210, gold:()=>150, item:'largePotion', dialogue:'강력한 보스가 등장합니다. 체력이 높고 위협적이지만, 공격을 이어가면 충분히 쓰러뜨릴 수 있습니다.' },
   { id:'guide_fever_1', type:'fever', title:'피버 모드 익히기', target:1, beginnerLevelUp:true, fixedExp:70, gold:()=>110, item:null, dialogue:'피버 게이지는 몬스터를 처치하면 조금씩 차오릅니다. 튜토리얼에서는 빠르게 충전되며, 100%가 되면 피버 타임이 자동으로 시작됩니다.' },
-  { id:'guide_bonus_1', type:'bonusStage', title:'보너스 스테이지 익히기', target:3, beginnerLevelUp:true, fixedExp:100, gold:()=>250, item:'expMediumPack', dialogue:'보너스 스테이지 체험입니다. 짧은 시간 동안 떨어지는 보상을 수집하며 특별 구간의 흐름을 익혀보세요.' },
   { id:'guide_pet_1', type:'pet', title:'펫 익히기', target:1, beginnerLevelUp:true, fixedExp:127, gold:()=>300, item:null, dialogue:'튜토리얼 모드에서는 펫 사용도 체험할 수 있습니다. 펫은 전투를 보조하며 성장 구간에서 든든한 동료가 되어줍니다.' }
 ]
 const TOWN_QUEST_POOL = [
@@ -12446,6 +12451,30 @@ function showBeginnerGuideInGame(q){
   tutorialIndex = 0;
   tutorialMessages = getBeginnerQuestGuideMessages(q);
 }
+
+function ensureTutorialPetAutoEquipped(){
+  try {
+    ensurePetSystemState();
+    const petsState = saveData.pets;
+    let pet = (petsState.owned || []).find(p => p && p.source === 'tutorial');
+    if (!pet) {
+      pet = {
+        uid: petsState.nextId++,
+        type: (PET_DEFS && PET_DEFS.fairy) ? 'fairy' : 'slime',
+        star: 1,
+        source: 'tutorial'
+      };
+      petsState.owned.push(pet);
+      try { registerPetDexEntry(pet); } catch(e) {}
+    }
+    petsState.equipped.left = pet.uid;
+    if (petsState.equipped.right === pet.uid) petsState.equipped.right = null;
+    try { syncPlayerHealthToLevel({ keepRatio:true }); } catch(e) {}
+    saveGameDataDebounced();
+    return pet;
+  } catch(e) { return null; }
+}
+
 function startBeginnerGuideRun(q){
   if (!isBeginnerGuideQuest(q)) return;
   closeTownQuestModal();
@@ -12458,6 +12487,12 @@ function startBeginnerGuideRun(q){
   stage = 1;
   showToast('🧭 튜토리얼 모드 진행 중! 전용 연습 목표를 달성해보세요.', '#b8ffd8', 1800);
   startGame(1);
+  if (q && q.type === 'pet') {
+    const tutorialPet = ensureTutorialPetAutoEquipped();
+    if (tutorialPet) {
+      try { showToast('🐾 튜토리얼 펫이 자동 장착되었습니다!', '#d9d2ff', 1800); } catch(e) {}
+    }
+  }
   setTimeout(() => showBeginnerGuideInGame(q), 80);
 }
 function acceptTownQuest(q){
@@ -12500,13 +12535,23 @@ function completeBeginnerGuideQuestInGame(q){
     town.active = nextQuest;
     saveGameData();
     setTimeout(() => {
+      if (nextQuest && nextQuest.type === 'pet') {
+        const tutorialPet = ensureTutorialPetAutoEquipped();
+        if (tutorialPet) {
+          try { showToast('🐾 튜토리얼 펫이 자동 장착되었습니다!', '#d9d2ff', 1800); } catch(e) {}
+        }
+      }
       showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
       showBeginnerGuideInGame(nextQuest);
     }, 700);
   } else {
     try {
       const capExp = Math.max(0, Number(EXP_TABLE?.[11]?.totalMin || 0));
-      if (Math.max(0, Math.floor(Number(exp) || 0)) < capExp) addExpDirect(capExp - Math.max(0, Math.floor(Number(exp) || 0)));
+      exp = capExp;
+      level = 11;
+      if (saveData) { saveData.exp = exp; saveData.level = level; }
+      try { syncPlayerHealthToLevel({ refill:true }); } catch(e) { try { syncPlayerHealthToLevel(); } catch(_e) {} }
+      updateHUD();
     } catch(e) {}
     tutorialModeActive = false;
     saveGameData();
@@ -12517,7 +12562,7 @@ function completeBeginnerGuideQuestInGame(q){
       tutorialIndex = 0;
       tutorialMessages = [
         '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-        '12단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+        '11단계 보상 적용이 끝났습니다. 이제 LV.11 0%부터 일반 모드에서 본격적인 성장이 시작됩니다.',
         '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
       ];
     }, 700);
@@ -17083,6 +17128,12 @@ function handleBossKilledBySkill() {
 
   // 퀘스트/통계
   registerEnemyKill(true);
+  if (gameMode === 'tutorial' && tutorialModeActive) {
+    try { updateTownQuestProgress('bossKills', 1); } catch(e) {}
+    boss = null;
+    playBgmTrack(getModeBgmName());
+    return;
+  }
 
   // ✅ 스테이지/미션 보스 카운트 반영
   if (gameMode === 'stage' && isBossStage(stage)) {
@@ -19920,24 +19971,45 @@ function getTutorialActiveQuest(){
 
 function spawnTutorialEnemy(count = 1){
   const q = getTutorialActiveQuest && getTutorialActiveQuest();
-  const maxOnScreen = (q && q.type === 'multiKills') ? 8 : ((q && q.type === 'bossKills') ? 1 : 5);
+  const isBossTraining = q && q.type === 'bossKills';
+
+  if (isBossTraining) {
+    enemies.length = 0;
+    enemyBullets.length = 0;
+    if (!boss || boss._deadHandled) {
+      boss = createBoss();
+      boss.x = width * 0.5;
+      boss.y = 86;
+      boss.targetY = 86;
+      boss.width = 104;
+      boss.height = 94;
+      boss.hp = 60;
+      boss.maxHp = 60;
+      boss.level = Math.max(1, Math.floor(Number(stage) || 1));
+      boss.evoStage = Math.max(1, Math.min(7, Number(boss.evoStage) || getBossEvoStageByLevel(boss.level) || 1));
+      boss.isTutorialBoss = true;
+      boss.moveState = 'roam';
+      boss.dashCooldown = 999999;
+      boss.attackTimer = 0;
+      boss.bounceTimer = 0;
+      bossSpawned = true;
+      try { showToast('👑 튜토리얼 보스 등장!', '#ffe48a', 1600); } catch(e) {}
+    }
+    return;
+  }
+
+  const maxOnScreen = (q && q.type === 'multiKills') ? 8 : 5;
   const room = Math.max(0, maxOnScreen - enemies.length);
   count = Math.min(Math.max(1, Math.floor(count || 1)), room);
   if (count <= 0) return;
   for (let i = 0; i < count; i++) {
-    const isBossTraining = q && q.type === 'bossKills';
-    const type = isBossTraining ? 'hexagon' : ENEMY_TYPES[(waveIndex + i) % ENEMY_TYPES.length];
-    const x = isBossTraining ? width * 0.5 : randRange(48, width - 48);
-    const y = isBossTraining ? 78 : (-44 - Math.random() * 16);
-    const enemy = createEnemy(type, x, y, isBossTraining ? 1.65 : 1.15, 'rain', 0, { drift: isBossTraining ? 0 : randRange(-0.08, 0.08), attackStyle: isBossTraining ? 'spread' : 'none' });
-    enemy.hp = isBossTraining ? 18 : 1;
+    const type = ENEMY_TYPES[(waveIndex + i) % ENEMY_TYPES.length];
+    const x = randRange(48, width - 48);
+    const y = -44 - Math.random() * 16;
+    const enemy = createEnemy(type, x, y, 1.15, 'rain', 0, { drift: randRange(-0.08, 0.08), attackStyle: 'none' });
+    enemy.hp = 1;
     enemy.maxHp = enemy.hp;
-    enemy.exp = Math.max(1, Math.floor((enemy.exp || 1) * (isBossTraining ? 0.8 : 0.35)));
-    if (isBossTraining) {
-      enemy.displayName = '튜토리얼 보스 슬라임';
-      enemy.isTutorialBoss = true;
-      enemy.vy = 0.12;
-    }
+    enemy.exp = Math.max(1, Math.floor((enemy.exp || 1) * 0.35));
     enemies.push(enemy);
   }
   waveIndex++;
@@ -20002,13 +20074,17 @@ function updateTutorialModeRun(dt, currentTime){
   shootPetBullet(currentTime);
   shootPet2Bullet(currentTime);
 
+  if (q && q.type === 'bossKills') {
+    spawnTutorialEnemy(1);
+  }
+
   if (q && tutorialShouldSpawnForQuest(q)) {
     tutorialRunState.spawnAcc += dt;
     const interval = q.type === 'survival' ? 900 : (q.type === 'bossKills' ? 1300 : (q.type === 'bonusStage' ? 1100 : ((q.type === 'fever' || q.type === 'pet') ? 550 : 650)));
     while (tutorialRunState.spawnAcc >= interval) {
       tutorialRunState.spawnAcc -= interval;
       const spawnCount = q.type === 'multiKills' ? 4 : ((q.type === 'goldEarned' || q.type === 'gems' || q.type === 'fever' || q.type === 'pet') ? 2 : 1);
-      if (q.type !== 'bonusStage') spawnTutorialEnemy(spawnCount);
+      if (q.type !== 'bonusStage' && q.type !== 'bossKills') spawnTutorialEnemy(spawnCount);
     }
   } else {
     enemies.length = 0;
@@ -20025,6 +20101,7 @@ function updateTutorialModeRun(dt, currentTime){
   }
 
   if (q && q.type === 'pet') {
+    if (!getEquippedPet('left')) ensureTutorialPetAutoEquipped();
     tutorialRunState.survivalAcc += dt;
     if (tutorialRunState.survivalAcc >= 1800) {
       tutorialRunState.survivalAcc = 0;
@@ -20049,6 +20126,7 @@ function updateTutorialModeRun(dt, currentTime){
   updatePetSkillStreams(dt);
   updatePetSkillBursts(dt);
   updateEnemies(dt);
+  updateBoss(dt);
   updateEnemyBullets(dt);
   updateParticles(dt);
   updateDamageTexts(dt);
@@ -20068,10 +20146,12 @@ function updateTutorialModeRun(dt, currentTime){
   checkCollisions();
   tryPickupExpItems();
   tryPickupGoldDrops();
-  // 튜토리얼 모드는 절대 스테이지 클리어/보스/보너스 스테이지로 넘어가지 않습니다.
+  // 튜토리얼 모드는 절대 스테이지 클리어/보너스 스테이지로 넘어가지 않습니다.
   stageCleared = false;
-  boss = null;
-  bossSpawned = false;
+  if (!q || q.type !== 'bossKills') {
+    boss = null;
+    bossSpawned = false;
+  }
 }
 
 function update(dt, currentTime) {
