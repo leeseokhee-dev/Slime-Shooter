@@ -6379,7 +6379,7 @@ let stageBonusState = {
   resultExp: 0,
   baseMonsterExp: 0
 };
-const STAGE_BONUS_CHANCE = 0.20;
+const STAGE_BONUS_CHANCE = 0.05;
 const STAGE_BONUS_COUNTDOWN_MS = 4000;
 const STAGE_BONUS_DURATION_MS = 15000;
 const STAGE_BONUS_SPAWN_INTERVAL_MS = 200;
@@ -12246,6 +12246,27 @@ function getTownQuestNeededExp(lv = level){
   const safeLv = Math.max(1, Math.min(maxLv - 1, Math.floor(Number(lv) || 1)));
   return Math.max(1, Number(EXP_TABLE?.[safeLv]?.needed || 1));
 }
+function getTownQuestLevelPercentRange(lv = level){
+  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
+  if (safeLv >= 11 && safeLv <= 20) return { min: 30, max: 60 };
+  if (safeLv >= 21 && safeLv <= 30) return { min: 20, max: 45 };
+  if (safeLv >= 31 && safeLv <= 50) return { min: 10, max: 30 };
+  if (safeLv >= 51 && safeLv <= 100) return { min: 3, max: 15 };
+  if (safeLv >= 101 && safeLv <= 150) return { min: 1, max: 7 };
+  if (safeLv >= 151 && safeLv <= 200) return { min: 0.4, max: 3 };
+  return null;
+}
+function getTownQuestScaledPercentByLevel(q, lv = level){
+  const pct200 = Math.max(0.01, Number(q?.expPct200 ?? q?.expPct ?? 0.1));
+  const range = getTownQuestLevelPercentRange(lv);
+  if (range) {
+    // 기존 의뢰 난이도(expPct200)를 보존해서 쉬운 의뢰는 범위 하한, 어려운 의뢰는 상한에 가깝게 배정
+    const difficulty = Math.max(0, Math.min(1, (pct200 - 0.05) / (1.20 - 0.05)));
+    return range.min + (range.max - range.min) * difficulty;
+  }
+  // 201레벨 이상은 기존 200레벨 기준 보상 + 10레벨마다 절반 감소 규칙 유지
+  return pct200 * getTownQuestLevelScale(lv);
+}
 function getBeginnerTutorialExpReward(lv = level){
   const curLv = Math.max(1, Math.floor(Number(lv) || 1));
   const capExp = Math.max(0, Number(EXP_TABLE?.[11]?.totalMin || 0));
@@ -12263,14 +12284,12 @@ function getTownQuestExpReward(q, lv = level){
     }
     return getBeginnerTutorialExpReward(lv);
   }
-  const pct200 = Math.max(0.01, Number(q?.expPct200 ?? q?.expPct ?? 0.1));
-  const pct = pct200 * getTownQuestLevelScale(lv);
+  const pct = getTownQuestScaledPercentByLevel(q, lv);
   return Math.max(1, Math.floor(getTownQuestNeededExp(lv) * (pct / 100)));
 }
 function getTownQuestPercentText(q, lv = level){
   if (q && q.beginnerLevelUp) return `고정 ${formatNumber(getTownQuestExpReward(q, lv))} EXP / 최대 LV.11 0%`;
-  const pct200 = Math.max(0.01, Number(q?.expPct200 ?? q?.expPct ?? 0.1));
-  const pct = pct200 * getTownQuestLevelScale(lv);
+  const pct = getTownQuestScaledPercentByLevel(q, lv);
   return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%`;
 }
 function ensureTownQuestState(){
@@ -19499,7 +19518,7 @@ function finalizeStageClearStats() {
 
   // ✅ [v.196.1] 스테이지 클리어 EXP 제거
   // - 클리어 보너스 EXP는 더 이상 지급하지 않습니다.
-  // - 20% 확률 보너스 스테이지에서 획득한 구슬 EXP만 별도로 stageRunExpOrbs에 누적됩니다.
+  // - 5% 확률 보너스 스테이지에서 획득한 구슬 EXP만 별도로 stageRunExpOrbs에 누적됩니다.
   const isMonsterParkClear = (typeof monsterParkActive !== 'undefined' && monsterParkActive);
   const grantedBonusExp = 0;
 
@@ -20180,7 +20199,7 @@ function updateTutorialModeRun(dt, currentTime){
 }
 
 function update(dt, currentTime) {
-  // ✅ [v.196.1] 스테이지 클리어 후 20% 확률 보너스 스테이지 진행
+  // ✅ [v.196.1] 스테이지 클리어 후 5% 확률 보너스 스테이지 진행
   if (gameMode === 'stage' && stageBonusState && stageBonusState.active) {
     if (updateStageBonusStage(dt)) return;
   }
@@ -29701,7 +29720,7 @@ try {
   if (noticeBody && !noticeBody.textContent.includes('v.196.1')) {
     const box = document.createElement('div');
     box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,232,107,0.35); border-radius:10px; background:rgba(255,232,107,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffe86b;">[v.196.1 보너스 스테이지 업데이트]</b><br>스테이지 클리어 EXP가 제거되고, 일반 스테이지 클리어 후 20% 확률로 15초 보너스 스테이지가 등장합니다.<br>보너스 스테이지에서는 bg_bonus.mp3가 재생되며, 0.2초마다 EXP 구슬이 떨어집니다. 구슬 EXP는 해당 스테이지 몬스터 EXP 기준 하 50%, 중 150%, 상 300%로 반올림 적용됩니다.';
+    box.innerHTML = '<b style="color:#ffe86b;">[v.196.1 보너스 스테이지 업데이트]</b><br>스테이지 클리어 EXP가 제거되고, 일반 스테이지 클리어 후 5% 확률로 15초 보너스 스테이지가 등장합니다.<br>보너스 스테이지에서는 bg_bonus.mp3가 재생되며, 0.2초마다 EXP 구슬이 떨어집니다. 구슬 EXP는 해당 스테이지 몬스터 EXP 기준 하 50%, 중 150%, 상 300%로 반올림 적용됩니다.';
     noticeBody.prepend(box);
   }
 } catch(e) {}
