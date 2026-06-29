@@ -22728,16 +22728,26 @@ ctx.scale(1 / b, b);
     // 보스가 목표 위치까지 완전히 내려온 뒤에만 표시합니다.
     const bossFullyEntered = !bossIntro.active && y >= boss.targetY;
     if (bossFullyEntered) {
-        const barWidth = 260; const barHeight = 14; const bx = (width - barWidth) / 2; const by = 20;
+        // ✅ [v.202 Boss HP UI] 모바일에서도 글자가 바 밖으로 벗어나지 않도록
+        // 화면 폭에 맞춰 체력바/글자 크기를 자동 보정합니다.
+        const barWidth = Math.min(width - 36, Math.max(320, width * 0.78));
+        const barHeight = width <= 520 ? 24 : 26;
+        const bx = (width - barWidth) / 2;
+        const by = 20;
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, barWidth, barHeight);
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.fillRect(bx - 3, by - 3, barWidth + 6, barHeight + 6);
+        ctx.fillStyle = 'rgba(30,30,40,0.92)';
+        ctx.fillRect(bx, by, barWidth, barHeight);
         const ratio = Math.max(0, hp / maxHp);
         
         // 체력바 색상: 보스 속성 반영
         ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color; 
-        ctx.fillRect(bx + 2, by + 2, (barWidth - 4) * ratio, barHeight - 4);
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(bx, by, barWidth, barHeight);
-        drawElementBadge(bx + barWidth + 18, by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.8);
+        ctx.fillRect(bx + 3, by + 3, (barWidth - 6) * ratio, barHeight - 6);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bx, by, barWidth, barHeight);
+        drawElementBadge(Math.min(width - 18, bx + barWidth + 18), by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.8);
 
         // [수정] 보스 타이틀 텍스트
         let title = "아기 슬라임";
@@ -22748,9 +22758,28 @@ ctx.scale(1 / b, b);
         else if(evoStage===6) title="우주 슬라임"; // 101~200
         else if(evoStage===7) title="크리스탈 슬라임"; // 201~300
 
-        ctx.fillStyle = '#ffffff'; ctx.font = `11px ${getUIFontFamily()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const hpPercent = (ratio * 100).toFixed(1);
-        ctx.fillText(`${title} ${bossElementMeta.icon}${bossElementMeta.name} (LV.${bLv}) HP: ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`, width / 2, by + barHeight / 2);
+        const fullText = `${title} ${bossElementMeta.icon}${bossElementMeta.name} LV.${bLv} HP ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`;
+        const midText = `${title} LV.${bLv} HP ${hpPercent}%`;
+        const shortText = `${title} HP ${hpPercent}%`;
+        const textMaxWidth = barWidth - 14;
+        let bossHpText = fullText;
+        let fontSize = width <= 520 ? 12 : 15;
+        ctx.font = `900 ${fontSize}px ${getUIFontFamily()}`;
+        if (ctx.measureText(bossHpText).width > textMaxWidth) bossHpText = midText;
+        if (ctx.measureText(bossHpText).width > textMaxWidth) bossHpText = shortText;
+        while (fontSize > 9 && ctx.measureText(bossHpText).width > textMaxWidth) {
+            fontSize -= 1;
+            ctx.font = `900 ${fontSize}px ${getUIFontFamily()}`;
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.82)';
+        ctx.strokeText(bossHpText, width / 2, by + barHeight / 2);
+        ctx.fillText(bossHpText, width / 2, by + barHeight / 2);
         ctx.restore();
     }
 }
