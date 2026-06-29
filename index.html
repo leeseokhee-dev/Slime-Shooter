@@ -29130,3 +29130,130 @@ try {
 
 </body>
 </html>
+
+<script>
+/* =========================================================
+   ✅ v.201.1 튜토리얼 모드 수정
+   - 튜토리얼 대사 중 게임 완전 일시정지
+   - 튜토리얼 모드에서는 목표 처치 수 달성으로 스테이지 클리어/다음 스테이지 이동 금지
+   - 골드 튜토리얼 진행 중에는 골드 드롭 허용
+   - 기존 저장된 stageClears 안내 퀘스트도 인게임 목표 달성형으로 보정
+   ========================================================= */
+(function(){
+  'use strict';
+
+  function isGuideTutorialRun(){
+    try { return !!tutorialModeActive && state === 'playing'; } catch(e) { return false; }
+  }
+
+  function getActiveGuideQuest(){
+    try {
+      const town = ensureTownQuestState && ensureTownQuestState();
+      const q = town && town.active;
+      return (q && typeof isBeginnerGuideQuest === 'function' && isBeginnerGuideQuest(q)) ? q : null;
+    } catch(e) { return null; }
+  }
+
+  function isTutorialGoldQuestActive(){
+    const q = getActiveGuideQuest();
+    return !!(isGuideTutorialRun() && q && q.type === 'goldEarned');
+  }
+
+  // ✅ 대사 중에는 무조건 정지. 기존 안내 퀘스트가 논블로킹으로 켜져도 여기서 차단합니다.
+  const showBeginnerGuideInGameBeforeV2011 = (typeof showBeginnerGuideInGame === 'function') ? showBeginnerGuideInGame : null;
+  if (showBeginnerGuideInGameBeforeV2011) {
+    showBeginnerGuideInGame = function(q){
+      const ret = showBeginnerGuideInGameBeforeV2011.apply(this, arguments);
+      try { tutorialNonBlocking = false; } catch(e) {}
+      return ret;
+    };
+  }
+
+  const getBeginnerQuestGuideMessagesBeforeV2011 = (typeof getBeginnerQuestGuideMessages === 'function') ? getBeginnerQuestGuideMessages : null;
+  if (getBeginnerQuestGuideMessagesBeforeV2011) {
+    getBeginnerQuestGuideMessages = function(q){
+      const arr = getBeginnerQuestGuideMessagesBeforeV2011.apply(this, arguments) || [];
+      try {
+        if (q && q.type === 'goldEarned') {
+          arr.push('이번 단계에서는 몬스터를 처치하면 골드가 반드시 드롭됩니다. 떨어진 골드에 가까이 이동해 주워보세요.');
+        }
+      } catch(e) {}
+      return arr;
+    };
+  }
+
+  // ✅ 튜토리얼 모드에서는 일반 스테이지 클리어 판정을 막습니다.
+  // 몬스터 5마리 처치 같은 초보 미션은 완료되어도 다음 스테이지로 넘어가지 않습니다.
+  const checkStageKillClearNowBeforeV2011 = (typeof checkStageKillClearNow === 'function') ? checkStageKillClearNow : null;
+  if (checkStageKillClearNowBeforeV2011) {
+    checkStageKillClearNow = function(){
+      if (isGuideTutorialRun()) return false;
+      return checkStageKillClearNowBeforeV2011.apply(this, arguments);
+    };
+  }
+
+  // ✅ 골드 드롭 시스템은 무한/미션 전용이었으므로, 골드 튜토리얼 중에도 열어줍니다.
+  const isMissionGoldDropObjectiveActiveBeforeV2011 = (typeof isMissionGoldDropObjectiveActive === 'function') ? isMissionGoldDropObjectiveActive : null;
+  if (isMissionGoldDropObjectiveActiveBeforeV2011) {
+    isMissionGoldDropObjectiveActive = function(){
+      if (isTutorialGoldQuestActive()) return true;
+      return isMissionGoldDropObjectiveActiveBeforeV2011.apply(this, arguments);
+    };
+  }
+
+  // ✅ 기존 저장 데이터에 stageClears 튜토리얼이 남아 있어도 다음 스테이지 이동 없이 수행형으로 완료되도록 보정합니다.
+  const updateTownQuestProgressBeforeV2011 = (typeof updateTownQuestProgress === 'function') ? updateTownQuestProgress : null;
+  if (updateTownQuestProgressBeforeV2011) {
+    updateTownQuestProgress = function(type, amount){
+      const ret = updateTownQuestProgressBeforeV2011.apply(this, arguments);
+      try {
+        const q = getActiveGuideQuest();
+        if (isGuideTutorialRun() && q && q.type === 'stageClears' && type === 'kills') {
+          const targetKills = Math.max(5, Math.floor((typeof getStageKillTarget === 'function' ? getStageKillTarget(stage) : 5) || 5));
+          if ((stageRunKillCount || 0) >= targetKills) {
+            q.progress = Math.min(q.target || 1, (q.progress || 0) + 1);
+            if (typeof normalizeTownQuestDisplay === 'function') normalizeTownQuestDisplay(q);
+            if ((q.progress || 0) >= (q.target || 1) && typeof completeBeginnerGuideQuestInGame === 'function') {
+              completeBeginnerGuideQuestInGame(q);
+            } else if (typeof saveGameDataDebounced === 'function') {
+              saveGameDataDebounced();
+            }
+          }
+        }
+      } catch(e) {}
+      return ret;
+    };
+  }
+
+  // ✅ 신규로 생성되는 초보 퀘스트는 스테이지 클리어형 대신 처치 수행형으로 자연스럽게 변경합니다.
+  try {
+    if (Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL)) {
+      BEGINNER_TUTORIAL_QUEST_POOL.forEach(q => {
+        if (!q || !q.id) return;
+        if (q.id === 'guide_stage_1') {
+          q.type = 'kills';
+          q.target = 5;
+          q.title = '기본 전투 마무리';
+          q.dialogue = '이번에는 튜토리얼 전투 안에서 몬스터 5마리를 처치해보세요. 목표를 달성해도 다음 스테이지로 넘어가지 않고 다음 안내가 이어집니다.';
+        }
+        if (q.id === 'guide_stage_2') {
+          q.type = 'kills';
+          q.target = 10;
+          q.title = '반복 전투 적응';
+          q.dialogue = '몬스터 10마리를 처치하며 조작과 회피를 반복해보세요. 튜토리얼 모드는 한 화면 안에서 차근차근 진행됩니다.';
+        }
+      });
+    }
+  } catch(e) {}
+
+  // ✅ 완료 후 다음 안내 대사도 정지 상태로 표시합니다.
+  const completeBeginnerGuideQuestInGameBeforeV2011 = (typeof completeBeginnerGuideQuestInGame === 'function') ? completeBeginnerGuideQuestInGame : null;
+  if (completeBeginnerGuideQuestInGameBeforeV2011) {
+    completeBeginnerGuideQuestInGame = function(q){
+      const ret = completeBeginnerGuideQuestInGameBeforeV2011.apply(this, arguments);
+      try { tutorialNonBlocking = false; } catch(e) {}
+      return ret;
+    };
+  }
+})();
+</script>
