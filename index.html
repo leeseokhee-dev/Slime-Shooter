@@ -22728,58 +22728,76 @@ ctx.scale(1 / b, b);
     // 보스가 목표 위치까지 완전히 내려온 뒤에만 표시합니다.
     const bossFullyEntered = !bossIntro.active && y >= boss.targetY;
     if (bossFullyEntered) {
-        // ✅ [v.202 Boss HP UI] 모바일에서도 글자가 바 밖으로 벗어나지 않도록
-        // 화면 폭에 맞춰 체력바/글자 크기를 자동 보정합니다.
-        const barWidth = Math.min(width - 36, Math.max(320, width * 0.78));
-        const barHeight = width <= 520 ? 24 : 26;
-        const bx = (width - barWidth) / 2;
-        const by = 20;
+        // ✅ [v.202.1 Boss HP UI] 모바일 글자 위치 고정
+        // - 글자는 반드시 보스 체력바 내부 중앙에만 표시
+        // - 긴 HP 숫자는 모바일에서 생략해 겹침/삐져나옴 방지
+        // - 속성 배지는 체력바 위에 겹치지 않도록 제거
+        const margin = width <= 520 ? 52 : 80;
+        const barWidth = Math.max(260, Math.min(width - margin, width * 0.78));
+        const barHeight = width <= 520 ? 24 : 28;
+        const bx = Math.round((width - barWidth) / 2);
+        const by = width <= 520 ? 28 : 22;
+        const ratio = Math.max(0, Math.min(1, hp / maxHp));
+
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+
+        // 바깥 테두리/배경
+        ctx.fillStyle = 'rgba(0,0,0,0.78)';
         ctx.fillRect(bx - 3, by - 3, barWidth + 6, barHeight + 6);
-        ctx.fillStyle = 'rgba(30,30,40,0.92)';
+        ctx.fillStyle = 'rgba(24,28,40,0.94)';
         ctx.fillRect(bx, by, barWidth, barHeight);
-        const ratio = Math.max(0, hp / maxHp);
-        
-        // 체력바 색상: 보스 속성 반영
-        ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color; 
+
+        // 체력 채움
+        ctx.fillStyle = (evoStage === 6) ? '#aa00ff' : bossElementMeta.color;
         ctx.fillRect(bx + 3, by + 3, (barWidth - 6) * ratio, barHeight - 6);
+
+        // 하이라이트
+        ctx.fillStyle = 'rgba(255,255,255,0.20)';
+        ctx.fillRect(bx + 3, by + 3, barWidth - 6, Math.max(4, Math.floor(barHeight * 0.32)));
+
+        // 테두리
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.strokeRect(bx, by, barWidth, barHeight);
-        drawElementBadge(Math.min(width - 18, bx + barWidth + 18), by + barHeight / 2, boss.element || getStageElementKey(stage, 1), 0.8);
 
-        // [수정] 보스 타이틀 텍스트
-        let title = "아기 슬라임";
-        if(evoStage===2) title="어린이 슬라임";
-        else if(evoStage===3) title="청소년 슬라임";
-        else if(evoStage===4) title="왕 슬라임";
-        else if(evoStage===5) title="신 슬라임";   // 51~100
-        else if(evoStage===6) title="우주 슬라임"; // 101~200
-        else if(evoStage===7) title="크리스탈 슬라임"; // 201~300
+        // 보스 이름
+        let title = '아기 슬라임';
+        if (evoStage === 2) title = '어린이 슬라임';
+        else if (evoStage === 3) title = '청소년 슬라임';
+        else if (evoStage === 4) title = '왕 슬라임';
+        else if (evoStage === 5) title = '신 슬라임';
+        else if (evoStage === 6) title = '우주 슬라임';
+        else if (evoStage === 7) title = '크리스탈 슬라임';
 
         const hpPercent = (ratio * 100).toFixed(1);
-        const fullText = `${title} ${bossElementMeta.icon}${bossElementMeta.name} LV.${bLv} HP ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`;
-        const midText = `${title} LV.${bLv} HP ${hpPercent}%`;
-        const shortText = `${title} HP ${hpPercent}%`;
-        const textMaxWidth = barWidth - 14;
-        let bossHpText = fullText;
-        let fontSize = width <= 520 ? 12 : 15;
+        const textMaxWidth = barWidth - 16;
+        let bossHpText = width <= 520
+            ? `${title} LV.${bLv}  ${hpPercent}%`
+            : `${title} ${bossElementMeta.icon}${bossElementMeta.name} LV.${bLv}  HP ${formatNumber(Math.ceil(hp))}/${formatNumber(maxHp)} [${hpPercent}%]`;
+        if (width <= 380) bossHpText = `${title} ${hpPercent}%`;
+
+        let fontSize = width <= 520 ? 13 : 16;
         ctx.font = `900 ${fontSize}px ${getUIFontFamily()}`;
-        if (ctx.measureText(bossHpText).width > textMaxWidth) bossHpText = midText;
-        if (ctx.measureText(bossHpText).width > textMaxWidth) bossHpText = shortText;
         while (fontSize > 9 && ctx.measureText(bossHpText).width > textMaxWidth) {
             fontSize -= 1;
             ctx.font = `900 ${fontSize}px ${getUIFontFamily()}`;
         }
 
-        ctx.fillStyle = '#ffffff';
+        // 글자 영역을 체력바 안으로 클리핑해서 절대 밖으로 나가지 않게 함
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bx + 4, by + 2, barWidth - 8, barHeight - 4);
+        ctx.clip();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(0,0,0,0.82)';
-        ctx.strokeText(bossHpText, width / 2, by + barHeight / 2);
-        ctx.fillText(bossHpText, width / 2, by + barHeight / 2);
+        ctx.lineWidth = Math.max(2, Math.floor(fontSize / 4));
+        ctx.strokeStyle = 'rgba(0,0,0,0.86)';
+        ctx.fillStyle = '#ffffff';
+        const textY = Math.round(by + barHeight / 2 + 1);
+        ctx.strokeText(bossHpText, Math.round(width / 2), textY);
+        ctx.fillText(bossHpText, Math.round(width / 2), textY);
+        ctx.restore();
+
         ctx.restore();
     }
 }
