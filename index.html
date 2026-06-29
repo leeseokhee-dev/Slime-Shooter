@@ -12456,22 +12456,35 @@ function ensureTutorialPetAutoEquipped(){
   try {
     ensurePetSystemState();
     const petsState = saveData.pets;
-    let pet = (petsState.owned || []).find(p => p && p.source === 'tutorial');
-    if (!pet) {
-      pet = {
+    let tutorialPet = (petsState.owned || []).find(p => p && p.source === 'tutorial');
+    if (!tutorialPet) {
+      tutorialPet = {
         uid: petsState.nextId++,
-        type: (PET_DEFS && PET_DEFS.fairy) ? 'fairy' : 'slime',
+        // ✅ 튜토리얼에서는 바로 눈에 보이고 탄환도 나가는 기본 슬라임 펫을 지급합니다.
+        type: 'slime',
         star: 1,
         source: 'tutorial'
       };
-      petsState.owned.push(pet);
-      try { registerPetDexEntry(pet); } catch(e) {}
+      petsState.owned.push(tutorialPet);
+      try { registerPetDexEntry(tutorialPet); } catch(e) {}
     }
-    petsState.equipped.left = pet.uid;
-    if (petsState.equipped.right === pet.uid) petsState.equipped.right = null;
+
+    // ✅ 실제 전투 렌더링은 오른쪽 펫 객체(pet)를 먼저 그리므로 오른쪽 슬롯에 장착합니다.
+    petsState.equipped.right = tutorialPet.uid;
+    if (petsState.equipped.left === tutorialPet.uid) petsState.equipped.left = null;
+
+    // ✅ 이미 전투가 시작된 뒤 장착되어도 화면에 즉시 등장하도록 오브젝트까지 생성합니다.
+    if (typeof createPet === 'function') {
+      pet = createPet({ slot:'right' });
+      if (player) {
+        pet.x = clamp(player.x + PET_OFFSET_X, 20, width - 20);
+        pet.y = clamp(player.y + PET_OFFSET_Y, 40, height - 40);
+      }
+    }
+
     try { syncPlayerHealthToLevel({ keepRatio:true }); } catch(e) {}
     saveGameDataDebounced();
-    return pet;
+    return tutorialPet;
   } catch(e) { return null; }
 }
 
@@ -12486,6 +12499,8 @@ function startBeginnerGuideRun(q){
   gameMode = 'tutorial';
   stage = 1;
   showToast('🧭 튜토리얼 모드 진행 중! 전용 연습 목표를 달성해보세요.', '#b8ffd8', 1800);
+  // ✅ 펫 퀘스트는 startGame 전에 먼저 장착해야 시작 직후 렌더링 오브젝트가 생성됩니다.
+  if (q && q.type === 'pet') ensureTutorialPetAutoEquipped();
   startGame(1);
   if (q && q.type === 'pet') {
     const tutorialPet = ensureTutorialPetAutoEquipped();
@@ -12535,12 +12550,6 @@ function completeBeginnerGuideQuestInGame(q){
     town.active = nextQuest;
     saveGameData();
     setTimeout(() => {
-      if (nextQuest && nextQuest.type === 'pet') {
-        const tutorialPet = ensureTutorialPetAutoEquipped();
-        if (tutorialPet) {
-          try { showToast('🐾 튜토리얼 펫이 자동 장착되었습니다!', '#d9d2ff', 1800); } catch(e) {}
-        }
-      }
       showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
       showBeginnerGuideInGame(nextQuest);
     }, 700);
@@ -12562,7 +12571,7 @@ function completeBeginnerGuideQuestInGame(q){
       tutorialIndex = 0;
       tutorialMessages = [
         '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-        '11단계 보상 적용이 끝났습니다. 이제 LV.11 0%부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+        '12단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
         '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
       ];
     }, 700);
@@ -19276,6 +19285,10 @@ if (gameMode === 'stage') {
   wasHyperFlightActive = false;
   stageRunStartTime = performance.now();
   stageRunStartExp = exp;
+  try {
+    const q = ensureTownQuestState()?.active;
+    if (q && isBeginnerGuideQuest(q) && q.type === 'pet') ensureTutorialPetAutoEquipped();
+  } catch(e) {}
 }
  pointerActive = false;
 levelUpTimer = 0;
@@ -20101,7 +20114,6 @@ function updateTutorialModeRun(dt, currentTime){
   }
 
   if (q && q.type === 'pet') {
-    if (!getEquippedPet('left')) ensureTutorialPetAutoEquipped();
     tutorialRunState.survivalAcc += dt;
     if (tutorialRunState.survivalAcc >= 1800) {
       tutorialRunState.survivalAcc = 0;
