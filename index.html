@@ -12690,7 +12690,12 @@ function updateTownQuestProgress(type, amount){
   normalizeTownQuestDisplay(q);
   const justCompleted = (q.progress || 0) >= (q.target || 1);
   try {
-    if (state !== 'town') showToast(`${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`, '#dffff0', 1500);
+    if (state !== 'town') {
+      const progressLabel = (q.type === 'pet')
+        ? `펫과 함께 몬스터 처치 (${formatNumber(q.progress)}/${formatNumber(q.target)})`
+        : `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`;
+      showToast(progressLabel, '#dffff0', 1500);
+    }
   } catch(e) {}
   if (justCompleted && isBeginnerGuideQuest(q) && state !== 'town') {
     completeBeginnerGuideQuestInGame(q);
@@ -15186,6 +15191,16 @@ function addScore(amount, source = 'monster', options = {}) {
   if (source === 'monster') {
     updateTownQuestProgress('kills', 1);
     if (gameMode === 'tutorial' && options && options.enemy && options.enemy.isTutorialBoss) updateTownQuestProgress('bossKills', 1);
+
+    // ✅ [v.201.8] 펫 튜토리얼은 '장착만 확인'이 아니라
+    // 펫을 장착한 상태에서 몬스터 처치 시 진행도가 올라가도록 처리합니다.
+    try {
+      const tq = getTutorialActiveQuest ? getTutorialActiveQuest() : null;
+      const petEquipped = !!(saveData && saveData.pets && saveData.pets.equipped && (saveData.pets.equipped.right || saveData.pets.equipped.left));
+      if (gameMode === 'tutorial' && tutorialModeActive && tq && tq.type === 'pet' && petEquipped) {
+        updateTownQuestProgress('pet', 1);
+      }
+    } catch(e) {}
   }
 
   if (gameMode === 'infinite' && source === 'monster' && options.noAllKill !== true) {
@@ -20114,14 +20129,9 @@ function updateTutorialModeRun(dt, currentTime){
   }
 
   if (q && q.type === 'pet') {
-    // ✅ 펫 장착 튜토리얼: 선물받은 펫이 장착된 것이 확인되면 퀘스트 클리어
+    // ✅ [v.201.8] 펫 튜토리얼: 자동 장착은 유지하되,
+    // 진행도는 몬스터 처치(addScore)에서만 증가합니다.
     try { ensureTutorialPetAutoEquipped(); } catch(e) {}
-    tutorialRunState.survivalAcc += dt;
-    const equippedPetReady = !!(pet && saveData && saveData.pets && saveData.pets.equipped && saveData.pets.equipped.right);
-    if (equippedPetReady && tutorialRunState.survivalAcc >= 450) {
-      tutorialRunState.survivalAcc = 0;
-      updateTownQuestProgress('pet', 1);
-    }
   }
 
   if (q && q.type === 'survival') {
