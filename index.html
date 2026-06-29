@@ -8102,6 +8102,7 @@ function spawnExpItem(x, y, baseExp, gradeKey = 'low', force = false) {
 }
 
 function spawnExpItemFromEnemy(enemy) {
+  if (gameMode === 'tutorial') return; // 튜토리얼: 처치 EXP/처치 구슬 없음
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
   if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   if (!enemy) return;
@@ -8122,6 +8123,7 @@ function spawnExpItemFromEnemy(enemy) {
 }
 
 function spawnExpItemFromBoss(force = false) {
+  if (gameMode === 'tutorial') return; // 튜토리얼: 보스 처치 EXP/처치 구슬 없음
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
   if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   // ✅ 요청: 보스 처치 시 10% 확률로 EXP 구슬 드랍
@@ -15112,7 +15114,7 @@ function addScore(amount, source = 'monster', options = {}) {
     updateBestRunScoreStats();
   }
 
-  if (gameMode === 'mission') {
+  if (gameMode === 'mission' || gameMode === 'tutorial') {
     return 0;
   }
 
@@ -16755,8 +16757,9 @@ function tryCastLaserSkill() {
 // - 모든 몬스터(보스 포함)에게 공격력 200% 피해
 // ===============================
 
-let bubbles = [];          // [{x,y,vx,vy,radius,damage,_hit}]
+let bubbles = [];          // 범위형 거품 영역 [{x,y,radius,damage,life,isArea,_hitEnemies,_hitBoss}]
 let bubbleSpray = null;    // { life, tick }
+let bubbleAreaSeq = 0;
 
 function canUseBubbleSkill() {
   if (gameMode === 'tutorial' && tutorialModeActive) return true;
@@ -16778,11 +16781,11 @@ function castBubbleSkill() {
   if (!player || !player.alive || isPlayerDying) return;
   if (!canUseBubbleSkill()) return;
 
-  // 1.5초 동안 분사
-  bubbleSpray = { life: 1500, tick: 0 };
+  // 2초 동안 범위형 거품을 전개
+  bubbleSpray = { life: 2000, tick: 0 };
 
-  // 쿨타임 3초
-  player.bubbleCooldown = applyHyperSkillCooldown(3000);
+  // 쿨타임 4초
+  player.bubbleCooldown = applyHyperSkillCooldown(4000);
 }
 
 function tryCastBubbleSkill() {
@@ -16798,48 +16801,34 @@ function updateBubbleSkillUI() {
   bubbleSkillBtn.classList.remove('hidden');
 
   const cd = Math.max(0, (player.bubbleCooldown || 0));
-  applySkillButtonVisual(bubbleSkillBtn, cd, 3000, '💧', cd > 0 ? '' : `${getBubbleSkillShotCount()}발`);
+  applySkillButtonVisual(bubbleSkillBtn, cd, 4000, '🫧', cd > 0 ? '' : '범위');
 }
 
 function shootBubbleProjectile() {
   if (!player || !player.alive || isPlayerDying) return;
 
-  // 타겟: 보스 우선, 없으면 가장 가까운 몬스터
-  let target = (!bossIntro?.active && boss) ? boss : null;
-  if (!target && enemies && enemies.length > 0) {
-    let best = null, bestD = Infinity;
-    for (const e of enemies) {
-      if (!e || e.dead || e.hp <= 0) continue;
-      const dx = e.x - player.x;
-      const dy = e.y - player.y;
-      const d2 = dx*dx + dy*dy;
-      if (d2 < bestD) { bestD = d2; best = e; }
-    }
-    target = best;
-  }
-
-  let baseAngle = -Math.PI / 2;
-  if (target) baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
-
-  const speed = 10 * getBuffMult('speed');
   const atk = getPlayerAttackPower();
   const dmg = Math.max(1, Math.round(atk * 2.0));
-  const count = getBubbleSkillShotCount();
-  const gap = 0.18; // 약 10도 간격의 부채꼴 발사
+  const count = Math.max(1, getBubbleSkillShotCount());
+  const baseRadius = Math.max(78, Math.min(150, (player.size || 24) * 3.8));
+  const gap = Math.max(34, baseRadius * 0.42);
 
+  // 범위형 스킬: 플레이어 주변에 겹치는 거품 영역을 펼쳐 여러 몬스터를 동시에 타격합니다.
   for (let i = 0; i < count; i++) {
     const offset = (i - (count - 1) / 2) * gap;
-    const angle = baseAngle + offset;
-    const side = (i - (count - 1) / 2) * 7;
-    const px = Math.cos(baseAngle + Math.PI / 2) * side;
-    const py = Math.sin(baseAngle + Math.PI / 2) * side;
     bubbles.push({
-      x: player.x + px,
-      y: player.y - player.size + py,
-      radius: 10,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      damage: dmg
+      id: ++bubbleAreaSeq,
+      x: player.x + offset,
+      y: player.y - (player.size || 24) * 0.7,
+      radius: baseRadius,
+      vx: 0,
+      vy: 0,
+      damage: dmg,
+      life: 520,
+      maxLife: 520,
+      isArea: true,
+      _hitEnemies: new Set(),
+      _hitBoss: false
     });
   }
 
@@ -16859,9 +16848,9 @@ function updateBubble(dt) {
   bubbleSpray.life -= dt;
   bubbleSpray.tick -= dt;
 
-  // 0.15초마다 발사
+  // 0.5초마다 범위 거품 전개
   if (bubbleSpray.tick <= 0) {
-    bubbleSpray.tick = 150;
+    bubbleSpray.tick = 500;
     shootBubbleProjectile();
   }
 
@@ -16873,26 +16862,37 @@ function updateBubble(dt) {
 function updateBubbles(dt) {
   const delta = dt / 16.67;
   bubbles.forEach(b => {
+    if (b.isArea) {
+      b.life = Math.max(0, (b.life || 0) - dt);
+      return;
+    }
     b.x += (b.vx || 0) * delta;
     b.y += (b.vy || 0) * delta;
   });
-  bubbles = bubbles.filter(b => (b.y + b.radius > -20) && (b.y < height + 20) && (b.x > -60) && (b.x < width + 60));
+  bubbles = bubbles.filter(b => {
+    if (b.isArea) return (b.life || 0) > 0;
+    return (b.y + b.radius > -20) && (b.y < height + 20) && (b.x > -60) && (b.x < width + 60);
+  });
 }
 
 function drawBubbles() {
   if (!bubbles.length) return;
   ctx.save();
-  ctx.globalAlpha = 0.85;
   for (const b of bubbles) {
+    const lifeRatio = b.isArea ? Math.max(0, Math.min(1, (b.life || 0) / (b.maxLife || 520))) : 1;
+    const pulse = b.isArea ? (1.08 - lifeRatio * 0.08) : 1;
+    const r = (b.radius || 10) * pulse;
+    ctx.globalAlpha = b.isArea ? (0.18 + 0.32 * lifeRatio) : 0.85;
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(180,240,255,0.25)';
+    ctx.arc(b.x, b.y, r, 0, Math.PI*2);
+    ctx.fillStyle = b.isArea ? 'rgba(150,235,255,0.26)' : 'rgba(180,240,255,0.25)';
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(210,255,255,0.75)';
+    ctx.lineWidth = b.isArea ? 4 : 2;
+    ctx.strokeStyle = b.isArea ? 'rgba(190,255,255,0.78)' : 'rgba(210,255,255,0.75)';
     ctx.stroke();
+    ctx.globalAlpha = b.isArea ? (0.26 + 0.34 * lifeRatio) : 0.85;
     ctx.beginPath();
-    ctx.arc(b.x - b.radius*0.25, b.y - b.radius*0.25, Math.max(1, b.radius*0.25), 0, Math.PI*2);
+    ctx.arc(b.x - r*0.25, b.y - r*0.25, Math.max(2, r*0.12), 0, Math.PI*2);
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.fill();
   }
@@ -17005,8 +17005,8 @@ function handleBossKilledBySkill() {
     spawnDamageText(bx, by - 34, getBossScorePopupText(bossBonusScore), '#7dff9b', true);
   }
 
-  // 미션 모드에서는 처치 즉시 EXP를 주지 않습니다.
-  if (gameMode !== 'mission') {
+  // 미션/튜토리얼 모드에서는 처치 즉시 EXP를 주지 않습니다.
+  if (gameMode !== 'mission' && gameMode !== 'tutorial') {
     if (gameMode === 'infinite') {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
@@ -21082,8 +21082,15 @@ bubbles = bubbles.filter(b => !b._hit);
 bubbles.forEach(b => {
   enemies.forEach(e => {
     if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
+      if (b.isArea && b._hitEnemies && b._hitEnemies.has(e)) return;
       const _dmg = calcLevelScaledDamage(b.damage, e);
-      e.hp -= _dmg; e.hitTimer = 100; b._hit = true;
+      e.hp -= _dmg; e.hitTimer = 100;
+      if (b.isArea) {
+        if (!b._hitEnemies) b._hitEnemies = new Set();
+        b._hitEnemies.add(e);
+      } else {
+        b._hit = true;
+      }
       // SFX.hit();
       spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#b3f6ff');
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
@@ -21115,7 +21122,7 @@ bubbles.forEach(b => {
   });
 });
 enemies = enemies.filter(e => e.hp > 0);
-bubbles = bubbles.filter(b => !b._hit);
+bubbles = bubbles.filter(b => b.isArea || !b._hit);
 
 // ===== PET 탄환 충돌(적) =====
 petBullets.forEach(b => {
@@ -21253,15 +21260,21 @@ if (boss && !bossInvincible) {
   const bx = boss.x, by = boss.y, hw = boss.width/2, hh = boss.height/2;
   for (let b of bubbles) {
     if (!boss) break;
-    if (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh) {
+    const hitBossByBubble = b.isArea
+      ? circleCollision(b.x, b.y, b.radius, boss.x, boss.y, Math.max(hw, hh))
+      : (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh);
+    if (hitBossByBubble) {
+      if (b.isArea && b._hitBoss) continue;
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
-      boss.hp -= _bdmg; b._hit = true;
+      boss.hp -= _bdmg;
+      if (b.isArea) b._hitBoss = true;
+      else b._hit = true;
       spawnDamageText(boss.x, boss.y - 10, _bdmg, '#b3f6ff');
       const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
       if (boss.hp <= 0) { handleBossKilledBySkill(); }
     }
   }
-  bubbles = bubbles.filter(b => !b._hit);
+  bubbles = bubbles.filter(b => b.isArea || !b._hit);
 }
 
 // ===== PET 탄환 충돌(보스) =====
