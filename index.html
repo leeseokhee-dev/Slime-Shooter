@@ -8104,7 +8104,18 @@ function spawnExpItem(x, y, baseExp, gradeKey = 'low', force = false) {
 }
 
 function spawnExpItemFromEnemy(enemy) {
-  if (gameMode === 'tutorial') return; // 튜토리얼: 처치 EXP/처치 구슬 없음
+  // ✅ [v.201.3] 튜토리얼 EXP 구슬 퀘스트에서는 처치 구슬을 허용
+  if (gameMode === 'tutorial') {
+    try {
+      const q = (typeof getTutorialActiveQuest === 'function') ? getTutorialActiveQuest() : null;
+      if (!q || q.type !== 'expOrbs' || !enemy) return;
+      const dropChance = 1; // 학습 단계에서는 막히지 않게 반드시 1개 등장
+      if (Math.random() >= dropChance) return;
+      const gradeKey = (typeof rollExpGrade === 'function') ? rollExpGrade() : 'low';
+      spawnExpItem(enemy.x, enemy.y, 1, gradeKey, false);
+    } catch(e) {}
+    return;
+  }
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
   if (gameMode === 'mission' && !missionState.bonusActive && !isMissionExpObjectiveActive()) return;
   if (!enemy) return;
@@ -8267,7 +8278,7 @@ function tryPickupExpItems() {
         } else {
           addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
           // ✅ 스테이지 EXP 상세 집계(구슬 EXP)
-          if (gameMode === 'stage' || gameMode === 'mission') {
+          if (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'tutorial') {
             stageRunExpOrbs += gained;
           }
         }
@@ -15140,7 +15151,24 @@ function addScore(amount, source = 'monster', options = {}) {
     updateBestRunScoreStats();
   }
 
-  if (gameMode === 'mission' || gameMode === 'tutorial') {
+  if (gameMode === 'tutorial') {
+    if (source === 'monster' && options.noExp !== true) {
+      // ✅ [v.201.3] 튜토리얼 모드 몬스터 EXP는 무조건 1 고정
+      const gainedExp = addExpDirect(1);
+      try { stageRunExpMonsters = Math.max(0, Math.floor(Number(stageRunExpMonsters) || 0)) + Math.max(0, Math.floor(gainedExp || 0)); } catch(e) {}
+      try { spawnDamageText(options.enemy?.x || player?.x || width/2, (options.enemy?.y || player?.y || height/2) - 18, '+1 EXP', '#44ffb8'); } catch(e) {}
+      if (source === 'monster' && options.multikillEligible === true) {
+        recordMultiKillCandidate(gainedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
+      }
+      return gainedExp;
+    }
+    if (source === 'monster' && options.multikillEligible === true) {
+      recordMultiKillCandidate(0, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
+    }
+    return 0;
+  }
+
+  if (gameMode === 'mission') {
     if (source === 'monster' && options.multikillEligible === true) {
       recordMultiKillCandidate(0, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
     }
@@ -29571,6 +29599,17 @@ try {
     box.innerHTML = '<b style="color:#ffe86b;">[v.196.1 보너스 스테이지 업데이트]</b><br>스테이지 클리어 EXP가 제거되고, 일반 스테이지 클리어 후 20% 확률로 15초 보너스 스테이지가 등장합니다.<br>보너스 스테이지에서는 bg_bonus.mp3가 재생되며, 0.2초마다 EXP 구슬이 떨어집니다. 구슬 EXP는 해당 스테이지 몬스터 EXP 기준 하 50%, 중 150%, 상 300%로 반올림 적용됩니다.';
     noticeBody.prepend(box);
   }
+} catch(e) {}
+</script>
+
+
+<script>
+/* ===============================
+   ✅ [v.201.3] 튜토리얼 EXP 최종 안전장치
+   - 기존 함수 내부에서 직접 수정했지만, 브라우저 캐시/후속 스크립트 대비용
+   =============================== */
+try {
+  window.__SS_TUTORIAL_EXP_PATCH_V2013 = true;
 } catch(e) {}
 </script>
 
