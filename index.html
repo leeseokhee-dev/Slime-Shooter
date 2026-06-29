@@ -17270,6 +17270,15 @@ function createBoss() {
 
 function startStage() {
 
+    // ✅ [v.197.4] 모험 모드 스테이지 값 보호
+    // startGame()을 거치지 않고 이어질 때도 1~100 범위와 표시값을 확실히 유지
+    if (typeof adventureModeActive !== 'undefined' && adventureModeActive && gameMode === 'stage') {
+      stage = Math.max(1, Math.min((typeof ADVENTURE_MAX_STAGE !== 'undefined' ? ADVENTURE_MAX_STAGE : 100), Math.floor(Number(stage) || 1)));
+      lastSelectedStage = stage;
+      runStartStage = stage;
+      try { showAdventureStageIntro(stage); } catch(e) {}
+    }
+
     // ===============================
     // ✅ [v.91] 스테이지별 몬스터 수 조정
     // 1~5 : 5마리
@@ -19210,6 +19219,46 @@ if (!boss && enemies.length === 0 && waveIndex >= getWavesPerStage(stage) && !bo
 if (stageCleared) {
   stageTransitionTimer -= dt;
   if (stageTransitionTimer <= 0) {
+    // ✅ [v.197.2] 모험 모드 전용: 결과창/보너스 판정 없이 바로 다음 스테이지
+    if (typeof adventureModeActive !== 'undefined' && adventureModeActive && gameMode === 'stage') {
+      const clearedStage = Math.max(1, Math.floor(Number(stage) || 1));
+      try { finalizeStageClearStats(); } catch(e) {}
+      try { if (stageClearModal) stageClearModal.classList.add('hidden'); } catch(e) {}
+      try {
+        if (stageClearSeq) {
+          stageClearSeq.active = false;
+          stageClearSeq.timer = 0;
+          stageClearSeq.bonusExp = 0;
+          stageClearSeq.rank = 'D';
+          stageClearSeq.formulaText = '';
+          stageClearSeq.formulaText2 = '';
+          stageClearSeq.resultExp = 0;
+          stageClearSeq.hasBonusStage = false;
+        }
+      } catch(e) {}
+      try { clearStageCombatObjects({ clearDrops: false }); } catch(e) {}
+
+      if (typeof ADVENTURE_MAX_STAGE !== 'undefined' && clearedStage >= ADVENTURE_MAX_STAGE) {
+        if (typeof finishAdventureModeV1711 === 'function') finishAdventureModeV1711();
+        else { setAdventureMode(false); goToTitle(); }
+        return;
+      }
+
+      stage = (typeof ADVENTURE_MAX_STAGE !== 'undefined')
+        ? Math.min(ADVENTURE_MAX_STAGE, clearedStage + 1)
+        : clearedStage + 1;
+      lastSelectedStage = stage;
+      runStartStage = stage;
+      stageCleared = false;
+      stageTransitionTimer = 0;
+      // ✅ [v.197.4] 모험 모드 자동 진행은 전체 게임 재시작 금지
+      // startGame(stage)를 호출하면 후속 래퍼/모드 초기화와 충돌해 2/100 이후 1/100으로 되돌아갈 수 있음
+      // 현재 모험 모드 상태를 유지한 채 스테이지 전투만 새로 시작합니다.
+      startStage();
+      updateHUD();
+      return;
+    }
+
     if (gameMode === 'stage') {
       const res = finalizeStageClearStats() || { bonusExp: 0, rank: 'D', expGained: 0 };
 
@@ -22291,6 +22340,9 @@ requestAnimationFrame(gameLoop);
     // ✅ [v.79] 보너스 EXP/랭크 3초 연출
     drawStageClearSeqOverlay();
 
+    // ✅ [v.197.6] 모험 모드 스테이지 시작 중앙 연출
+    drawAdventureStageIntroOverlay();
+
     // ✅ 튜토리얼/스킬 해금 안내(오버레이)
     drawTutorialOverlay();
     drawActiveBuffPanel();
@@ -23148,9 +23200,10 @@ update = function(dt, currentTime) {
 
   if (gameMode === 'infinite') {
     stage = 1;
-  } else {
-    stage = realStage;
   }
+  // ✅ [v.197.5] 비무한 모드에서는 update() 안에서 변경된 stage를 되돌리지 않습니다.
+  // 모험 모드 자동 진행은 update() 내부에서 stage를 1→2→3...으로 올리므로,
+  // 여기서 realStage로 복구하면 1/100으로 되돌아가는 문제가 발생합니다.
   return r;
 };
 
@@ -23462,6 +23515,116 @@ const ADVENTURE_BOSS_EXP_TABLE = {
   60: 8316, 70: 14553, 80: 25468, 90: 44569, 100: 77996
 };
 
+// ===============================
+// ✅ [v.197.6] 모험 모드 스테이지 시작 중앙 연출
+// - 결과창 없이 자동 진행되는 모험 모드에서 현재 스테이지를 짧게 안내
+// - 게임은 멈추지 않고 0.9초 동안 중앙에 표시 후 페이드아웃
+// ===============================
+let adventureStageIntroFx = {
+  active: false,
+  stage: 1,
+  startedAt: 0,
+  duration: 900
+};
+
+function showAdventureStageIntro(stageValue){
+  if (!(typeof adventureModeActive !== 'undefined' && adventureModeActive && gameMode === 'stage')) return;
+  const maxStage = (typeof ADVENTURE_MAX_STAGE !== 'undefined') ? ADVENTURE_MAX_STAGE : 100;
+  const st = Math.max(1, Math.min(maxStage, Math.floor(Number(stageValue) || 1)));
+  adventureStageIntroFx.active = true;
+  adventureStageIntroFx.stage = st;
+  adventureStageIntroFx.startedAt = performance.now();
+  adventureStageIntroFx.duration = 900;
+}
+
+function drawAdventureStageIntroOverlay(){
+  if (!adventureStageIntroFx || !adventureStageIntroFx.active) return;
+  if (!(typeof adventureModeActive !== 'undefined' && adventureModeActive && gameMode === 'stage' && state === 'playing')) {
+    adventureStageIntroFx.active = false;
+    return;
+  }
+
+  const now = performance.now();
+  const duration = Math.max(300, Number(adventureStageIntroFx.duration) || 900);
+  const elapsed = now - Number(adventureStageIntroFx.startedAt || now);
+  const p = Math.max(0, Math.min(1, elapsed / duration));
+  if (p >= 1) {
+    adventureStageIntroFx.active = false;
+    return;
+  }
+
+  const st = Math.max(1, Math.floor(Number(adventureStageIntroFx.stage) || 1));
+  const maxStage = (typeof ADVENTURE_MAX_STAGE !== 'undefined') ? ADVENTURE_MAX_STAGE : 100;
+  const isBoss = (st % 10 === 0);
+  const fadeIn = Math.min(1, p / 0.18);
+  const fadeOut = p < 0.62 ? 1 : Math.max(0, 1 - ((p - 0.62) / 0.38));
+  const alpha = Math.max(0, Math.min(1, fadeIn * fadeOut));
+  const pop = p < 0.22 ? (0.88 + 0.24 * Math.sin((p / 0.22) * Math.PI / 2)) : (1.04 - 0.04 * Math.min(1, (p - 0.22) / 0.30));
+  const x = width / 2;
+  const y = height / 2;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y);
+  ctx.scale(pop, pop);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const glow = isBoss ? 'rgba(255,92,92,0.38)' : 'rgba(255,215,90,0.34)';
+  const mainColor = isBoss ? '#ffef8a' : '#ffffff';
+  const accentColor = isBoss ? '#ff8f8f' : '#ffe86b';
+
+  const panelW = Math.min(width * 0.72, 430);
+  const panelH = isBoss ? 132 : 118;
+  const px = -panelW / 2;
+  const py = -panelH / 2;
+
+  const grad = ctx.createLinearGradient(0, py, 0, py + panelH);
+  grad.addColorStop(0, 'rgba(10,16,30,0.58)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = isBoss ? 'rgba(255,140,140,0.50)' : 'rgba(255,232,107,0.45)';
+  ctx.lineWidth = 2;
+  try {
+    drawRoundRect(px, py, panelW, panelH, 24);
+    ctx.fill();
+    ctx.stroke();
+  } catch(e) {
+    ctx.fillRect(px, py, panelW, panelH);
+    ctx.strokeRect(px, py, panelW, panelH);
+  }
+
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 28;
+  ctx.fillStyle = accentColor;
+  ctx.font = fontStr(isBoss ? 25 : 20, '1000');
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(0,0,0,0.70)';
+  const topText = isBoss ? '★ BOSS STAGE ★' : 'ADVENTURE MODE';
+  ctx.strokeText(topText, 0, isBoss ? -34 : -32);
+  ctx.fillText(topText, 0, isBoss ? -34 : -32);
+
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 36;
+  ctx.fillStyle = mainColor;
+  ctx.font = fontStr(isBoss ? 45 : 52, '1000');
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = 'rgba(0,0,0,0.76)';
+  ctx.strokeText(`STAGE ${st}`, 0, isBoss ? 10 : 8);
+  ctx.fillText(`STAGE ${st}`, 0, isBoss ? 10 : 8);
+
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = isBoss ? '#ffd7d7' : '#dff8ff';
+  ctx.font = fontStr(19, '900');
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(0,0,0,0.68)';
+  const subText = isBoss ? `${st} / ${maxStage} · 보스 등장` : `${st} / ${maxStage}`;
+  ctx.strokeText(subText, 0, isBoss ? 48 : 45);
+  ctx.fillText(subText, 0, isBoss ? 48 : 45);
+
+  ctx.restore();
+}
+
 function v171SafeNum(v, d = 0){
   const n = Number(v);
   return Number.isFinite(n) ? n : d;
@@ -23603,14 +23766,20 @@ checkStageKillClearNow = function(){
     stageCleared = true;
   }
 
-  stageTransitionTimer = 1000;
-  enemies.length = 0;
-  enemyBullets.length = 0;
-  boss = null;
+  // ✅ [v.197.2] 모험 모드: 클리어 결과창/보너스 스테이지 없이 즉시 다음 스테이지로 진행
+  stageTransitionTimer = 0;
+  try { clearStageCombatObjects({ clearDrops: false }); } catch(e) {
+    enemies.length = 0;
+    enemyBullets.length = 0;
+    lasers = [];
+    boss = null;
+  }
   bossSpawned = false;
   spawnExplosion(width/2, height/3, 'rgba(185, 255, 124, 1)', 25);
   if (SFX && SFX.stageClear) SFX.stageClear();
   addQuestStat('stageClears', 1);
+  // ✅ [v.197.4] 자동 진행은 메인 클리어 처리 루트에서 1회만 수행
+  // - checkStageKillClearNow 안에서 별도 setTimeout을 걸면 1→2 직후 다시 1로 초기화되는 경합이 생길 수 있음
   return true;
 };
 
@@ -23850,11 +24019,18 @@ function scheduleAdventureAutoAdvanceV1711(){
       stageClearSeq.formulaText2 = '';
     }
 
+    // ✅ [v.197.3] 모험 모드: 전체 게임 재시작(startGame) 대신 현재 stage 값을 직접 올리고 startStage()만 호출
+    // - startGame 래퍼/초기화 체인에서 stage가 1로 되돌아가는 현상을 방지
+    // - HUD의 "모험 모드 1/100" 고정 문제 수정
     stage = Math.min(ADVENTURE_MAX_STAGE, clearedStage + 1);
     lastSelectedStage = stage;
     runStartStage = stage;
-    startGame(stage);
-  }, 900);
+    stageCleared = false;
+    stageTransitionTimer = 0;
+    state = 'playing';
+    startStage();
+    updateHUD();
+  }, 0);
 }
 
 const startAdventureModeBeforeV1711 = startAdventureMode;
