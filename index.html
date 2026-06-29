@@ -12194,7 +12194,7 @@ const BEGINNER_TUTORIAL_QUEST_POOL = [
   { id:'guide_survival_1', type:'survival', title:'회피 익히기', target:5, beginnerLevelUp:true, fixedExp:165, gold:()=>120, item:null, dialogue:'공격만큼 중요한 것이 생존입니다. 적과 탄환을 피하면서 5초 동안 버텨보세요.' },
   { id:'guide_boss_1', type:'bossKills', title:'보스 익히기', target:1, beginnerLevelUp:true, fixedExp:210, gold:()=>150, item:'largePotion', dialogue:'강력한 보스가 등장합니다. 체력이 높고 위협적이지만, 공격을 이어가면 충분히 쓰러뜨릴 수 있습니다.' },
   { id:'guide_fever_1', type:'fever', title:'피버 모드 익히기', target:1, beginnerLevelUp:true, fixedExp:70, gold:()=>110, item:null, dialogue:'피버 게이지는 몬스터를 처치하면 조금씩 차오릅니다. 튜토리얼에서는 빠르게 충전되며, 100%가 되면 피버 타임이 자동으로 시작됩니다.' },
-  { id:'guide_pet_1', type:'pet', title:'펫 익히기', target:1, beginnerLevelUp:true, fixedExp:127, gold:()=>300, item:null, dialogue:'펫을 선물해서 플레이어가 펫을 장착하면 퀘스트 클리어!' }
+  { id:'guide_pet_1', type:'pet', title:'펫 익히기', target:10, beginnerLevelUp:true, fixedExp:127, gold:()=>300, item:null, dialogue:'펫을 선물했습니다. 선물받은 펫을 장착한 상태로 몬스터 10마리를 처치하면 퀘스트 클리어!' }
 ]
 const TOWN_QUEST_POOL = [
   { id:'town_kill_10', type:'kills', title:'마을 입구 몬스터 정리', target:10, expPct200:0.05, gold:()=>Math.max(80, level * 8), item:null, dialogue:'마을 입구가 조금 소란스러워. 가볍게 정리해주면 모두 안심할 거야.' },
@@ -12302,7 +12302,7 @@ function getTownQuestTypeLabel(type){
     : type === 'multiKills' ? '멀티킬'
     : type === 'bonusStage' ? '보너스 스테이지'
     : type === 'fever' ? '피버 발동'
-    : type === 'pet' ? '펫 체험'
+    : type === 'pet' ? '펫 동행 처치'
     : '진행도';
 }
 function getTownItemName(key){
@@ -12346,7 +12346,7 @@ function makeTownQuestDesc(type, target){
   if (type === 'multiKills') return `멀티킬 ${n}회 달성`;
   if (type === 'bonusStage') return `보너스 스테이지 보상 ${n}회 수집`;
   if (type === 'fever') return `피버 모드 ${n}회 발동`;
-  if (type === 'pet') return `펫 장착 ${n}회 확인`;
+  if (type === 'pet') return `펫과 함께 몬스터 ${n}마리 처치`;
   return `진행도 ${n} 달성`;
 }
 function normalizeTownQuestDisplay(q){
@@ -12437,7 +12437,7 @@ function getBeginnerQuestGuideMessages(q){
     bossKills: ['보스전 시뮬레이션이 열렸습니다. 보스는 일반 몬스터보다 체력이 높고 압박이 큽니다.','공격을 유지하면서 위험한 위치를 피하면 클리어할 수 있습니다.',`현재 임무: ${desc}`],
     fever: ['피버 모드 훈련입니다. 몬스터를 처치하면 피버 게이지가 차오릅니다.','튜토리얼에서는 게이지가 빠르게 충전됩니다. 100%가 되면 피버 타임이 자동으로 발동됩니다.',`현재 임무: ${desc}`],
     bonusStage: ['보너스 스테이지 체험입니다.','보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다. 떨어지는 보상을 챙겨보세요.',`현재 임무: ${desc}`],
-    pet: ['펫을 선물해서 플레이어가 펫을 장착하면 퀘스트 클리어!','튜토리얼에서는 선물받은 슬라임 펫이 자동으로 장착되고, 전투 화면에서 바로 플레이어를 따라다닙니다.',`현재 임무: ${desc}`]
+    pet: ['펫을 선물했습니다! 선물받은 슬라임 펫이 자동으로 장착됩니다.','펫은 플레이어를 따라다니며 전투를 도와주는 동료입니다. 이제 펫과 함께 몬스터를 처치해보세요.',`현재 임무: ${desc}`]
   };
   return [header].concat(guideMap[q?.type] || [`현재 임무: ${desc}`]);
 }
@@ -12571,7 +12571,7 @@ function completeBeginnerGuideQuestInGame(q){
       tutorialIndex = 0;
       tutorialMessages = [
         '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-        '12단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+        '11단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
         '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
       ];
     }, 700);
@@ -29705,6 +29705,93 @@ try {
    =============================== */
 try {
   window.__SS_TUTORIAL_EXP_PATCH_V2013 = true;
+} catch(e) {}
+</script>
+
+
+<script>
+/* ===============================
+   ✅ [v.201.7] 튜토리얼 펫 단계 완료 조건 변경
+   - 펫 자동 장착만으로 완료하지 않고, 펫 장착 상태에서 몬스터 10마리 처치
+   - 표시: 펫과 함께 몬스터 처치 (0/10)
+   =============================== */
+try {
+  if (Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL)) {
+    const petTutorialQuest = BEGINNER_TUTORIAL_QUEST_POOL.find(q => q && q.id === 'guide_pet_1');
+    if (petTutorialQuest) {
+      petTutorialQuest.target = 10;
+      petTutorialQuest.dialogue = '펫을 선물했습니다. 선물받은 펫을 장착한 상태로 몬스터 10마리를 처치하면 퀘스트 클리어!';
+    }
+  }
+
+  const __makeTownQuestDescBeforePetKillV2017 = makeTownQuestDesc;
+  makeTownQuestDesc = function(type, target){
+    if (type === 'pet') {
+      const n = (typeof formatNumber === 'function') ? formatNumber(Math.max(1, Math.floor(Number(target) || 1))) : String(Math.max(1, Math.floor(Number(target) || 1)));
+      return `펫과 함께 몬스터 ${n}마리 처치`;
+    }
+    return __makeTownQuestDescBeforePetKillV2017.apply(this, arguments);
+  };
+
+  const __getTownQuestTypeLabelBeforePetKillV2017 = getTownQuestTypeLabel;
+  getTownQuestTypeLabel = function(type){
+    if (type === 'pet') return '펫 동행 처치';
+    return __getTownQuestTypeLabelBeforePetKillV2017.apply(this, arguments);
+  };
+
+  const __getBeginnerQuestGuideMessagesBeforePetKillV2017 = getBeginnerQuestGuideMessages;
+  getBeginnerQuestGuideMessages = function(q){
+    if (q && q.type === 'pet') {
+      const title = String(q.title || '펫 익히기');
+      const desc = String(q.desc || makeTownQuestDesc(q.type, q.target));
+      const step = Math.max(1, Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Number(q.tutorialStep || q.step || 0) || (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1)));
+      return [
+        `🧭 튜토리얼 ${step}/${BEGINNER_TUTORIAL_QUEST_POOL.length} · ${title}`,
+        '펫을 선물했습니다! 선물받은 슬라임 펫이 자동으로 장착됩니다.',
+        '펫은 플레이어를 따라다니며 전투를 도와주는 동료입니다. 이제 펫과 함께 몬스터를 처치해보세요.',
+        `현재 임무: ${desc}`
+      ];
+    }
+    return __getBeginnerQuestGuideMessagesBeforePetKillV2017.apply(this, arguments);
+  };
+
+  const __buildTownQuestFromTemplateBeforePetKillV2017 = buildTownQuestFromTemplate;
+  buildTownQuestFromTemplate = function(t, npc){
+    if (t && t.id === 'guide_pet_1') t.target = 10;
+    const q = __buildTownQuestFromTemplateBeforePetKillV2017.apply(this, arguments);
+    if (q && q.baseId === 'guide_pet_1') {
+      q.target = 10;
+      q.progress = 0;
+      q.dialogue = '펫을 선물했습니다. 선물받은 펫을 장착한 상태로 몬스터 10마리를 처치하면 퀘스트 클리어!';
+      normalizeTownQuestDisplay(q);
+    }
+    return q;
+  };
+
+  function hasTutorialPetEquippedV2017(){
+    try {
+      ensurePetSystemState();
+      const eq = saveData?.pets?.equipped || {};
+      return !!(eq.left || eq.right || pet || leftPet || rightPet);
+    } catch(e) {
+      return !!(pet || leftPet || rightPet);
+    }
+  }
+
+  const __addScoreBeforePetKillV2017 = addScore;
+  addScore = function(amount, source = 'monster', options = {}){
+    const result = __addScoreBeforePetKillV2017.apply(this, arguments);
+    try {
+      if (gameMode === 'tutorial' && tutorialModeActive && source === 'monster') {
+        const town = ensureTownQuestState();
+        const q = town && town.active;
+        if (q && q.type === 'pet' && hasTutorialPetEquippedV2017()) {
+          updateTownQuestProgress('pet', 1);
+        }
+      }
+    } catch(e) {}
+    return result;
+  };
 } catch(e) {}
 </script>
 
