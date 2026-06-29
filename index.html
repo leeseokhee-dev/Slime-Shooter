@@ -29457,6 +29457,87 @@ try {
   }
 } catch(e) {}
 
+
+/* ===============================
+   ✅ [v.201.2] 튜토리얼 EXP/구슬/최종 레벨 보정
+   - 튜토리얼 모드 몬스터 처치 EXP를 1로 고정
+   - 튜토리얼 EXP 구슬 퀘스트 중 몬스터 처치 구슬 드랍 허용
+   - 12단계 전체 완료 시 정확히 LV.11 / EXP 0%로 고정
+   =============================== */
+function setTutorialFinalLevel11ZeroExpV2012(){
+  try {
+    const capExp = Math.max(0, Math.floor(Number(EXP_TABLE?.[11]?.totalMin || 0)));
+    level = 11;
+    exp = capExp;
+    tutorialModeActive = false;
+    if (saveData) {
+      saveData.level = level;
+      saveData.exp = exp;
+    }
+    try { syncPlayerHealthToLevel({ refill:true }); } catch(e) { try { syncPlayerHealthToLevel(); } catch(_) {} }
+    try { updateHUD(); } catch(e) {}
+    try { saveGameData(); } catch(e) { try { saveGameDataDebounced(); } catch(_) {} }
+  } catch(e) {}
+}
+
+try {
+  const __addScoreBeforeTutorialExpV2012 = addScore;
+  addScore = function(amount, source = 'monster', options = {}){
+    options = options || {};
+    if (gameMode === 'tutorial' && tutorialModeActive && source === 'monster' && options.noExp !== true) {
+      const scoreAmount = (typeof resolveScoreAmount === 'function') ? resolveScoreAmount(amount, source, options) : Math.max(0, Math.floor(Number(amount) || 0));
+      score += scoreAmount;
+      try { updateTownQuestProgress('kills', 1); } catch(e) {}
+      try { if (options.enemy && options.enemy.isTutorialBoss) updateTownQuestProgress('bossKills', 1); } catch(e) {}
+
+      // ✅ 튜토리얼 몬스터 EXP는 버프/핫타임/피버/펫 보너스 없이 무조건 1
+      const grantedExp = addExpDirect(1);
+      try { stageRunExpMonsters = Math.max(0, Math.floor(Number(stageRunExpMonsters) || 0)) + Math.max(0, Math.floor(grantedExp || 0)); } catch(e) {}
+
+      if (options.multikillEligible === true) {
+        try { recordMultiKillCandidate(grantedExp, options.enemy, { eligible:true, source: options.multikillSource || 'skill' }); } catch(e) {}
+      }
+      return grantedExp;
+    }
+    return __addScoreBeforeTutorialExpV2012.apply(this, arguments);
+  };
+} catch(e) {}
+
+try {
+  const __spawnExpItemFromEnemyBeforeTutorialV2012 = spawnExpItemFromEnemy;
+  spawnExpItemFromEnemy = function(enemy){
+    if (gameMode === 'tutorial' && tutorialModeActive) {
+      const q = (typeof getTutorialActiveQuest === 'function') ? getTutorialActiveQuest() : null;
+      if (!q || q.type !== 'expOrbs' || !enemy) return;
+      let dropChance = EXP_ITEM_DROP_CHANCE + (typeof getFeverExpDropBonus === 'function' ? getFeverExpDropBonus() : 0);
+      // ✅ 튜토리얼 EXP 구슬 학습 단계에서는 너무 안 나와서 막히지 않게 최소 확률 보장
+      dropChance = Math.max(0.45, Math.min(1, dropChance));
+      if (Math.random() >= dropChance) return;
+      const gradeKey = (typeof rollExpGrade === 'function') ? rollExpGrade() : 'low';
+      spawnExpItem(enemy.x, enemy.y, 1, gradeKey, false);
+      return;
+    }
+    return __spawnExpItemFromEnemyBeforeTutorialV2012.apply(this, arguments);
+  };
+} catch(e) {}
+
+try {
+  const __completeBeginnerGuideQuestBeforeFinalClampV2012 = completeBeginnerGuideQuestInGame;
+  completeBeginnerGuideQuestInGame = function(q){
+    const townBefore = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+    const stepBefore = Math.max(0, Math.floor(Number(townBefore?.guideStep || 0)));
+    const totalSteps = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 12;
+    const ret = __completeBeginnerGuideQuestBeforeFinalClampV2012.apply(this, arguments);
+    const townAfter = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+    const stepAfter = Math.max(0, Math.floor(Number(townAfter?.guideStep || 0)));
+    if (ret && (stepBefore >= totalSteps - 1 || stepAfter >= totalSteps)) {
+      setTutorialFinalLevel11ZeroExpV2012();
+      try { showToast('튜토리얼 완료! LV.11 / EXP 0%로 맞춰졌습니다.', '#b8ffd8', 1800); } catch(e) {}
+    }
+    return ret;
+  };
+} catch(e) {}
+
 </script>
 
 <!-- ===============================
