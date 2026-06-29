@@ -4854,6 +4854,7 @@ const bgmTracks = {
   slimerush:new Audio('bg_slimerush.mp3'),// ✅ [v.187.1] 슬라임 러시 전용
   evolution:new Audio('bg_evolution.mp3'),// ✅ [v.188] 에볼루션 모드 전용
   village:  new Audio('bg_village.mp3'),  // ✅ [v.201] 슬라임 마을 전용
+  tutorial: new Audio('bg_tutorial.mp3'), // ✅ [v.201] 튜토리얼 모드 전용
   fever:    new Audio('bg_fever.mp3'),    // ✅ 피버 모드 전용
 
   // ✅ [추가] 시즌 BGM(파일이 없으면 자동으로 기본 BGM 사용)
@@ -4978,6 +4979,7 @@ function getModeBgmName() {
   if (gameMode === 'itempark') return 'itempark';
   if (gameMode === 'minigame') return 'minigame';
   if (gameMode === 'town') return 'village';
+  if (gameMode === 'tutorial') return 'tutorial';
   if (gameMode === 'treasure') return 'treasure';
   if (typeof slimeRushActiveV187 !== 'undefined' && slimeRushActiveV187) return 'slimerush';
   return 'game';
@@ -5883,13 +5885,13 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'infinite' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon'
+let gameMode = 'stage';      // 'stage' | 'infinite' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon' | 'tutorial'
 
 // ✅ [v.194.2] 5마리 묶음형 리스폰 적용 대상
 // - 무한 모드와 던전 모드는 기존 스폰 시스템 유지
 // - 나머지 일반 몬스터 사용 모드는 화면에 몬스터가 모두 사라진 뒤 다음 5마리 생성
 function useTenMonsterBatchRespawn() {
-  return gameMode !== 'infinite' && gameMode !== 'dungeon';
+  return gameMode !== 'infinite' && gameMode !== 'dungeon' && gameMode !== 'tutorial';
 }
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
@@ -7813,6 +7815,19 @@ function nextTutorialMessage() {
     return;
   }
 
+  // ✅ 튜토리얼 모드 전체 완료 안내가 끝나면 타이틀로 복귀
+  if (tutorialFlow === 'beginnerGuideDone') {
+    tutorialActive = false;
+    tutorialNonBlocking = false;
+    tutorialIndex = 0;
+    tutorialMessages = [];
+    tutorialFlow = 'none';
+    document.body.classList.remove('tutorial-mode');
+    if (tutorialOverlayDom) tutorialOverlayDom.classList.add('hidden');
+    try { goToTitle(); } catch(e) {}
+    return;
+  }
+
   // ✅ 보스 소개 튜토리얼 종료 후 보스 경고 연출 시작
   if (tutorialFlow === 'bossIntro') {
     tutorialActive = false;
@@ -8258,6 +8273,7 @@ function tryPickupExpItems() {
   // ✅ [v.30] 일일/주간 카운트
   addQuestStat('expOrbs', 1);
   try { updateTownQuestProgress('expOrbs', 1); } catch(e) {}
+  try { updateTownQuestProgress('bonusStage', 1); } catch(e) {}
   saveGameDataDebounced();
 }
 
@@ -11312,6 +11328,7 @@ function flushMultiKillIfReady(force = false) {
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, gained || bonus);
   addQuestStat('multiKills', 1);
+  try { updateTownQuestProgress('multiKills', 1); } catch(e) {}
   if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
   if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
   if (skillCount > 0) addQuestStat('skillKills', skillCount);
@@ -12145,18 +12162,17 @@ function clearGuideQuestIfNoLongerNeeded(){
 }
 
 const BEGINNER_TUTORIAL_QUEST_POOL = [
-  { id:'guide_kill_1', type:'kills', title:'첫 전투 연습', target:1, beginnerLevelUp:true, gold:()=>20, item:null, dialogue:'먼저 몬스터를 1마리 처치해볼까요? 플레이어는 자동으로 공격하니 움직이면서 피하면 됩니다.' },
-  { id:'guide_kill_3', type:'kills', title:'자동 공격 익히기', target:3, beginnerLevelUp:true, gold:()=>30, item:'smallPotion', dialogue:'이번에는 몬스터 3마리를 처치해보세요. 위에서 내려오는 몬스터와 부딪히지 않는 게 핵심입니다.' },
-  { id:'guide_gold_10', type:'goldEarned', title:'골드 획득 배우기', target:10, beginnerLevelUp:true, gold:()=>40, item:null, dialogue:'전투를 하다 보면 골드도 모을 수 있어요. 골드는 아이템과 성장 준비에 도움이 됩니다.' },
-  { id:'guide_orb_1', type:'expOrbs', title:'EXP 구슬 줍기', target:1, beginnerLevelUp:true, gold:()=>50, item:'expSmallPack', dialogue:'반짝이는 EXP 구슬을 주워보세요. 구슬은 성장 속도를 올려주는 좋은 보상입니다.' },
-  { id:'guide_stage_1', type:'stageClears', title:'1스테이지 클리어', target:1, beginnerLevelUp:true, gold:()=>80, item:'smallPotion', dialogue:'이제 스테이지를 한 번 클리어해볼 차례입니다. 목표 처치 수를 채우면 클리어할 수 있어요.' },
-  { id:'guide_kill_8', type:'kills', title:'회피와 처치 반복', target:8, beginnerLevelUp:true, gold:()=>100, item:null, dialogue:'움직임이 익숙해졌다면 몬스터 8마리를 처치해보세요. 좌우 이동으로 안전한 위치를 잡는 게 좋아요.' },
-  { id:'guide_gold_50', type:'goldEarned', title:'골드 사용 준비', target:50, beginnerLevelUp:true, gold:()=>120, item:'smallPotion', dialogue:'골드는 조금씩 쌓아두면 이후 상점과 아이템 활용이 편해집니다. 금빛 보상을 모아볼까요?' },
-  { id:'guide_orb_3', type:'expOrbs', title:'성장 구슬 관찰', target:3, beginnerLevelUp:true, gold:()=>150, item:'expSmallPack', dialogue:'EXP 구슬을 3개 주우면 성장 흐름을 더 잘 체감할 수 있어요. 반짝임을 놓치지 마세요.' },
-  { id:'guide_stage_2', type:'stageClears', title:'스테이지 적응 훈련', target:2, beginnerLevelUp:true, gold:()=>180, item:'largePotion', dialogue:'스테이지 클리어를 2회 달성해보세요. 반복 플레이가 본격적인 성장의 시작입니다.' },
-  { id:'guide_kill_15', type:'kills', title:'초보 탈출 최종 점검', target:15, beginnerLevelUp:true, gold:()=>250, item:'expMediumPack', dialogue:'마지막 안내 퀘스트입니다. 몬스터 15마리를 처치하면 LV.11까지의 기본 성장을 마무리할 수 있어요.' }
+  { id:'guide_control_1', type:'control', title:'조작 방법 익히기', target:1, beginnerLevelUp:true, gold:()=>20, item:null, dialogue:'훈련장 입장 확인. 먼저 캐릭터 이동부터 시작합니다. 모바일은 터치/드래그, PC는 방향키 또는 WASD로 움직여보세요.' },
+  { id:'guide_auto_attack_1', type:'autoAttack', title:'자동 공격 익히기', target:20, beginnerLevelUp:true, gold:()=>30, item:null, dialogue:'슬라임 슈터의 기본 공격은 자동 전투 시스템입니다. 몬스터가 없어도 0.15초마다 탄환이 계속 발사됩니다.' },
+  { id:'guide_kill_1', type:'kills', title:'몬스터 처치 익히기', target:5, beginnerLevelUp:true, gold:()=>40, item:'smallPotion', dialogue:'이제 실제 전투입니다. 내려오는 몬스터를 피하면서 자동 공격으로 처치해보세요.' },
+  { id:'guide_gold_1', type:'goldEarned', title:'골드 획득 익히기', target:10, beginnerLevelUp:true, gold:()=>50, item:null, dialogue:'전투 보상은 직접 주워야 진짜 내 것이 됩니다. 몬스터를 처치하고 떨어진 골드를 획득해보세요.' },
+  { id:'guide_gem_1', type:'gems', title:'보석 획득 익히기', target:1, beginnerLevelUp:true, gold:()=>60, item:null, dialogue:'골드 드랍 중에는 일정 확률로 보석이 등장합니다. 루비는 10골드, 사파이어는 30골드, 다이아는 50골드입니다.' },
+  { id:'guide_multi_1', type:'multiKills', title:'멀티킬 익히기', target:1, beginnerLevelUp:true, gold:()=>80, item:'smallPotion', dialogue:'튜토리얼 모드에서는 초보자도 스킬을 사용할 수 있습니다. 몬스터가 모였을 때 거품 스킬로 한 번에 처치해 멀티킬을 만들어보세요.' },
+  { id:'guide_orb_1', type:'expOrbs', title:'경험치 구슬 익히기', target:1, beginnerLevelUp:true, gold:()=>100, item:'expSmallPack', dialogue:'EXP 구슬은 몬스터 처치 후 일정 확률로 등장합니다. 무조건 나오는 보상이 아니므로 보이면 안전하게 이동해서 획득하세요.' },
+  { id:'guide_survival_1', type:'survival', title:'회피 익히기', target:5, beginnerLevelUp:true, gold:()=>120, item:null, dialogue:'공격만큼 중요한 것이 생존입니다. 적과 탄환을 피하면서 5초 동안 버텨보세요.' },
+  { id:'guide_boss_1', type:'bossKills', title:'보스 익히기', target:1, beginnerLevelUp:true, gold:()=>150, item:'largePotion', dialogue:'강력한 보스가 등장합니다. 체력이 높고 위협적이지만, 공격을 이어가면 충분히 쓰러뜨릴 수 있습니다.' },
+  { id:'guide_bonus_1', type:'bonusStage', title:'보너스 스테이지 익히기', target:3, beginnerLevelUp:true, gold:()=>250, item:'expMediumPack', dialogue:'마지막은 보너스 스테이지 체험입니다. 떨어지는 보상을 수집하며 성장 흐름을 마무리해보세요.' }
 ];
-
 const TOWN_QUEST_POOL = [
   { id:'town_kill_10', type:'kills', title:'마을 입구 몬스터 정리', target:10, expPct200:0.05, gold:()=>Math.max(80, level * 8), item:null, dialogue:'마을 입구가 조금 소란스러워. 가볍게 정리해주면 모두 안심할 거야.' },
   { id:'town_kill_25', type:'kills', title:'슬라임 길 안전 확보', target:25, expPct200:0.12, gold:()=>Math.max(180, level * 15), item:'smallPotion', dialogue:'슬라임들이 다니는 길을 안전하게 만들고 싶어. 조금 더 힘을 빌려줘!' },
@@ -12242,13 +12258,18 @@ function ensureTownQuestState(){
   return saveData.townQuest;
 }
 function getTownQuestTypeLabel(type){
-  return type === 'kills' ? '몬스터 처치'
+  return type === 'control' ? '기본 조작'
+    : type === 'autoAttack' ? '자동 공격'
+    : type === 'survival' ? '회피 연습'
+    : type === 'kills' ? '몬스터 처치'
     : type === 'goldEarned' ? '골드 획득'
+    : type === 'gems' ? '보석 획득'
     : type === 'expOrbs' ? 'EXP 구슬'
     : type === 'skillUses' ? '스킬 사용'
     : type === 'stageClears' ? '스테이지 클리어'
     : type === 'bossKills' ? '보스 처치'
     : type === 'multiKills' ? '멀티킬'
+    : type === 'bonusStage' ? '보너스 스테이지'
     : '진행도';
 }
 function getTownItemName(key){
@@ -12279,13 +12300,18 @@ function getTownQuestFinalTarget(t, lv = level){
 }
 function makeTownQuestDesc(type, target){
   const n = formatNumber(Math.max(1, Math.floor(Number(target) || 1)));
+  if (type === 'control') return `기본 조작 ${n}회 익히기`;
+  if (type === 'autoAttack') return `자동 공격 ${n}회 확인`;
+  if (type === 'survival') return `${n}초 동안 회피 연습`;
   if (type === 'kills') return `몬스터 ${n}마리 처치`;
   if (type === 'goldEarned') return `골드 ${n} 획득`;
+  if (type === 'gems') return `보석 ${n}개 획득`;
   if (type === 'expOrbs') return `EXP 구슬 ${n}개 줍기`;
   if (type === 'skillUses') return `스킬 ${n}회 사용`;
   if (type === 'stageClears') return `스테이지 ${n}회 클리어`;
   if (type === 'bossKills') return `보스 ${n}마리 처치`;
   if (type === 'multiKills') return `멀티킬 ${n}회 달성`;
+  if (type === 'bonusStage') return `보너스 스테이지 보상 ${n}회 수집`;
   return `진행도 ${n} 달성`;
 }
 function normalizeTownQuestDisplay(q){
@@ -12311,6 +12337,7 @@ function buildTownQuestFromTemplate(t, npc){
     gold: Math.max(0, Math.floor(goldReward || 0)),
     item: t.item || null,
     beginnerLevelUp: !!t.beginnerLevelUp,
+    tutorialStep: t.beginnerLevelUp ? (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1) : 0,
     dialogue: t.dialogue || '',
     acceptedAt: Date.now()
   });
@@ -12360,23 +12387,28 @@ function isBeginnerGuideQuest(q){
 function getBeginnerQuestGuideMessages(q){
   const title = q ? String(q.title || '초보자 안내') : '초보자 안내';
   const desc = q ? String(q.desc || makeTownQuestDesc(q.type, q.target)) : '';
-  const common = [
-    `🧭 ${title}`,
-    `이번 안내 미션: ${desc}`,
-    '화면을 터치하거나 드래그해서 플레이어를 움직여보세요. 총알은 자동으로 발사됩니다.',
-    '몬스터와 적 탄환을 피하면서 목표를 채우면 퀘스트가 자동 완료됩니다.'
-  ];
-  if (q && q.type === 'kills') common.push('몬스터 처치는 가장 기본입니다. 내려오는 적을 피하면서 자동 공격으로 정리해보세요.');
-  if (q && q.type === 'goldEarned') common.push('골드는 전투 중 드랍되거나 클리어 보상으로 얻을 수 있습니다. 반짝이는 보상을 놓치지 마세요.');
-  if (q && q.type === 'expOrbs') common.push('EXP 구슬은 몬스터 처치 후 나타납니다. 안전한 타이밍에 가까이 이동해 주워보세요.');
-  if (q && q.type === 'stageClears') common.push('스테이지 목표 처치 수를 모두 채우면 클리어됩니다. 천천히 생존하면서 진행해보세요.');
-  common.push('이 안내 퀘스트를 완료하면 1레벨업 EXP를 받습니다. 단, 최대 LV.11 0%까지만 올라갑니다.' );
-  return common;
+  const step = Math.max(1, Math.min(10, Number(q?.tutorialStep || q?.step || 0) || (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1)));
+  const header = `🧭 튜토리얼 ${step}/10 · ${title}`;
+  const guideMap = {
+    control: ['슬라임 훈련장에 접속했습니다. 지금부터 기본 조작 체크를 시작합니다.','캐릭터를 한 번 움직이면 목표가 완료됩니다. 모바일은 드래그, PC는 방향키와 WASD를 사용할 수 있습니다.',`현재 임무: ${desc}`],
+    autoAttack: ['전투 시스템 안내입니다. 슬라임 슈터의 기본 공격은 자동으로 작동합니다.','몬스터가 있든 없든 0.15초마다 탄환이 발사됩니다. 손을 떼도 공격 리듬은 유지됩니다.',`현재 임무: ${desc}`],
+    kills: ['첫 몬스터 처치 훈련을 시작합니다. 내려오는 몬스터를 피하면서 공격 라인을 맞춰보세요.','처치 기록이 목표 수치에 도달하면 다음 훈련으로 이동합니다.',`현재 임무: ${desc}`],
+    goldEarned: ['이번 훈련은 전리품 회수입니다. 골드는 자동 지급이 아니라 필드에 떨어진 보상을 직접 줍는 방식입니다.','몬스터를 처치한 뒤 떨어지는 골드에 가까이 이동해 획득하세요.',`현재 임무: ${desc}`],
+    gems: ['보석 드랍 안내입니다. 보석은 골드보다 더 반짝이는 특별 전리품입니다.','루비는 10골드, 사파이어는 30골드, 다이아는 50골드 가치가 있습니다. 등장하면 우선적으로 챙겨보세요.',`현재 임무: ${desc}`],
+    multiKills: ['멀티킬 훈련을 시작합니다. 튜토리얼 모드에서는 초보자도 스킬 버튼을 사용할 수 있습니다.','몬스터가 모였을 때 거품 스킬을 누르면 한 번에 여러 마리를 처치할 수 있습니다.',`현재 임무: ${desc}`],
+    expOrbs: ['EXP 구슬 안내입니다. 구슬은 몬스터 처치 후 일정 확률로 등장합니다.','무조건 나오는 보상이 아니기 때문에, 나타났을 때 안전한 경로로 이동해 획득하는 것이 중요합니다.',`현재 임무: ${desc}`],
+    survival: ['회피 훈련입니다. 강한 유저는 공격뿐 아니라 피하는 타이밍도 좋습니다.','몬스터와 탄환을 피하면서 지정 시간 동안 버텨보세요.',`현재 임무: ${desc}`],
+    bossKills: ['보스전 시뮬레이션이 열렸습니다. 보스는 일반 몬스터보다 체력이 높고 압박이 큽니다.','공격을 유지하면서 위험한 위치를 피하면 클리어할 수 있습니다.',`현재 임무: ${desc}`],
+    bonusStage: ['마지막 훈련은 보너스 스테이지 체험입니다.','보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다. 떨어지는 EXP 구슬을 챙겨보세요.',`현재 임무: ${desc}`]
+  };
+  return [header].concat(guideMap[q?.type] || [`현재 임무: ${desc}`]);
 }
 function showBeginnerGuideInGame(q){
   if (!isBeginnerGuideQuest(q)) return;
   tutorialFlow = 'beginnerGuide';
-  tutorialNonBlocking = true;
+  // ✅ 튜토리얼 모드 대사 중에는 전투 화면을 완전히 일시정지합니다.
+  // 몬스터/탄환/자동공격/타이머가 진행되지 않아 설명을 안전하게 읽을 수 있습니다.
+  tutorialNonBlocking = false;
   tutorialActive = true;
   tutorialIndex = 0;
   tutorialMessages = getBeginnerQuestGuideMessages(q);
@@ -12389,9 +12421,9 @@ function startBeginnerGuideRun(q){
   if (titleUI) titleUI.classList.add('hidden');
   state = 'playing';
   tutorialModeActive = true;
-  gameMode = 'stage';
-  stage = Math.max(1, Math.min(Number(saveData?.maxUnlockedStage || 1), 1));
-  showToast('🧭 튜토리얼 모드 진행 중! 실제 전투에서 목표를 달성해보세요.', '#b8ffd8', 1800);
+  gameMode = 'tutorial';
+  stage = 1;
+  showToast('🧭 튜토리얼 모드 진행 중! 전용 연습 목표를 달성해보세요.', '#b8ffd8', 1800);
   startGame(1);
   setTimeout(() => showBeginnerGuideInGame(q), 80);
 }
@@ -12443,14 +12475,13 @@ function completeBeginnerGuideQuestInGame(q){
     saveGameData();
     setTimeout(() => {
       tutorialFlow = 'beginnerGuideDone';
-      tutorialNonBlocking = true;
+      tutorialNonBlocking = false;
       tutorialActive = true;
       tutorialIndex = 0;
       tutorialMessages = [
-        '축하합니다! 초보자 안내 퀘스트를 완료했습니다.',
-        '이제 LV.11부터 본격적인 플레이가 시작됩니다.',
-        '거품 스킬이 해금되면 스킬 버튼을 눌러 전투 흐름을 더 빠르게 만들 수 있습니다.',
-        '마을의 다른 슬라임들에게서도 다양한 퀘스트를 받을 수 있어요.'
+        '튜토리얼 10단계를 모두 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
+        '보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+        '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
       ];
     }, 700);
   }
@@ -13858,6 +13889,27 @@ window.addEventListener('keydown', (e) => {
 keys[e.code] = true;
 handleInputStart();
 
+// ✅ PC/노트북 조작 보강: 방향키/WASD도 튜토리얼 기본 조작 완료 조건으로 즉시 인정
+if (!e.repeat && state === 'playing' && gameMode === 'tutorial' && !tutorialActive) {
+  const moveKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS'];
+  if (moveKeys.includes(e.code)) {
+    e.preventDefault();
+    try {
+      tutorialRunState.moved = true;
+      const q = getTutorialActiveQuest();
+      if (q && q.type === 'control') updateTownQuestProgress('control', 1);
+    } catch(_) {}
+  }
+}
+
+// ✅ 튜토리얼 대사는 키보드 Enter/Space로도 넘길 수 있게 처리
+if (!e.repeat && tutorialActive && (e.code === 'Enter' || e.code === 'Space')) {
+  e.preventDefault();
+  if (introTutorialActive) { handleIntroTutorialTapAdvance(); return; }
+  nextTutorialMessage();
+  return;
+}
+
 if (!e.repeat && (e.code === 'Escape' || e.code === 'KeyP')) {
   if (state === 'playing' || isPaused) {
     e.preventDefault();
@@ -15038,7 +15090,10 @@ function addScore(amount, source = 'monster', options = {}) {
   amount = resolveScoreAmount(amount, source, options);
   const prevScore = score;
   score += amount;
-  if (source === 'monster') updateTownQuestProgress('kills', 1);
+  if (source === 'monster') {
+    updateTownQuestProgress('kills', 1);
+    if (gameMode === 'tutorial' && options && options.enemy && options.enemy.isTutorialBoss) updateTownQuestProgress('bossKills', 1);
+  }
 
   if (gameMode === 'infinite' && source === 'monster' && options.noAllKill !== true) {
     recordInfiniteAllKillCandidate(options.enemy, amount);
@@ -15315,7 +15370,12 @@ function spawnGoldDrop(x, y, amount) {
   let dropType = 'gold';
   let finalAmount = Math.max(1, Math.floor(amount));
 
-  if (isMissionGemObjectiveActive()) {
+  if (gameMode === 'tutorial' && isTutorialGoldDropObjectiveActive() && getTutorialActiveQuest()?.type === 'gems') {
+    const roll = Math.random();
+    if (roll < 0.50) { dropType = 'ruby'; finalAmount = 10; }
+    else if (roll < 0.84) { dropType = 'sapphire'; finalAmount = 30; }
+    else { dropType = 'diamond'; finalAmount = 50; }
+  } else if (isMissionGemObjectiveActive()) {
     const roll = Math.random();
     if (roll < 0.55) {
       dropType = 'ruby';
@@ -15542,7 +15602,10 @@ function tryPickupGoldDrops() {
       const gained = Math.max(1, Math.floor(baseGained * getPetGoldMultiplier() * getFeverGoldMultiplier()));
       addGoldGainMessages(baseGained, gained, it.type || 'gold');
       stageRunItemPickupCount = (stageRunItemPickupCount || 0) + 1;
-      if (it.type && it.type !== 'gold') stageRunGemPickupCount = (stageRunGemPickupCount || 0) + 1;
+      if (it.type && it.type !== 'gold') {
+        stageRunGemPickupCount = (stageRunGemPickupCount || 0) + 1;
+        try { updateTownQuestProgress('gems', 1); } catch(e) {}
+      }
       gold += gained;
       stageRunGoldEarned = (stageRunGoldEarned || 0) + gained;
       saveData.goldEarned = (saveData.goldEarned || 0) + gained;
@@ -16696,10 +16759,12 @@ let bubbles = [];          // [{x,y,vx,vy,radius,damage,_hit}]
 let bubbleSpray = null;    // { life, tick }
 
 function canUseBubbleSkill() {
+  if (gameMode === 'tutorial' && tutorialModeActive) return true;
   return (typeof level === 'number') && (level >= 11);
 }
 
 function getBubbleSkillShotCount() {
+  if (gameMode === 'tutorial' && tutorialModeActive) return 3;
   if (level >= 200) return 5;
   if (level >= 101) return 4;
   if (level >= 61) return 3;
@@ -19122,6 +19187,7 @@ else if (gameMode === 'itempark') initItemParkRun();
 else if (gameMode === 'minigame') initMiniGameRun();
 else if (gameMode === 'treasure') initTreasureRushRun();
 else if (gameMode === 'training') initTrainingRun();
+else if (gameMode === 'tutorial') initTutorialModeRun();
 else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
@@ -19711,6 +19777,237 @@ const r = r1 + r2;
 return distSq <= r * r;
 }
 
+
+// ===============================
+// ✅ [v.201.1] 전용 튜토리얼 모드
+// - 스테이지 모드와 완전 분리: 목표 처치 수/보스/결과창/보너스 스테이지 없음
+// - 단계별 안내 퀘스트를 전투 안에서 직접 수행
+// ===============================
+const tutorialRunState = {
+  active: false,
+  elapsed: 0,
+  spawnAcc: 0,
+  autoAttackAcc: 0,
+  autoShotCount: 0,
+  lastPlayerX: 0,
+  lastPlayerY: 0,
+  moved: false,
+  survivalAcc: 0
+};
+
+function isTutorialGoldDropObjectiveActive(){
+  try {
+    const q = ensureTownQuestState()?.active;
+    return gameMode === 'tutorial' && isBeginnerGuideQuest(q) && (q.type === 'goldEarned' || q.type === 'gems');
+  } catch(e) { return false; }
+}
+
+// 기존 골드 드랍 허용 조건에 튜토리얼 골드 연습을 추가합니다.
+try {
+  const __oldMissionGoldDropObjectiveActive = isMissionGoldDropObjectiveActive;
+  isMissionGoldDropObjectiveActive = function(){
+    return (typeof __oldMissionGoldDropObjectiveActive === 'function' && __oldMissionGoldDropObjectiveActive()) || isTutorialGoldDropObjectiveActive();
+  };
+} catch(e) {}
+
+function initTutorialModeRun(){
+  tutorialRunState.active = true;
+  tutorialRunState.elapsed = 0;
+  tutorialRunState.spawnAcc = 0;
+  tutorialRunState.autoAttackAcc = 0;
+  tutorialRunState.autoShotCount = 0;
+  tutorialRunState.lastPlayerX = player ? player.x : width / 2;
+  tutorialRunState.lastPlayerY = player ? player.y : height * 0.82;
+  tutorialRunState.moved = false;
+  tutorialRunState.survivalAcc = 0;
+  stage = 1;
+  waveIndex = 0;
+  bossSpawned = false;
+  stageCleared = false;
+  stageTransitionTimer = 0;
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  bullets.length = 0;
+  expItems.length = 0;
+  goldDrops.length = 0;
+  fieldItems.length = 0;
+  boss = null;
+  syncPlayerHealthToLevel({ refill: true });
+  stageRunHits = 0;
+  stageRunExpMonsters = 0;
+  stageRunExpBoss = 0;
+  stageRunExpOrbs = 0;
+  stageRunGoldEarned = 0;
+  stageRunKillCount = 0;
+  stageRunItemPickupCount = 0;
+  stageRunGemPickupCount = 0;
+  stageBossTriggered = false;
+  stageBossKillCount = 0;
+  stageRunStartTime = performance.now();
+  stageRunStartExp = exp;
+  try {
+    const town = ensureTownQuestState();
+    if (town && !isBeginnerGuideQuest(town.active)) town.active = getOrCreateBeginnerGuideQuestForTutorialMode();
+  } catch(e) {}
+  setTimeout(() => {
+    try { showBeginnerGuideInGame(ensureTownQuestState().active); } catch(e) {}
+  }, 90);
+}
+
+function getTutorialActiveQuest(){
+  try {
+    const q = ensureTownQuestState()?.active;
+    return isBeginnerGuideQuest(q) ? q : null;
+  } catch(e) { return null; }
+}
+
+function spawnTutorialEnemy(count = 1){
+  const q = getTutorialActiveQuest && getTutorialActiveQuest();
+  const maxOnScreen = (q && q.type === 'multiKills') ? 8 : ((q && q.type === 'bossKills') ? 1 : 5);
+  const room = Math.max(0, maxOnScreen - enemies.length);
+  count = Math.min(Math.max(1, Math.floor(count || 1)), room);
+  if (count <= 0) return;
+  for (let i = 0; i < count; i++) {
+    const isBossTraining = q && q.type === 'bossKills';
+    const type = isBossTraining ? 'hexagon' : ENEMY_TYPES[(waveIndex + i) % ENEMY_TYPES.length];
+    const x = isBossTraining ? width * 0.5 : randRange(48, width - 48);
+    const y = isBossTraining ? 78 : (-44 - Math.random() * 16);
+    const enemy = createEnemy(type, x, y, isBossTraining ? 1.65 : 1.15, 'rain', 0, { drift: isBossTraining ? 0 : randRange(-0.08, 0.08), attackStyle: isBossTraining ? 'spread' : 'none' });
+    enemy.hp = isBossTraining ? 18 : 1;
+    enemy.maxHp = enemy.hp;
+    enemy.exp = Math.max(1, Math.floor((enemy.exp || 1) * (isBossTraining ? 0.8 : 0.35)));
+    if (isBossTraining) {
+      enemy.displayName = '튜토리얼 보스 슬라임';
+      enemy.isTutorialBoss = true;
+      enemy.vy = 0.12;
+    }
+    enemies.push(enemy);
+  }
+  waveIndex++;
+}
+function tutorialShouldSpawnForQuest(q){
+  if (!q) return false;
+  return q.type === 'kills' || q.type === 'goldEarned' || q.type === 'gems' || q.type === 'multiKills' || q.type === 'expOrbs' || q.type === 'survival' || q.type === 'bossKills' || q.type === 'bonusStage';
+}
+
+function forceTutorialAutoShot(currentTime){
+  if (!player || !player.alive || isPlayerDying) return false;
+  const before = bullets.length;
+  const oldLast = lastShotTime;
+  // FIRE_INTERVAL과 상관없이 튜토리얼에서는 0.15초마다 기본 공격이 나가게 강제합니다.
+  lastShotTime = currentTime - Math.max(FIRE_INTERVAL, 150) - 1;
+  shootBullet(currentTime);
+  if (bullets.length > before) {
+    tutorialRunState.autoShotCount += (bullets.length - before);
+    return true;
+  }
+  lastShotTime = oldLast;
+  return false;
+}
+
+function updateTutorialModeRun(dt, currentTime){
+  if (!tutorialRunState.active) initTutorialModeRun();
+  const q = getTutorialActiveQuest();
+  tutorialRunState.elapsed += dt;
+
+  if (levelUpTimer > 0) levelUpTimer -= dt;
+  if (player) player.speed = BASE_PLAYER_SPEED + (level - 1) * 0.15;
+  if (playerInvulnTimer > 0) playerInvulnTimer = Math.max(0, playerInvulnTimer - dt);
+
+  updatePlayerStatusEffects(dt);
+  handlePlayerMovement(dt);
+
+  const keyboardMoving = !!(
+    keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD'] ||
+    keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS']
+  );
+  if (player) {
+    const movedX = Math.abs(player.x - tutorialRunState.lastPlayerX);
+    const movedY = Math.abs(player.y - tutorialRunState.lastPlayerY);
+    if (movedX >= 12 || movedY >= 12 || keyboardMoving || dragActive) tutorialRunState.moved = true;
+    tutorialRunState.lastPlayerX = player.x;
+    tutorialRunState.lastPlayerY = player.y;
+  }
+  if (q && q.type === 'control' && tutorialRunState.moved) {
+    updateTownQuestProgress('control', 1);
+  }
+
+  tutorialRunState.autoAttackAcc += dt;
+  while (tutorialRunState.autoAttackAcc >= 150) {
+    tutorialRunState.autoAttackAcc -= 150;
+    const before = tutorialRunState.autoShotCount;
+    forceTutorialAutoShot((currentTime || performance.now()) + before);
+    if (q && q.type === 'autoAttack' && tutorialRunState.autoShotCount > before) {
+      updateTownQuestProgress('autoAttack', 1);
+    }
+  }
+
+  shootPetBullet(currentTime);
+  shootPet2Bullet(currentTime);
+
+  if (q && tutorialShouldSpawnForQuest(q)) {
+    tutorialRunState.spawnAcc += dt;
+    const interval = q.type === 'survival' ? 900 : (q.type === 'bossKills' ? 1300 : (q.type === 'bonusStage' ? 1100 : 650));
+    while (tutorialRunState.spawnAcc >= interval) {
+      tutorialRunState.spawnAcc -= interval;
+      const spawnCount = q.type === 'multiKills' ? 4 : ((q.type === 'goldEarned' || q.type === 'gems') ? 2 : 1);
+      if (q.type !== 'bonusStage') spawnTutorialEnemy(spawnCount);
+    }
+  } else {
+    enemies.length = 0;
+    enemyBullets.length = 0;
+  }
+
+  if (q && q.type === 'bonusStage') {
+    tutorialRunState.survivalAcc += dt;
+    if (tutorialRunState.survivalAcc >= 550) {
+      tutorialRunState.survivalAcc -= 550;
+      const grade = Math.random() < 0.18 ? 'high' : (Math.random() < 0.45 ? 'mid' : 'low');
+      spawnExpItem(randRange(60, width - 60), -20, Math.max(5, Math.floor(getRequiredExpForLevel(level) * 0.02)), grade, true);
+    }
+  }
+
+  if (q && q.type === 'survival') {
+    tutorialRunState.survivalAcc += dt;
+    if (tutorialRunState.survivalAcc >= 1000) {
+      tutorialRunState.survivalAcc -= 1000;
+      updateTownQuestProgress('survival', 1);
+    }
+  } else if (!q || q.type !== 'bonusStage') {
+    tutorialRunState.survivalAcc = 0;
+  }
+
+  updateBullets(dt);
+  updatePetBullets(dt);
+  updatePet2Bullets(dt);
+  updatePetSkillProjectiles(dt);
+  updatePetSkillStreams(dt);
+  updatePetSkillBursts(dt);
+  updateEnemies(dt);
+  updateEnemyBullets(dt);
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  updateExpItems(dt);
+  updateFieldItems(dt);
+  updateGoldDrops(dt);
+  updatePetProduction(dt);
+  updateLasers(dt); updateLaserSkillUI();
+  updateBubble(dt); updateBubbleSkillUI(); updateBubbles(dt);
+  updateLightning(dt); updateLightningSkillUI();
+  updateBlizzard(dt); updateBlizzardSkillUI();
+  updateMeteors(dt); updateMeteorSkillUI();
+  updateQuake(dt); updateQuakeSkillUI();
+  updateExtraAreaSkills(dt); updateExtraAreaSkillUI();
+  updateMultiKillSystem(dt);
+  checkCollisions();
+  tryPickupExpItems();
+  tryPickupGoldDrops();
+  // 튜토리얼 모드는 절대 스테이지 클리어/보스/보너스 스테이지로 넘어가지 않습니다.
+  stageCleared = false;
+  boss = null;
+  bossSpawned = false;
+}
+
 function update(dt, currentTime) {
   // ✅ [v.196.1] 스테이지 클리어 후 20% 확률 보너스 스테이지 진행
   if (gameMode === 'stage' && stageBonusState && stageBonusState.active) {
@@ -19790,6 +20087,11 @@ function update(dt, currentTime) {
   }
   if (gameMode === 'training') {
     updateTrainingMode(dt);
+    updateHUD();
+    return;
+  }
+  if (gameMode === 'tutorial') {
+    updateTutorialModeRun(dt, currentTime);
     updateHUD();
     return;
   }
@@ -19994,7 +20296,7 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
       }
     }
     // ✅ [v.79] 스테이지 모드는 보스가 나오지 않도록(목표 처치 수 기반 클리어)
-    if (gameMode !== 'stage') spawnBossIfReady();
+    if (gameMode !== 'stage' && gameMode !== 'tutorial') spawnBossIfReady();
     
     // 1) 보스 처치로 클리어 처리 (bossSpawned가 true였다가 boss가 사라진 경우)
 if (bossSpawned && !boss && !stageCleared) {
@@ -23155,6 +23457,18 @@ requestAnimationFrame(gameLoop);
     drawTutorialOverlay();
     drawActiveBuffPanel();
     drawTrainingOverlay();
+
+    // ✅ 튜토리얼 모드 대사 중에는 실제 진행이 멈춘 상태임을 화면에도 표시
+    if (state === 'playing' && gameMode === 'tutorial' && tutorialActive && !tutorialNonBlocking) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(0, 0, width, height);
+      ctx.textAlign = 'center';
+      ctx.font = `900 16px ${getUIFontFamily()}`;
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillText('대사 진행 중 · 화면 일시정지', width / 2, 28);
+      ctx.restore();
+    }
 
     drawInfiniteBossCountdown();
 
@@ -29130,130 +29444,3 @@ try {
 
 </body>
 </html>
-
-<script>
-/* =========================================================
-   ✅ v.201.1 튜토리얼 모드 수정
-   - 튜토리얼 대사 중 게임 완전 일시정지
-   - 튜토리얼 모드에서는 목표 처치 수 달성으로 스테이지 클리어/다음 스테이지 이동 금지
-   - 골드 튜토리얼 진행 중에는 골드 드롭 허용
-   - 기존 저장된 stageClears 안내 퀘스트도 인게임 목표 달성형으로 보정
-   ========================================================= */
-(function(){
-  'use strict';
-
-  function isGuideTutorialRun(){
-    try { return !!tutorialModeActive && state === 'playing'; } catch(e) { return false; }
-  }
-
-  function getActiveGuideQuest(){
-    try {
-      const town = ensureTownQuestState && ensureTownQuestState();
-      const q = town && town.active;
-      return (q && typeof isBeginnerGuideQuest === 'function' && isBeginnerGuideQuest(q)) ? q : null;
-    } catch(e) { return null; }
-  }
-
-  function isTutorialGoldQuestActive(){
-    const q = getActiveGuideQuest();
-    return !!(isGuideTutorialRun() && q && q.type === 'goldEarned');
-  }
-
-  // ✅ 대사 중에는 무조건 정지. 기존 안내 퀘스트가 논블로킹으로 켜져도 여기서 차단합니다.
-  const showBeginnerGuideInGameBeforeV2011 = (typeof showBeginnerGuideInGame === 'function') ? showBeginnerGuideInGame : null;
-  if (showBeginnerGuideInGameBeforeV2011) {
-    showBeginnerGuideInGame = function(q){
-      const ret = showBeginnerGuideInGameBeforeV2011.apply(this, arguments);
-      try { tutorialNonBlocking = false; } catch(e) {}
-      return ret;
-    };
-  }
-
-  const getBeginnerQuestGuideMessagesBeforeV2011 = (typeof getBeginnerQuestGuideMessages === 'function') ? getBeginnerQuestGuideMessages : null;
-  if (getBeginnerQuestGuideMessagesBeforeV2011) {
-    getBeginnerQuestGuideMessages = function(q){
-      const arr = getBeginnerQuestGuideMessagesBeforeV2011.apply(this, arguments) || [];
-      try {
-        if (q && q.type === 'goldEarned') {
-          arr.push('이번 단계에서는 몬스터를 처치하면 골드가 반드시 드롭됩니다. 떨어진 골드에 가까이 이동해 주워보세요.');
-        }
-      } catch(e) {}
-      return arr;
-    };
-  }
-
-  // ✅ 튜토리얼 모드에서는 일반 스테이지 클리어 판정을 막습니다.
-  // 몬스터 5마리 처치 같은 초보 미션은 완료되어도 다음 스테이지로 넘어가지 않습니다.
-  const checkStageKillClearNowBeforeV2011 = (typeof checkStageKillClearNow === 'function') ? checkStageKillClearNow : null;
-  if (checkStageKillClearNowBeforeV2011) {
-    checkStageKillClearNow = function(){
-      if (isGuideTutorialRun()) return false;
-      return checkStageKillClearNowBeforeV2011.apply(this, arguments);
-    };
-  }
-
-  // ✅ 골드 드롭 시스템은 무한/미션 전용이었으므로, 골드 튜토리얼 중에도 열어줍니다.
-  const isMissionGoldDropObjectiveActiveBeforeV2011 = (typeof isMissionGoldDropObjectiveActive === 'function') ? isMissionGoldDropObjectiveActive : null;
-  if (isMissionGoldDropObjectiveActiveBeforeV2011) {
-    isMissionGoldDropObjectiveActive = function(){
-      if (isTutorialGoldQuestActive()) return true;
-      return isMissionGoldDropObjectiveActiveBeforeV2011.apply(this, arguments);
-    };
-  }
-
-  // ✅ 기존 저장 데이터에 stageClears 튜토리얼이 남아 있어도 다음 스테이지 이동 없이 수행형으로 완료되도록 보정합니다.
-  const updateTownQuestProgressBeforeV2011 = (typeof updateTownQuestProgress === 'function') ? updateTownQuestProgress : null;
-  if (updateTownQuestProgressBeforeV2011) {
-    updateTownQuestProgress = function(type, amount){
-      const ret = updateTownQuestProgressBeforeV2011.apply(this, arguments);
-      try {
-        const q = getActiveGuideQuest();
-        if (isGuideTutorialRun() && q && q.type === 'stageClears' && type === 'kills') {
-          const targetKills = Math.max(5, Math.floor((typeof getStageKillTarget === 'function' ? getStageKillTarget(stage) : 5) || 5));
-          if ((stageRunKillCount || 0) >= targetKills) {
-            q.progress = Math.min(q.target || 1, (q.progress || 0) + 1);
-            if (typeof normalizeTownQuestDisplay === 'function') normalizeTownQuestDisplay(q);
-            if ((q.progress || 0) >= (q.target || 1) && typeof completeBeginnerGuideQuestInGame === 'function') {
-              completeBeginnerGuideQuestInGame(q);
-            } else if (typeof saveGameDataDebounced === 'function') {
-              saveGameDataDebounced();
-            }
-          }
-        }
-      } catch(e) {}
-      return ret;
-    };
-  }
-
-  // ✅ 신규로 생성되는 초보 퀘스트는 스테이지 클리어형 대신 처치 수행형으로 자연스럽게 변경합니다.
-  try {
-    if (Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL)) {
-      BEGINNER_TUTORIAL_QUEST_POOL.forEach(q => {
-        if (!q || !q.id) return;
-        if (q.id === 'guide_stage_1') {
-          q.type = 'kills';
-          q.target = 5;
-          q.title = '기본 전투 마무리';
-          q.dialogue = '이번에는 튜토리얼 전투 안에서 몬스터 5마리를 처치해보세요. 목표를 달성해도 다음 스테이지로 넘어가지 않고 다음 안내가 이어집니다.';
-        }
-        if (q.id === 'guide_stage_2') {
-          q.type = 'kills';
-          q.target = 10;
-          q.title = '반복 전투 적응';
-          q.dialogue = '몬스터 10마리를 처치하며 조작과 회피를 반복해보세요. 튜토리얼 모드는 한 화면 안에서 차근차근 진행됩니다.';
-        }
-      });
-    }
-  } catch(e) {}
-
-  // ✅ 완료 후 다음 안내 대사도 정지 상태로 표시합니다.
-  const completeBeginnerGuideQuestInGameBeforeV2011 = (typeof completeBeginnerGuideQuestInGame === 'function') ? completeBeginnerGuideQuestInGame : null;
-  if (completeBeginnerGuideQuestInGameBeforeV2011) {
-    completeBeginnerGuideQuestInGame = function(q){
-      const ret = completeBeginnerGuideQuestInGameBeforeV2011.apply(this, arguments);
-      try { tutorialNonBlocking = false; } catch(e) {}
-      return ret;
-    };
-  }
-})();
-</script>
