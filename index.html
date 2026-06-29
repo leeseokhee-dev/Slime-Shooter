@@ -3595,7 +3595,8 @@ function addFeverGaugeByKill() {
   if (!isFeverEligibleMode()) return;
   if (state !== 'playing') return;
   if (feverActive) return;
-  feverGauge = Math.min(100, Math.max(0, feverGauge + FEVER_GAIN_PER_KILL));
+  const gain = (gameMode === 'tutorial' && tutorialModeActive) ? 25 : FEVER_GAIN_PER_KILL;
+  feverGauge = Math.min(100, Math.max(0, feverGauge + gain));
   if (feverGauge >= 100) startFeverMode();
   updateFeverUI();
 }
@@ -3611,6 +3612,7 @@ function startFeverMode() {
   try { initAudio(); playBgmTrack('fever'); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
   try { showToast('🔥 FEVER TIME! 15초 동안 스폰+40% / EXP+20% / 골드+30%!', '#ffd86b', 1600); } catch(e) {}
+  try { if (gameMode === 'tutorial' && tutorialModeActive) updateTownQuestProgress('fever', 1); } catch(e) {}
 }
 
 function endFeverMode() {
@@ -11324,8 +11326,9 @@ function flushMultiKillIfReady(force = false) {
   ensureMultiKillPatchState();
   const rate = getMultiKillBonusRate(count);
   const base = estimateKillBaseExpForMultiKill() * count;
-  const bonus = Math.max(1, Math.floor(base * rate));
-  const gained = addExp(bonus, { baseAmount: bonus, hotMultiplier: 1, showGainMessage:false });
+  const tutorialNoExp = (gameMode === 'tutorial' && tutorialModeActive);
+  const bonus = tutorialNoExp ? 0 : Math.max(1, Math.floor(base * rate));
+  const gained = tutorialNoExp ? 0 : addExp(bonus, { baseAmount: bonus, hotMultiplier: 1, showGainMessage:false });
   saveData.multikill.total += 1;
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, gained || bonus);
@@ -11342,7 +11345,7 @@ function flushMultiKillIfReady(force = false) {
   const color = getMultiKillColor(count);
   multiKillPopups.push({ count, bonus: gained || bonus, color, createdAt: performance.now(), life: 1150 });
   if (multiKillPopups.length > 5) multiKillPopups.shift();
-  pushGainMessage(`멀티킬(${count}) (+${formatNumber(gained || bonus)})`, color);
+  pushGainMessage(tutorialNoExp ? `멀티킬(${count})` : `멀티킬(${count}) (+${formatNumber(gained || bonus)})`, color);
 }
 
 
@@ -12152,7 +12155,7 @@ function getVisibleTownNpcs(){
 function clearGuideQuestIfNoLongerNeeded(){
   try {
     const town = ensureTownQuestState();
-    if (Number(level || saveData?.level || 1) >= 11 && town && town.active && town.active.npcId === 'guide') {
+    if (Number(level || saveData?.level || 1) >= 11 && town && town.active && town.active.npcId === 'guide' && !tutorialModeActive) {
       town.active = null;
       town.guideStep = BEGINNER_TUTORIAL_QUEST_POOL.length;
       try { tutorialModeActive = false; } catch(e) {}
@@ -12164,17 +12167,19 @@ function clearGuideQuestIfNoLongerNeeded(){
 }
 
 const BEGINNER_TUTORIAL_QUEST_POOL = [
-  { id:'guide_control_1', type:'control', title:'조작 방법 익히기', target:1, beginnerLevelUp:true, gold:()=>20, item:null, dialogue:'훈련장 입장 확인. 먼저 캐릭터 이동부터 시작합니다. 모바일은 터치/드래그, PC는 방향키 또는 WASD로 움직여보세요.' },
-  { id:'guide_auto_attack_1', type:'autoAttack', title:'자동 공격 익히기', target:20, beginnerLevelUp:true, gold:()=>30, item:null, dialogue:'슬라임 슈터의 기본 공격은 자동 전투 시스템입니다. 몬스터가 없어도 0.15초마다 탄환이 계속 발사됩니다.' },
-  { id:'guide_kill_1', type:'kills', title:'몬스터 처치 익히기', target:5, beginnerLevelUp:true, gold:()=>40, item:'smallPotion', dialogue:'이제 실제 전투입니다. 내려오는 몬스터를 피하면서 자동 공격으로 처치해보세요.' },
-  { id:'guide_gold_1', type:'goldEarned', title:'골드 획득 익히기', target:10, beginnerLevelUp:true, gold:()=>50, item:null, dialogue:'전투 보상은 직접 주워야 진짜 내 것이 됩니다. 몬스터를 처치하고 떨어진 골드를 획득해보세요.' },
-  { id:'guide_gem_1', type:'gems', title:'보석 획득 익히기', target:1, beginnerLevelUp:true, gold:()=>60, item:null, dialogue:'골드 드랍 중에는 일정 확률로 보석이 등장합니다. 루비는 10골드, 사파이어는 30골드, 다이아는 50골드입니다.' },
-  { id:'guide_multi_1', type:'multiKills', title:'멀티킬 익히기', target:1, beginnerLevelUp:true, gold:()=>80, item:'smallPotion', dialogue:'튜토리얼 모드에서는 초보자도 스킬을 사용할 수 있습니다. 몬스터가 모였을 때 거품 스킬로 한 번에 처치해 멀티킬을 만들어보세요.' },
-  { id:'guide_orb_1', type:'expOrbs', title:'경험치 구슬 익히기', target:1, beginnerLevelUp:true, gold:()=>100, item:'expSmallPack', dialogue:'EXP 구슬은 몬스터 처치 후 일정 확률로 등장합니다. 무조건 나오는 보상이 아니므로 보이면 안전하게 이동해서 획득하세요.' },
-  { id:'guide_survival_1', type:'survival', title:'회피 익히기', target:5, beginnerLevelUp:true, gold:()=>120, item:null, dialogue:'공격만큼 중요한 것이 생존입니다. 적과 탄환을 피하면서 5초 동안 버텨보세요.' },
-  { id:'guide_boss_1', type:'bossKills', title:'보스 익히기', target:1, beginnerLevelUp:true, gold:()=>150, item:'largePotion', dialogue:'강력한 보스가 등장합니다. 체력이 높고 위협적이지만, 공격을 이어가면 충분히 쓰러뜨릴 수 있습니다.' },
-  { id:'guide_bonus_1', type:'bonusStage', title:'보너스 스테이지 익히기', target:3, beginnerLevelUp:true, gold:()=>250, item:'expMediumPack', dialogue:'마지막은 보너스 스테이지 체험입니다. 떨어지는 보상을 수집하며 성장 흐름을 마무리해보세요.' }
-];
+  { id:'guide_control_1', type:'control', title:'조작 방법 익히기', target:1, beginnerLevelUp:true, fixedExp:10, gold:()=>20, item:null, dialogue:'훈련장 입장 확인. 먼저 캐릭터 이동부터 시작합니다. 모바일은 터치/드래그, PC는 방향키 또는 WASD로 움직여보세요.' },
+  { id:'guide_auto_attack_1', type:'autoAttack', title:'자동 공격 익히기', target:20, beginnerLevelUp:true, fixedExp:15, gold:()=>30, item:null, dialogue:'슬라임 슈터의 기본 공격은 자동 전투 시스템입니다. 몬스터가 없어도 0.15초마다 탄환이 계속 발사됩니다.' },
+  { id:'guide_kill_1', type:'kills', title:'몬스터 처치 익히기', target:5, beginnerLevelUp:true, fixedExp:30, gold:()=>40, item:'smallPotion', dialogue:'이제 실제 전투입니다. 내려오는 몬스터를 피하면서 자동 공격으로 처치해보세요.' },
+  { id:'guide_gold_1', type:'goldEarned', title:'골드 획득 익히기', target:10, beginnerLevelUp:true, fixedExp:50, gold:()=>50, item:null, dialogue:'전투 보상은 직접 주워야 진짜 내 것이 됩니다. 몬스터를 처치하고 떨어진 골드를 획득해보세요.' },
+  { id:'guide_gem_1', type:'gems', title:'보석 획득 익히기', target:1, beginnerLevelUp:true, fixedExp:70, gold:()=>60, item:null, dialogue:'골드 드랍 중에는 일정 확률로 보석이 등장합니다. 루비는 10골드, 사파이어는 30골드, 다이아는 50골드입니다.' },
+  { id:'guide_multi_1', type:'multiKills', title:'멀티킬 익히기', target:1, beginnerLevelUp:true, fixedExp:95, gold:()=>80, item:'smallPotion', dialogue:'튜토리얼 모드에서는 초보자도 스킬을 사용할 수 있습니다. 몬스터가 모였을 때 거품 스킬로 한 번에 처치해 멀티킬을 만들어보세요.' },
+  { id:'guide_orb_1', type:'expOrbs', title:'경험치 구슬 익히기', target:1, beginnerLevelUp:true, fixedExp:130, gold:()=>100, item:'expSmallPack', dialogue:'EXP 구슬은 몬스터 처치 후 일정 확률로 등장합니다. 무조건 나오는 보상이 아니므로 보이면 안전하게 이동해서 획득하세요.' },
+  { id:'guide_survival_1', type:'survival', title:'회피 익히기', target:5, beginnerLevelUp:true, fixedExp:165, gold:()=>120, item:null, dialogue:'공격만큼 중요한 것이 생존입니다. 적과 탄환을 피하면서 5초 동안 버텨보세요.' },
+  { id:'guide_boss_1', type:'bossKills', title:'보스 익히기', target:1, beginnerLevelUp:true, fixedExp:210, gold:()=>150, item:'largePotion', dialogue:'강력한 보스가 등장합니다. 체력이 높고 위협적이지만, 공격을 이어가면 충분히 쓰러뜨릴 수 있습니다.' },
+  { id:'guide_fever_1', type:'fever', title:'피버 모드 익히기', target:1, beginnerLevelUp:true, fixedExp:70, gold:()=>110, item:null, dialogue:'피버 게이지는 몬스터를 처치하면 조금씩 차오릅니다. 튜토리얼에서는 빠르게 충전되며, 100%가 되면 피버 타임이 자동으로 시작됩니다.' },
+  { id:'guide_bonus_1', type:'bonusStage', title:'보너스 스테이지 익히기', target:3, beginnerLevelUp:true, fixedExp:100, gold:()=>250, item:'expMediumPack', dialogue:'보너스 스테이지 체험입니다. 짧은 시간 동안 떨어지는 보상을 수집하며 특별 구간의 흐름을 익혀보세요.' },
+  { id:'guide_pet_1', type:'pet', title:'펫 익히기', target:1, beginnerLevelUp:true, fixedExp:127, gold:()=>300, item:null, dialogue:'튜토리얼 모드에서는 펫 사용도 체험할 수 있습니다. 펫은 전투를 보조하며 성장 구간에서 든든한 동료가 되어줍니다.' }
+]
 const TOWN_QUEST_POOL = [
   { id:'town_kill_10', type:'kills', title:'마을 입구 몬스터 정리', target:10, expPct200:0.05, gold:()=>Math.max(80, level * 8), item:null, dialogue:'마을 입구가 조금 소란스러워. 가볍게 정리해주면 모두 안심할 거야.' },
   { id:'town_kill_25', type:'kills', title:'슬라임 길 안전 확보', target:25, expPct200:0.12, gold:()=>Math.max(180, level * 15), item:'smallPotion', dialogue:'슬라임들이 다니는 길을 안전하게 만들고 싶어. 조금 더 힘을 빌려줘!' },
@@ -12233,13 +12238,21 @@ function getBeginnerTutorialExpReward(lv = level){
   return Math.max(1, Math.min(getTownQuestNeededExp(curLv), remainToLv11));
 }
 function getTownQuestExpReward(q, lv = level){
-  if (q && q.beginnerLevelUp) return getBeginnerTutorialExpReward(lv);
+  if (q && q.beginnerLevelUp) {
+    const fixed = Math.max(0, Math.floor(Number(q.fixedExp ?? q.expReward ?? 0) || 0));
+    if (fixed > 0) {
+      const capExp = Math.max(0, Number(EXP_TABLE?.[11]?.totalMin || 0));
+      const remainToLv11 = Math.max(0, capExp - Math.max(0, Math.floor(Number(exp) || 0)));
+      return Math.max(0, Math.min(fixed, remainToLv11));
+    }
+    return getBeginnerTutorialExpReward(lv);
+  }
   const pct200 = Math.max(0.01, Number(q?.expPct200 ?? q?.expPct ?? 0.1));
   const pct = pct200 * getTownQuestLevelScale(lv);
   return Math.max(1, Math.floor(getTownQuestNeededExp(lv) * (pct / 100)));
 }
 function getTownQuestPercentText(q, lv = level){
-  if (q && q.beginnerLevelUp) return '1레벨업 EXP / 최대 LV.11 0%';
+  if (q && q.beginnerLevelUp) return `고정 ${formatNumber(getTownQuestExpReward(q, lv))} EXP / 최대 LV.11 0%`;
   const pct200 = Math.max(0.01, Number(q?.expPct200 ?? q?.expPct ?? 0.1));
   const pct = pct200 * getTownQuestLevelScale(lv);
   return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%`;
@@ -12272,6 +12285,8 @@ function getTownQuestTypeLabel(type){
     : type === 'bossKills' ? '보스 처치'
     : type === 'multiKills' ? '멀티킬'
     : type === 'bonusStage' ? '보너스 스테이지'
+    : type === 'fever' ? '피버 발동'
+    : type === 'pet' ? '펫 체험'
     : '진행도';
 }
 function getTownItemName(key){
@@ -12314,6 +12329,8 @@ function makeTownQuestDesc(type, target){
   if (type === 'bossKills') return `보스 ${n}마리 처치`;
   if (type === 'multiKills') return `멀티킬 ${n}회 달성`;
   if (type === 'bonusStage') return `보너스 스테이지 보상 ${n}회 수집`;
+  if (type === 'fever') return `피버 모드 ${n}회 발동`;
+  if (type === 'pet') return `펫 전투 보조 ${n}회 체험`;
   return `진행도 ${n} 달성`;
 }
 function normalizeTownQuestDisplay(q){
@@ -12339,6 +12356,7 @@ function buildTownQuestFromTemplate(t, npc){
     gold: Math.max(0, Math.floor(goldReward || 0)),
     item: t.item || null,
     beginnerLevelUp: !!t.beginnerLevelUp,
+    fixedExp: Math.max(0, Math.floor(Number(t.fixedExp || 0))),
     tutorialStep: t.beginnerLevelUp ? (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1) : 0,
     dialogue: t.dialogue || '',
     acceptedAt: Date.now()
@@ -12389,8 +12407,8 @@ function isBeginnerGuideQuest(q){
 function getBeginnerQuestGuideMessages(q){
   const title = q ? String(q.title || '초보자 안내') : '초보자 안내';
   const desc = q ? String(q.desc || makeTownQuestDesc(q.type, q.target)) : '';
-  const step = Math.max(1, Math.min(10, Number(q?.tutorialStep || q?.step || 0) || (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1)));
-  const header = `🧭 튜토리얼 ${step}/10 · ${title}`;
+  const step = Math.max(1, Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Number(q?.tutorialStep || q?.step || 0) || (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1)));
+  const header = `🧭 튜토리얼 ${step}/${BEGINNER_TUTORIAL_QUEST_POOL.length} · ${title}`;
   const guideMap = {
     control: ['슬라임 훈련장에 접속했습니다. 지금부터 기본 조작 체크를 시작합니다.','캐릭터를 한 번 움직이면 목표가 완료됩니다. 모바일은 드래그, PC는 방향키와 WASD를 사용할 수 있습니다.',`현재 임무: ${desc}`],
     autoAttack: ['전투 시스템 안내입니다. 슬라임 슈터의 기본 공격은 자동으로 작동합니다.','몬스터가 있든 없든 0.15초마다 탄환이 발사됩니다. 손을 떼도 공격 리듬은 유지됩니다.',`현재 임무: ${desc}`],
@@ -12401,7 +12419,9 @@ function getBeginnerQuestGuideMessages(q){
     expOrbs: ['EXP 구슬 안내입니다. 구슬은 몬스터 처치 후 일정 확률로 등장합니다.','무조건 나오는 보상이 아니기 때문에, 나타났을 때 안전한 경로로 이동해 획득하는 것이 중요합니다.',`현재 임무: ${desc}`],
     survival: ['회피 훈련입니다. 강한 유저는 공격뿐 아니라 피하는 타이밍도 좋습니다.','몬스터와 탄환을 피하면서 지정 시간 동안 버텨보세요.',`현재 임무: ${desc}`],
     bossKills: ['보스전 시뮬레이션이 열렸습니다. 보스는 일반 몬스터보다 체력이 높고 압박이 큽니다.','공격을 유지하면서 위험한 위치를 피하면 클리어할 수 있습니다.',`현재 임무: ${desc}`],
-    bonusStage: ['마지막 훈련은 보너스 스테이지 체험입니다.','보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다. 떨어지는 EXP 구슬을 챙겨보세요.',`현재 임무: ${desc}`]
+    fever: ['피버 모드 훈련입니다. 몬스터를 처치하면 피버 게이지가 차오릅니다.','튜토리얼에서는 게이지가 빠르게 충전됩니다. 100%가 되면 피버 타임이 자동으로 발동됩니다.',`현재 임무: ${desc}`],
+    bonusStage: ['보너스 스테이지 체험입니다.','보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다. 떨어지는 보상을 챙겨보세요.',`현재 임무: ${desc}`],
+    pet: ['마지막 훈련은 펫 체험입니다. 튜토리얼 모드에서는 펫 보조 공격을 미리 확인할 수 있습니다.','펫은 전투 중 자동으로 공격하거나 보조 효과를 제공해 성장 구간을 도와줍니다.',`현재 임무: ${desc}`]
   };
   return [header].concat(guideMap[q?.type] || [`현재 임무: ${desc}`]);
 }
@@ -12462,7 +12482,7 @@ function completeBeginnerGuideQuestInGame(q){
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
   updateHUD();
 
-  if ((level || 1) < 11 && town.guideStep < BEGINNER_TUTORIAL_QUEST_POOL.length) {
+  if (town.guideStep < BEGINNER_TUTORIAL_QUEST_POOL.length) {
     const npc = getTownNpcById('guide');
     const nextTemplate = pickBeginnerTutorialQuest();
     const nextQuest = buildTownQuestFromTemplate(nextTemplate, npc);
@@ -12473,6 +12493,10 @@ function completeBeginnerGuideQuestInGame(q){
       showBeginnerGuideInGame(nextQuest);
     }, 700);
   } else {
+    try {
+      const capExp = Math.max(0, Number(EXP_TABLE?.[11]?.totalMin || 0));
+      if (Math.max(0, Math.floor(Number(exp) || 0)) < capExp) addExpDirect(capExp - Math.max(0, Math.floor(Number(exp) || 0)));
+    } catch(e) {}
     tutorialModeActive = false;
     saveGameData();
     setTimeout(() => {
@@ -12481,8 +12505,8 @@ function completeBeginnerGuideQuestInGame(q){
       tutorialActive = true;
       tutorialIndex = 0;
       tutorialMessages = [
-        '튜토리얼 10단계를 모두 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-        '보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+        '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
+        '12단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
         '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
       ];
     }, 700);
@@ -15061,11 +15085,12 @@ function finalizeMultiKillBonus() {
   const count = Math.max(0, Math.floor(Number(batch.count) || 0));
   const baseExp = Math.max(0, Math.floor(Number(batch.exp) || 0));
   const rate = getMultiKillBonusRate(count);
-  if (count < 3 || rate <= 0 || baseExp <= 0) return;
+  const tutorialNoExp = (gameMode === 'tutorial' && tutorialModeActive);
+  if (count < 3 || rate <= 0 || (!tutorialNoExp && baseExp <= 0)) return;
 
-  const bonusExp = Math.max(1, Math.round(baseExp * rate));
-  const granted = addExpDirect(bonusExp);
-  if (granted <= 0) return;
+  const bonusExp = tutorialNoExp ? 0 : Math.max(1, Math.round(baseExp * rate));
+  const granted = tutorialNoExp ? 0 : addExpDirect(bonusExp);
+  if (!tutorialNoExp && granted <= 0) return;
 
   // ✅ 같은 처리 프레임의 스킬 동시 처치만 여기까지 도달합니다.
   ensureMultiKillPatchState();
@@ -15073,6 +15098,7 @@ function finalizeMultiKillBonus() {
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, Math.floor(granted || bonusExp));
   addQuestStat('multiKills', 1);
+  try { updateTownQuestProgress('multiKills', 1); } catch(e) {}
   if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
   if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
   if (gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'multi') {
@@ -15084,7 +15110,7 @@ function finalizeMultiKillBonus() {
   const y = Number.isFinite(batch.y) ? batch.y : (player ? player.y : height / 2);
 
   spawnMultiKillText(count, granted, x, y - 34);
-  pushGainMessage(`멀티킬(${count}) (+${formatNumber(granted)})`, getMultiKillStyle(count).color);
+  pushGainMessage(tutorialNoExp ? `멀티킬(${count})` : `멀티킬(${count}) (+${formatNumber(granted)})`, getMultiKillStyle(count).color);
 }
 
 function addScore(amount, source = 'monster', options = {}) {
@@ -15115,6 +15141,9 @@ function addScore(amount, source = 'monster', options = {}) {
   }
 
   if (gameMode === 'mission' || gameMode === 'tutorial') {
+    if (source === 'monster' && options.multikillEligible === true) {
+      recordMultiKillCandidate(0, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
+    }
     return 0;
   }
 
@@ -19887,7 +19916,7 @@ function spawnTutorialEnemy(count = 1){
 }
 function tutorialShouldSpawnForQuest(q){
   if (!q) return false;
-  return q.type === 'kills' || q.type === 'goldEarned' || q.type === 'gems' || q.type === 'multiKills' || q.type === 'expOrbs' || q.type === 'survival' || q.type === 'bossKills' || q.type === 'bonusStage';
+  return q.type === 'kills' || q.type === 'goldEarned' || q.type === 'gems' || q.type === 'multiKills' || q.type === 'expOrbs' || q.type === 'survival' || q.type === 'bossKills' || q.type === 'bonusStage' || q.type === 'fever' || q.type === 'pet';
 }
 
 function forceTutorialAutoShot(currentTime){
@@ -19947,10 +19976,10 @@ function updateTutorialModeRun(dt, currentTime){
 
   if (q && tutorialShouldSpawnForQuest(q)) {
     tutorialRunState.spawnAcc += dt;
-    const interval = q.type === 'survival' ? 900 : (q.type === 'bossKills' ? 1300 : (q.type === 'bonusStage' ? 1100 : 650));
+    const interval = q.type === 'survival' ? 900 : (q.type === 'bossKills' ? 1300 : (q.type === 'bonusStage' ? 1100 : ((q.type === 'fever' || q.type === 'pet') ? 550 : 650)));
     while (tutorialRunState.spawnAcc >= interval) {
       tutorialRunState.spawnAcc -= interval;
-      const spawnCount = q.type === 'multiKills' ? 4 : ((q.type === 'goldEarned' || q.type === 'gems') ? 2 : 1);
+      const spawnCount = q.type === 'multiKills' ? 4 : ((q.type === 'goldEarned' || q.type === 'gems' || q.type === 'fever' || q.type === 'pet') ? 2 : 1);
       if (q.type !== 'bonusStage') spawnTutorialEnemy(spawnCount);
     }
   } else {
@@ -19964,6 +19993,14 @@ function updateTutorialModeRun(dt, currentTime){
       tutorialRunState.survivalAcc -= 550;
       const grade = Math.random() < 0.18 ? 'high' : (Math.random() < 0.45 ? 'mid' : 'low');
       spawnExpItem(randRange(60, width - 60), -20, Math.max(5, Math.floor(getRequiredExpForLevel(level) * 0.02)), grade, true);
+    }
+  }
+
+  if (q && q.type === 'pet') {
+    tutorialRunState.survivalAcc += dt;
+    if (tutorialRunState.survivalAcc >= 1800) {
+      tutorialRunState.survivalAcc = 0;
+      updateTownQuestProgress('pet', 1);
     }
   }
 
@@ -19991,6 +20028,7 @@ function updateTutorialModeRun(dt, currentTime){
   updateFieldItems(dt);
   updateGoldDrops(dt);
   updatePetProduction(dt);
+  updateFeverMode(dt);
   updateLasers(dt); updateLaserSkillUI();
   updateBubble(dt); updateBubbleSkillUI(); updateBubbles(dt);
   updateLightning(dt); updateLightningSkillUI();
@@ -21101,7 +21139,7 @@ bubbles.forEach(b => {
           addExp(gained);
         } else {
           const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster', { enemy: e });
+  addScore(killScoreInfo.amount, 'monster', { enemy: e, multikillEligible: true, multikillSource: 'bubble' });
   if (gameMode === 'infinite') {
     spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
   }
