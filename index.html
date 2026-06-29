@@ -1447,6 +1447,37 @@ function shouldShowTutorial(id){
   font-weight:900;
 }
 
+#townQuestProgressToast{
+  position:absolute;
+  top:22%;
+  left:50%;
+  transform:translateX(-50%) translateY(-8px);
+  z-index:95;
+  min-width:min(74vw, 320px);
+  max-width:min(84vw, 420px);
+  padding:10px 16px;
+  border-radius:999px;
+  background:rgba(8,14,24,0.86);
+  border:1px solid rgba(124,255,181,0.42);
+  box-shadow:0 10px 30px rgba(0,0,0,0.42), 0 0 18px rgba(68,255,184,0.16);
+  color:#eafff4;
+  font-size:18px;
+  font-weight:1000;
+  text-align:center;
+  letter-spacing:-0.2px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .14s ease, transform .14s ease;
+  text-shadow:0 2px 8px rgba(0,0,0,0.78);
+}
+#townQuestProgressToast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+@media (max-width:520px){
+  #townQuestProgressToast{ top:24%; font-size:15px; padding:9px 13px; }
+}
+
 /* ===== Stage Clear UI 리파인 ===== */
 #stageClearModal{
   max-width: 440px;
@@ -2921,6 +2952,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 </div>
 
 <canvas id="gameCanvas" width="960" height="640"></canvas>
+<div id="townQuestProgressToast" aria-live="polite"></div>
 <button id="pauseBtn" class="ui-btn hidden" type="button" aria-label="일시정지" title="일시정지">⏸</button>
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
@@ -12080,6 +12112,128 @@ const TOWN_NPCS = [
     questTypes:['bossKills','stageClears','kills']
   }
 ];
+const TOWN_NPC_DIALOGUES = {
+  green: {
+    idle:[
+      '오늘 바람이 좋아서 마을 산책하기 딱 좋아!',
+      '몬스터가 잠잠한 날도 있지만, 방심은 금물이야.',
+      '마을 길목을 지켜주는 모험가가 있으면 모두 든든해해.',
+      '쉬어 갈 때는 슬라임 마을 음악을 들어봐. 마음이 말랑해져.',
+      '오늘도 장비 상태 확인했어? 작은 준비가 큰 차이를 만들거든!'
+    ],
+    offer:[
+      '마을 주변에 도움이 필요한 일이 있어. 잠깐 맡아줄래?',
+      '딱 너한테 어울릴 의뢰가 하나 들어왔어!',
+      '안전한 길을 만들려면 모험가의 손길이 필요해.'
+    ],
+    progress:[
+      '천천히 해도 괜찮아. 안전하게 다녀오는 게 먼저야!',
+      '진행 기록은 잘 쌓이고 있어. 조금만 더 힘내!',
+      '기다리고 있을게. 마을 입구는 내가 보고 있을게!'
+    ],
+    done:[
+      '와, 진짜 빠르다! 약속한 보상을 줄게.',
+      '마을 길이 훨씬 조용해졌어. 정말 고마워!',
+      '역시 믿고 맡기길 잘했어. 보상 받아가!'
+    ]
+  },
+  blue: {
+    idle:[
+      'EXP 구슬은 볼 때마다 색이 조금씩 달라 보여.',
+      '물방울 소리랑 마을 음악이 은근 잘 어울리지 않아?',
+      '오늘은 구슬 연구 노트가 꽤 두꺼워졌어.',
+      '강해지는 기록을 모아두면 나중에 엄청 뿌듯해!',
+      '급하게 달리기보다 꾸준히 모으는 게 오래 가더라.'
+    ],
+    offer:[
+      '연구에 필요한 기록이 있어. 도와줄 수 있어?',
+      '반짝이는 데이터를 모으는 의뢰야. 꽤 재밌을걸?',
+      '오늘의 성장 기록을 같이 남겨보자!'
+    ],
+    progress:[
+      '좋아, 기록이 점점 채워지고 있어!',
+      '구슬빛이 더 선명해지는 느낌이야. 계속 부탁해!',
+      '무리하지 말고 필요한 만큼만 차근차근 모아줘.'
+    ],
+    done:[
+      '데이터 완벽해! 이건 보상 받을 만하지.',
+      '연구가 한 단계 진전됐어. 고마워!',
+      '반짝임이 아주 좋아. 보상 준비 완료!'
+    ]
+  },
+  gold: {
+    idle:[
+      '골드는 모을 때보다 쓸 때 계획이 더 중요해.',
+      '금빛 장식이 늘어나면 마을 분위기도 살아나지!',
+      '오늘 금고 상태? 아주 반짝반짝해.',
+      '작은 골드도 모이면 강화의 밑바탕이 돼.',
+      '황금 슬라임은 반짝이는 소문에 민감하단 말씀!'
+    ],
+    offer:[
+      '금빛 의뢰 하나 받아볼래?',
+      '마을 금고에 필요한 기록이 있어. 도와주면 보상할게!',
+      '반짝이는 성과를 보여주면 나도 크게 챙겨줄게.'
+    ],
+    progress:[
+      '좋아, 금빛 기록이 차곡차곡 쌓이는 중이야.',
+      '조금만 더 모으면 금고가 흐뭇해질 거야!',
+      '반짝임이 느껴져. 계속 가보자!'
+    ],
+    done:[
+      '완전 금빛 결과야! 보상 받아가.',
+      '금고가 든든해졌어. 약속은 지켜야지!',
+      '반짝임 합격! 이건 보상 확정이야.'
+    ]
+  },
+  pink: {
+    idle:[
+      '스킬 이펙트는 볼 때마다 축제 같아서 좋아!',
+      '멋진 연계 공격이 나오면 마을 애들이 다 구경해.',
+      '오늘은 어떤 스킬이 제일 잘 맞았어?',
+      '화려함도 좋지만 타이밍이 제일 중요해!',
+      '전투가 끝나면 손목도 쉬게 해줘. 꾸준함이 진짜야.'
+    ],
+    offer:[
+      '스킬 연습 의뢰가 있어. 멋지게 보여줄래?',
+      '화려한 전투 기록이 필요해. 너라면 가능하지!',
+      '오늘은 스킬 타이밍을 점검해보자!'
+    ],
+    progress:[
+      '좋아 좋아! 이펙트가 점점 살아나고 있어.',
+      '쿨타임 보면서 차근차근 쓰면 금방 채울 수 있어!',
+      '연계 감각이 좋아지고 있어. 계속 부탁해!'
+    ],
+    done:[
+      '완전 멋졌어! 보상 줄게!',
+      '스킬 기록 최고야. 마을 축제 같았어!',
+      '화려함 인정! 약속한 선물 받아가.'
+    ]
+  },
+  elder: {
+    idle:[
+      '강함은 하루에 완성되지 않는다. 꾸준함이 답이지.',
+      '높은 레벨일수록 작은 보상도 균형이 중요하단다.',
+      '마을은 조용해 보여도 늘 새로운 시련을 준비하고 있지.',
+      '전투에서 돌아오면 잠깐 숨을 고르는 것도 실력이다.',
+      '후반 성장일수록 급하지 않게, 정확하게 가야 하느니라.'
+    ],
+    offer:[
+      '오늘의 시련을 받아보겠느냐?',
+      '네 성장에 맞춘 의뢰를 준비해두었다.',
+      '조금 어려울 수 있으나, 그만큼 의미 있는 부탁이다.'
+    ],
+    progress:[
+      '좋다. 시련은 아직 끝나지 않았지만 길은 보인다.',
+      '조급해하지 말거라. 꾸준한 진행이 곧 힘이다.',
+      '마지막까지 집중하면 충분히 완수할 수 있느니라.'
+    ],
+    done:[
+      '훌륭하다. 약속한 보상을 받거라.',
+      '시련을 넘어섰구나. 오늘의 성장은 값지다.',
+      '잘 해냈다. 이 경험이 다음 전투의 힘이 될 것이다.'
+    ]
+  }
+};
 const TOWN_QUEST_POOL = [
   { id:'town_kill_10', type:'kills', title:'마을 주변 몬스터 정리', desc:'몬스터 10마리 처치', target:10, expPct200:0.05, gold:()=>Math.max(80, level * 8), item:null, dialogue:'요즘 마을 입구 근처가 시끄러워. 가볍게 정리해주면 모두 안심할 거야.' },
   { id:'town_kill_25', type:'kills', title:'슬라임 길 안전 확보', desc:'몬스터 25마리 처치', target:25, expPct200:0.12, gold:()=>Math.max(180, level * 15), item:'smallPotion', dialogue:'슬라임들이 다니는 길을 안전하게 만들고 싶어. 조금 더 힘을 빌려줘!' },
@@ -12119,17 +12273,24 @@ function getTownQuestPercentText(q, lv = level){
   return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%`;
 }
 function ensureTownQuestState(){
-  if (!saveData.townQuest || typeof saveData.townQuest !== 'object') saveData.townQuest = { active:null, completed:0, npcTalks:0 };
-  if (typeof saveData.townQuest.completed !== 'number') saveData.townQuest.completed = 0;
-  if (typeof saveData.townQuest.npcTalks !== 'number') saveData.townQuest.npcTalks = 0;
-  const q = saveData.townQuest.active;
+  if (!saveData.townQuest || typeof saveData.townQuest !== 'object') {
+    saveData.townQuest = { active:null, completed:0, npcTalks:0, recentBaseId:null, completedBaseIds:[], lastNpcLines:{}, lastProgressType:null };
+  }
+  const town = saveData.townQuest;
+  if (typeof town.completed !== 'number') town.completed = 0;
+  if (typeof town.npcTalks !== 'number') town.npcTalks = 0;
+  if (!Array.isArray(town.completedBaseIds)) town.completedBaseIds = [];
+  if (typeof town.lastNpcLines !== 'object' || !town.lastNpcLines) town.lastNpcLines = {};
+  if (!('recentBaseId' in town)) town.recentBaseId = null;
+  const q = town.active;
   if (q && (typeof q.progress !== 'number' || !isFinite(q.progress))) q.progress = 0;
   if (q && typeof q.expPct200 !== 'number') {
     const tpl = TOWN_QUEST_POOL.find(t => t.id === q.baseId);
     q.expPct200 = tpl ? Number(tpl.expPct200 || 0.1) : 0.1;
   }
-  return saveData.townQuest;
+  return town;
 }
+
 function getTownQuestTypeLabel(type){
   return type === 'kills' ? '몬스터 처치'
     : type === 'goldEarned' ? '골드 획득'
@@ -12150,6 +12311,32 @@ function grantTownItem(key, count = 1){
   inv[key] = Math.max(0, Math.floor(Number(inv[key]) || 0)) + Math.max(1, Math.floor(count || 1));
   return getTownItemName(key);
 }
+function getTownQuestDifficultyScale(lv = level){
+  const safeLv = Math.max(1, Math.min((typeof MAX_LEVEL !== 'undefined' ? MAX_LEVEL : 300), Math.floor(Number(lv) || 1)));
+  if (safeLv <= 20) return 1;
+  if (safeLv <= 50) return 1.5;
+  if (safeLv <= 100) return 2.5;
+  if (safeLv <= 150) return 4;
+  if (safeLv < 200) return 6;
+  return 8 * Math.pow(1.18, Math.floor((safeLv - 200) / 10));
+}
+function getTownQuestTargetMultiplierByType(type){
+  if (type === 'bossKills') return 0.35;
+  if (type === 'stageClears') return 0.55;
+  if (type === 'skillUses') return 0.85;
+  if (type === 'multiKills') return 0.75;
+  if (type === 'goldEarned') return 10;
+  if (type === 'expOrbs') return 0.9;
+  return 1;
+}
+function getScaledTownQuestTarget(t, lv = level){
+  const base = Math.max(1, Math.floor(Number(t?.target) || 1));
+  const scale = getTownQuestDifficultyScale(lv) * getTownQuestTargetMultiplierByType(t?.type);
+  let target = Math.max(base, Math.round(base * scale));
+  if (t?.type === 'bossKills') target = Math.max(base, Math.min(target, 80));
+  if (t?.type === 'stageClears') target = Math.max(base, Math.min(target, 120));
+  return target;
+}
 function buildTownQuestFromTemplate(t, npc){
   const goldReward = typeof t.gold === 'function' ? t.gold() : t.gold;
   return {
@@ -12160,7 +12347,8 @@ function buildTownQuestFromTemplate(t, npc){
     type: t.type,
     title: t.title,
     desc: t.desc,
-    target: Math.max(1, Math.floor(t.target || 1)),
+    baseTarget: Math.max(1, Math.floor(t.target || 1)),
+    target: getScaledTownQuestTarget(t, level),
     progress: 0,
     expPct200: Math.max(0.01, Number(t.expPct200 || t.expPct || 0.1)),
     gold: Math.max(0, Math.floor(goldReward || 0)),
@@ -12212,14 +12400,37 @@ function getTownNpcStatus(npc){
   return { icon:'💡', text:'퀘스트 가능', color:'#fff1a8' };
 }
 function pickTownQuestForNpc(npc){
+  const town = ensureTownQuestState();
   const types = Array.isArray(npc.questTypes) ? npc.questTypes : [];
-  const list = TOWN_QUEST_POOL.filter(q => !types.length || types.includes(q.type));
-  return (list.length ? list : TOWN_QUEST_POOL)[Math.floor(Math.random() * (list.length ? list.length : TOWN_QUEST_POOL.length))];
+  const baseList = TOWN_QUEST_POOL.filter(q => !types.length || types.includes(q.type));
+  const pool = baseList.length ? baseList : TOWN_QUEST_POOL;
+  const used = new Set(Array.isArray(town.completedBaseIds) ? town.completedBaseIds : []);
+  const activeBaseId = town.active && town.active.baseId;
+  let candidates = pool.filter(q => q.id !== activeBaseId && q.id !== town.recentBaseId && !used.has(q.id));
+  if (!candidates.length) {
+    town.completedBaseIds = town.completedBaseIds.filter(id => !pool.some(q => q.id === id));
+    candidates = pool.filter(q => q.id !== activeBaseId && q.id !== town.recentBaseId);
+  }
+  if (!candidates.length) candidates = pool.filter(q => q.id !== activeBaseId);
+  if (!candidates.length) candidates = pool;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+function pickTownNpcLine(npc, mood = 'idle'){
+  const town = ensureTownQuestState();
+  const pack = TOWN_NPC_DIALOGUES[npc.id] || {};
+  let arr = pack[mood] || pack.idle || npc.tips || [npc.line];
+  if (!Array.isArray(arr) || !arr.length) arr = [npc.line || '오늘도 좋은 하루예요!'];
+  const key = `${npc.id}_${mood}`;
+  const last = town.lastNpcLines[key];
+  const candidates = arr.length > 1 ? arr.filter(v => v !== last) : arr;
+  const picked = candidates[Math.floor(Math.random() * candidates.length)] || arr[0];
+  town.lastNpcLines[key] = picked;
+  return picked;
 }
 function pickTownNpcTip(npc){
-  const arr = Array.isArray(npc.tips) && npc.tips.length ? npc.tips : ['퀘스트 표시는 상태에 따라 바뀝니다. 전구는 받을 수 있음, 점 세 개는 진행 중, 책은 완료 가능이에요.'];
-  return arr[Math.floor(Math.random() * arr.length)];
+  return pickTownNpcLine(npc, 'idle');
 }
+
 function talkToTownNpc(npc){
   selectedTownNpc = npc;
   const town = ensureTownQuestState();
@@ -12230,19 +12441,19 @@ function talkToTownNpc(npc){
     const owner = getTownNpcById(active.npcId);
     const isOwner = active.npcId === npc.id;
     if (!isOwner) {
-      const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${pickTownNpcTip(npc)}”</div><div class="town-tip-box">현재 ${owner.name}의 퀘스트를 진행 중입니다. 완료하거나 보상을 받은 뒤 새 퀘스트를 받을 수 있어요.</div></div>` + renderActiveTownQuestHtml(active);
+      const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${pickTownNpcLine(npc, 'idle')}”</div><div class="town-tip-box">현재 ${owner.name}의 퀘스트를 진행 중입니다. 완료하거나 보상을 받은 뒤 새 퀘스트를 받을 수 있어요.</div></div>` + renderActiveTownQuestHtml(active);
       openTownQuestModal(html, '확인', closeTownQuestModal);
       saveGameDataDebounced();
       return;
     }
-    const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${done ? '수고했어! 약속한 보상을 바로 줄게.' : (active.dialogue || npc.line)}”</div><div class="town-tip-box">${done ? 'NPC 위에 책 모양이 뜨면 완료 보상을 받을 수 있습니다.' : pickTownNpcTip(npc)}</div></div>` + renderActiveTownQuestHtml(active) + `<div style="margin-top:10px; color:#cfe8ff;">${done ? '📖 완료 가능! 보상을 받아가세요.' : '… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.'}</div>`;
+    const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${done ? pickTownNpcLine(npc, 'done') : pickTownNpcLine(npc, 'progress')}”</div><div class="town-tip-box">${done ? 'NPC 위에 책 모양이 뜨면 완료 보상을 받을 수 있습니다.' : (active.dialogue || pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(active) + `<div style="margin-top:10px; color:#cfe8ff;">${done ? '📖 완료 가능! 보상을 받아가세요.' : '… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.'}</div>`;
     openTownQuestModal(html, done ? '보상 받기' : '확인', done ? claimTownQuestReward : closeTownQuestModal);
     saveGameDataDebounced();
     return;
   }
   const template = pickTownQuestForNpc(npc);
   const q = buildTownQuestFromTemplate(template, npc);
-  const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${q.dialogue || npc.line}”</div><div class="town-tip-box">${pickTownNpcTip(npc)}</div></div>` + renderActiveTownQuestHtml(q);
+  const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${pickTownNpcLine(npc, 'offer')}”</div><div class="town-tip-box">${q.dialogue || pickTownNpcTip(npc)}</div></div>` + renderActiveTownQuestHtml(q);
   openTownQuestModal(html, '퀘스트 수락', () => {
     ensureTownQuestState().active = q;
     saveGameData();
@@ -12266,6 +12477,12 @@ function claimTownQuestReward(){
   }
   const itemName = grantTownItem(q.item, 1);
   town.completed += 1;
+  if (q.baseId) {
+    if (!Array.isArray(town.completedBaseIds)) town.completedBaseIds = [];
+    if (!town.completedBaseIds.includes(q.baseId)) town.completedBaseIds.push(q.baseId);
+    if (town.completedBaseIds.length > TOWN_QUEST_POOL.length) town.completedBaseIds = town.completedBaseIds.slice(-TOWN_QUEST_POOL.length);
+    town.recentBaseId = q.baseId;
+  }
   town.active = null;
   saveGameData();
   updateHUD();
@@ -12273,14 +12490,31 @@ function claimTownQuestReward(){
   closeTownQuestModal();
   alert(`마을 퀘스트 완료!\n+${formatNumber(expReward)} EXP (${getTownQuestPercentText(q)})\n+${formatNumber(goldReward)} 골드${itemName ? `\n+${itemName} x1` : ''}`);
 }
+let townQuestProgressToastTimer = null;
+function showTownQuestProgressToast(q){
+  try {
+    if (!q || state === 'town') return;
+    const el = document.getElementById('townQuestProgressToast');
+    if (!el) return;
+    el.textContent = `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress || 0)}/${formatNumber(q.target || 1)})`;
+    el.classList.add('show');
+    if (townQuestProgressToastTimer) clearTimeout(townQuestProgressToastTimer);
+    townQuestProgressToastTimer = setTimeout(() => {
+      try { el.classList.remove('show'); } catch(_) {}
+    }, 1500);
+  } catch(e) {}
+}
 function updateTownQuestProgress(type, amount){
   const town = ensureTownQuestState();
   const q = town.active;
   if (!q || q.type !== type) return;
   if ((q.progress || 0) >= (q.target || 1)) return;
-  q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
+  const before = Math.max(0, Math.floor(q.progress || 0));
+  q.progress = Math.min(q.target, before + Math.max(1, Math.floor(amount || 1)));
+  if (q.progress !== before) showTownQuestProgressToast(q);
   saveGameDataDebounced();
 }
+
 function enterTown(){
   initAudio();
   ensureTownQuestState();
