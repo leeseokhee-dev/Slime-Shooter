@@ -3226,6 +3226,9 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
         <div style="font-size:13px; color:#cfd6ff; line-height:1.4;">
             원하시는 모드를 골라주세요.
         </div>
+        <button id="modeTutorialBtn" class="ui-btn big-btn" style="width:100%; border-color:#b8ffd8; color:#edfff4; background:linear-gradient(to bottom, #1b6b46, #082417);">
+            🧭 튜토리얼 모드 (신규 LV.1 전용)
+        </button>
         <button id="modeStageBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffd700; color:#ffd700;">
             🎯 스테이지 모드
         </button>
@@ -3257,6 +3260,7 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
             🏰 던전 모드 (LV.100+ · 하루 10회)
         </button>
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
+            튜토리얼 모드: 신규 캐릭터가 직접 조작하며 기본기를 배우는 전용 흐름<br>
             스테이지 모드: 스테이지 선택 → 플레이<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
             수련 모드: 5초마다 자동 EXP 획득<br>
@@ -4747,6 +4751,7 @@ const closeDungeonBtn = document.getElementById('closeDungeonBtn');
 
 // 모드 선택 모달
 const modeModal = document.getElementById('modeModal');
+const modeTutorialBtn = document.getElementById('modeTutorialBtn');
 const modeStageBtn = document.getElementById('modeStageBtn');
 const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
 const modeTrainingBtn = document.getElementById('modeTrainingBtn');
@@ -7130,22 +7135,14 @@ function applyIntroStepFocus() {
     return;
   }
   if (introStep === 2) {
-    // 모드 선택: 스테이지 모드 버튼
-    if (modeStageBtn) showFocusOnElement(modeStageBtn, 14);
+    // 모드 선택: 튜토리얼 모드 버튼
+    if (modeTutorialBtn) showFocusOnElement(modeTutorialBtn, 14);
     else hideFocusMask();
     return;
   }
   if (introStep === 3) {
-    // 스테이지 선택: 1스테이지 버튼
-    const b1 = getStage1Button();
-    if (b1) showFocusOnElement(b1, 10);
-    else {
-      // 혹시 아직 렌더 전이면 다음 프레임에 재시도
-      requestAnimationFrame(() => {
-        const again = getStage1Button();
-        if (again) showFocusOnElement(again, 10);
-      });
-    }
+    // 튜토리얼 모드 시작 직전/직후 안내 단계
+    hideFocusMask();
     return;
   }
 
@@ -7195,6 +7192,7 @@ function runTutorialOnce(id, starter){
 
 // ✅ [v.93.3] 인게임 튜토리얼 흐름(논블로킹/클리어 후 안내)
 let tutorialFlow = 'none'; // none | ingame | waitClear | postClear
+let tutorialModeActive = false; // ✅ 튜토리얼 모드 버튼으로 시작한 초보 전용 진행 상태
 let tutorialNonBlocking = false; // true면 게임 업데이트를 멈추지 않음
 
 const BASE_TUTORIAL_MESSAGES = [
@@ -7230,9 +7228,9 @@ const BASE_TUTORIAL_MESSAGES = [
 
 const INTRO_TUTORIAL_PRE_MESSAGES = [
   "안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.",
-  "화면 중앙의 [게임 시작] 버튼을 눌러주세요. 조작과 전투 흐름을 차근차근 알려드리겠습니다.",
-  "먼저 [스테이지 모드]를 선택해보세요. 스테이지 모드는 몬스터를 처치하며 기본 조작, 경험치 획득, 골드 획득을 익히기 가장 좋습니다.",
-  "이제 [1스테이지]를 선택해볼까요? LV.11에 도달하면 본격적인 성장과 스킬 활용을 시작할 수 있습니다."
+  "먼저 화면 중앙의 [게임 시작] 버튼을 눌러주세요. 닉네임을 만든 뒤에는 이 버튼을 통해 모드를 선택할 수 있습니다.",
+  "처음 플레이하는 신규 캐릭터라면 [튜토리얼 모드]를 선택해보세요. 실제 전투 안에서 조작, 몬스터 처치, 골드 획득, EXP 구슬, 스킬 흐름을 차근차근 배울 수 있습니다.",
+  "튜토리얼 모드는 안내 퀘스트를 하나씩 수행하는 방식입니다. 완료할 때마다 1레벨업 EXP를 받고, 최대 LV.11 0%까지 성장할 수 있습니다."
 ];
 
 const INTRO_TUTORIAL_INGAME_MESSAGES = [
@@ -12138,6 +12136,7 @@ function clearGuideQuestIfNoLongerNeeded(){
     if (Number(level || saveData?.level || 1) >= 11 && town && town.active && town.active.npcId === 'guide') {
       town.active = null;
       town.guideStep = BEGINNER_TUTORIAL_QUEST_POOL.length;
+      try { tutorialModeActive = false; } catch(e) {}
       saveGameDataDebounced();
       return true;
     }
@@ -12389,9 +12388,10 @@ function startBeginnerGuideRun(q){
   if (stageModal) stageModal.classList.add('hidden');
   if (titleUI) titleUI.classList.add('hidden');
   state = 'playing';
+  tutorialModeActive = true;
   gameMode = 'stage';
   stage = Math.max(1, Math.min(Number(saveData?.maxUnlockedStage || 1), 1));
-  showToast('🧭 안내 퀘스트 시작! 실제 전투에서 목표를 달성해보세요.', '#b8ffd8', 1800);
+  showToast('🧭 튜토리얼 모드 진행 중! 실제 전투에서 목표를 달성해보세요.', '#b8ffd8', 1800);
   startGame(1);
   setTimeout(() => showBeginnerGuideInGame(q), 80);
 }
@@ -12439,6 +12439,7 @@ function completeBeginnerGuideQuestInGame(q){
       showBeginnerGuideInGame(nextQuest);
     }, 700);
   } else {
+    tutorialModeActive = false;
     saveGameData();
     setTimeout(() => {
       tutorialFlow = 'beginnerGuideDone';
@@ -12760,8 +12761,45 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+function isTutorialModeAvailable(){
+  try { return Number(level || saveData?.level || 1) < 11; } catch(e) { return true; }
+}
+function refreshTutorialModeButtonVisibility(){
+  if (!modeTutorialBtn) return;
+  const show = isTutorialModeAvailable();
+  modeTutorialBtn.classList.toggle('hidden', !show);
+}
+function getOrCreateBeginnerGuideQuestForTutorialMode(){
+  const town = ensureTownQuestState();
+  if (town.active && isBeginnerGuideQuest(town.active)) return town.active;
+  const npc = getTownNpcById('guide') || (TOWN_NPCS || []).find(n => n && n.id === 'guide');
+  const template = pickBeginnerTutorialQuest();
+  if (!npc || !template) return null;
+  const q = buildTownQuestFromTemplate(template, npc);
+  town.active = q;
+  saveGameData();
+  return q;
+}
+function startTutorialMode(){
+  if (!isTutorialModeAvailable()) {
+    alert('튜토리얼 모드는 LV.10 이하 신규 성장 구간 전용입니다. 이제 일반 모드에서 본격적으로 플레이해보세요!');
+    return;
+  }
+  stopIntroTutorial();
+  hideFocusMask();
+  if (modeModal) modeModal.classList.add('hidden');
+  const q = getOrCreateBeginnerGuideQuestForTutorialMode();
+  if (!q) {
+    alert('튜토리얼 퀘스트를 준비하지 못했습니다. 다시 시도해주세요.');
+    return;
+  }
+  try { showToast('🧭 튜토리얼 모드 시작! 길잡이 슬라임과 함께 기본기를 배워보세요.', '#b8ffd8', 1800); } catch(e) {}
+  startBeginnerGuideRun(q);
+}
+
 function openModeSelect() {
   // 타이틀에서 바로 모드 선택창
+  try { refreshTutorialModeButtonVisibility(); } catch(e) {}
   if (modeModal) modeModal.classList.remove('hidden');
 }
 
@@ -12769,14 +12807,21 @@ if (closeModeBtn) closeModeBtn.addEventListener('click', () => {
   modeModal.classList.add('hidden');
 });
 
+if (modeTutorialBtn) modeTutorialBtn.addEventListener('click', () => {
+  // ✅ 신규 캐릭터 전용 튜토리얼 모드: 마을 설명이 아니라 전투 안에서 안내 퀘스트 수행
+  if (introTutorialActive && introStep === 2) advanceIntroTo(3);
+  startTutorialMode();
+});
+
 if (modeStageBtn) modeStageBtn.addEventListener('click', () => {
+  if (introTutorialActive && introStep === 2 && isTutorialModeAvailable()) {
+    setTutorialMsg('신규 캐릭터 안내에서는 [튜토리얼 모드]를 먼저 선택해주세요. 기본기를 배운 뒤 스테이지 모드로 넘어가면 더 자연스럽습니다.');
+    applyIntroStepFocus();
+    return;
+  }
   gameMode = 'stage';
   modeModal.classList.add('hidden');
   openStageSelect();
-  // ✅ 인트로 튜토리얼: [스테이지 모드] 선택 후 → 1스테이지 안내
-  if (introTutorialActive && introStep === 2) {
-    advanceIntroTo(3);
-  }
 });
 
 if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
@@ -19089,6 +19134,7 @@ try {
 }
 
 function goToTitle() {
+  try { tutorialModeActive = false; } catch(e) {}
 clearMissionAutoAdvanceTimer();
 closeMiniGameSelect();
 isPaused = false;
