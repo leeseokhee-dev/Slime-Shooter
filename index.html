@@ -7162,15 +7162,29 @@ function getTutorialSeenMap(){
   try { return JSON.parse(localStorage.getItem(ONE_TIME_TUTORIAL_KEY) || '{}') || {}; }
   catch(e) { return {}; }
 }
+function getTutorialSeenId(id){
+  const charId = currentCharacterId || 'global';
+  return `${charId}::${id}`;
+}
 function hasTutorialBeenSeen(id){
   const map = getTutorialSeenMap();
-  return !!map[id];
+  return !!map[getTutorialSeenId(id)];
 }
 function markTutorialAsSeen(id){
   if (!id) return;
   const map = getTutorialSeenMap();
-  map[id] = true;
+  map[getTutorialSeenId(id)] = true;
   try { localStorage.setItem(ONE_TIME_TUTORIAL_KEY, JSON.stringify(map)); } catch(e) {}
+}
+function resetCurrentCharacterTutorialFlags(){
+  try {
+    const map = getTutorialSeenMap();
+    const prefix = `${currentCharacterId || 'global'}::`;
+    Object.keys(map).forEach(k => { if (k.startsWith(prefix)) delete map[k]; });
+    localStorage.setItem(ONE_TIME_TUTORIAL_KEY, JSON.stringify(map));
+    localStorage.removeItem('ss_tutorial_shown');
+    tutorialShown = false;
+  } catch(e) {}
 }
 function runTutorialOnce(id, starter){
   if (!id || hasTutorialBeenSeen(id)) return false;
@@ -7227,7 +7241,7 @@ const INTRO_TUTORIAL_INGAME_MESSAGES = [
   "위에서 내려오는 몬스터를 피하면서 처치해보세요. 몬스터를 처치하면 경험치와 점수를 얻습니다.",
   "골드는 전투 보상과 드랍으로 모을 수 있고, 나중에 아이템과 성장 준비에 사용할 수 있습니다.",
   "스킬은 레벨이 오르면 차례대로 해금됩니다. 쿨타임이 끝났을 때 버튼을 누르면 강한 공격을 사용할 수 있습니다.",
-  "마을의 길잡이 슬라임 안내 퀘스트를 완료하면 퀘스트마다 1레벨업 EXP를 받고, 최대 LV.11 0%까지 성장할 수 있습니다."
+  "길잡이 슬라임의 초보 안내 퀘스트를 완료하면 퀘스트마다 1레벨업 EXP를 받고, 최대 LV.11 0%까지 성장할 수 있습니다."
 ];
 
 // ✅ 인트로(타이틀) 단계형 튜토리얼 상태
@@ -7300,7 +7314,7 @@ function beginIngameTutorial() {
     "화면을 터치하거나 드래그해서 플레이어를 움직이면 됩니다. 총알은 자동으로 발사됩니다.",
     "몬스터를 처치하면 경험치와 점수를 얻고, 골드는 전투 보상과 드랍으로 모을 수 있습니다.",
     "스킬은 레벨이 오르면 차례대로 해금됩니다. 쿨타임이 끝났을 때 버튼을 눌러 강한 공격을 사용하면 됩니다.",
-    "마을의 길잡이 슬라임 안내 퀘스트는 클리어마다 1레벨업 EXP를 지급하며, 최대 LV.11 0%까지만 적용됩니다.",
+    "길잡이 슬라임의 초보 안내 퀘스트는 클리어마다 1레벨업 EXP를 지급하며, 최대 LV.11 0%까지만 적용됩니다.",
     `이번 스테이지 목표는 몬스터 ${target}마리 처치입니다. 먼저 목표를 달성해볼까요?`
   ];
 }
@@ -7334,7 +7348,7 @@ function maybeStartPostClearTutorial() {
   ];
 }
 
-let tutorialShown = (localStorage.getItem('ss_tutorial_shown') === '1');
+let tutorialShown = false;
 
 // 스킬 해금 안내(레벨별 최초 1회)
 const SKILL_NOTICE_LEVELS = [11, 31, 61, 101, 200, 250];
@@ -7831,12 +7845,14 @@ function nextTutorialMessage() {
 function maybeShowFirstTutorial() {
   if (tutorialShown) return;
   if (Number(level) !== 1) return;
+  if (!String(saveData.nickname || '').trim()) return;
+  if (initialNicknameModal && !initialNicknameModal.classList.contains('hidden')) return;
   if (hasTutorialBeenSeen('intro_title')) return;
 
-  // ✅ [v.164.2] 타이틀 단계형 튜토리얼도 최초 1회만 시작
+  // ✅ 닉네임 생성 완료 후 타이틀에서 [게임 시작] 버튼을 누르는 흐름으로 안내
   startIntroTutorial();
 
-  try { localStorage.setItem('ss_tutorial_shown', '1'); } catch(e) {}
+  try { localStorage.setItem(`ss_tutorial_shown__${currentCharacterId || 'global'}`, '1'); } catch(e) {}
   tutorialShown = true;
 }
 
@@ -9165,6 +9181,12 @@ function switchCharacter(id) {
   try { saveGameData(); } catch (e) {}
   localStorage.setItem(CHARACTER_CURRENT_KEY, id);
   currentCharacterId = id;
+  try {
+    const raw = localStorage.getItem(getCharacterStorageKey(id));
+    const data = raw ? JSON.parse(raw) : null;
+    const fresh = data && Number(data.level || 1) <= 1 && Number(data.exp || 0) <= 0 && Number(data.highScore || 0) <= 0 && Number(data.totalMonsterKills || 0) <= 0;
+    if (fresh) resetCurrentCharacterTutorialFlags();
+  } catch(e) {}
   alert('캐릭터를 불러옵니다. 화면을 새로고침해 적용할게요.');
   location.reload();
 }
@@ -9231,6 +9253,7 @@ function createCharacterSlot() {
   const data = createCharacterData(newNick);
   data.playerElement = elementKey;
   localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(data));
+  try { localStorage.setItem(getInitialNicknameDoneKey(id), '1'); } catch(e) {}
   const list = getCharacterIndex();
   list.push({ id, nickname: newNick, level: 1, highScore: 0, element: elementKey, createdAt: Date.now(), updatedAt: Date.now() });
   setCharacterIndex(list);
@@ -9268,10 +9291,10 @@ function deleteCharacterById(id) {
   renderCharacterList();
 }
 
+function getInitialNicknameDoneKey(id = currentCharacterId) {
+  return `${INITIAL_NICKNAME_DONE_KEY}__${id || 'global'}`;
+}
 function isInitialNicknameRequired() {
-  try {
-    if (localStorage.getItem(INITIAL_NICKNAME_DONE_KEY)) return false;
-  } catch (e) {}
   const list = getCharacterIndex();
   const curMeta = list.find(v => v && v.id === currentCharacterId);
   const cleanNick = String(saveData.nickname || '').trim();
@@ -9280,7 +9303,10 @@ function isInitialNicknameRequired() {
     && Number(saveData.highScore || 0) <= 0
     && Number(saveData.totalMonsterKills || 0) <= 0
     && Number(saveData.totalBossKills || 0) <= 0;
-  return !!(currentCharacterId && list.length === 1 && curMeta && !cleanNick && isFreshProfile);
+  let done = false;
+  try { done = !!localStorage.getItem(getInitialNicknameDoneKey()); } catch (e) {}
+  // ✅ 처음 설치한 캐릭터 또는 새로 만든 LV.1 캐릭터는 닉네임 확정 후 튜토리얼 흐름으로 진입
+  return !!(currentCharacterId && curMeta && isFreshProfile && (!cleanNick || !done));
 }
 
 function openInitialNicknameModal() {
@@ -9311,7 +9337,7 @@ function confirmInitialNickname() {
   const now = Date.now();
   saveData.nickname = newNick;
   saveData.nicknameLastChangedAt = now;
-  try { localStorage.setItem(INITIAL_NICKNAME_DONE_KEY, '1'); } catch (e) {}
+  try { localStorage.setItem(getInitialNicknameDoneKey(), '1'); } catch (e) {}
 
   const list = getCharacterIndex();
   const target = list.find(v => v && v.id === currentCharacterId);
@@ -9336,6 +9362,10 @@ function confirmInitialNickname() {
   saveGameData();
   updateHUD();
   closeInitialNicknameModal();
+  resetCurrentCharacterTutorialFlags();
+  setTimeout(() => {
+    try { startIntroTutorial(); } catch(e) {}
+  }, 80);
   return true;
 }
 
@@ -12057,7 +12087,7 @@ const TOWN_NPCS = [
     tips:[
       '조작은 화면을 터치하거나 드래그해서 플레이어를 움직이면 됩니다. 총알은 자동으로 발사돼요.',
       '몬스터를 처치하면 EXP와 점수를 얻고, 골드는 전투 보상과 드랍으로 모을 수 있습니다.',
-      '초보자 안내 퀘스트는 클리어할 때마다 현재 레벨 기준 1레벨업 EXP를 지급하며, 최대 LV.11 0%까지만 올려드립니다.'
+      '초보자 안내 퀘스트는 마을 설명이 아니라 실제 전투 안에서 직접 진행됩니다. 클리어할 때마다 1레벨업 EXP를 지급하며, 최대 LV.11 0%까지만 올려드립니다.'
     ],
     questTypes:['beginner']
   },
@@ -12092,6 +12122,28 @@ const TOWN_NPCS = [
     questTypes:['bossKills','stageClears','kills']
   }
 ];
+
+
+function isGuideSlimeVisible(){
+  try { return Number(level || saveData?.level || 1) < 11; } catch(e) { return true; }
+}
+function getVisibleTownNpcs(){
+  try {
+    return TOWN_NPCS.filter(npc => npc && (npc.id !== 'guide' || isGuideSlimeVisible()));
+  } catch(e) { return TOWN_NPCS || []; }
+}
+function clearGuideQuestIfNoLongerNeeded(){
+  try {
+    const town = ensureTownQuestState();
+    if (Number(level || saveData?.level || 1) >= 11 && town && town.active && town.active.npcId === 'guide') {
+      town.active = null;
+      town.guideStep = BEGINNER_TUTORIAL_QUEST_POOL.length;
+      saveGameDataDebounced();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
 
 const BEGINNER_TUTORIAL_QUEST_POOL = [
   { id:'guide_kill_1', type:'kills', title:'첫 전투 연습', target:1, beginnerLevelUp:true, gold:()=>20, item:null, dialogue:'먼저 몬스터를 1마리 처치해볼까요? 플레이어는 자동으로 공격하니 움직이면서 피하면 됩니다.' },
@@ -12295,12 +12347,113 @@ function townNpcSpeak(npc, text){
   return base + suffix;
 }
 function getBeginnerGuideIntroHtml(){
-  return `<div class="town-tip-box">안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.<br><br>조작 방법, 몬스터 처치, 스킬 사용, 골드 획득 방법을 단계별로 알려드립니다. 안내 퀘스트는 클리어할 때마다 현재 레벨 기준 1레벨업 EXP를 지급하며, 최대 LV.11 0%까지만 적용됩니다.</div>`;
+  return `<div class="town-tip-box">안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.<br><br>안내는 마을 안에서 설명만 듣는 방식이 아니라, 실제 게임 화면에서 직접 움직이고 처치하면서 진행됩니다.<br><br>퀘스트를 수락하면 바로 전투로 이동하며, 퀘스트를 클리어할 때마다 현재 레벨 기준 1레벨업 EXP를 지급합니다. 보상은 최대 LV.11 0%까지만 적용됩니다.</div>`;
 }
 function pickBeginnerTutorialQuest(){
   const town = ensureTownQuestState();
   const step = Math.max(0, Math.floor(Number(town.guideStep) || 0));
   return BEGINNER_TUTORIAL_QUEST_POOL[Math.min(step, BEGINNER_TUTORIAL_QUEST_POOL.length - 1)];
+}
+
+function isBeginnerGuideQuest(q){
+  return !!(q && q.beginnerLevelUp && q.npcId === 'guide');
+}
+function getBeginnerQuestGuideMessages(q){
+  const title = q ? String(q.title || '초보자 안내') : '초보자 안내';
+  const desc = q ? String(q.desc || makeTownQuestDesc(q.type, q.target)) : '';
+  const common = [
+    `🧭 ${title}`,
+    `이번 안내 미션: ${desc}`,
+    '화면을 터치하거나 드래그해서 플레이어를 움직여보세요. 총알은 자동으로 발사됩니다.',
+    '몬스터와 적 탄환을 피하면서 목표를 채우면 퀘스트가 자동 완료됩니다.'
+  ];
+  if (q && q.type === 'kills') common.push('몬스터 처치는 가장 기본입니다. 내려오는 적을 피하면서 자동 공격으로 정리해보세요.');
+  if (q && q.type === 'goldEarned') common.push('골드는 전투 중 드랍되거나 클리어 보상으로 얻을 수 있습니다. 반짝이는 보상을 놓치지 마세요.');
+  if (q && q.type === 'expOrbs') common.push('EXP 구슬은 몬스터 처치 후 나타납니다. 안전한 타이밍에 가까이 이동해 주워보세요.');
+  if (q && q.type === 'stageClears') common.push('스테이지 목표 처치 수를 모두 채우면 클리어됩니다. 천천히 생존하면서 진행해보세요.');
+  common.push('이 안내 퀘스트를 완료하면 1레벨업 EXP를 받습니다. 단, 최대 LV.11 0%까지만 올라갑니다.' );
+  return common;
+}
+function showBeginnerGuideInGame(q){
+  if (!isBeginnerGuideQuest(q)) return;
+  tutorialFlow = 'beginnerGuide';
+  tutorialNonBlocking = true;
+  tutorialActive = true;
+  tutorialIndex = 0;
+  tutorialMessages = getBeginnerQuestGuideMessages(q);
+}
+function startBeginnerGuideRun(q){
+  if (!isBeginnerGuideQuest(q)) return;
+  closeTownQuestModal();
+  if (modeModal) modeModal.classList.add('hidden');
+  if (stageModal) stageModal.classList.add('hidden');
+  if (titleUI) titleUI.classList.add('hidden');
+  state = 'playing';
+  gameMode = 'stage';
+  stage = Math.max(1, Math.min(Number(saveData?.maxUnlockedStage || 1), 1));
+  showToast('🧭 안내 퀘스트 시작! 실제 전투에서 목표를 달성해보세요.', '#b8ffd8', 1800);
+  startGame(1);
+  setTimeout(() => showBeginnerGuideInGame(q), 80);
+}
+function acceptTownQuest(q){
+  const town = ensureTownQuestState();
+  town.active = q;
+  saveGameData();
+  try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
+  closeTownQuestModal();
+  if (isBeginnerGuideQuest(q)) {
+    startBeginnerGuideRun(q);
+  } else {
+    showToast('💡 마을 퀘스트를 수락했습니다!', '#b8ffd8', 1200);
+  }
+}
+function completeBeginnerGuideQuestInGame(q){
+  const town = ensureTownQuestState();
+  if (!isBeginnerGuideQuest(q)) return false;
+  const expReward = getTownQuestExpReward(q);
+  if (expReward > 0) addExpDirect(expReward);
+  const goldReward = Math.max(0, Math.floor(q.gold || 0));
+  if (goldReward > 0) {
+    gold += goldReward;
+    saveData.goldEarned = (saveData.goldEarned || 0) + goldReward;
+    addGoldEarnedStat(goldReward);
+  }
+  const itemName = grantTownItem(q.item, 1);
+  town.completed += 1;
+  town.guideStep = Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Math.max(0, Math.floor(Number(town.guideStep) || 0)) + 1);
+  town.recentBaseIds = [q.baseId].concat(Array.isArray(town.recentBaseIds) ? town.recentBaseIds.filter(id => id !== q.baseId) : []).slice(0, 6);
+  town.active = null;
+  const rewardText = `🧭 안내 퀘스트 완료! +${formatNumber(expReward)} EXP / +${formatNumber(goldReward)} 골드${itemName ? ` / ${itemName} x1` : ''}`;
+  showToast(rewardText, '#b8ffd8', 2200);
+  try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
+  updateHUD();
+
+  if ((level || 1) < 11 && town.guideStep < BEGINNER_TUTORIAL_QUEST_POOL.length) {
+    const npc = getTownNpcById('guide');
+    const nextTemplate = pickBeginnerTutorialQuest();
+    const nextQuest = buildTownQuestFromTemplate(nextTemplate, npc);
+    town.active = nextQuest;
+    saveGameData();
+    setTimeout(() => {
+      showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
+      showBeginnerGuideInGame(nextQuest);
+    }, 700);
+  } else {
+    saveGameData();
+    setTimeout(() => {
+      tutorialFlow = 'beginnerGuideDone';
+      tutorialNonBlocking = true;
+      tutorialActive = true;
+      tutorialIndex = 0;
+      tutorialMessages = [
+        '축하합니다! 초보자 안내 퀘스트를 완료했습니다.',
+        '이제 LV.11부터 본격적인 플레이가 시작됩니다.',
+        '거품 스킬이 해금되면 스킬 버튼을 눌러 전투 흐름을 더 빠르게 만들 수 있습니다.',
+        '마을의 다른 슬라임들에게서도 다양한 퀘스트를 받을 수 있어요.'
+      ];
+    }, 700);
+  }
+  return true;
 }
 
 function renderActiveTownQuestHtml(q){
@@ -12336,7 +12489,7 @@ function getTownNpcStatus(npc){
 function pickTownQuestForNpc(npc){
   const types = Array.isArray(npc.questTypes) ? npc.questTypes : [];
   if (npc && npc.id === 'guide') {
-    if ((level || 1) >= 11) return { id:'guide_review', type:'stageClears', title:'본격 플레이 준비 점검', target:1, expPct200:0.08, gold:()=>120, item:'smallPotion', dialogue:'이제 LV.11에 도달했으니 본격적인 플레이를 시작할 수 있습니다. 스테이지를 한 번 더 클리어해볼까요?' };
+    if ((level || 1) >= 11) return null;
     return pickBeginnerTutorialQuest();
   }
   const town = ensureTownQuestState();
@@ -12372,15 +12525,14 @@ function talkToTownNpc(npc){
     return;
   }
   const template = pickTownQuestForNpc(npc);
+  if (!template) {
+    const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${townNpcSpeak(npc, '이제 초보 안내는 충분히 마쳤습니다. 다른 슬라임들의 퀘스트에 도전해보세요!')}”</div></div>`;
+    openTownQuestModal(html, '확인', closeTownQuestModal);
+    return;
+  }
   const q = buildTownQuestFromTemplate(template, npc);
   const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${townNpcSpeak(npc, q.dialogue || npc.line)}”</div>${npc.id === 'guide' ? getBeginnerGuideIntroHtml() : ''}<div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(q);
-  openTownQuestModal(html, '퀘스트 수락', () => {
-    ensureTownQuestState().active = q;
-    saveGameData();
-    try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
-    closeTownQuestModal();
-    showToast('💡 마을 퀘스트를 수락했습니다!', '#b8ffd8', 1200);
-  });
+  openTownQuestModal(html, isBeginnerGuideQuest(q) ? '전투에서 안내 퀘스트 시작' : '퀘스트 수락', () => acceptTownQuest(q));
   saveGameDataDebounced();
 }
 function claimTownQuestReward(){
@@ -12413,9 +12565,14 @@ function updateTownQuestProgress(type, amount){
   if ((q.progress || 0) >= (q.target || 1)) return;
   q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
   normalizeTownQuestDisplay(q);
+  const justCompleted = (q.progress || 0) >= (q.target || 1);
   try {
     if (state !== 'town') showToast(`${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`, '#dffff0', 1500);
   } catch(e) {}
+  if (justCompleted && isBeginnerGuideQuest(q) && state !== 'town') {
+    completeBeginnerGuideQuestInGame(q);
+    return;
+  }
   saveGameDataDebounced();
 }
 function enterTown(){
@@ -12478,7 +12635,8 @@ function drawTownScreen(timestamp){
     ctx.strokeText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.25);
     ctx.fillText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.25);
   }
-  TOWN_NPCS.forEach((npc) => {
+  clearGuideQuestIfNoLongerNeeded();
+  getVisibleTownNpcs().forEach((npc) => {
     const x = width * npc.x;
     const y = height * npc.y + Math.sin(t/420 + x) * 5;
     const r = Math.max(26, Math.min(44, width*0.052));
@@ -12525,7 +12683,7 @@ function handleTownPointer(clientX, clientY){
   const y = (clientY - rect.top) * (canvas.height / rect.height);
   const bx = width*0.5, by = height - 38, bw = Math.min(260,width*0.7), bh=42;
   if (x >= bx-bw/2 && x <= bx+bw/2 && y >= by-bh/2 && y <= by+bh/2) { leaveTown(); return true; }
-  for (const npc of TOWN_NPCS) {
+  for (const npc of getVisibleTownNpcs()) {
     const nx = width * npc.x;
     const ny = height * npc.y;
     const r = Math.max(34, Math.min(54, width*0.065));
@@ -18924,6 +19082,10 @@ else startStage();
 playBgmTrack(getModeBgmName()); // ★ 모드별 BGM 재생
 if (!isFeverEligibleMode()) { feverActive = false; feverTimeLeft = 0; document.body.classList.remove('fever-mode'); }
 updateHUD();
+try {
+  const tq = ensureTownQuestState && ensureTownQuestState();
+  if (tq && isBeginnerGuideQuest(tq.active)) setTimeout(() => showBeginnerGuideInGame(tq.active), 120);
+} catch(e) {}
 }
 
 function goToTitle() {
@@ -28796,6 +28958,8 @@ try {
 } catch(e) {}
 
 loadGameData();
+try { tutorialShown = (localStorage.getItem(`ss_tutorial_shown__${currentCharacterId || 'global'}`) === '1'); } catch(e) { tutorialShown = false; }
+try { clearGuideQuestIfNoLongerNeeded(); } catch(e) {}
 try { syncGoldAccountingV1882(); saveGameData(); } catch (e) {}
 updateHUD();
 if (isInitialNicknameRequired()) openInitialNicknameModal();
