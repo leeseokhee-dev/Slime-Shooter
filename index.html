@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.191.2 Crystal Boss Bullet Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.203.11 Tutorial Clear Guide)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1270,18 +1270,69 @@ function shouldShowTutorial(id){
 }
 #tutorialBox{
   margin-top: -120px;
-  max-width: 85%;
-  padding: 16px 20px;
-  border-radius: 16px;
-  background: rgba(0,0,0,0.92);
+  width: min(88%, 620px);
+  max-width: 88%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(10,18,32,0.96), rgba(0,0,0,0.92));
   border: 3px solid #ffd700;
   color: #fff;
   font-weight: 800;
-  font-size: 17px;
-  text-align: center;
+  font-size: 16px;
+  text-align: left;
   text-shadow: 0 2px 4px #000;
   pointer-events: auto; /* 대사 박스만 터치 가능 */
   cursor: pointer;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  box-shadow:0 16px 44px rgba(0,0,0,0.48), 0 0 18px rgba(255,215,0,0.16);
+}
+#tutorialGuideIcon{
+  flex:0 0 70px;
+  width:70px;
+  height:70px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:38px;
+  background:radial-gradient(circle at 35% 28%, rgba(255,255,255,0.82), rgba(124,255,181,0.34) 42%, rgba(22,92,74,0.82) 100%);
+  border:3px solid rgba(184,255,216,0.94);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,0.34), 0 0 16px rgba(124,255,181,0.35);
+}
+#tutorialSpeechWrap{
+  flex:1 1 auto;
+  min-width:0;
+}
+#tutorialSpeakerName{
+  display:inline-block;
+  margin-bottom:5px;
+  padding:3px 9px;
+  border-radius:999px;
+  color:#16351f;
+  background:#b8ffd8;
+  font-size:13px;
+  font-weight:1000;
+  text-shadow:none;
+}
+#tutorialText{
+  display:block;
+  line-height:1.55;
+  word-break:keep-all;
+}
+#tutorialNextHint{
+  display:block;
+  margin-top:6px;
+  color:#ffe98a;
+  font-size:12px;
+  font-weight:900;
+  opacity:0.9;
+}
+@media (max-width:520px){
+  #tutorialBox{ width:92%; max-width:92%; padding:12px; gap:10px; font-size:14px; margin-top:-92px; }
+  #tutorialGuideIcon{ flex-basis:56px; width:56px; height:56px; font-size:30px; border-width:2px; }
+  #tutorialSpeakerName{ font-size:12px; }
 }
 /* ===============================
    ✅ [v.93.2] 튜토리얼 포커스(스포트라이트) 오버레이
@@ -2960,7 +3011,12 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 <!-- ✅ [v.89] 튜토리얼 오버레이 -->
 <div id="tutorialOverlay" class="hidden">
   <div id="tutorialBox">
-    <span id="tutorialText"></span>
+    <div id="tutorialGuideIcon" aria-hidden="true">🧭</div>
+    <div id="tutorialSpeechWrap">
+      <div id="tutorialSpeakerName">길잡이 슬라임</div>
+      <span id="tutorialText"></span>
+      <span id="tutorialNextHint">터치하면 다음 안내로 넘어갑니다</span>
+    </div>
   </div>
 </div>
 
@@ -4810,6 +4866,7 @@ function animateStageClearExp(value) {
 }
 
 function showStageClearModalAnimated(totalExp, rank) {
+  try { updateTownQuestProgress('stageClears', 1); if (String(rank || '').toUpperCase() === 'S') { updateTownQuestProgress('sRankClears', 1); updateTownQuestProgress('kingSRankClears', 1); } } catch(e) {}
   if (!stageClearModal) return;
   stageClearModal.classList.remove('hidden');
   stageClearModal.classList.remove('stage-clear-pop');
@@ -7016,6 +7073,8 @@ let tutorialActive = false;
 const tutorialOverlayDom = document.getElementById('tutorialOverlay');
 const tutorialBoxDom      = document.getElementById('tutorialBox');
 const tutorialTextDom     = document.getElementById('tutorialText');
+const tutorialSpeakerNameDom = document.getElementById('tutorialSpeakerName');
+const tutorialGuideIconDom   = document.getElementById('tutorialGuideIcon');
 
 if (tutorialBoxDom) {
   tutorialBoxDom.addEventListener('click', (e) => {
@@ -7244,12 +7303,12 @@ const INTRO_TUTORIAL_PRE_MESSAGES = [
 ];
 
 const INTRO_TUTORIAL_INGAME_MESSAGES = [
-  "좋아요! 전투가 시작됐습니다.",
-  "화면을 터치하거나 드래그해서 플레이어를 움직이면 됩니다. 총알은 자동으로 발사됩니다.",
-  "위에서 내려오는 몬스터를 피하면서 처치해보세요. 몬스터를 처치하면 경험치와 점수를 얻습니다.",
-  "골드는 전투 보상과 드랍으로 모을 수 있고, 나중에 아이템과 성장 준비에 사용할 수 있습니다.",
-  "스킬은 레벨이 오르면 차례대로 해금됩니다. 쿨타임이 끝났을 때 버튼을 누르면 강한 공격을 사용할 수 있습니다.",
-  "길잡이 슬라임의 초보 안내 퀘스트를 완료하면 퀘스트마다 1레벨업 EXP를 받고, 최대 LV.11 0%까지 성장할 수 있습니다."
+  "좋아요! 전투가 시작됐습니다. 먼저 화면을 터치하거나 드래그해서 플레이어를 움직여보세요.",
+  "공격은 자동으로 발사됩니다. 플레이어는 몬스터와 탄환을 피하면서 안전한 위치를 잡으면 됩니다.",
+  "위에서 내려오는 몬스터를 처치하면 EXP, 점수, 골드 같은 보상을 얻을 수 있습니다.",
+  "EXP 구슬은 일정 확률로 등장합니다. 무조건 나오지 않으니, 보이면 안전할 때 획득해주세요.",
+  "스킬은 쿨타임이 끝났을 때 사용할 수 있습니다. 몬스터가 모였을 때 쓰면 멀티킬을 노리기 좋습니다.",
+  "초보 안내 퀘스트를 모두 완료하면 LV.11 0% 상태로 마무리됩니다."
 ];
 
 // ✅ 인트로(타이틀) 단계형 튜토리얼 상태
@@ -7799,6 +7858,8 @@ function drawTutorialOverlay() {
     : '';
 
   if (textEl) textEl.textContent = msg;
+  if (tutorialSpeakerNameDom) tutorialSpeakerNameDom.textContent = '길잡이 슬라임';
+  if (tutorialGuideIconDom) tutorialGuideIconDom.textContent = '🧭';
   if (overlay) overlay.classList.remove('hidden');
 }
 
@@ -12118,7 +12179,7 @@ const townQuestCloseBtn = document.getElementById('townQuestCloseBtn');
 let selectedTownNpc = null;
 const TOWN_NPCS = [
   {
-    id:'guide', name:'길잡이 슬라임', emoji:'🧭', x:0.12, y:0.70, color:'#b8ffd8',
+    id:'guide', name:'길잡이 슬라임', emoji:'🧭', x:0.12, y:0.70, color:'#b8ffd8', unlockLevel:1,
     tone:'guide',
     line:'안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.',
     tips:[
@@ -12129,34 +12190,76 @@ const TOWN_NPCS = [
     questTypes:['beginner']
   },
   {
-    id:'green', name:'초록 슬라임', emoji:'🟢', x:0.24, y:0.56, color:'#74ff9b',
-    line:'마을 주변 길목이 조금 소란스러워. 안전한 길을 만들어주면 좋겠어!',
-    tips:['몬스터 처치 퀘스트는 스테이지 모드나 무한 모드에서 자연스럽게 진행돼.', '초반에는 작은 목표 퀘스트부터 완료하면 성장 속도가 꽤 좋아져.'],
-    questTypes:['kills','stageClears','multiKills']
+    id:'green', name:'초록 슬라임', emoji:'🟢', x:0.24, y:0.56, color:'#74ff9b', unlockLevel:1,
+    line:'요즘 숲 가장자리에서 몬스터들이 몰려와 마을 밭과 창고를 망가뜨리고 있어. 그냥 싸우는 게 아니라, 마을 생활을 되찾기 위한 토벌이야.',
+    tips:['몬스터를 처치하는 이유는 단순한 싸움이 아니야. 마을의 하루를 되찾는 일이야.', '초반에는 밭과 창고를 지키는 작은 토벌부터 완료하면 성장 속도도 좋아져.'],
+    questTypes:['stageClears','kills','multiKills']
   },
   {
-    id:'blue', name:'물방울 슬라임', emoji:'🔵', x:0.50, y:0.50, color:'#78d8ff',
-    line:'EXP 구슬은 반짝임이 강할수록 놓치기 아까워. 수집 기록을 같이 연구해볼래?',
-    tips:['EXP 구슬 퀘스트는 몬스터가 많이 나오는 모드와 잘 어울려.', '체력이 낮을 때는 무리해서 구슬을 줍기보다 먼저 회피하는 게 좋아.'],
-    questTypes:['expOrbs','skillUses','kills']
+    id:'blue', name:'물방울 슬라임', emoji:'🔵', x:0.50, y:0.50, color:'#78d8ff', unlockLevel:1,
+    line:'최근 몬스터를 처치한 뒤 나타나는 EXP 구슬의 빛이 예전보다 불안정하게 흔들리고 있습니다. 단순한 성장 에너지가 아니라, 마을 주변에 퍼진 이상 현상과 연결되어 있을 가능성이 있어요. 구슬을 모아 주시면 빛의 흐름을 분석해서 몬스터가 왜 갑자기 늘어나는지 조사해보겠습니다.',
+    tips:['EXP 구슬 퀘스트는 몬스터가 많이 나오는 모드와 잘 어울립니다.', '체력이 낮을 때는 무리해서 구슬을 줍기보다 먼저 회피하는 게 좋습니다.'],
+    questTypes:['fever','pet']
   },
   {
-    id:'gold', name:'황금 슬라임', emoji:'🟡', x:0.75, y:0.58, color:'#ffe16b',
-    line:'반짝이는 골드는 장비와 성장의 바탕이지. 오늘도 금빛 의뢰 하나 해볼래?',
-    tips:['골드 획득 퀘스트는 보상형 모드나 골드 드랍이 있는 전투에서 빨리 진행돼.', '골드는 한 번에 많이 쓰기보다 다음 강화 목표를 정해두면 좋아.'],
-    questTypes:['goldEarned','stageClears','bossKills']
+    id:'gold', name:'황금 슬라임', emoji:'🟡', x:0.75, y:0.58, color:'#ffe16b', unlockLevel:1,
+    line:'몬스터 습격 이후로 마을 창고와 상점 물자가 많이 비었어. 겉으로는 평화로워 보여도, 회복약과 장비 재료가 부족하면 다음 전투를 버티기 어려워. 골드를 모아오면 무너진 상점도 고치고, 마을 슬라임들이 다시 일상을 이어갈 수 있어.',
+    tips:['골드는 그냥 숫자가 아니야. 마을이 다시 돌아가게 만드는 힘이지.', '골드 획득 퀘스트는 보상형 모드나 골드 드랍이 있는 전투에서 빨리 진행돼.'],
+    questTypes:['goldEarned','gems','infiniteItems']
   },
   {
-    id:'pink', name:'분홍 슬라임', emoji:'🟣', x:0.36, y:0.74, color:'#ff9de8',
-    line:'스킬을 예쁘게 쓰는 장면을 보고 싶어! 연습을 도와주면 선물 줄게.',
-    tips:['스킬 사용 퀘스트는 쿨타임을 보면서 꾸준히 누르면 쉽게 채울 수 있어.', '범위 스킬은 몬스터가 모였을 때 쓰면 멀티킬까지 노릴 수 있어.'],
-    questTypes:['skillUses','multiKills','expOrbs']
+    id:'pink', name:'분홍 슬라임', emoji:'🟣', x:0.36, y:0.74, color:'#ff9de8', unlockLevel:1,
+    line:'요즘 몬스터들이 혼자 움직이지 않고 무리를 지어 몰려오고 있습니다. 그냥 공격만으로는 마을 방어선이 오래 버티기 어려울지도 몰라요. 여러 스킬의 사용 기록을 모아 주시면 어떤 기술이 몬스터 무리를 막는 데 가장 효과적인지 분석해볼 수 있습니다.',
+    tips:['스킬 사용 퀘스트는 쿨타임을 보면서 꾸준히 누르면 쉽게 채울 수 있습니다.', '범위 스킬은 몬스터가 모였을 때 쓰면 멀티킬까지 노릴 수 있습니다.'],
+    questTypes:['infiniteScore','skillUses']
   },
   {
-    id:'elder', name:'장로 슬라임', emoji:'👑', x:0.64, y:0.75, color:'#d9ff8a',
-    line:'성장은 빠른 한 번보다 꾸준한 반복에서 나온단다. 오늘의 시련을 받아보겠느냐?',
-    tips:['보스 처치 퀘스트는 10단위 스테이지나 보스가 나오는 모드에서 진행해보렴.', '퀘스트 완료 상태가 되면 NPC 위에 책 모양이 떠서 바로 알아볼 수 있단다.'],
-    questTypes:['bossKills','stageClears','kills']
+    id:'elder', name:'장로 슬라임', emoji:'👑', x:0.64, y:0.75, color:'#d9ff8a', unlockLevel:1,
+    line:'마을에 닥친 이상 현상은 결코 우연이 아니란다. 처음에는 작은 몬스터 몇 마리뿐이었지만, 이제는 보스까지 움직이며 마을을 압박하고 있지. 네가 전투 기록을 모아준다면, 이 모든 일이 어디서 시작되었는지 조금씩 실마리를 찾을 수 있을 것이야.',
+    tips:['보스 처치 퀘스트는 10단위 스테이지나 보스가 나오는 모드에서 진행해보렴.', '모든 의뢰에는 이유가 있단다. 숫자 뒤에 숨은 이야기를 보아야 하느니라.'],
+    questTypes:['bossKills','sRankClears','multiKills']
+  },
+  {
+    id:'petKeeper', name:'펫 관리 슬라임', emoji:'🐾', x:0.14, y:0.39, color:'#d9b8ff', unlockLevel:20,
+    line:'오! 이제 혼자 싸우기엔 네 모험이 꽤 커졌네. 하지만 앞으로는 몬스터도 더 많아지고 전투도 길어질 거야. 이럴 때 곁에서 함께 싸워 줄 펫이 있다면 훨씬 든든하지. 펫은 단순한 장식이 아니라, 네 모험을 같이 기억하고 성장하는 동료야.',
+    firstIntro:['오! 이제 혼자 싸우기엔 네 모험이 꽤 커졌네. 하지만 앞으로는 몬스터도 더 많아지고 전투도 길어질 거야. 이럴 때 곁에서 함께 싸워 줄 펫이 있다면 훨씬 든든하지.', '펫은 모험가를 따라다니며 전투를 도와주는 동료야. 함께 싸우고, 함께 버티고, 함께 성장하는 존재지. 이제부터 펫과 호흡을 맞추는 퀘스트를 맡겨볼게!'],
+    tips:['펫을 장착한 상태로 몬스터를 처치하면 펫 동행 퀘스트가 진행돼.', '펫은 단순한 장식이 아니라 전투를 도와주는 동료야. 꾸준히 활용해봐!'],
+    questTypes:['pet','kills','expOrbs']
+  },
+  {
+    id:'rankJudge', name:'모험 심사관 슬라임', emoji:'🏅', x:0.86, y:0.39, color:'#ffd86b', unlockLevel:50,
+    line:'이제부터는 단순히 스테이지를 클리어하는 것만으로는 부족합니다. 진짜 모험가는 얼마나 빠르게, 얼마나 안정적으로, 얼마나 멋지게 전투를 마쳤는지 기록으로 증명해야 합니다. 스테이지 등급은 바로 그 실력을 보여주는 중요한 증거랍니다.',
+    firstIntro:['이제부터는 단순히 스테이지를 클리어하는 것만으로는 부족합니다. 진짜 모험가는 전투 결과를 기록으로 증명해야 합니다.', '더 빠르게 움직이고, 피격을 줄이고, 안정적으로 보스를 상대해 보세요. 높은 등급은 당신이 얼마나 성장했는지 보여주는 멋진 증거가 될 것입니다.'],
+    tips:['스테이지 등급은 실력을 보여주는 중요한 기록입니다.', '피격을 줄이고 빠르게 클리어하면 더 좋은 등급을 노릴 수 있습니다.'],
+    questTypes:['sRankClears','stageClears','bossKills','infiniteScore']
+  },
+  {
+    id:'dungeonExplorer', name:'던전 탐험 슬라임', emoji:'🏰', x:0.10, y:0.84, color:'#9bc7ff', unlockLevel:100,
+    line:'던전 안쪽에서는 마을 주변과는 비교하기 어려운 강한 몬스터들이 기다리고 있어. 어둡고 좁은 길 때문에 도망칠 곳도 많지 않지. 하지만 그만큼 던전에는 중요한 단서와 보상도 숨어 있어. 충분히 준비하고 들어가서, 안쪽에서 무슨 일이 벌어지는지 확인해줘.',
+    firstIntro:['던전 안쪽에서는 마을 주변과는 비교하기 어려운 강한 몬스터들이 기다리고 있어. 어둡고 좁은 길 때문에 한 번 들어가면 방심하기 어려운 곳이지.', '하지만 그곳에는 이상 현상의 단서와 귀한 보상도 숨어 있어. 짧지만 밀도 높은 전투가 이어질 테니, 체력과 스킬을 충분히 준비하고 도전해!'],
+    tips:['던전은 체력 관리와 스킬 타이밍이 중요해.', '던전 클리어 기록은 고레벨 성장에 큰 도움이 돼.'],
+    questTypes:['dungeonClears','bossKills','kills']
+  },
+  {
+    id:'dimensionResearcher', name:'차원 연구 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:150,
+    line:'최근 마을 주변의 차원 균열이 점점 커지고 있습니다. 균열 너머에서 흘러나온 힘이 몬스터의 움직임을 바꾸고 있는 것 같아요. 디멘션 인베이드는 단순한 전투가 아니라, 이 세계가 왜 흔들리고 있는지 알아내기 위한 중요한 조사입니다.',
+    firstIntro:['최근 마을 주변의 차원 균열이 점점 커지고 있습니다. 균열 너머에서 흘러나온 힘이 몬스터의 움직임을 바꾸고 있는 것 같아요.', '디멘션 인베이드는 단순한 전투가 아니라, 이 세계가 왜 흔들리고 있는지 알아내기 위한 중요한 조사입니다. 위험하지만, 당신의 기록이 꼭 필요합니다.'],
+    tips:['디멘션 인베이드는 웨이브와 보스가 이어지는 특수 전투입니다.', '차원 관련 퀘스트는 난이도가 높지만 보상도 좋은 편입니다.'],
+    questTypes:['dimensionClears','bossKills','kills']
+  },
+  {
+    id:'crystalResearcher', name:'크리스탈 슬라임 연구원', emoji:'💎', x:0.28, y:0.35, color:'#8ff5ff', unlockLevel:200,
+    line:'크리스탈 슬라임은 일반 몬스터와는 비교도 안 될 만큼 강력합니다. 차원 균열의 에너지가 몸 안에 굳어져 만들어진 존재라서, 공격도 방어도 훨씬 위협적이에요. 충분히 성장한 모험가만 상대할 수 있지만, 이들을 조사해야 후반 지역의 비밀을 밝힐 수 있습니다.',
+    firstIntro:['크리스탈 슬라임은 일반 몬스터와는 비교도 안 될 만큼 강력합니다. 차원 균열의 에너지가 몸 안에 굳어져 만들어진 존재라서, 공격도 방어도 훨씬 위협적이에요.', '201스테이지 이후에는 수정화된 몬스터들이 본격적으로 등장합니다. 위험한 상대지만, 이들의 기록을 모아야 후반 지역의 비밀을 밝힐 수 있습니다.'],
+    tips:['크리스탈 슬라임은 201스테이지 이후부터 본격적으로 등장합니다.', '후반 스테이지는 체력과 공격 압박이 강하니 성장 상태를 꼭 확인하세요.'],
+    questTypes:['crystalKills','stageClears','bossKills']
+  },
+  {
+    id:'slimeKing', name:'슬라임 왕', emoji:'👑', x:0.50, y:0.31, color:'#ffe48a', unlockLevel:250,
+    line:'여기까지 오다니 정말 대단하도다. 수많은 몬스터를 넘어섰고, 던전과 차원의 균열, 크리스탈 슬라임의 위협까지 마주했구나. 이제 그대는 평범한 모험가가 아니라 이 마을의 운명을 짊어질 영웅이 되었도다. 지금부터는 진정한 영웅만이 해낼 수 있는 왕의 임무를 맡기겠노라.',
+    firstIntro:['여기까지 오다니 정말 대단하도다. 수많은 몬스터를 넘어섰고, 던전과 차원의 균열, 크리스탈 슬라임의 위협까지 마주했구나.', '이제 그대는 평범한 모험가가 아니라 이 마을의 운명을 짊어질 영웅이 되었도다. 내가 주는 임무는 결코 쉽지 않다. 그러나 그만큼 높은 경험치와 골드를 내려주겠노라.'],
+    tips:['슬라임 왕의 퀘스트는 매우 어렵지만 보상도 최고 수준이다.', '진정한 영웅은 어려운 임무 앞에서도 물러서지 않느니라.'],
+    questTypes:['kingCrystalKills','kingDimensionClears','kingDungeonClears','kingSRankClears','kingInfiniteScore']
   }
 ];
 
@@ -12164,9 +12267,18 @@ const TOWN_NPCS = [
 function isGuideSlimeVisible(){
   try { return Number(level || saveData?.level || 1) < 11; } catch(e) { return true; }
 }
+function getTownNpcUnlockLevel(npc){
+  return Math.max(1, Math.floor(Number(npc?.unlockLevel || 1) || 1));
+}
+function isTownNpcUnlocked(npc){
+  if (!npc) return false;
+  if (npc.id === 'guide') return isGuideSlimeVisible();
+  const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
+  return lv >= getTownNpcUnlockLevel(npc);
+}
 function getVisibleTownNpcs(){
   try {
-    return TOWN_NPCS.filter(npc => npc && (npc.id !== 'guide' || isGuideSlimeVisible()));
+    return TOWN_NPCS.filter(npc => npc && isTownNpcUnlocked(npc));
   } catch(e) { return TOWN_NPCS || []; }
 }
 function clearGuideQuestIfNoLongerNeeded(){
@@ -12197,43 +12309,52 @@ const BEGINNER_TUTORIAL_QUEST_POOL = [
   { id:'guide_pet_1', type:'pet', title:'펫 익히기', target:10, beginnerLevelUp:true, fixedExp:127, gold:()=>300, item:null, dialogue:'펫을 선물했습니다. 선물받은 펫을 장착한 상태로 몬스터 10마리를 처치하면 퀘스트 클리어!' }
 ]
 const TOWN_QUEST_POOL = [
-  { id:'town_kill_10', type:'kills', title:'마을 입구 몬스터 정리', target:10, expPct200:0.05, gold:()=>Math.max(80, level * 8), item:null, dialogue:'마을 입구가 조금 소란스러워. 가볍게 정리해주면 모두 안심할 거야.' },
-  { id:'town_kill_25', type:'kills', title:'슬라임 길 안전 확보', target:25, expPct200:0.12, gold:()=>Math.max(180, level * 15), item:'smallPotion', dialogue:'슬라임들이 다니는 길을 안전하게 만들고 싶어. 조금 더 힘을 빌려줘!' },
-  { id:'town_kill_40', type:'kills', title:'풀숲 몬스터 추적', target:40, expPct200:0.20, gold:()=>Math.max(300, level * 20), item:null, dialogue:'풀숲에 숨어드는 몬스터가 늘었어. 흔적을 따라 정리해줘.' },
-  { id:'town_kill_60', type:'kills', title:'마을 외곽 대청소', target:60, expPct200:0.30, gold:()=>Math.max(450, level * 25), item:'largePotion', dialogue:'이번엔 꽤 큰 정리야. 오래 싸울 수 있게 보상도 넉넉히 준비했어.' },
-  { id:'town_kill_90', type:'kills', title:'위험 구역 진압', target:90, expPct200:0.45, gold:()=>Math.max(650, level * 32), item:'expSmallPack', dialogue:'외곽 위험 구역이 꽤 시끄러워. 실력 있는 슬라임 슈터가 필요해.' },
-  { id:'town_kill_130', type:'kills', title:'마을 방어선 강화', target:130, expPct200:0.70, gold:()=>Math.max(900, level * 42), item:'expMediumPack', dialogue:'마을 방어선을 단단히 만들려면 주변 몬스터 수를 크게 줄여야 해.' },
+  // ===== 초록 슬라임: 스테이지 클리어 / 몬스터 처치 / 멀티킬 =====
+  { npcId:'green', id:'green_stage_12', type:'stageClears', title:'옛길 균열 흔적 조사', target:12, fixedTarget:true, expPct200:0.35, gold:()=>Math.max(260, level * 18), item:'smallPotion', dialogue:'마을 밖 옛길에 균열의 흔적이 남아 있어. 스테이지를 {n}회 클리어해서 흔적을 조사해줘!' },
+  { npcId:'green', id:'green_kill_36', type:'kills', title:'마을 주변 몬스터 정리', target:36, fixedTarget:true, expPct200:0.32, gold:()=>Math.max(300, level * 20), item:null, dialogue:'이런, 마을 주변에 몬스터의 수가 너무 많아! 마을 주변에 있는 몬스터 {n}마리를 처치해 줄 수 있을까? 처치해준다면 마을이 평화로워질 거야. 보상은 넉넉히 준비해 둘게!' },
+  { npcId:'green', id:'green_multi_9', type:'multiKills', title:'방어선 무리 정리', target:9, fixedTarget:true, expPct200:0.28, gold:()=>Math.max(240, level * 16), item:'smallPotion', dialogue:'몬스터들이 한꺼번에 몰려오면 마을 방어선이 금방 흔들릴 거야. 멀티킬을 {n}번만 성공해 준다면 무리를 빠르게 정리할 수 있어! 할 수 있지?' },
+  { npcId:'green', id:'green_stage_20', type:'stageClears', title:'숲길 순찰 기록', target:20, fixedTarget:true, expPct200:0.55, gold:()=>Math.max(520, level * 28), item:'expSmallPack', dialogue:'숲길 끝에서 이상한 발자국이 계속 발견되고 있어. 스테이지를 {n}회 클리어하면서 길목을 확인해줘. 어디서 몬스터가 몰려오는지 알 수 있을 거야!' },
+  { npcId:'green', id:'green_kill_80', type:'kills', title:'창고 앞 방어전', target:80, fixedTarget:true, expPct200:0.60, gold:()=>Math.max(760, level * 34), item:'largePotion', dialogue:'이번엔 창고 앞까지 몬스터들이 내려왔어. 몬스터 {n}마리를 처치해서 물자 창고를 지켜줘! 창고가 무너지면 마을이 꽤 곤란해질 거야.' },
 
-  { id:'town_gold_300', type:'goldEarned', title:'반짝 골드 모으기', target:300, expPct200:0.07, gold:()=>150, item:null, dialogue:'반짝이는 골드를 조금 모아줄래? 마을 장식에 쓰려고 해.' },
-  { id:'town_gold_800', type:'goldEarned', title:'상점 물자 준비', target:800, expPct200:0.12, gold:()=>Math.max(260, level * 12), item:'smallPotion', dialogue:'상점 물자를 준비하려면 골드 기록이 필요해. 조금만 도와줘!' },
-  { id:'town_gold_1200', type:'goldEarned', title:'황금 금고 채우기', target:1200, expPct200:0.18, gold:()=>Math.max(350, level * 18), item:'expSmallPack', dialogue:'금고가 비면 마음이 허전하거든. 금빛 기록을 세워보자!' },
-  { id:'town_gold_2500', type:'goldEarned', title:'축제 예산 모으기', target:2500, expPct200:0.32, gold:()=>Math.max(650, level * 28), item:'expMediumPack', dialogue:'마을 축제를 열려면 예산이 필요해. 반짝반짝하게 모아보자!' },
-  { id:'town_gold_5000', type:'goldEarned', title:'황금 슬라임의 큰 의뢰', target:5000, expPct200:0.55, gold:()=>Math.max(1100, level * 45), item:'largePotion', dialogue:'이번 의뢰는 꽤 커. 대신 성공하면 보상도 확실히 챙겨줄게.' },
+  // ===== 분홍 슬라임: 무한 모드 점수 / 스킬 사용 =====
+  { npcId:'pink', id:'pink_infinite_50000', type:'infiniteScore', title:'끝없는 방어선 기록', target:50000, fixedTarget:true, expPct200:0.45, gold:()=>Math.max(500, level * 22), item:null, dialogue:'끝없이 몰려오는 몬스터를 오래 막아내는 기록이 필요합니다. 무한 모드에서 {n}점을 달성해 주세요. 이 기록이 있으면 마을 방어선을 얼마나 버틸 수 있는지 계산할 수 있어요.' },
+  { npcId:'pink', id:'pink_infinite_120000', type:'infiniteScore', title:'장기 방어 자료 수집', target:120000, fixedTarget:true, expPct200:0.75, gold:()=>Math.max(900, level * 36), item:'expSmallPack', dialogue:'몬스터가 계속 몰려오는 상황에서는 순간 판단이 정말 중요합니다. 무한 모드에서 {n}점을 달성해 주세요. 그 전투 흐름을 분석하면 다음 습격 때 큰 도움이 될 거예요.' },
+  { npcId:'pink', id:'pink_skill_18', type:'skillUses', title:'스킬 반응 조사', target:18, fixedTarget:true, expPct200:0.25, gold:()=>Math.max(260, level * 14), item:null, dialogue:'몬스터들이 무리를 지어 움직이고 있어서 어떤 스킬이 가장 효과적인지 기록해야 합니다. 스킬을 {n}회 사용해 주세요. 이 자료가 쌓이면 마을 방어 전략을 더 똑똑하게 세울 수 있어요!' },
+  { npcId:'pink', id:'pink_skill_40', type:'skillUses', title:'방어 기술 실험', target:40, fixedTarget:true, expPct200:0.52, gold:()=>Math.max(620, level * 25), item:'smallPotion', dialogue:'이번에는 조금 더 많은 전투 기록이 필요합니다. 스킬을 {n}회 사용해 주세요. 여러 스킬의 효과를 비교하면 몬스터 무리를 막는 방법이 훨씬 선명해질 거예요.' },
 
-  { id:'town_orb_8', type:'expOrbs', title:'경험치 구슬 연구', target:8, expPct200:0.08, gold:()=>Math.max(120, level * 10), item:'expSmallPack', dialogue:'구슬의 빛이 레벨 성장과 어떻게 이어지는지 관찰하고 있어.' },
-  { id:'town_orb_20', type:'expOrbs', title:'반짝 구슬 표본 수집', target:20, expPct200:0.22, gold:()=>Math.max(250, level * 16), item:'expMediumPack', dialogue:'더 많은 표본이 있으면 마을 연구가 한 단계 진전될 거야.' },
-  { id:'town_orb_35', type:'expOrbs', title:'구슬 빛깔 분류', target:35, expPct200:0.33, gold:()=>Math.max(430, level * 22), item:null, dialogue:'EXP 구슬의 빛깔이 조금씩 달라. 많이 모아오면 분류해볼 수 있어.' },
-  { id:'town_orb_60', type:'expOrbs', title:'반짝임 대량 관측', target:60, expPct200:0.55, gold:()=>Math.max(760, level * 34), item:'expMediumPack', dialogue:'이번엔 대량 관측이야. 구슬을 많이 주워오면 연구가 진짜 빨라질 거야.' },
+  // ===== 물방울 슬라임: 피버 모드 / 펫 관련 =====
+  { npcId:'blue', id:'blue_fever_3', type:'fever', title:'피버 에너지 관찰', target:3, fixedTarget:true, expPct200:0.30, gold:()=>Math.max(280, level * 16), item:null, dialogue:'피버 모드가 발동될 때마다 주변 물의 흐름이 크게 흔들립니다. 피버 모드를 {n}회 발동해 주세요. 그 에너지 변화를 관찰하면 균열의 움직임을 더 정확히 알 수 있을 것 같아요.' },
+  { npcId:'blue', id:'blue_fever_7', type:'fever', title:'불안정한 빛의 파동', target:7, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(680, level * 30), item:'expSmallPack', dialogue:'최근 피버 에너지의 빛이 평소보다 불안정합니다. 피버 모드를 {n}회 발동해 주시면 빛의 파동을 분석해 몬스터 증가와 어떤 관련이 있는지 조사해보겠습니다.' },
+  { npcId:'blue', id:'blue_pet_30', type:'pet', title:'펫 동행 반응 조사', target:30, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(340, level * 18), item:'smallPotion', dialogue:'펫과 함께 전투할 때 몬스터의 움직임이 조금 달라지는 것 같습니다. 펫과 함께 몬스터 {n}마리를 처치해 주세요. 동행 전투 기록을 모으면 펫이 전투에 주는 영향을 확인할 수 있어요.' },
+  { npcId:'blue', id:'blue_pet_80', type:'pet', title:'동료의 전투 흐름', target:80, fixedTarget:true, expPct200:0.70, gold:()=>Math.max(820, level * 36), item:'expMediumPack', dialogue:'펫은 단순히 따라다니는 존재가 아니라 전투 흐름을 함께 바꾸는 동료입니다. 펫과 함께 몬스터 {n}마리를 처치해 주세요. 그 기록이 있으면 펫의 성장 방향도 더 잘 파악할 수 있습니다.' },
 
-  { id:'town_skill_5', type:'skillUses', title:'스킬 연습 도와주기', target:5, expPct200:0.06, gold:()=>Math.max(100, level * 9), item:'antidote', dialogue:'스킬은 자주 써봐야 손에 익어. 멋진 이펙트를 보여줘!' },
-  { id:'town_skill_15', type:'skillUses', title:'전투 기술 점검', target:15, expPct200:0.20, gold:()=>Math.max(260, level * 17), item:'smallPotion', dialogue:'강한 스테이지일수록 스킬 타이밍이 중요해. 연습 기록을 남겨보자.' },
-  { id:'town_skill_30', type:'skillUses', title:'스킬 콤보 훈련', target:30, expPct200:0.36, gold:()=>Math.max(520, level * 26), item:'largePotion', dialogue:'여러 스킬을 번갈아 쓰면 전투 흐름이 더 좋아져. 콤보 감각을 익혀보자!' },
-  { id:'town_skill_50', type:'skillUses', title:'마법 이펙트 시험', target:50, expPct200:0.58, gold:()=>Math.max(850, level * 38), item:'expSmallPack', dialogue:'스킬 이펙트가 안정적으로 나오는지 확인해야 해. 많이 써보고 알려줘!' },
+  // ===== 황금 슬라임: 골드 / 보석 / 무한 모드 아이템 수집 =====
+  { npcId:'gold', id:'gold_gold_1200', type:'goldEarned', title:'상점 복구 자금', target:1200, fixedTarget:true, expPct200:0.30, gold:()=>Math.max(420, level * 20), item:null, dialogue:'반짝! 몬스터 습격 이후로 상점 물자가 많이 비었어. 골드 {n}개를 모아오면 무너진 진열대도 고치고 회복약 재료도 다시 들여올 수 있어. 이건 그냥 돈 모으기가 아니라 마을을 다시 움직이게 만드는 일이야!' },
+  { npcId:'gold', id:'gold_gold_5000', type:'goldEarned', title:'황금 금고 채우기', target:5000, fixedTarget:true, expPct200:0.68, gold:()=>Math.max(1200, level * 48), item:'expSmallPack', dialogue:'비상 금고가 비어 있으면 다음 습격 때 아무것도 준비할 수 없어. 골드 {n}개를 모아줘! 네가 모아오는 골드가 마을의 회복약, 장비 재료, 수리비가 될 거야.' },
+  { npcId:'gold', id:'gold_gem_45', type:'gems', title:'마법 수정 재충전', target:45, fixedTarget:true, expPct200:0.42, gold:()=>Math.max(500, level * 22), item:null, dialogue:'마을 중앙의 마법 수정이 예전보다 흐릿해졌어. 보석 {n}개를 모아오면 수정의 빛을 다시 채울 수 있을 거야. 반짝이는 보석은 마을을 지키는 힘이 되거든!' },
+  { npcId:'gold', id:'gold_gem_120', type:'gems', title:'수정 창고 보강', target:120, fixedTarget:true, expPct200:0.80, gold:()=>Math.max(1400, level * 55), item:'largePotion', dialogue:'후반 전투를 준비하려면 보석 창고를 넉넉히 채워야 해. 보석 {n}개를 모아줘! 그 보석들이 모이면 장비와 마법 수정 관리에 큰 도움이 될 거야.' },
+  { npcId:'gold', id:'gold_item_5', type:'infiniteItems', title:'무한 모드 아이템 회수', target:5, fixedTarget:true, expPct200:0.34, gold:()=>Math.max(460, level * 21), item:'smallPotion', dialogue:'무한 모드에서 떨어지는 자석이나 더블 샷 같은 아이템에는 특별한 에너지가 담겨 있어. 무한 모드 아이템을 {n}개 수집해줘! 그걸 연구하면 상점 물품을 더 튼튼하게 만들 수 있어.' },
+  { npcId:'gold', id:'gold_item_15', type:'infiniteItems', title:'반짝 보급품 수집', target:15, fixedTarget:true, expPct200:0.72, gold:()=>Math.max(1200, level * 50), item:'expMediumPack', dialogue:'이번에는 보급품을 조금 더 많이 모아야 해. 무한 모드 아이템을 {n}개 수집해줘! 자석, 더블 샷, 대시, 더블 스코어 같은 아이템 기록이 쌓이면 마을 보급 체계가 훨씬 좋아질 거야.' },
 
-  { id:'town_stage_3', type:'stageClears', title:'스테이지 순찰 임무', target:3, expPct200:0.16, gold:()=>Math.max(240, level * 16), item:null, dialogue:'마을과 이어진 스테이지 길을 순찰해줘. 클리어 기록이 필요해.' },
-  { id:'town_stage_5', type:'stageClears', title:'안전 루트 확인', target:5, expPct200:0.26, gold:()=>Math.max(360, level * 22), item:'smallPotion', dialogue:'마을에서 이어지는 안전 루트가 아직 불안정해. 몇 번 더 확인해줘.' },
-  { id:'town_stage_7', type:'stageClears', title:'연속 순찰 기록', target:7, expPct200:0.35, gold:()=>Math.max(520, level * 28), item:'expMediumPack', dialogue:'꾸준히 클리어하는 힘이 진짜 실력이야. 오늘 기록을 세워보자.' },
-  { id:'town_stage_12', type:'stageClears', title:'장거리 순찰 작전', target:12, expPct200:0.65, gold:()=>Math.max(900, level * 42), item:'largePotion', dialogue:'조금 긴 순찰이지만 네가 맡아주면 마을이 훨씬 안전해질 거야.' },
+  // ===== 장로 슬라임: 보스 처치 / S랭크 / 동시 처치 =====
+  { npcId:'elder', id:'elder_boss_2', type:'bossKills', title:'보스 움직임 조사', target:2, fixedTarget:true, expPct200:0.55, gold:()=>Math.max(600, level * 30), item:'largePotion', dialogue:'보스의 움직임은 평범한 몬스터와 다르단다. 보스 {n}마리를 처치하고 그 흔적을 살펴보거라. 그 기록이 있어야 이번 사태의 뿌리에 조금 더 가까워질 수 있을 것이야.' },
+  { npcId:'elder', id:'elder_boss_5', type:'bossKills', title:'강적의 지휘 흔적', target:5, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1500, level * 62), item:'expMediumPack', dialogue:'몬스터 무리 뒤에는 강한 지휘 흔적이 남아 있단다. 보스 {n}마리를 처치해 보거라. 결코 쉬운 임무는 아니지만, 자네라면 마을의 불안을 덜어낼 수 있을 것이야.' },
+  { npcId:'elder', id:'elder_srank_3', type:'sRankClears', title:'완벽한 전투 증명', target:3, fixedTarget:true, expPct200:0.72, gold:()=>Math.max(900, level * 40), item:null, dialogue:'단순히 이기는 것과 완벽하게 지켜내는 것은 다르단다. 스테이지 S랭크를 {n}회 달성해 보거라. 그 기록은 자네가 진정으로 성장했다는 증거가 될 것이야.' },
+  { npcId:'elder', id:'elder_srank_10', type:'sRankClears', title:'장로의 고급 시험', target:10, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(2200, level * 82), item:'largePotion', dialogue:'이제 자네에게 조금 어려운 시험을 맡기겠네. 스테이지 S랭크를 {n}회 달성해 보거라. 흔들림 없는 전투야말로 마을을 지키는 수호자의 자격이니라.' },
+  { npcId:'elder', id:'elder_multi_12', type:'multiKills', title:'동시 처치 전술 확인', target:12, fixedTarget:true, expPct200:0.48, gold:()=>Math.max(620, level * 26), item:'smallPotion', dialogue:'몬스터들이 한꺼번에 몰려오는 것은 우연이 아니란다. 멀티킬을 {n}회 달성해 보거라. 동시에 처치한 기록을 보면 그 무리가 어떤 방식으로 움직이는지 알 수 있을 것이야.' },
+  { npcId:'elder', id:'elder_multi_30', type:'multiKills', title:'무리 제압의 증명', target:30, fixedTarget:true, expPct200:0.95, gold:()=>Math.max(1800, level * 70), item:'expMediumPack', dialogue:'거대한 무리를 빠르게 제압할 수 있어야 마을 방어선이 무너지지 않는단다. 멀티킬을 {n}회 달성해 보거라. 그 힘은 언젠가 더 큰 위협을 막는 데 필요할 것이야.' },
 
-  { id:'town_boss_1', type:'bossKills', title:'보스 흔적 조사', target:1, expPct200:0.30, gold:()=>Math.max(300, level * 20), item:'largePotion', dialogue:'강한 보스의 흔적이 감지됐어. 조심해서 다녀와.' },
-  { id:'town_boss_2', type:'bossKills', title:'강적 대응 훈련', target:2, expPct200:0.55, gold:()=>Math.max(550, level * 30), item:'smallPotion', dialogue:'보스와 싸우는 감각은 꾸준히 익혀야 해. 무리하지 말고 다녀와.' },
-  { id:'town_boss_3', type:'bossKills', title:'장로의 보스 시험', target:3, expPct200:1.00, gold:()=>Math.max(800, level * 38), item:'expMediumPack', dialogue:'너라면 충분히 해낼 수 있다. 보스와 맞서는 용기를 보여다오.' },
-  { id:'town_boss_5', type:'bossKills', title:'마을 수호자 증명', target:5, expPct200:1.20, gold:()=>Math.max(1300, level * 55), item:'largePotion', dialogue:'강적을 여러 번 쓰러뜨릴 수 있다면 진짜 마을 수호자라고 부를 수 있겠지.' },
-
-  { id:'town_multi_3', type:'multiKills', title:'멀티킬 감각 익히기', target:3, expPct200:0.13, gold:()=>Math.max(220, level * 14), item:null, dialogue:'몬스터가 모였을 때 한 번에 정리하면 멀티킬이 터져. 그 감각을 보고 싶어!' },
-  { id:'town_multi_8', type:'multiKills', title:'화려한 연쇄 공격', target:8, expPct200:0.28, gold:()=>Math.max(480, level * 24), item:'smallPotion', dialogue:'연쇄 공격은 보기에도 시원하지. 마을 축제처럼 화려하게 부탁해!' },
-  { id:'town_multi_15', type:'multiKills', title:'연쇄 정리 전문가', target:15, expPct200:0.50, gold:()=>Math.max(760, level * 34), item:'expSmallPack', dialogue:'멀티킬을 꾸준히 성공시키면 전투 시간이 확 줄어들어. 제대로 보여줘!' },
-  { id:'town_multi_25', type:'multiKills', title:'폭발적인 전투 흐름', target:25, expPct200:0.85, gold:()=>Math.max(1150, level * 50), item:'expMediumPack', dialogue:'이번 의뢰는 시원한 전투 흐름이 핵심이야. 연쇄 공격으로 분위기를 가져와줘!' }
+  // ===== 레벨 해금 NPC =====
+  { npcId:'petKeeper', id:'petkeeper_pet_100', type:'pet', title:'펫 동행 훈련', target:100, fixedTarget:true, minLevel:20, expPct200:0.70, gold:()=>Math.max(900, level * 38), item:'expSmallPack', dialogue:'펫은 네 뒤를 따라오는 장식이 아니라 함께 싸우는 동료야. 펫과 함께 몬스터 {n}마리를 처치해봐. 전투 기록이 쌓일수록 너와 펫의 호흡이 훨씬 좋아질 거야!' },
+  { npcId:'rankJudge', id:'rankjudge_srank_8', type:'sRankClears', title:'심사관의 S등급 평가', target:8, fixedTarget:true, minLevel:50, expPct200:0.90, gold:()=>Math.max(1800, level * 58), item:'largePotion', dialogue:'이제부터는 결과뿐 아니라 과정도 중요합니다. 스테이지 S랭크를 {n}회 달성해 주세요. 높은 등급은 당신이 안정성과 속도를 모두 갖춘 모험가라는 증거입니다.' },
+  { npcId:'dungeonExplorer', id:'dungeon_10', type:'dungeonClears', title:'던전 내부 조사', target:10, fixedTarget:true, minLevel:100, expPct200:1.00, gold:()=>Math.max(2600, level * 90), item:'expMediumPack', dialogue:'던전 안쪽에서 강한 기운이 새어 나오고 있어. 던전을 {n}회 클리어해서 안쪽 상황을 조사해줘. 위험하지만 그 안에는 이번 사건의 중요한 단서가 숨어 있을 거야.' },
+  { npcId:'dimensionResearcher', id:'dimension_8', type:'dimensionClears', title:'차원 균열 기록', target:8, fixedTarget:true, minLevel:150, expPct200:1.00, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 {n}회 클리어해 주세요. 그 기록이 있어야 균열 너머에서 무엇이 넘어오고 있는지 분석할 수 있습니다.' },
+  { npcId:'crystalResearcher', id:'crystal_500', type:'crystalKills', title:'크리스탈 개체 조사', target:500, fixedTarget:true, minLevel:200, expPct200:1.00, gold:()=>Math.max(6500, level * 160), item:'expMediumPack', dialogue:'크리스탈 슬라임은 차원 에너지가 굳어져 만들어진 위험한 개체입니다. 크리스탈 슬라임 {n}마리를 처치해 주세요. 그 전투 기록이 후반 지역의 비밀을 밝히는 중요한 자료가 됩니다.' },
+  { npcId:'slimeKing', id:'king_crystal_2000', type:'kingCrystalKills', title:'왕의 크리스탈 토벌', target:2000, fixedTarget:true, minLevel:250, expPct200:1.00, gold:()=>Math.max(50000, level * 900), item:'largePotion', dialogue:'왕의 명이니라. 크리스탈 슬라임 {n}마리를 처치하여 왕국을 뒤덮는 수정화를 막거라. 어려운 임무이나, 그대라면 해낼 수 있으리라 믿노라.' },
+  { npcId:'slimeKing', id:'king_dimension_30', type:'kingDimensionClears', title:'왕의 차원 봉인 명령', target:30, fixedTarget:true, minLevel:250, expPct200:1.00, gold:()=>Math.max(60000, level * 1100), item:'expMediumPack', dialogue:'왕의 명이니라. 디멘션 인베이드를 {n}회 클리어하여 차원의 균열을 봉인하거라. 왕국의 하늘이 다시 고요해질 수 있도록 힘을 보태거라.' },
+  { npcId:'slimeKing', id:'king_dungeon_100', type:'kingDungeonClears', title:'왕의 던전 정복 명령', target:100, fixedTarget:true, minLevel:250, expPct200:1.00, gold:()=>Math.max(70000, level * 1300), item:'largePotion', dialogue:'왕의 명이니라. 던전을 {n}회 클리어하여 왕국 지하의 깊은 위험을 정복하거라. 어둠 속에서 돌아온 기록은 큰 보상으로 갚겠노라.' },
+  { npcId:'slimeKing', id:'king_srank_50', type:'kingSRankClears', title:'왕의 완벽한 영웅 시험', target:50, fixedTarget:true, minLevel:250, expPct200:1.00, gold:()=>Math.max(80000, level * 1500), item:'expMediumPack', dialogue:'왕의 명이니라. 스테이지 S랭크를 {n}회 달성하여 완벽한 영웅임을 증명하거라. 그대의 전투는 왕국의 전설로 남을 것이니라.' },
+  { npcId:'slimeKing', id:'king_infinite_1000000000', type:'kingInfiniteScore', title:'왕의 무한 방어 기록', target:1000000000, fixedTarget:true, minLevel:250, expPct200:1.00, gold:()=>Math.max(100000, level * 2000), item:'largePotion', dialogue:'왕의 명이니라. 무한 모드에서 {n}점을 달성하여 왕국 역사에 남을 방어 기록을 세우거라. 이 임무를 완수한다면 최고의 보상을 내려주겠노라.' }
 ];
 function getTownQuestLevelScale(lv = level){
   const safeLv = Math.max(1, Math.min((typeof MAX_LEVEL !== 'undefined' ? MAX_LEVEL : 300), Math.floor(Number(lv) || 1)));
@@ -12304,7 +12425,16 @@ function ensureTownQuestState(){
     const tpl = TOWN_QUEST_POOL.find(t => t.id === q.baseId);
     q.expPct200 = tpl ? Number(tpl.expPct200 || 0.1) : 0.1;
   }
-  if (q) normalizeTownQuestDisplay(q);
+  if (q) {
+    const tpl = TOWN_QUEST_POOL.find(t => t && t.id === q.baseId);
+    if (tpl && !q.beginnerLevelUp && q.difficultyVersion !== 'v203.10') {
+      q.target = getTownQuestFinalTarget(tpl, level);
+      q.progress = Math.min(Math.max(0, Math.floor(Number(q.progress || 0))), q.target);
+      q.difficultyVersion = 'v203.10';
+      if (!q.storyDialogue) q.storyDialogue = tpl.dialogue || '';
+    }
+    normalizeTownQuestDisplay(q);
+  }
   return saveData.townQuest;
 }
 function getTownQuestTypeLabel(type){
@@ -12322,6 +12452,17 @@ function getTownQuestTypeLabel(type){
     : type === 'bonusStage' ? '보너스 스테이지'
     : type === 'fever' ? '피버 발동'
     : type === 'pet' ? '펫 동행 처치'
+    : type === 'infiniteItems' ? '무한 모드 아이템'
+    : type === 'infiniteScore' ? '무한 모드 점수'
+    : type === 'sRankClears' ? 'S등급 달성'
+    : type === 'dungeonClears' ? '던전 클리어'
+    : type === 'dimensionClears' ? '디멘션 클리어'
+    : type === 'crystalKills' ? '크리스탈 처치'
+    : type === 'kingCrystalKills' ? '왕의 크리스탈 토벌'
+    : type === 'kingDimensionClears' ? '왕의 차원 임무'
+    : type === 'kingDungeonClears' ? '왕의 던전 임무'
+    : type === 'kingSRankClears' ? '왕의 S등급 임무'
+    : type === 'kingInfiniteScore' ? '왕의 무한 점수 임무'
     : '진행도';
 }
 function getTownItemName(key){
@@ -12343,35 +12484,173 @@ function getTownQuestTargetScale(type, lv = level){
   if (type === 'multiKills') return 1 + safeLv / 70;
   if (type === 'stageClears') return 1 + safeLv / 140;
   if (type === 'bossKills') return 1 + safeLv / 180;
+  if (type === 'pet') return 1 + safeLv / 120;
+  if (['infiniteScore','sRankClears','dungeonClears','dimensionClears','crystalKills','kingCrystalKills','kingDimensionClears','kingDungeonClears','kingSRankClears','kingInfiniteScore'].includes(type)) return 1;
   return 1 + safeLv / 60;
+}
+function getTownQuestDifficultyBracketV20310(lv = level){
+  const safeLv = Math.max(1, Math.min(300, Math.floor(Number(lv) || 1)));
+  if (safeLv <= 30) return { name:'매우 쉬움', minLv:11, maxLv:30 };
+  if (safeLv <= 60) return { name:'쉬움', minLv:31, maxLv:60 };
+  if (safeLv <= 100) return { name:'보통', minLv:61, maxLv:100 };
+  if (safeLv <= 200) return { name:'어려움', minLv:101, maxLv:200 };
+  return { name:'매우 어려움', minLv:201, maxLv:300 };
+}
+function getTownQuestTargetRangeV20310(type, difficultyName){
+  const ranges = {
+    '매우 쉬움': {
+      stageClears:[1,3], kills:[5,20], multiKills:[1,3], bossKills:[1,1],
+      sRankClears:[1,2], infiniteScore:[5000,20000], skillUses:[3,10], fever:[1,2], pet:[5,20],
+      goldEarned:[200,1000], gems:[1,5], infiniteItems:[1,3], expOrbs:[1,4], survival:[5,12], bonusStage:[1,1]
+    },
+    '쉬움': {
+      stageClears:[3,6], kills:[20,50], multiKills:[3,8], bossKills:[1,3],
+      sRankClears:[2,5], infiniteScore:[30000,100000], skillUses:[10,25], fever:[2,4], pet:[20,60],
+      goldEarned:[1000,5000], gems:[5,20], infiniteItems:[3,8], expOrbs:[4,12], survival:[12,25], bonusStage:[1,2]
+    },
+    '보통': {
+      stageClears:[6,12], kills:[50,120], multiKills:[8,18], bossKills:[3,6],
+      sRankClears:[5,10], infiniteScore:[100000,300000], skillUses:[25,50], fever:[4,8], pet:[60,150],
+      goldEarned:[5000,20000], gems:[20,60], infiniteItems:[8,20], expOrbs:[12,30], survival:[25,45], dungeonClears:[3,8], dimensionClears:[2,5], bonusStage:[2,4]
+    },
+    '어려움': {
+      stageClears:[12,25], kills:[120,350], multiKills:[18,45], bossKills:[6,15],
+      sRankClears:[10,25], infiniteScore:[300000,2000000], skillUses:[50,120], fever:[8,20], pet:[150,400],
+      goldEarned:[20000,100000], gems:[60,180], infiniteItems:[20,60], expOrbs:[30,80], survival:[45,90], dungeonClears:[8,25], dimensionClears:[5,15], crystalKills:[80,250], bonusStage:[4,8]
+    },
+    '매우 어려움': {
+      stageClears:[25,45], kills:[350,1000], multiKills:[45,120], bossKills:[15,40],
+      sRankClears:[25,60], infiniteScore:[2000000,20000000], skillUses:[120,250], fever:[20,50], pet:[400,1200],
+      goldEarned:[100000,500000], gems:[180,500], infiniteItems:[60,150], expOrbs:[80,200], survival:[90,180], dungeonClears:[25,80], dimensionClears:[15,40], crystalKills:[250,2000], bonusStage:[8,20],
+      kingCrystalKills:[2000,2000], kingDimensionClears:[30,30], kingDungeonClears:[100,100], kingSRankClears:[50,50], kingInfiniteScore:[1000000000,1000000000]
+    }
+  };
+  const group = ranges[difficultyName] || ranges['보통'];
+  return group[type] || group.kills || [10,30];
+}
+function getTownQuestTemplateWeightV20310(t){
+  const pct = Math.max(0.01, Number(t?.expPct200 ?? t?.expPct ?? 0.35));
+  return Math.max(0, Math.min(1, (pct - 0.20) / 0.85));
 }
 function getTownQuestFinalTarget(t, lv = level){
   const base = Math.max(1, Math.floor(Number(t?.target || 1)));
-  const scaled = base * getTownQuestTargetScale(t?.type, lv);
-  return Math.max(base, Math.floor(scaled));
+  if (t && t.beginnerLevelUp) return base;
+  const type = t?.type || 'kills';
+  const bracket = getTownQuestDifficultyBracketV20310(lv);
+  const [minTarget, maxTarget] = getTownQuestTargetRangeV20310(type, bracket.name);
+  if (minTarget === maxTarget) return Math.max(1, Math.floor(minTarget));
+  const safeLv = Math.max(bracket.minLv, Math.min(bracket.maxLv, Math.floor(Number(lv) || bracket.minLv)));
+  const levelRate = (safeLv - bracket.minLv) / Math.max(1, bracket.maxLv - bracket.minLv);
+  const templateWeight = getTownQuestTemplateWeightV20310(t);
+  const mixed = Math.max(0, Math.min(1, levelRate * 0.45 + templateWeight * 0.55));
+  let target = Math.round(minTarget + (maxTarget - minTarget) * mixed);
+  // 표시가 깔끔하게 보이도록 큰 수치는 적당히 반올림합니다.
+  if (target >= 1000000) target = Math.round(target / 100000) * 100000;
+  else if (target >= 100000) target = Math.round(target / 10000) * 10000;
+  else if (target >= 10000) target = Math.round(target / 1000) * 1000;
+  else if (target >= 1000) target = Math.round(target / 100) * 100;
+  else if (target >= 100) target = Math.round(target / 10) * 10;
+  return Math.max(1, Math.floor(target));
 }
 function makeTownQuestDesc(type, target){
   const n = formatNumber(Math.max(1, Math.floor(Number(target) || 1)));
-  if (type === 'control') return `기본 조작 ${n}회 익히기`;
-  if (type === 'autoAttack') return `자동 공격 ${n}회 확인`;
-  if (type === 'survival') return `${n}초 동안 회피 연습`;
-  if (type === 'kills') return `몬스터 ${n}마리 처치`;
-  if (type === 'goldEarned') return `골드 ${n} 획득`;
-  if (type === 'gems') return `보석 ${n}개 획득`;
-  if (type === 'expOrbs') return `EXP 구슬 ${n}개 줍기`;
-  if (type === 'skillUses') return `스킬 ${n}회 사용`;
-  if (type === 'stageClears') return `스테이지 ${n}회 클리어`;
-  if (type === 'bossKills') return `보스 ${n}마리 처치`;
-  if (type === 'multiKills') return `멀티킬 ${n}회 달성`;
-  if (type === 'bonusStage') return `보너스 스테이지 보상 ${n}회 수집`;
-  if (type === 'fever') return `피버 모드 ${n}회 발동`;
-  if (type === 'pet') return `펫과 함께 몬스터 ${n}마리 처치`;
-  return `진행도 ${n} 달성`;
+  if (type === 'control') return `마을 수호 훈련의 첫 단계입니다. 기본 조작 ${n}회를 익혀 전투 준비를 마쳐주세요!`;
+  if (type === 'autoAttack') return `자동 공격은 슬라임 슈터의 기본 전투 방식입니다. 자동 공격 ${n}회를 확인해 주세요!`;
+  if (type === 'survival') return `마을을 지키려면 오래 버티는 힘도 필요합니다. ${n}초 동안 회피하며 생존해 주세요!`;
+  if (type === 'kills') return `이런, 마을 주변에 몬스터의 수가 너무 많아! 마을 주변에 있는 몬스터 ${n}마리를 처치해 줄래? 처치해준다면 마을이 평화로워질 거야. 보상은 넉넉히 준비해 둘게!`;
+  if (type === 'goldEarned') return `마을 창고와 상점이 몬스터 습격으로 비어가고 있어요. 골드 ${n}개를 모아 복구 자금을 마련해주세요!`;
+  if (type === 'gems') return `마법 수정의 빛이 약해지고 있어요. 보석 ${n}개를 모아 수정의 힘을 되살려 주세요!`;
+  if (type === 'expOrbs') return `몬스터 증가의 단서가 EXP 구슬에 남아 있어요. EXP 구슬 ${n}개를 모아 원인을 조사해주세요!`;
+  if (type === 'skillUses') return `마을 방어에 어떤 스킬이 효과적인지 기록해야 해요. 스킬을 ${n}회 사용해서 전투 자료를 모아주세요!`;
+  if (type === 'stageClears') return `마을 밖 옛길에 균열의 흔적이 남아 있어요. 스테이지를 ${n}회 클리어해서 흔적을 조사해주세요!`;
+  if (type === 'bossKills') return `몬스터들을 지휘하는 보스가 마을을 노리고 있어요. 보스 ${n}마리를 처치해서 습격을 막아주세요!`;
+  if (type === 'multiKills') return `몬스터들이 한꺼번에 몰려와 방어선이 흔들리고 있어요. 멀티킬 ${n}회를 달성해 무리를 빠르게 정리해주세요!`;
+  if (type === 'bonusStage') return `보너스 스테이지에는 마을 복구에 필요한 특별한 자원이 숨어 있어요. 보상 ${n}회를 수집해 주세요!`;
+  if (type === 'fever') return `위기 상황을 뒤집는 폭발력이 필요합니다. 피버 모드 ${n}회를 발동해 전투 흐름을 바꿔주세요!`;
+  if (type === 'pet') return `혼자서는 넓어진 순찰 구역을 지키기 어려워요. 펫과 함께 몬스터 ${n}마리를 처치해서 동료와의 호흡을 보여주세요!`;
+  if (type === 'infiniteScore') return `끝없이 몰려오는 몬스터가 마을 방어선을 시험하고 있어요. 무한 모드에서 ${n}점을 달성해 방어 능력을 증명해주세요!`;
+  if (type === 'sRankClears') return `완벽한 전투 기록이 있어야 더 위험한 길을 맡길 수 있습니다. 스테이지 S등급을 ${n}회 달성해주세요!`;
+  if (type === 'dungeonClears') return `던전에서 강한 기운이 새어 나와 마을 지하가 흔들리고 있어요. 던전을 ${n}회 클리어해서 위험을 줄여주세요!`;
+  if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 균열의 원인을 조사해주세요!`;
+  if (type === 'crystalKills') return `크리스탈 슬라임의 수정화가 확산되고 있어요. 크리스탈 슬라임 ${n}마리를 처치해 연구 기록을 확보해주세요!`;
+  if (type === 'kingCrystalKills') return `왕의 명령입니다. 크리스탈 슬라임 ${n}마리를 처치해 왕국을 뒤덮는 수정화를 막으세요!`;
+  if (type === 'kingDimensionClears') return `왕의 명령입니다. 디멘션 인베이드를 ${n}회 클리어하여 차원의 균열을 봉인하세요!`;
+  if (type === 'kingDungeonClears') return `왕의 명령입니다. 던전 ${n}회 클리어로 왕국 지하의 깊은 위험을 정복하세요!`;
+  if (type === 'kingSRankClears') return `왕의 명령입니다. S등급 ${n}회 달성으로 완벽한 영웅임을 증명하세요!`;
+  if (type === 'kingInfiniteScore') return `왕의 명령입니다. 무한 모드에서 ${n}점을 달성하여 왕국 역사에 남을 방어 기록을 세우세요!`;
+  return `마을 기록에 필요한 목표입니다. 진행도 ${n}을 달성해 주세요!`;
+}
+function getTownNpcById(id){
+  try { return (TOWN_NPCS || []).find(n => n && n.id === id) || null; } catch(e) { return null; }
+}
+function formatTownQuestStoryDialogue(text, target){
+  const n = formatNumber(Math.max(1, Math.floor(Number(target) || 1)));
+  return String(text || '').replace(/\{n\}/g, n);
+}
+function makeTownQuestNpcDialogue(npc, type, target){
+  const n = formatNumber(Math.max(1, Math.floor(Number(target) || 1)));
+  const id = npc?.id || '';
+  if (type === 'kills') {
+    if (id === 'green') return `이런, 마을 주변에 몬스터의 수가 너무 많아! 마을 주변에 있는 몬스터 ${n}마리를 처치해 줄래? 처치해준다면 마을이 평화로워질 거야. 보상은 넉넉히 준비해 둘게!`;
+    if (id === 'blue') return `마을 주변의 몬스터 수가 갑자기 늘어나고 있습니다. 몬스터 ${n}마리를 처치해 주시면, 남은 흔적을 분석해서 왜 이렇게 많이 몰려왔는지 조사해보겠습니다. 다녀오시면 보상도 정성껏 준비해 드릴게요.`;
+    if (id === 'pink') return `마을 방어선 근처에 몬스터들이 계속 모이고 있어요. 그대로 두면 어린 슬라임들이 밖으로 나가기 어려워질지도 몰라요. 몬스터 ${n}마리를 처치해서 마을을 안전하게 지켜주세요. 보상은 꼭 챙겨드리겠습니다!`;
+    if (id === 'gold') return `몬스터들이 창고 근처까지 내려와서 물자 운반이 완전히 막혔어. 몬스터 ${n}마리를 처치해 주면 상점 재료를 다시 옮길 수 있을 거야. 반짝한 보상은 내가 넉넉히 준비해 둘게!`;
+    if (id === 'elder') return `마을을 어지럽히는 몬스터의 기세가 심상치 않구나. 몬스터 ${n}마리를 처치하고 그 움직임을 살펴보거라. 네가 길을 열어준다면 마을의 불안도 조금은 가라앉을 것이야. 보상은 내가 챙겨두마.`;
+    if (id === 'petKeeper') return `펫과 함께 순찰하기 좋은 임무가 생겼어. 마을 외곽에 몬스터가 너무 많이 모였거든. 몬스터 ${n}마리를 처치하면서 펫과 호흡을 맞춰봐. 함께 싸운 기록이 쌓이면 진짜 동료가 되어갈 거야!`;
+    if (id === 'dungeonExplorer') return `던전 입구 근처에 몬스터들이 몰려들고 있어. 이대로 두면 던전에서 새어 나온 기운이 마을길까지 번질 수 있지. 몬스터 ${n}마리를 처치해서 입구를 정리해줘. 그래야 다음 탐험도 안전하게 준비할 수 있어.`;
+    if (id === 'dimensionResearcher') return `차원 균열 주변에서 몬스터 반응이 급격히 늘고 있습니다. 몬스터 ${n}마리를 처치해 주시면 균열의 영향 범위를 확인할 수 있을 것 같아요. 위험한 조사지만, 당신의 전투 기록이 꼭 필요합니다.`;
+    if (id === 'crystalResearcher') return `수정화 기운을 머금은 몬스터들이 후반 지역에서 점점 늘어나고 있습니다. 몬스터 ${n}마리를 처치해 주시면 크리스탈화가 어디까지 퍼졌는지 연구하는 데 큰 도움이 됩니다. 조심해서 다녀오세요.`;
+  }
+  if (type === 'goldEarned') {
+    if (id === 'gold') return `반짝! 몬스터 습격 이후로 마을 창고가 텅 비었어. 골드 ${n}개를 모아오면 상점 물자를 다시 들이고, 망가진 표지판과 창고 문도 고칠 수 있어. 이건 그냥 돈 모으기가 아니라 마을을 다시 움직이게 만드는 일이야!`;
+    if (id === 'green') return `밭 울타리와 창고가 망가져서 수리비가 필요해. 골드 ${n}개를 모아줄래? 그 골드가 있으면 마을 슬라임들이 다시 마음 놓고 농사를 지을 수 있을 거야.`;
+    return `마을 창고와 상점이 몬스터 습격으로 비어가고 있습니다. 골드 ${n}개를 모아 주시면 복구 자금을 마련해 다시 마을을 안정시킬 수 있어요.`;
+  }
+  if (type === 'expOrbs') {
+    if (id === 'blue') return `EXP 구슬의 빛이 평소와 다르게 흔들리고 있습니다. EXP 구슬 ${n}개를 모아 주시면 빛의 흐름을 분석해 몬스터 증가와 어떤 관련이 있는지 조사해보겠습니다.`;
+    if (id === 'pink') return `반짝이는 EXP 구슬에는 전투의 흔적이 남아 있어요. EXP 구슬 ${n}개를 모아 주시면 어떤 전투 방식이 성장에 도움이 되는지 더 자세히 알아볼 수 있습니다.`;
+    return `몬스터 증가의 단서가 EXP 구슬에 남아 있어요. EXP 구슬 ${n}개를 모아 원인을 조사해주세요!`;
+  }
+  if (type === 'skillUses') {
+    if (id === 'pink') return `몬스터들이 무리를 지어 몰려오고 있어서, 어떤 스킬이 방어에 가장 효과적인지 기록해야 합니다. 스킬을 ${n}회 사용해 주세요. 이 자료가 쌓이면 다음 습격 때 훨씬 똑똑하게 대응할 수 있어요!`;
+    if (id === 'blue') return `스킬을 사용할 때마다 주변 에너지 흐름이 크게 흔들립니다. 스킬 ${n}회 사용 기록을 모아 주시면 마법 반응을 분석하는 데 도움이 될 것 같습니다.`;
+    return `마을 방어에 어떤 스킬이 효과적인지 기록해야 해요. 스킬을 ${n}회 사용해서 전투 자료를 모아주세요!`;
+  }
+  if (type === 'stageClears') {
+    if (id === 'rankJudge') return `모험가의 실력은 말보다 기록으로 증명됩니다. 스테이지를 ${n}회 클리어해 주세요. 클리어 기록이 쌓이면 더 어려운 임무를 맡길 수 있는지 심사할 수 있습니다.`;
+    if (id === 'elder') return `마을 밖 옛길에 남은 균열의 흔적이 신경 쓰이는구나. 스테이지를 ${n}회 클리어하며 길목을 살펴보거라. 작은 흔적 하나가 큰 진실로 이어질 수 있단다.`;
+    return `마을 밖 옛길에 균열의 흔적이 남아 있어요. 스테이지를 ${n}회 클리어해서 흔적을 조사해주세요!`;
+  }
+  if (type === 'bossKills') {
+    if (id === 'elder') return `보스의 움직임은 평범한 몬스터와 다르단다. 보스 ${n}마리를 처치하고 그 흔적을 가져오거라. 그 기록이 있어야 이번 사태의 뿌리에 조금 더 가까워질 수 있을 것이야.`;
+    if (id === 'rankJudge') return `강한 모험가라면 보스 앞에서도 흔들리지 않아야 합니다. 보스 ${n}마리를 처치해 주세요. 그 기록은 당신의 실력을 증명하는 중요한 심사 자료가 될 것입니다.`;
+    return `몬스터들을 지휘하는 보스가 마을을 노리고 있어요. 보스 ${n}마리를 처치해서 습격을 막아주세요!`;
+  }
+  if (type === 'multiKills') {
+    if (id === 'green') return `몬스터들이 한꺼번에 몰려오면 마을 방어선이 금방 흔들려. 멀티킬 ${n}회를 달성해서 무리를 빠르게 정리해 줄래? 네가 한 번에 밀어내면 마을 입구가 훨씬 안정될 거야!`;
+    if (id === 'pink') return `무리 지어 오는 몬스터를 한 번에 정리하는 전투 자료가 필요합니다. 멀티킬 ${n}회를 달성해 주세요. 이 기록은 방어 전략을 만드는 데 정말 큰 도움이 될 거예요.`;
+    return `몬스터들이 한꺼번에 몰려와 방어선이 흔들리고 있어요. 멀티킬 ${n}회를 달성해 무리를 빠르게 정리해주세요!`;
+  }
+  if (type === 'infiniteItems') return `무한 모드에서 떨어지는 자석이나 더블 샷 같은 아이템에는 특별한 에너지가 담겨 있어. 무한 모드 아이템 ${n}개를 수집해줘! 그 기록이 있으면 마을 보급품을 더 튼튼하게 만들 수 있어.`;
+  if (type === 'pet') return `혼자서는 넓어진 순찰 구역을 모두 지키기 어려워. 펫과 함께 몬스터 ${n}마리를 처치해 봐. 함께 움직이고 함께 싸우는 경험이 쌓이면, 펫은 단순한 장식이 아니라 진짜 동료가 될 거야!`;
+  if (type === 'sRankClears') return `이제부터는 그냥 클리어가 아니라 완성도 높은 전투가 필요합니다. 스테이지 S등급을 ${n}회 달성해 주세요. 당신의 실력을 기록으로 확인하겠습니다.`;
+  if (type === 'infiniteScore') return `끝없이 몰려오는 몬스터를 얼마나 오래 막아낼 수 있는지 확인해야 합니다. 무한 모드에서 ${n}점을 달성해 주세요. 이 기록은 마을 방어 능력을 판단하는 중요한 기준이 됩니다.`;
+  if (type === 'dungeonClears') return `던전 안쪽에서 강한 기운이 새어 나오고 있어. 던전을 ${n}회 클리어해서 위험을 줄여줘. 안쪽 기록이 쌓이면 마을을 위협하는 원인을 더 정확히 알 수 있을 거야.`;
+  if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 주세요. 균열 너머의 움직임을 기록해야 이 세계가 왜 흔들리는지 알아낼 수 있습니다.`;
+  if (type === 'crystalKills') return `크리스탈 슬라임의 수정화가 빠르게 퍼지고 있습니다. 크리스탈 슬라임 ${n}마리를 처치해 주세요. 그 전투 기록이 있어야 후반 지역의 위험을 분석할 수 있습니다.`;
+  if (type === 'kingCrystalKills') return `왕의 명이니라. 크리스탈 슬라임 ${n}마리를 처치하여 왕국을 뒤덮는 수정화를 막거라. 어려운 임무이나, 그대라면 해낼 수 있으리라 믿노라.`;
+  if (type === 'kingDimensionClears') return `왕의 명이니라. 디멘션 인베이드를 ${n}회 클리어하여 차원의 균열을 봉인하거라. 왕국의 하늘이 다시 고요해질 수 있도록 힘을 보태거라.`;
+  if (type === 'kingDungeonClears') return `왕의 명이니라. 던전을 ${n}회 클리어하여 왕국 지하의 깊은 위험을 정복하거라. 어둠 속에서 돌아온 기록은 큰 보상으로 갚겠노라.`;
+  if (type === 'kingSRankClears') return `왕의 명이니라. S등급 ${n}회 달성으로 완벽한 영웅임을 증명하거라. 그대의 전투가 왕국의 전설로 남을 것이니라.`;
+  if (type === 'kingInfiniteScore') return `왕의 명이니라. 무한 모드에서 ${n}점을 달성하여 왕국 역사에 남을 방어 기록을 세우거라. 이 임무를 완수한다면 최고의 보상을 내려주겠노라.`;
+  return makeTownQuestDesc(type, target);
 }
 function normalizeTownQuestDisplay(q){
   if (!q) return q;
   q.target = Math.max(1, Math.floor(Number(q.target || 1)));
-  q.desc = makeTownQuestDesc(q.type, q.target);
+  const npc = getTownNpcById(q.npcId);
+  q.desc = q.storyDialogue ? formatTownQuestStoryDialogue(q.storyDialogue, q.target) : makeTownQuestNpcDialogue(npc, q.type, q.target);
+  if (!q.beginnerLevelUp && q.npcId !== 'guide') q.dialogue = q.desc;
   return q;
 }
 function buildTownQuestFromTemplate(t, npc){
@@ -12384,7 +12663,8 @@ function buildTownQuestFromTemplate(t, npc){
     npcName: npc.name,
     type: t.type,
     title: t.title,
-    desc: makeTownQuestDesc(t.type, finalTarget),
+    desc: t.dialogue ? formatTownQuestStoryDialogue(t.dialogue, finalTarget) : makeTownQuestNpcDialogue(npc, t.type, finalTarget),
+    storyDialogue: t.dialogue || '',
     target: finalTarget,
     progress: 0,
     expPct200: Math.max(0.01, Number(t.expPct200 || t.expPct || 0.1)),
@@ -12393,7 +12673,8 @@ function buildTownQuestFromTemplate(t, npc){
     beginnerLevelUp: !!t.beginnerLevelUp,
     fixedExp: Math.max(0, Math.floor(Number(t.fixedExp || 0))),
     tutorialStep: t.beginnerLevelUp ? (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1) : 0,
-    dialogue: t.dialogue || '',
+    dialogue: t.beginnerLevelUp ? (t.dialogue || '') : (t.dialogue ? formatTownQuestStoryDialogue(t.dialogue, finalTarget) : makeTownQuestNpcDialogue(npc, t.type, finalTarget)),
+    difficultyVersion: 'v203.10',
     acceptedAt: Date.now()
   });
 }
@@ -12410,25 +12691,121 @@ function closeTownQuestModal(){
   if (townQuestModal) townQuestModal.classList.add('hidden');
 }
 
-function getTownNpcToneSuffix(npc){
-  if (!npc) return '';
-  if (npc.id === 'guide') return ' 차근차근 알려드릴게요.';
-  if (npc.id === 'gold') return ' 반짝!';
-  if (npc.id === 'elder') return ' 잊지 말거라.';
-  if (npc.id === 'pink') return ' 예쁘게 부탁해!';
-  if (npc.id === 'blue') return ' 관찰해보자.';
-  if (npc.id === 'green') return ' 마을을 부탁해!';
-  return '';
+const TOWN_NPC_SPEECH_STYLE = {
+  guide: {
+    speaker:'길잡이 슬라임', icon:'🧭', honorific:true,
+    accept:['좋습니다! 지금부터 제가 차근차근 알려드릴게요.','준비되셨다면 바로 훈련장으로 이동하겠습니다.'],
+    progress:['잘하고 계세요. 목표를 조금만 더 채워보세요.','괜찮습니다. 천천히 따라오시면 됩니다.'],
+    complete:['정말 잘하셨습니다! 보상을 받아주세요.','완료입니다! 다음 단계도 제가 안내해드릴게요.'],
+    idle:['궁금한 것이 있으면 언제든 눌러주세요. 제가 쉽게 알려드릴게요.']
+  },
+  green: {
+    speaker:'초록 슬라임', icon:'🟢', honorific:false,
+    accept:['좋아! 마을 밭을 망가뜨린 녀석들을 그냥 둘 순 없지. 저 밭은 우리 마을 슬라임들이 내일 먹을 식량이 자라는 곳이야. 몬스터를 처치해서 다시 안심하고 농사 지을 수 있게 해줘!','오케이! 이번 토벌은 단순히 싸우자는 게 아니야. 마을 입구와 밭길이 막히면 어린 슬라임들이 밖으로 나갈 수 없어. 길을 되찾는다는 마음으로 부탁할게!'],
+    progress:['아직 몬스터들이 남아 있어. 그래도 네가 줄여준 덕분에 마을 쪽으로 내려오는 수가 확실히 줄었어. 조금만 더 밀어내면 입구를 다시 열 수 있을 거야!','좋아, 그 페이스면 금방 끝날 거야. 무리해서 앞으로 나가기보다 몬스터가 모이는 지점을 잘 보고 움직여줘. 마을 방어선이 다시 안정되고 있어!'],
+    complete:['수고했어! 덕분에 밭과 창고가 다시 조용해졌어. 이제 슬라임들이 겁먹지 않고 밖으로 나갈 수 있겠네. 약속한 보상 받아가!','완료야! 네가 몬스터를 막아준 덕분에 오늘 밤은 마을이 훨씬 조용할 거야. 진짜 고마워, 이 보상은 꼭 받아줘!'],
+    idle:['몬스터를 처치하는 이유는 단순한 싸움이 아니야. 누군가의 밭을 지키고, 아이들이 다니는 길을 열고, 마을의 하루를 되찾는 일이야. 그래서 네 도움이 꼭 필요해.']
+  },
+  blue: {
+    speaker:'물방울 슬라임', icon:'🔵', honorific:true,
+    accept:['좋습니다. 함께 관찰해보겠습니다.','구슬 기록을 모으면 연구에 큰 도움이 됩니다.'],
+    progress:['아직 표본이 조금 부족합니다. 조금만 더 관찰해 주세요.','빛의 흐름이 보이고 있습니다. 조금만 더 모아주세요.'],
+    complete:['좋습니다. 표본이 충분합니다. 정말 감사합니다.','완료입니다. 이 기록이면 연구가 꽤 진전될 것 같습니다.'],
+    idle:['EXP 구슬은 항상 나오는 것이 아니어서, 보이면 안전하게 챙기는 것이 좋습니다.']
+  },
+  gold: {
+    speaker:'황금 슬라임', icon:'🟡', honorific:false,
+    accept:['반짝! 좋아, 금빛 의뢰 시작이야. 지금 마을 창고가 비어서 회복약도 장비 재료도 부족하거든. 네가 모아오는 골드가 마을 복구의 첫걸음이 될 거야!','반짝이는 기록을 기대할게! 골드는 그냥 쌓아두는 숫자가 아니라, 무너진 상점을 다시 열고 슬라임들의 생활을 되살리는 힘이야. 제대로 모아보자!'],
+    progress:['반짝! 아직 조금 더 필요해. 하지만 지금까지 모은 골드만으로도 수리 재료 일부는 준비할 수 있겠어. 조금만 더 모으면 상점이 다시 활기를 찾을 거야!','좋아, 금빛이 점점 모이고 있어! 이 정도면 창고에 불이 다시 켜질 날도 멀지 않았네. 끝까지 부탁할게!'],
+    complete:['반짝! 완벽해. 네가 모아온 골드 덕분에 창고에 물자를 채울 수 있게 됐어. 보상도 반짝하게 챙겨줄게!','역시 멋져! 약속한 보상 받아가. 오늘 모은 골드는 마을 복구에 큰 도움이 될 거야. 다들 네 이름을 기억할걸?'],
+    idle:['골드는 성장의 바탕이지. 하지만 지금 우리에게 골드는 더 큰 의미가 있어. 무너진 표지판, 빈 창고, 닫힌 상점을 다시 살리는 데 꼭 필요하거든.']
+  },
+  pink: {
+    speaker:'분홍 슬라임', icon:'🟣', honorific:true,
+    accept:['좋아요! 이번에는 스킬 기록을 자세히 남겨볼게요. 몬스터가 무리 지어 올 때 어떤 스킬이 가장 효과적인지 알아야 마을 방어 계획을 세울 수 있거든요.','와, 멋진 장면 기대하겠습니다! 단순히 화려한 장면을 보려는 게 아니라, 스킬이 실제 전투에서 얼마나 마을을 지켜줄 수 있는지 확인하려는 거예요.'],
+    progress:['아직 조금 남았습니다. 그래도 지금까지의 기록을 보면 스킬이 몬스터 무리를 흩트리는 데 꽤 효과적이에요. 조금만 더 보여주세요!','스킬 타이밍이 좋아요! 특히 몬스터가 모였을 때 쓰는 순간이 중요합니다. 이 기록이 쌓이면 방어 전략을 더 정확하게 만들 수 있어요.'],
+    complete:['정말 훌륭했어요! 스킬 기록이 충분히 모였습니다. 이 자료라면 다음 습격 때 어떤 기술을 먼저 써야 할지 판단할 수 있겠어요. 보상 받아가세요!','성공이에요! 전투 장면도 멋졌지만, 무엇보다 마을 방어에 쓸 수 있는 중요한 자료가 생겼습니다. 정말 수고하셨어요!'],
+    idle:['스킬은 많이 써볼수록 손에 착 붙습니다. 그리고 마을 입장에서는 어떤 스킬이 위기 상황에서 가장 도움이 되는지 알아두는 것이 정말 중요해요.']
+  },
+  elder: {
+    speaker:'장로 슬라임', icon:'👑', honorific:false,
+    accept:['좋다. 이 의뢰는 단순한 심부름이 아니란다. 몬스터와 보스의 움직임을 살피면, 마을을 덮친 이상 현상의 뿌리를 조금씩 알아낼 수 있지. 너라면 충분히 해낼 수 있어. 다녀오거라.','마을을 위해 힘을 보태줘. 내가 오래 살아보니, 작은 징조를 놓친 마을은 큰 위기를 맞곤 했단다. 이번 기록도 언젠가 중요한 단서가 될 것이야. 보상은 내가 챙겨두마.'],
+    progress:['아직 시련이 끝나지 않았어. 하지만 네가 모아온 기록 덕분에 몬스터의 움직임이 조금씩 보이기 시작했다. 조금만 더 힘을 내거라.','방심하면 위험해! 특히 보스의 움직임은 평범한 몬스터와 다르단다. 끝까지 집중하고, 살아 돌아오는 것을 가장 먼저 생각하거라.'],
+    complete:['훌륭하다! 네가 가져온 기록은 마을의 다음 결정을 내리는 데 큰 도움이 될 것이야. 약속한 보상을 가져가거라.','네 실력은 믿음직하구나. 오늘의 전투는 단순한 승리가 아니라 마을의 미래를 밝히는 단서가 되었단다. 이 보상을 받아가거라.'],
+    idle:['강한 모험가는 언제나 준비되어 있어야 한단다. 검보다 중요한 것은 왜 싸워야 하는지 잊지 않는 마음이지.','마을 밖에는 아직 위험이 많아. 하지만 두려움만으로는 아무것도 바꿀 수 없지. 준비하고, 관찰하고, 살아 돌아오거라.']
+  }
+  ,petKeeper: { speaker:'펫 관리 슬라임', icon:'🐾', honorific:false,
+    accept:['좋아! 펫과 함께하는 모습을 보여줘!','오케이! 네 동료가 얼마나 든든한지 확인해보자!'],
+    progress:['아직 조금 남았어. 펫과 호흡을 맞춰봐!','좋아, 펫이랑 점점 손발이 맞고 있어!'],
+    complete:['완료야! 펫과의 호흡이 꽤 괜찮은데?','좋아! 펫 동료도 엄청 뿌듯해할 거야!'],
+    idle:['펫은 혼자 싸우는 모험을 훨씬 든든하게 만들어줘. 네 곁에서 함께 싸운 기록이 쌓일수록, 펫은 단순한 동료를 넘어 진짜 모험의 파트너가 될 거야.'] },
+  rankJudge: { speaker:'모험 심사관 슬라임', icon:'🏅', honorific:true,
+    accept:['좋습니다. 이번 기록을 심사해보겠습니다.','도전 정신이 훌륭합니다. 높은 등급을 기대하겠습니다.'],
+    progress:['아직 심사 기록이 부족합니다. 조금 더 도전해 주세요.','좋은 흐름입니다. 안정적인 클리어를 이어가 주세요.'],
+    complete:['훌륭합니다. 이 기록이면 충분히 인정할 수 있습니다.','완료입니다. 모험가로서의 실력을 증명하셨습니다.'],
+    idle:['스테이지 등급은 실력을 보여주는 중요한 기록입니다. 클리어 시간, 안정성, 전투 흐름이 모두 모여 하나의 평가가 되죠. 높은 등급은 당신의 성장이 눈에 보이는 증거입니다.'] },
+  dungeonExplorer: { speaker:'던전 탐험 슬라임', icon:'🏰', honorific:false,
+    accept:['좋아. 던전 탐험 기록을 맡겨볼게.','던전은 쉽지 않아. 준비 단단히 하고 들어가!'],
+    progress:['아직 탐험 기록이 부족해. 조금만 더 버텨봐!','던전에서는 무리하면 위험해. 침착하게 이어가!'],
+    complete:['성공이야! 던전에서도 충분히 통하는 실력이네.','좋아! 이 정도면 던전 탐험가라고 불러도 되겠어!'],
+    idle:['던전에서는 강한 몬스터들이 기다리고 있어. 하지만 그 안에는 지금 마을을 위협하는 변화의 단서도 숨어 있지. 충분히 준비하고, 안쪽에서 무엇을 봤는지 꼭 알려줘.'] },
+  dimensionResearcher: { speaker:'차원 연구 슬라임', icon:'🌌', honorific:true,
+    accept:['감사합니다. 차원 균열 조사에 큰 도움이 될 거예요.','좋습니다. 디멘션 인베이드 기록을 부탁드릴게요.'],
+    progress:['아직 균열 자료가 부족합니다. 조금만 더 조사해 주세요.','차원 반응이 감지되고 있어요. 계속 기록을 모아주세요.'],
+    complete:['훌륭합니다. 이 자료면 균열 분석이 크게 진전될 거예요.','완료입니다. 위험한 조사였는데 정말 수고하셨어요.'],
+    idle:['차원의 균열은 방치하면 점점 커질 수 있습니다. 지금은 작은 흔들림처럼 보여도, 균열이 커지면 마을 전체가 다른 차원의 힘에 휩쓸릴 수 있어요.'] },
+  crystalResearcher: { speaker:'크리스탈 슬라임 연구원', icon:'💎', honorific:true,
+    accept:['좋습니다. 크리스탈 개체 조사 기록을 부탁드릴게요.','위험하지만 중요한 연구입니다. 조심해서 다녀오세요.'],
+    progress:['아직 표본 기록이 부족합니다. 조금만 더 확보해 주세요.','크리스탈 반응이 선명해지고 있어요. 계속 조사해 주세요.'],
+    complete:['완료입니다. 이 기록이면 후반 지역 연구에 큰 도움이 됩니다.','정말 감사합니다. 크리스탈 슬라임의 특성을 더 잘 이해하게 됐어요.'],
+    idle:['크리스탈 슬라임은 충분히 성장한 모험가만 상대할 수 있습니다. 그 강함은 차원 에너지가 굳어진 흔적이기도 해서, 전투 기록 하나하나가 귀중한 연구 자료가 됩니다.'] },
+  slimeKing: { speaker:'슬라임 왕', icon:'👑', honorific:false,
+    accept:['좋다. 진정한 영웅의 임무를 맡기겠노라.','네 용기를 높이 사겠다. 왕의 임무를 수행하거라.'],
+    progress:['아직 임무가 끝나지 않았도다. 끝까지 해내거라.','영웅의 길은 멀고 험하다. 흔들리지 말거라.'],
+    complete:['훌륭하도다! 그대는 진정한 영웅이로다. 보상을 받거라.','왕의 임무를 완수했구나. 높은 보상을 내려주겠노라.'],
+    idle:['진정한 영웅은 어려운 임무 앞에서도 물러서지 않느니라. 하지만 무모함과 용기는 다르다. 충분히 준비하고, 마을을 지키겠다는 뜻을 품은 채 왕의 임무에 임하거라.'] }
+
+};
+function getTownNpcSpeechStyle(npc){
+  return TOWN_NPC_SPEECH_STYLE[npc?.id] || TOWN_NPC_SPEECH_STYLE.green;
+}
+function pickTownNpcSpeech(npc, state, fallback){
+  const style = getTownNpcSpeechStyle(npc);
+  const list = Array.isArray(style[state]) ? style[state] : [];
+  if (list.length) return list[Math.floor(Math.random() * list.length)];
+  return townNpcSpeak(npc, fallback || npc?.line || '');
 }
 function townNpcSpeak(npc, text){
   const base = String(text || npc?.line || '').trim();
   if (!base) return '';
-  const suffix = getTownNpcToneSuffix(npc);
-  if (!suffix || base.endsWith(suffix.trim()) || base.includes('습니다') || base.includes('드립니다')) return base;
-  return base + suffix;
+  const id = npc?.id || '';
+  if (id === 'elder') {
+    if (/(단다|하네|하거라|가거라|두마|구나|해|줘|자|야|어)[.!?？]?$/.test(base)) return base;
+    if (base.includes('위험')) return base.replace(/[.!?。]*$/, '') + ' 위험해!';
+    if (base.includes('보상')) return base.replace(/[.!?。]*$/, '') + ' 가져가거라.';
+    if (base.includes('도와') || base.includes('부탁') || base.includes('시련')) return base.replace(/[.!?。]*$/, '') + ' 도와줘.';
+    return base.replace(/[.!?。]*$/, '') + ' 기억해두거라.';
+  }
+  if (id === 'guide') {
+    if (/(습니다|드릴게요|주세요|하세요|됩니다|이에요|예요)[.!?]?$/.test(base)) return base;
+    return base.replace(/[.!?。]*$/, '') + ' 차근차근 알려드릴게요.';
+  }
+  if (id === 'blue' || id === 'pink') {
+    if (/(습니다|드릴게요|주세요|하세요|됩니다|이에요|예요|좋아요)[.!?]?$/.test(base)) return base;
+    if (base.includes('부탁') || base.includes('도와')) return base.replace(/[.!?。]*$/, '') + ' 부탁드립니다.';
+    if (base.includes('보상') || base.includes('선물')) return base.replace(/[.!?。]*$/, '') + ' 드릴게요.';
+    return base.replace(/[.!?。]*$/, '') + ' 해주세요.';
+  }
+  // 초록/황금 슬라임은 친근한 반말 톤으로 통일
+  if (/(어|야|해|줘|자|래|게|지|네|거야)[.!?]?$/.test(base)) return base;
+  return base.replace(/[.!?。]*$/, '') + ' 해보자!';
+}
+function renderTownNpcFace(npc){
+  const style = getTownNpcSpeechStyle(npc);
+  return `<div style="font-size:34px; text-align:center;">${style.icon || npc?.emoji || '💬'}</div><div style="font-weight:1000; color:${npc?.color || '#fff'};">${style.speaker || npc?.name || '슬라임'}</div>`;
 }
 function getBeginnerGuideIntroHtml(){
-  return `<div class="town-tip-box">안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.<br><br>안내는 마을 안에서 설명만 듣는 방식이 아니라, 실제 게임 화면에서 직접 움직이고 처치하면서 진행됩니다.<br><br>퀘스트를 수락하면 바로 전투로 이동하며, 퀘스트를 클리어할 때마다 현재 레벨 기준 1레벨업 EXP를 지급합니다. 보상은 최대 LV.11 0%까지만 적용됩니다.</div>`;
+  return `<div class="town-tip-box">🧭 안녕하세요! 저는 길잡이 슬라임입니다.<br><br>튜토리얼은 설명만 읽는 방식이 아니라, 실제 전투 화면에서 직접 움직이고 몬스터를 처치하면서 배우는 방식입니다.<br><br>대사창 왼쪽에는 길잡이 슬라임 아이콘이 표시되며, 화면을 터치하면 다음 안내로 넘어갑니다.<br><br>퀘스트를 완료할 때마다 현재 레벨 기준 1레벨업 EXP를 지급하고, 보상은 최대 LV.11 0%까지만 적용됩니다.</div>`;
 }
 function pickBeginnerTutorialQuest(){
   const town = ensureTownQuestState();
@@ -12445,18 +12822,66 @@ function getBeginnerQuestGuideMessages(q){
   const step = Math.max(1, Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Number(q?.tutorialStep || q?.step || 0) || (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1)));
   const header = `🧭 튜토리얼 ${step}/${BEGINNER_TUTORIAL_QUEST_POOL.length} · ${title}`;
   const guideMap = {
-    control: ['슬라임 훈련장에 접속했습니다. 지금부터 기본 조작 체크를 시작합니다.','캐릭터를 한 번 움직이면 목표가 완료됩니다. 모바일은 드래그, PC는 방향키와 WASD를 사용할 수 있습니다.',`현재 임무: ${desc}`],
-    autoAttack: ['전투 시스템 안내입니다. 슬라임 슈터의 기본 공격은 자동으로 작동합니다.','몬스터가 있든 없든 0.15초마다 탄환이 발사됩니다. 손을 떼도 공격 리듬은 유지됩니다.',`현재 임무: ${desc}`],
-    kills: ['첫 몬스터 처치 훈련을 시작합니다. 내려오는 몬스터를 피하면서 공격 라인을 맞춰보세요.','처치 기록이 목표 수치에 도달하면 다음 훈련으로 이동합니다.',`현재 임무: ${desc}`],
-    goldEarned: ['이번 훈련은 전리품 회수입니다. 골드는 자동 지급이 아니라 필드에 떨어진 보상을 직접 줍는 방식입니다.','몬스터를 처치한 뒤 떨어지는 골드에 가까이 이동해 획득하세요.',`현재 임무: ${desc}`],
-    gems: ['보석 드랍 안내입니다. 보석은 골드보다 더 반짝이는 특별 전리품입니다.','루비는 10골드, 사파이어는 30골드, 다이아는 50골드 가치가 있습니다. 등장하면 우선적으로 챙겨보세요.',`현재 임무: ${desc}`],
-    multiKills: ['멀티킬 훈련을 시작합니다. 튜토리얼 모드에서는 초보자도 스킬 버튼을 사용할 수 있습니다.','몬스터가 모였을 때 거품 스킬을 누르면 한 번에 여러 마리를 처치할 수 있습니다.',`현재 임무: ${desc}`],
-    expOrbs: ['EXP 구슬 안내입니다. 구슬은 몬스터 처치 후 일정 확률로 등장합니다.','무조건 나오는 보상이 아니기 때문에, 나타났을 때 안전한 경로로 이동해 획득하는 것이 중요합니다.',`현재 임무: ${desc}`],
-    survival: ['회피 훈련입니다. 강한 유저는 공격뿐 아니라 피하는 타이밍도 좋습니다.','몬스터와 탄환을 피하면서 지정 시간 동안 버텨보세요.',`현재 임무: ${desc}`],
-    bossKills: ['보스전 시뮬레이션이 열렸습니다. 보스는 일반 몬스터보다 체력이 높고 압박이 큽니다.','공격을 유지하면서 위험한 위치를 피하면 클리어할 수 있습니다.',`현재 임무: ${desc}`],
-    fever: ['피버 모드 훈련입니다. 몬스터를 처치하면 피버 게이지가 차오릅니다.','튜토리얼에서는 게이지가 빠르게 충전됩니다. 100%가 되면 피버 타임이 자동으로 발동됩니다.',`현재 임무: ${desc}`],
-    bonusStage: ['보너스 스테이지 체험입니다.','보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다. 떨어지는 보상을 챙겨보세요.',`현재 임무: ${desc}`],
-    pet: ['펫을 선물했습니다! 선물받은 슬라임 펫이 자동으로 장착됩니다.','펫은 플레이어를 따라다니며 전투를 도와주는 동료입니다. 이제 펫과 함께 몬스터를 처치해보세요.',`현재 임무: ${desc}`]
+    control: [
+      '먼저 이동부터 배워볼게요. 모바일은 화면을 터치하거나 드래그하면 플레이어가 움직입니다. PC는 방향키 또는 WASD를 사용합니다.',
+      '플레이어를 한 번 움직이면 목표가 완료됩니다. 위험한 몬스터와 탄환을 피하는 기본 동작입니다.',
+      `현재 목표: ${desc}`
+    ],
+    autoAttack: [
+      '슬라임 슈터의 기본 공격은 자동입니다. 직접 발사 버튼을 누르지 않아도 탄환이 계속 나갑니다.',
+      '몬스터가 가까이 오면 공격 라인을 맞춰주세요. 이동으로 피하면서 자동 공격을 유지하는 것이 핵심입니다.',
+      `현재 목표: ${desc}`
+    ],
+    kills: [
+      '이제 몬스터 처치 훈련입니다. 위에서 내려오는 몬스터를 피하면서 자동 공격으로 쓰러뜨려보세요.',
+      '목표 수만큼 처치하면 다음 튜토리얼로 넘어갑니다. 무리하지 말고 안전한 위치를 먼저 잡아주세요.',
+      `현재 목표: ${desc}`
+    ],
+    goldEarned: [
+      '골드는 몬스터 처치 후 필드에 떨어질 수 있습니다. 가까이 이동해서 직접 획득해보세요.',
+      '골드는 상점, 아이템, 성장 준비에 사용됩니다. 전투 중 보이면 안전할 때 챙기는 것이 좋습니다.',
+      `현재 목표: ${desc}`
+    ],
+    gems: [
+      '보석은 골드보다 더 반짝이는 특별 전리품입니다. 루비, 사파이어, 다이아가 등장할 수 있습니다.',
+      '루비는 10골드, 사파이어는 30골드, 다이아는 50골드 가치입니다. 보이면 우선적으로 챙겨보세요.',
+      `현재 목표: ${desc}`
+    ],
+    multiKills: [
+      '멀티킬은 여러 몬스터를 거의 동시에 처치했을 때 발생합니다. 튜토리얼에서는 초보자도 스킬을 사용할 수 있습니다.',
+      '몬스터가 모였을 때 거품 스킬을 눌러보세요. 한 번에 정리하면 멀티킬 목표가 올라갑니다.',
+      `현재 목표: ${desc}`
+    ],
+    expOrbs: [
+      'EXP 구슬은 몬스터를 처치했을 때 일정 확률로 등장합니다. 항상 나오는 보상은 아닙니다.',
+      '구슬이 보이면 안전한 경로로 이동해서 획득하세요. 레벨업에 직접 도움이 됩니다.',
+      `현재 목표: ${desc}`
+    ],
+    survival: [
+      '이번에는 회피 훈련입니다. 공격만큼 중요한 것이 안전하게 살아남는 움직임입니다.',
+      '몬스터와 탄환을 피하면서 지정 시간 동안 버텨보세요. 위험하면 공격보다 이동을 먼저 생각하세요.',
+      `현재 목표: ${desc}`
+    ],
+    bossKills: [
+      '보스는 일반 몬스터보다 체력이 높고 공격 압박도 큽니다. 길게 싸운다고 생각하면 됩니다.',
+      '공격은 자동으로 유지되니, 플레이어는 위험한 위치를 피하면서 꾸준히 버티면 됩니다.',
+      `현재 목표: ${desc}`
+    ],
+    fever: [
+      '피버 게이지는 몬스터를 처치하면 차오릅니다. 100%가 되면 피버 모드가 발동합니다.',
+      '튜토리얼에서는 피버를 쉽게 체험할 수 있도록 게이지가 빠르게 충전됩니다.',
+      `현재 목표: ${desc}`
+    ],
+    bonusStage: [
+      '보너스 스테이지는 짧은 시간 동안 보상을 수집하는 특별 구간입니다.',
+      '떨어지는 보상을 따라가되, 화면 흐름을 놓치지 않도록 천천히 움직여보세요.',
+      `현재 목표: ${desc}`
+    ],
+    pet: [
+      '펫을 선물했습니다. 선물받은 슬라임 펫은 자동으로 장착됩니다.',
+      '펫은 플레이어를 따라다니며 전투를 도와주는 동료입니다. 펫과 함께 몬스터를 처치해보세요.',
+      `현재 목표: ${desc}`
+    ]
   };
   return [header].concat(guideMap[q?.type] || [`현재 임무: ${desc}`]);
 }
@@ -12605,6 +13030,7 @@ function renderActiveTownQuestHtml(q){
     <div class="town-npc-card">
       <div style="font-size:18px; font-weight:1000; color:#b8ffd8;">${q.title}</div>
       <div style="margin-top:6px; color:#eef4ff;">${q.npcName}이 부탁한 퀘스트입니다.</div>
+      <div style="margin-top:6px; color:#ffe98a; font-weight:900;">난이도: ${getTownQuestDifficultyBracketV20310(level).name}</div>
       <div style="margin-top:8px; color:#dce8ff;">${q.desc}</div>
       <div style="margin-top:10px; height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,0.12);">
         <div style="width:${pct.toFixed(1)}%; height:100%; background:linear-gradient(90deg,#44ffb8,#ffe16b);"></div>
@@ -12636,8 +13062,14 @@ function pickTownQuestForNpc(npc){
   }
   const town = ensureTownQuestState();
   const recent = Array.isArray(town.recentBaseIds) ? town.recentBaseIds : [];
-  const baseList = TOWN_QUEST_POOL.filter(q => !types.length || types.includes(q.type));
-  const source = baseList.length ? baseList : TOWN_QUEST_POOL;
+  const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
+  const baseList = TOWN_QUEST_POOL.filter(q => {
+    if (!q) return false;
+    if (q.npcId && q.npcId !== npc.id) return false;
+    if (q.minLevel && lv < Number(q.minLevel)) return false;
+    return !types.length || types.includes(q.type);
+  });
+  const source = baseList.length ? baseList : TOWN_QUEST_POOL.filter(q => (!q.npcId || q.npcId === npc.id) && (!q.minLevel || lv >= Number(q.minLevel)));
   const freshList = source.filter(q => !recent.includes(q.id));
   const list = freshList.length ? freshList : source;
   return list[Math.floor(Math.random() * list.length)];
@@ -12656,24 +13088,24 @@ function talkToTownNpc(npc){
     const owner = getTownNpcById(active.npcId);
     const isOwner = active.npcId === npc.id;
     if (!isOwner) {
-      const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${townNpcSpeak(npc, pickTownNpcTip(npc))}”</div><div class="town-tip-box">현재 ${owner.name}의 퀘스트를 진행 중입니다. 완료하거나 보상을 받은 뒤 새 퀘스트를 받을 수 있어요.</div></div>` + renderActiveTownQuestHtml(active);
+      const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, pickTownNpcTip(npc))}”</div><div class="town-tip-box">현재 ${owner.name}의 퀘스트를 진행 중입니다. 완료하거나 보상을 받은 뒤 새 퀘스트를 받을 수 있어요.</div></div>` + renderActiveTownQuestHtml(active);
       openTownQuestModal(html, '확인', closeTownQuestModal);
       saveGameDataDebounced();
       return;
     }
-    const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${done ? townNpcSpeak(npc, '수고했습니다. 약속한 보상을 바로 드릴게요.') : townNpcSpeak(npc, active.dialogue || npc.line)}”</div><div class="town-tip-box">${done ? 'NPC 위에 책 모양이 뜨면 완료 보상을 받을 수 있습니다.' : townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(active) + `<div style="margin-top:10px; color:#cfe8ff;">${done ? '📖 완료 가능! 보상을 받아가세요.' : '… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.'}</div>`;
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${done ? pickTownNpcSpeech(npc, 'complete', '수고했습니다. 약속한 보상을 바로 드릴게요.') : (active.dialogue || makeTownQuestNpcDialogue(npc, active.type, active.target) || npc.line)}”</div><div class="town-tip-box">${done ? 'NPC 위에 책 모양이 뜨면 완료 보상을 받을 수 있습니다.' : townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(active) + `<div style="margin-top:10px; color:#cfe8ff;">${done ? '📖 완료 가능! 보상을 받아가세요.' : '… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.'}</div>`;
     openTownQuestModal(html, done ? '보상 받기' : '확인', done ? claimTownQuestReward : closeTownQuestModal);
     saveGameDataDebounced();
     return;
   }
   const template = pickTownQuestForNpc(npc);
   if (!template) {
-    const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><div class="town-dialogue-box">“${townNpcSpeak(npc, '이제 초보 안내는 충분히 마쳤습니다. 다른 슬라임들의 퀘스트에 도전해보세요!')}”</div></div>`;
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, '이제 초보 안내는 충분히 마쳤습니다. 다른 슬라임들의 퀘스트에 도전해보세요!')}”</div></div>`;
     openTownQuestModal(html, '확인', closeTownQuestModal);
     return;
   }
   const q = buildTownQuestFromTemplate(template, npc);
-  const html = `<div class="town-npc-card"><div style="font-size:34px; text-align:center;">${npc.emoji}</div><div style="font-weight:1000; color:${npc.color};">${npc.name}</div><span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${townNpcSpeak(npc, q.dialogue || npc.line)}”</div>${npc.id === 'guide' ? getBeginnerGuideIntroHtml() : ''}<div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(q);
+  const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${q.dialogue || makeTownQuestNpcDialogue(npc, q.type, q.target) || npc.line}”</div>${npc.id === 'guide' ? getBeginnerGuideIntroHtml() : ''}<div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(q);
   openTownQuestModal(html, isBeginnerGuideQuest(q) ? '전투에서 안내 퀘스트 시작' : '퀘스트 수락', () => acceptTownQuest(q));
   saveGameDataDebounced();
 }
@@ -12722,6 +13154,31 @@ function updateTownQuestProgress(type, amount){
   }
   saveGameDataDebounced();
 }
+
+function ensureTownNpcUnlockSave(){
+  try {
+    if (!saveData.townNpcUnlocks || typeof saveData.townNpcUnlocks !== 'object') saveData.townNpcUnlocks = {};
+    return saveData.townNpcUnlocks;
+  } catch(e) { return {}; }
+}
+function showNewTownNpcIntroIfNeeded(){
+  try {
+    const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
+    const unlocks = ensureTownNpcUnlockSave();
+    const npc = (TOWN_NPCS || []).find(n => n && n.unlockLevel && n.unlockLevel > 1 && lv >= n.unlockLevel && !unlocks[n.id]);
+    if (!npc) return;
+    unlocks[npc.id] = 1;
+    saveGameDataDebounced();
+    const toastText = npc.id === 'slimeKing' ? '👑 슬라임 왕이 모습을 드러냈습니다!' : `🎉 새로운 NPC가 마을에 찾아왔습니다! ${npc.emoji || '💬'} ${npc.name}`;
+    showToast(toastText, npc.color || '#b8ffd8', 2600);
+    setTimeout(() => {
+      const introText = Array.isArray(npc.firstIntro) ? npc.firstIntro.join('<br><br>') : npc.line;
+      const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">LV.${npc.unlockLevel} 해금</span><div class="town-dialogue-box">“${introText}”</div><div class="town-tip-box">이제부터 ${npc.name}에게 전용 스토리 퀘스트를 받을 수 있습니다.</div></div>`;
+      openTownQuestModal(html, '확인', closeTownQuestModal);
+    }, 450);
+  } catch(e) {}
+}
+
 function enterTown(){
   initAudio();
   ensureTownQuestState();
@@ -12735,6 +13192,7 @@ function enterTown(){
   closeTownQuestModal();
   updateHUD();
   showToast('🏡 슬라임 마을에 입장했습니다. NPC를 눌러보세요!', '#b8ffd8', 1500);
+  showNewTownNpcIntroIfNeeded();
 }
 function leaveTown(){
   state = 'title';
@@ -15207,8 +15665,21 @@ function addScore(amount, source = 'monster', options = {}) {
   amount = resolveScoreAmount(amount, source, options);
   const prevScore = score;
   score += amount;
+  try {
+    if (gameMode === 'infinite') {
+      const totalInf = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : score;
+      updateTownQuestProgress('infiniteScore', Math.max(0, totalInf - ((ensureTownQuestState().active && ensureTownQuestState().active.__lastInfScore) || 0)));
+      updateTownQuestProgress('kingInfiniteScore', Math.max(0, totalInf - ((ensureTownQuestState().active && ensureTownQuestState().active.__lastInfScore) || 0)));
+      if (ensureTownQuestState().active) ensureTownQuestState().active.__lastInfScore = totalInf;
+    }
+  } catch(e) {}
   if (source === 'monster') {
     updateTownQuestProgress('kills', 1);
+    try { if (options && options.enemy && options.enemy.isCrystalSlime) { updateTownQuestProgress('crystalKills', 1); updateTownQuestProgress('kingCrystalKills', 1); } } catch(e) {}
+    try {
+      const petEquippedAny = !!(saveData && saveData.pets && saveData.pets.equipped && (saveData.pets.equipped.right || saveData.pets.equipped.left));
+      if (petEquippedAny) updateTownQuestProgress('pet', 1);
+    } catch(e) {}
     if (gameMode === 'tutorial' && options && options.enemy && options.enemy.isTutorialBoss) updateTownQuestProgress('bossKills', 1);
 
     // ✅ [v.201.8] 펫 튜토리얼은 '장착만 확인'이 아니라
@@ -15388,6 +15859,7 @@ function pickupFieldItem(item) {
   applyInfiniteFieldItem(item.type);
   spawnDamageText(item.x, item.y - 18, `${def.emoji} ${def.name}!`, def.color || '#ffffff');
   if (SFX && SFX.expPickup) SFX.expPickup();
+  try { updateTownQuestProgress('infiniteItems', 1); } catch(e) {}
   item._collected = true;
 }
 
@@ -17171,6 +17643,7 @@ function handleBossKilledBySkill() {
 
   // 퀘스트/통계
   registerEnemyKill(true);
+  try { updateTownQuestProgress('bossKills', 1); } catch(e) {}
   if (gameMode === 'tutorial' && tutorialModeActive) {
     try { updateTownQuestProgress('bossKills', 1); } catch(e) {}
     boss = null;
@@ -19791,6 +20264,10 @@ function updateGameOverModal() {
   const isTreasure = gameMode === 'treasure';
   const isTraining = gameMode === 'training';
   const levelText = `LV.${formatNumber(level || 1)}`;
+  try {
+    if (isDungeon && dungeonState && dungeonState.endedNaturally && !dungeonState.storyQuestRecorded) { dungeonState.storyQuestRecorded = true; updateTownQuestProgress('dungeonClears', 1); updateTownQuestProgress('kingDungeonClears', 1); }
+    if (typeof dimensionInvasionLastResultV175 !== 'undefined' && dimensionInvasionLastResultV175 && dimensionInvasionLastResultV175.completed && !dimensionInvasionLastResultV175.storyQuestRecorded) { dimensionInvasionLastResultV175.storyQuestRecorded = true; updateTownQuestProgress('dimensionClears', 1); updateTownQuestProgress('kingDimensionClears', 1); }
+  } catch(e) {}
 
   if (gameOverModeTextEl) {
     gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isTraining ? '수련 모드' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드'))))));
@@ -29871,5 +30348,228 @@ try {
 } catch(e) {}
 </script>
 
+
+
+<script>
+/* ===============================
+   ✅ [v.202.2] 튜토리얼 펫 → 일반 퀘스트 1단계 자동 반영 + 마을 퀘스트 확장
+   - 튜토리얼에서 펫 선물을 받는 즉시 일반 퀘스트 [펫 파트너]를 1단계 보유 상태로 동기화
+   - 마을 NPC별 퀘스트 종류/난이도/대사를 확장해 반복 체감 감소
+   =============================== */
+try {
+  function syncTutorialGiftPetToNormalQuestV2022(){
+    try {
+      if (!saveData) return false;
+      if (!saveData.quests || typeof saveData.quests !== 'object') saveData.quests = {};
+      if (!saveData.quests.pet || typeof saveData.quests.pet !== 'object') saveData.quests.pet = { claimed: 0 };
+      if (typeof saveData.quests.pet.claimed !== 'number') saveData.quests.pet.claimed = 0;
+
+      const beforeStage = Math.max(0, Math.floor(Number(saveData.petStage) || 0));
+      const beforeClaimed = Math.max(0, Math.floor(Number(saveData.quests.pet.claimed) || 0));
+
+      // 튜토리얼 선물 펫은 일반 퀘스트의 '1단계 펫 획득'과 같은 의미로 처리합니다.
+      saveData.petStage = Math.max(1, beforeStage);
+      saveData.quests.pet.claimed = Math.max(1, beforeClaimed);
+
+      try { ensurePetSystemState(); } catch(e) {}
+      try { saveGameDataDebounced(); } catch(e) { try { saveGameData(); } catch(_e) {} }
+      try { if (typeof updateQuestUI === 'function') updateQuestUI(); } catch(e) {}
+      return beforeStage < 1 || beforeClaimed < 1;
+    } catch(e) { return false; }
+  }
+
+  if (typeof ensureTutorialPetAutoEquipped === 'function') {
+    const __ensureTutorialPetAutoEquippedBeforeV2022 = ensureTutorialPetAutoEquipped;
+    ensureTutorialPetAutoEquipped = function(){
+      const petObj = __ensureTutorialPetAutoEquippedBeforeV2022.apply(this, arguments);
+      const changed = syncTutorialGiftPetToNormalQuestV2022();
+      if (changed) {
+        try { showToast('🎁 일반 퀘스트 [펫 파트너]가 1단계 펫 보유 상태로 자동 반영되었습니다!', '#ffdcff', 2200); } catch(e) {}
+      }
+      return petObj;
+    };
+  }
+
+  if (typeof updateQuestUI === 'function') {
+    const __updateQuestUIBeforeV2022 = updateQuestUI;
+    updateQuestUI = function(){
+      try {
+        // 튜토리얼 선물 펫을 보유/장착한 저장 데이터라면 타이틀 일반 퀘스트도 1단계 이후로 맞춥니다.
+        const ownedTutorialPet = !!(saveData && saveData.pets && Array.isArray(saveData.pets.owned) && saveData.pets.owned.some(p => p && p.source === 'tutorial'));
+        const equippedAnyPet = !!(saveData && saveData.pets && saveData.pets.equipped && (saveData.pets.equipped.left || saveData.pets.equipped.right));
+        if (ownedTutorialPet || equippedAnyPet || Number(saveData?.petStage || 0) >= 1) syncTutorialGiftPetToNormalQuestV2022();
+      } catch(e) {}
+      return __updateQuestUIBeforeV2022.apply(this, arguments);
+    };
+  }
+
+  if (Array.isArray(TOWN_QUEST_POOL)) {
+    const extraTownQuestsV2022 = [
+      { id:'town_kill_180', type:'kills', title:'밤길 순찰대 지원', target:180, expPct200:0.90, gold:()=>Math.max(1200, level * 55), item:'largePotion', dialogue:'밤길 쪽 몬스터가 부쩍 늘었어. 순찰대가 지나갈 길을 먼저 정리해줘!' },
+      { id:'town_kill_250', type:'kills', title:'마을 경계선 대작전', target:250, expPct200:1.00, gold:()=>Math.max(1600, level * 70), item:'expMediumPack', dialogue:'이번엔 큰 작전이야. 경계선 주변을 넓게 정리하면 마을이 한동안 조용할 거야.' },
+      { id:'town_kill_320', type:'kills', title:'슬라임 숲 대소탕', target:320, expPct200:1.00, gold:()=>Math.max(2100, level * 82), item:'largePotion', dialogue:'숲 안쪽까지 들어가야 해. 쉽진 않지만 네 실력이면 가능할 거야!' },
+
+      { id:'town_gold_9000', type:'goldEarned', title:'황금 축제 장식비', target:9000, expPct200:0.78, gold:()=>Math.max(1500, level * 60), item:'expMediumPack', dialogue:'축제 장식은 반짝일수록 좋아. 골드 기록을 크게 세워보자!' },
+      { id:'town_gold_15000', type:'goldEarned', title:'상점 확장 자금', target:15000, expPct200:1.00, gold:()=>Math.max(2400, level * 88), item:'largePotion', dialogue:'상점을 더 크게 꾸미려면 든든한 자금 기록이 필요해. 제대로 한 번 모아볼래?' },
+      { id:'town_gold_25000', type:'goldEarned', title:'황금 슬라임의 비밀 금고', target:25000, expPct200:1.00, gold:()=>Math.max(3600, level * 115), item:'expMediumPack', dialogue:'비밀 금고를 채우는 건 아무에게나 맡기지 않아. 이번엔 너를 믿어볼게!' },
+
+      { id:'town_orb_90', type:'expOrbs', title:'푸른 구슬 반응 실험', target:90, expPct200:0.78, gold:()=>Math.max(1100, level * 48), item:'expMediumPack', dialogue:'EXP 구슬 반응을 더 정확히 보려면 많은 표본이 필요해. 반짝임을 놓치지 말아줘.' },
+      { id:'town_orb_130', type:'expOrbs', title:'성장 에너지 대조사', target:130, expPct200:1.00, gold:()=>Math.max(1700, level * 66), item:'largePotion', dialogue:'이번 조사는 장기 관측이야. 구슬을 많이 모아오면 성장 연구에 큰 도움이 돼.' },
+      { id:'town_orb_180', type:'expOrbs', title:'마을 연구소 긴급 의뢰', target:180, expPct200:1.00, gold:()=>Math.max(2400, level * 84), item:'expMediumPack', dialogue:'연구소에서 급히 자료를 찾고 있어. EXP 구슬을 최대한 많이 확보해줘!' },
+
+      { id:'town_skill_75', type:'skillUses', title:'스킬 안정성 검사', target:75, expPct200:0.82, gold:()=>Math.max(1200, level * 52), item:'largePotion', dialogue:'스킬을 많이 사용해보면 전투 안정성을 확인할 수 있어. 화려하게 부탁해!' },
+      { id:'town_skill_100', type:'skillUses', title:'마법 훈련장 기록 갱신', target:100, expPct200:1.00, gold:()=>Math.max(1800, level * 72), item:'expMediumPack', dialogue:'훈련장 최고 기록을 새로 세워보자! 스킬을 꾸준히 쓰는 게 핵심이야.' },
+      { id:'town_skill_150', type:'skillUses', title:'스킬 마스터 예비 시험', target:150, expPct200:1.00, gold:()=>Math.max(2600, level * 95), item:'largePotion', dialogue:'이 정도면 진짜 스킬 마스터 시험이야. 쿨타임을 보면서 차근차근 써보자!' },
+
+      { id:'town_multi_8', type:'multiKills', title:'동시 처치 감각 익히기', target:8, expPct200:0.28, gold:()=>Math.max(420, level * 22), item:'smallPotion', dialogue:'몬스터가 모였을 때 한 번에 정리하면 정말 시원해. 멀티킬 감각을 보여줘!' },
+      { id:'town_multi_20', type:'multiKills', title:'연속 멀티킬 도전', target:20, expPct200:0.55, gold:()=>Math.max(850, level * 38), item:'expSmallPack', dialogue:'이번엔 한두 번으로는 부족해. 여러 번 멀티킬을 만들어보자!' },
+      { id:'town_multi_40', type:'multiKills', title:'광역 전투 기록', target:40, expPct200:0.92, gold:()=>Math.max(1500, level * 60), item:'largePotion', dialogue:'광역 스킬 타이밍을 잘 잡으면 기록이 확 올라갈 거야. 멋진 장면 기대할게!' },
+      { id:'town_multi_70', type:'multiKills', title:'마을 축제 폭죽 연습', target:70, expPct200:1.00, gold:()=>Math.max(2300, level * 88), item:'expMediumPack', dialogue:'멀티킬 이펙트가 꼭 폭죽 같거든! 축제 전에 멋진 장면을 많이 보여줘!' },
+
+      { id:'town_stage_18', type:'stageClears', title:'긴급 순찰 확대', target:18, expPct200:0.85, gold:()=>Math.max(1300, level * 56), item:'largePotion', dialogue:'마을 주변을 넘어 먼 길목까지 균열 흔적이 퍼지고 있네. 여러 스테이지를 돌며 확산 범위를 조사해주게나.' },
+      { id:'town_stage_25', type:'stageClears', title:'마을 연결로 안정화', target:25, expPct200:1.00, gold:()=>Math.max(2100, level * 78), item:'expMediumPack', dialogue:'마을과 이어진 길이 흔들리고 있단다. 꾸준히 클리어해 연결로를 안정시켜주게나.' },
+      { id:'town_stage_35', type:'stageClears', title:'장로의 장기 순찰 명령', target:35, expPct200:1.00, gold:()=>Math.max(3200, level * 105), item:'largePotion', dialogue:'긴 순찰은 지치기 쉽네. 하지만 자네라면 끝까지 해낼 수 있단다.' },
+
+      { id:'town_boss_4', type:'bossKills', title:'강적 출현 보고', target:4, expPct200:0.80, gold:()=>Math.max(1400, level * 60), item:'largePotion', dialogue:'강한 기운이 여러 곳에서 느껴지는구나. 보스의 움직임을 막아주게나.' },
+      { id:'town_boss_7', type:'bossKills', title:'장로의 보스 토벌령', target:7, expPct200:1.00, gold:()=>Math.max(2300, level * 86), item:'expMediumPack', dialogue:'보스가 많아지면 마을이 위험하네! 자네가 앞장서서 토벌해주지 않겠나?' },
+      { id:'town_boss_10', type:'bossKills', title:'마을 영웅의 증명', target:10, expPct200:1.00, gold:()=>Math.max(3600, level * 120), item:'largePotion', dialogue:'열 마리의 강적을 쓰러뜨린다면 모두가 자네를 영웅으로 기억할 것이네.' }
+    ];
+    const existingIds = new Set(TOWN_QUEST_POOL.map(q => q && q.id).filter(Boolean));
+    extraTownQuestsV2022.forEach(q => { if (q && q.id && !existingIds.has(q.id)) TOWN_QUEST_POOL.push(q); });
+  }
+} catch(e) {}
+</script>
+<script>
+/* ===============================
+   ✅ [v.202.3] 첫 스테이지 모드 안내 + 튜토리얼 완료 칭찬 메시지
+   - 튜토리얼 전체 완료 후, 스테이지 모드에 처음 입장하면 길잡이 슬라임 안내 1회 표시
+   - 튜토리얼 퀘스트 완료 시 다음 안내 앞에 칭찬/정리 메시지 추가
+   =============================== */
+(function(){
+  const PATCH_ID = 'v202_3_stage_first_guide_and_tutorial_praise';
+  if (window[PATCH_ID]) return;
+  window[PATCH_ID] = true;
+
+  function getCharKeyV2023(){
+    try { return currentCharacterId || saveData?.currentCharacterId || saveData?.nickname || 'global'; }
+    catch(e) { return 'global'; }
+  }
+  function getStageGuideSeenKeyV2023(){
+    return `ss_stage_mode_first_guide_after_tutorial_v2023__${getCharKeyV2023()}`;
+  }
+  function hasCompletedBeginnerTutorialV2023(){
+    try {
+      const total = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 11;
+      const town = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+      return Number(level || saveData?.level || 1) >= 11 && Math.floor(Number(town?.guideStep || 0)) >= total;
+    } catch(e) {
+      return Number(level || 1) >= 11;
+    }
+  }
+  function maybeShowFirstStageModeGuideV2023(){
+    try {
+      if (tutorialActive || tutorialModeActive) return;
+      if (gameMode !== 'stage' || state !== 'playing') return;
+      if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return;
+      if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return;
+      if (!hasCompletedBeginnerTutorialV2023()) return;
+      const key = getStageGuideSeenKeyV2023();
+      if (localStorage.getItem(key) === '1') return;
+      localStorage.setItem(key, '1');
+
+      const target = (typeof getStageKillTarget === 'function') ? getStageKillTarget(stage || 1) : 5;
+      tutorialFlow = 'stageModeFirstGuide';
+      tutorialNonBlocking = false;
+      tutorialActive = true;
+      tutorialIndex = 0;
+      tutorialMessages = [
+        '스테이지 모드에 처음 오셨군요! 스테이지 모드에 대해 간단하게 설명해 드리겠습니다.',
+        '스테이지 모드는 정해진 수만큼 몬스터를 처치하면 스테이지를 클리어할 수 있는 기본 모드입니다.',
+        `이번 스테이지를 클리어하려면 몬스터 ${target}마리를 처치하세요!`,
+        '몬스터를 모두 처치하면 보너스 스테이지가 낮은 확률로 등장하거나, 바로 결과 화면으로 이동합니다.',
+        '공격은 자동으로 나가니 플레이어는 몬스터와 탄환을 피하면서 안전하게 움직이면 됩니다.'
+      ];
+      if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+    } catch(e) {}
+  }
+
+  const __startGameBeforeStageGuideV2023 = (typeof startGame === 'function') ? startGame : null;
+  if (__startGameBeforeStageGuideV2023) {
+    startGame = function(startStageNum = 1){
+      const ret = __startGameBeforeStageGuideV2023.apply(this, arguments);
+      setTimeout(maybeShowFirstStageModeGuideV2023, 180);
+      return ret;
+    };
+  }
+
+  function getTutorialPraiseMessageV2023(q){
+    const type = q && q.type;
+    const title = q && q.title ? String(q.title) : '이번 훈련';
+    const map = {
+      control: '잘하셨어요! 이제 이동 방법을 아시겠죠? 위험한 순간에는 움직임이 가장 중요합니다. 계속해서 다음 가이드를 진행하겠습니다.',
+      autoAttack: '잘하셨어요! 이제 자동 공격이 어떻게 이루어지는지 아시겠죠? 총알은 자동으로 발사되니, 플레이어는 위치를 잡고 몬스터를 피하는 데 집중하면 됩니다. 계속해서 다음 가이드를 진행하겠습니다.',
+      kills: '잘하셨어요! 이제 몬스터를 처치하는 흐름을 익히셨습니다. 내려오는 몬스터를 피하면서 자동 공격으로 정리하는 감각을 기억해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+      goldEarned: '잘하셨어요! 이제 골드를 직접 획득해야 한다는 것도 아시겠죠? 전투 중 떨어지는 보상은 그냥 지나치지 말고 안전할 때 챙겨주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+      gems: '잘하셨어요! 이제 보석이 얼마나 귀한 보상인지 아시겠죠? 골드보다 가치가 높으니 전투 중 발견하면 조심해서 획득해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+      multiKills: '잘하셨어요! 이제 멀티킬의 시원함을 느끼셨죠? 몬스터가 한꺼번에 모였을 때 스킬을 사용하면 훨씬 빠르게 정리할 수 있습니다. 계속해서 다음 가이드를 진행하겠습니다.',
+      expOrbs: '잘하셨어요! 이제 EXP 구슬이 항상 나오는 보상이 아니라는 것도 아시겠죠? 보이면 레벨업에 큰 도움이 되니 안전한 타이밍에 획득해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+      survival: '잘하셨어요! 이제 공격만큼 회피도 중요하다는 걸 아시겠죠? 오래 살아남는 것이 더 강한 몬스터를 상대하는 기본입니다. 계속해서 다음 가이드를 진행하겠습니다.',
+      bossKills: '잘하셨어요! 이제 보스 몬스터의 위협을 직접 확인하셨습니다. 보스는 강하지만, 침착하게 피하고 꾸준히 공격하면 충분히 쓰러뜨릴 수 있습니다. 계속해서 다음 가이드를 진행하겠습니다.',
+      fever: '잘하셨어요! 이제 피버 모드가 어떤 흐름으로 발동되는지 아시겠죠? 게이지가 차오르면 전투 분위기가 확 달라지니 적극적으로 활용해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+      pet: '잘하셨어요! 이제 펫이 함께 싸워주는 든든한 동료라는 걸 아시겠죠? 앞으로의 모험에서는 펫과 함께 더 안정적으로 전투를 이어갈 수 있습니다.'
+    };
+    return map[type] || `잘하셨어요! ${title} 훈련을 완료했습니다. 계속해서 다음 가이드를 진행하겠습니다.`;
+  }
+
+  window.__pendingTutorialPraiseV2023 = null;
+
+  const __showBeginnerGuideBeforePraiseV2023 = (typeof showBeginnerGuideInGame === 'function') ? showBeginnerGuideInGame : null;
+  if (__showBeginnerGuideBeforePraiseV2023) {
+    showBeginnerGuideInGame = function(q){
+      if (!isBeginnerGuideQuest(q)) return __showBeginnerGuideBeforePraiseV2023.apply(this, arguments);
+      const praise = window.__pendingTutorialPraiseV2023;
+      window.__pendingTutorialPraiseV2023 = null;
+
+      tutorialFlow = 'beginnerGuide';
+      tutorialNonBlocking = false;
+      tutorialActive = true;
+      tutorialIndex = 0;
+      const baseMessages = (typeof getBeginnerQuestGuideMessages === 'function') ? getBeginnerQuestGuideMessages(q) : [];
+      tutorialMessages = praise ? [praise].concat(baseMessages) : baseMessages;
+      if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+    };
+  }
+
+  const __completeBeginnerBeforePraiseV2023 = (typeof completeBeginnerGuideQuestInGame === 'function') ? completeBeginnerGuideQuestInGame : null;
+  if (__completeBeginnerBeforePraiseV2023) {
+    completeBeginnerGuideQuestInGame = function(q){
+      const total = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 11;
+      const townBefore = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+      const stepBefore = Math.max(0, Math.floor(Number(townBefore?.guideStep || 0)));
+      const praise = getTutorialPraiseMessageV2023(q);
+      const ret = __completeBeginnerBeforePraiseV2023.apply(this, arguments);
+      if (ret) {
+        const townAfter = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+        const stepAfter = Math.max(0, Math.floor(Number(townAfter?.guideStep || 0)));
+        if (stepAfter < total) {
+          window.__pendingTutorialPraiseV2023 = praise;
+        } else {
+          try { localStorage.setItem(`ss_beginner_tutorial_completed_v2023__${getCharKeyV2023()}`, '1'); } catch(e) {}
+          setTimeout(() => {
+            if (tutorialFlow === 'beginnerGuideDone' && Array.isArray(tutorialMessages) && tutorialMessages[0] !== praise) {
+              tutorialMessages = [praise].concat(tutorialMessages);
+              tutorialIndex = 0;
+              if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+            }
+          }, 760);
+        }
+      }
+      return ret;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
+
