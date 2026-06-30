@@ -12798,7 +12798,7 @@ function townNpcSpeak(npc, text){
   }
   // 초록/황금 슬라임은 친근한 반말 톤으로 통일
   if (/(어|야|해|줘|자|래|게|지|네|거야)[.!?]?$/.test(base)) return base;
-  return base.replace(/[.!?。]*$/, '') + ' 해보자!';
+  return base.replace(/[.!?。]*$/, '') + '!';
 }
 function renderTownNpcFace(npc){
   const style = getTownNpcSpeechStyle(npc);
@@ -12966,6 +12966,38 @@ function acceptTownQuest(q){
     showToast('💡 마을 퀘스트를 수락했습니다!', '#b8ffd8', 1200);
   }
 }
+
+function getTutorialClearPraiseMessageV20312(q){
+  const type = q && q.type;
+  const title = q && q.title ? String(q.title) : '이번 가이드';
+  const map = {
+    control: '잘하셨어요! 이제 조작은 익숙해지셨죠? 그럼 다음 가이드를 진행하겠습니다.',
+    autoAttack: '좋아요! 자동 공격은 이렇게 몬스터와 보스를 자동으로 공격해 준답니다. 그럼 다음 가이드로 가볼까요?',
+    kills: '아주 잘하셨어요! 이제 몬스터를 피하면서 처치하는 흐름을 익히셨습니다. 실제 전투에서도 이 감각을 기억해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+    goldEarned: '좋습니다! 골드는 몬스터를 처치한 뒤 직접 획득해야 한다는 점을 잘 익히셨습니다. 앞으로 장비와 아이템을 준비할 때 큰 도움이 될 거예요. 다음 가이드로 넘어가겠습니다.',
+    gems: '훌륭해요! 보석은 골드보다 귀한 보상이라 성장에 큰 도움이 됩니다. 전투 중 보석이 보이면 안전한 타이밍에 꼭 챙겨 주세요. 다음 가이드를 진행하겠습니다.',
+    multiKills: '멋집니다! 한 번에 여러 몬스터를 처치하는 멀티킬을 성공하셨습니다. 몬스터가 몰려올 때 스킬을 활용하면 전투가 훨씬 시원해진답니다. 다음 가이드로 가볼까요?',
+    expOrbs: '잘하셨어요! 경험치 구슬은 레벨업을 빠르게 도와주는 중요한 보상입니다. 보이면 무리하지 않는 선에서 안전하게 획득해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
+    survival: '좋아요! 공격만큼 회피와 생존도 중요하다는 걸 잘 보여주셨습니다. 오래 버틸수록 더 많은 기회를 만들 수 있어요. 다음 가이드로 넘어가겠습니다.',
+    bossKills: '대단합니다! 보스는 일반 몬스터보다 훨씬 강하지만, 침착하게 피하고 꾸준히 공격하면 쓰러뜨릴 수 있습니다. 이제 다음 가이드를 진행하겠습니다.',
+    fever: '아주 좋아요! 피버 모드는 전투 흐름을 한 번에 바꿔 주는 강력한 기능입니다. 게이지가 차오르면 더 적극적으로 전투를 이어가 보세요. 다음 가이드로 넘어가겠습니다.',
+    pet: '정말 잘하셨어요! 이제 펫이 함께 싸워주는 든든한 동료라는 걸 알게 되셨습니다. 앞으로의 모험에서도 펫과 함께 더 안정적으로 성장할 수 있을 거예요.'
+  };
+  return map[type] || `잘하셨어요! ${title}를 완료했습니다. 계속해서 다음 가이드를 진행하겠습니다.`;
+}
+function prependTutorialClearPraiseV20312(q){
+  try {
+    const praise = getTutorialClearPraiseMessageV20312(q);
+    if (!praise) return;
+    if (!Array.isArray(tutorialMessages)) tutorialMessages = [];
+    if (tutorialMessages[0] !== praise) {
+      tutorialMessages = [praise].concat(tutorialMessages);
+      tutorialIndex = 0;
+      if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+    }
+  } catch(e) {}
+}
+
 function completeBeginnerGuideQuestInGame(q){
   const town = ensureTownQuestState();
   if (!isBeginnerGuideQuest(q)) return false;
@@ -12996,6 +13028,7 @@ function completeBeginnerGuideQuestInGame(q){
     setTimeout(() => {
       showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
       showBeginnerGuideInGame(nextQuest);
+      prependTutorialClearPraiseV20312(q);
     }, 700);
   } else {
     try {
@@ -13014,6 +13047,7 @@ function completeBeginnerGuideQuestInGame(q){
       tutorialActive = true;
       tutorialIndex = 0;
       tutorialMessages = [
+        getTutorialClearPraiseMessageV20312(q),
         '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
         '11단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
         '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
@@ -30502,71 +30536,10 @@ try {
     };
   }
 
-  function getTutorialPraiseMessageV2023(q){
-    const type = q && q.type;
-    const title = q && q.title ? String(q.title) : '이번 훈련';
-    const map = {
-      control: '잘하셨어요! 이제 이동 방법을 아시겠죠? 위험한 순간에는 움직임이 가장 중요합니다. 계속해서 다음 가이드를 진행하겠습니다.',
-      autoAttack: '잘하셨어요! 이제 자동 공격이 어떻게 이루어지는지 아시겠죠? 총알은 자동으로 발사되니, 플레이어는 위치를 잡고 몬스터를 피하는 데 집중하면 됩니다. 계속해서 다음 가이드를 진행하겠습니다.',
-      kills: '잘하셨어요! 이제 몬스터를 처치하는 흐름을 익히셨습니다. 내려오는 몬스터를 피하면서 자동 공격으로 정리하는 감각을 기억해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
-      goldEarned: '잘하셨어요! 이제 골드를 직접 획득해야 한다는 것도 아시겠죠? 전투 중 떨어지는 보상은 그냥 지나치지 말고 안전할 때 챙겨주세요. 계속해서 다음 가이드를 진행하겠습니다.',
-      gems: '잘하셨어요! 이제 보석이 얼마나 귀한 보상인지 아시겠죠? 골드보다 가치가 높으니 전투 중 발견하면 조심해서 획득해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
-      multiKills: '잘하셨어요! 이제 멀티킬의 시원함을 느끼셨죠? 몬스터가 한꺼번에 모였을 때 스킬을 사용하면 훨씬 빠르게 정리할 수 있습니다. 계속해서 다음 가이드를 진행하겠습니다.',
-      expOrbs: '잘하셨어요! 이제 EXP 구슬이 항상 나오는 보상이 아니라는 것도 아시겠죠? 보이면 레벨업에 큰 도움이 되니 안전한 타이밍에 획득해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
-      survival: '잘하셨어요! 이제 공격만큼 회피도 중요하다는 걸 아시겠죠? 오래 살아남는 것이 더 강한 몬스터를 상대하는 기본입니다. 계속해서 다음 가이드를 진행하겠습니다.',
-      bossKills: '잘하셨어요! 이제 보스 몬스터의 위협을 직접 확인하셨습니다. 보스는 강하지만, 침착하게 피하고 꾸준히 공격하면 충분히 쓰러뜨릴 수 있습니다. 계속해서 다음 가이드를 진행하겠습니다.',
-      fever: '잘하셨어요! 이제 피버 모드가 어떤 흐름으로 발동되는지 아시겠죠? 게이지가 차오르면 전투 분위기가 확 달라지니 적극적으로 활용해 주세요. 계속해서 다음 가이드를 진행하겠습니다.',
-      pet: '잘하셨어요! 이제 펫이 함께 싸워주는 든든한 동료라는 걸 아시겠죠? 앞으로의 모험에서는 펫과 함께 더 안정적으로 전투를 이어갈 수 있습니다.'
-    };
-    return map[type] || `잘하셨어요! ${title} 훈련을 완료했습니다. 계속해서 다음 가이드를 진행하겠습니다.`;
-  }
 
-  window.__pendingTutorialPraiseV2023 = null;
+  // ===== [v.203.12] 튜토리얼 완료 칭찬 대사는 원본 completeBeginnerGuideQuestInGame 내부에서 직접 표시합니다.
+  // 기존 v.2023 후킹은 다음 가이드 제목이 먼저 보이거나, 대사가 중복될 수 있어 비활성화했습니다.
 
-  const __showBeginnerGuideBeforePraiseV2023 = (typeof showBeginnerGuideInGame === 'function') ? showBeginnerGuideInGame : null;
-  if (__showBeginnerGuideBeforePraiseV2023) {
-    showBeginnerGuideInGame = function(q){
-      if (!isBeginnerGuideQuest(q)) return __showBeginnerGuideBeforePraiseV2023.apply(this, arguments);
-      const praise = window.__pendingTutorialPraiseV2023;
-      window.__pendingTutorialPraiseV2023 = null;
-
-      tutorialFlow = 'beginnerGuide';
-      tutorialNonBlocking = false;
-      tutorialActive = true;
-      tutorialIndex = 0;
-      const baseMessages = (typeof getBeginnerQuestGuideMessages === 'function') ? getBeginnerQuestGuideMessages(q) : [];
-      tutorialMessages = praise ? [praise].concat(baseMessages) : baseMessages;
-      if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
-    };
-  }
-
-  const __completeBeginnerBeforePraiseV2023 = (typeof completeBeginnerGuideQuestInGame === 'function') ? completeBeginnerGuideQuestInGame : null;
-  if (__completeBeginnerBeforePraiseV2023) {
-    completeBeginnerGuideQuestInGame = function(q){
-      const total = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 11;
-      const townBefore = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
-      const stepBefore = Math.max(0, Math.floor(Number(townBefore?.guideStep || 0)));
-      const praise = getTutorialPraiseMessageV2023(q);
-      const ret = __completeBeginnerBeforePraiseV2023.apply(this, arguments);
-      if (ret) {
-        const townAfter = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
-        const stepAfter = Math.max(0, Math.floor(Number(townAfter?.guideStep || 0)));
-        if (stepAfter < total) {
-          window.__pendingTutorialPraiseV2023 = praise;
-        } else {
-          try { localStorage.setItem(`ss_beginner_tutorial_completed_v2023__${getCharKeyV2023()}`, '1'); } catch(e) {}
-          setTimeout(() => {
-            if (tutorialFlow === 'beginnerGuideDone' && Array.isArray(tutorialMessages) && tutorialMessages[0] !== praise) {
-              tutorialMessages = [praise].concat(tutorialMessages);
-              tutorialIndex = 0;
-              if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
-            }
-          }, 760);
-        }
-      }
-      return ret;
-    };
-  }
 })();
 </script>
 
