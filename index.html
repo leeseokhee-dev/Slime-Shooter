@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.203.11 Tutorial Clear Guide)</title>
+<title>Slime Shooter - Ultimate Evolution (v.203.13 Town Day Night Cycle)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -13236,43 +13236,202 @@ function leaveTown(){
   try { playBgmTrack('title'); } catch(e) {}
   closeTownQuestModal();
 }
+
+// ===============================
+// ✅ [v.203.13] 슬라임 마을 실시간 하늘 / 태양 / 달 위상 시스템
+// - 기기 현재 시간 기준: 새벽, 아침, 낮, 저녁, 밤
+// - 아침~저녁에는 태양이 시간에 따라 이동
+// - 밤~새벽에는 달이 이동하고, 약 29.53일 주기로 달 모양이 변화
+// ===============================
+function getTownDayPeriod(date = new Date()){
+  const h = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  if (h >= 3 && h < 6) return '새벽';
+  if (h >= 6 && h < 9) return '아침';
+  if (h >= 9 && h < 17) return '낮';
+  if (h >= 17 && h < 19) return '저녁';
+  return '밤';
+}
+function getTownSkyPalette(period){
+  if (period === '새벽') return { top:'#14204b', mid:'#48699a', bottom:'#ffd1a1', ground:'#2e7655', light:0.72, cloud:'rgba(255,232,214,0.26)' };
+  if (period === '아침') return { top:'#65bfff', mid:'#ffe3a8', bottom:'#77d684', ground:'#49a96a', light:0.92, cloud:'rgba(255,255,255,0.46)' };
+  if (period === '낮') return { top:'#6ecfff', mid:'#b8f4ff', bottom:'#83dc74', ground:'#4ab36f', light:1.0, cloud:'rgba(255,255,255,0.38)' };
+  if (period === '저녁') return { top:'#314a8d', mid:'#ff9d63', bottom:'#ffcf7a', ground:'#3f8f5b', light:0.78, cloud:'rgba(255,218,176,0.34)' };
+  return { top:'#08112b', mid:'#17295c', bottom:'#23385a', ground:'#245543', light:0.52, cloud:'rgba(180,210,255,0.16)' };
+}
+function townArcPosition(progress, yLow, yHigh){
+  progress = Math.max(0, Math.min(1, progress));
+  const x = width * (0.08 + 0.84 * progress);
+  const y = height * (yLow - (yLow - yHigh) * Math.sin(progress * Math.PI));
+  return { x, y };
+}
+function getTownSunPosition(date = new Date()){
+  const h = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  return townArcPosition((h - 6) / 13, 0.50, 0.12);
+}
+function getTownMoonPosition(date = new Date()){
+  const h = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  const nightHour = h >= 19 ? h : h + 24;
+  return townArcPosition((nightHour - 19) / 11, 0.42, 0.13);
+}
+function getTownMoonPhase(date = new Date()){
+  // 기준: 2000-01-06 18:14 UTC 부근의 삭. 실제 천문 계산이 아닌 게임용 근사치.
+  const synodic = 29.530588853;
+  const base = Date.UTC(2000, 0, 6, 18, 14, 0);
+  const days = (date.getTime() - base) / 86400000;
+  const age = ((days % synodic) + synodic) % synodic;
+  const phase = age / synodic;
+  const names = ['삭','초승달','상현달','상현망','보름달','하현망','하현달','그믐달'];
+  const idx = Math.floor(((phase + 1 / 16) % 1) * 8);
+  return { age, phase, name:names[idx] || '달' };
+}
+function drawTownStars(t, alpha){
+  if (alpha <= 0) return;
+  ctx.save();
+  for (let i=0;i<56;i++){
+    const x = ((i * 137.5) % 1000) / 1000 * width;
+    const y = (0.035 + ((i * 73) % 280) / 1000) * height;
+    const tw = 0.48 + 0.52 * Math.sin(t * 0.002 + i * 1.7);
+    ctx.fillStyle = `rgba(255,255,235,${alpha * tw})`;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.8, width * 0.0016) * (0.75 + tw * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function drawTownSun(date, period){
+  if (!(period === '아침' || period === '낮' || period === '저녁')) return;
+  const pos = getTownSunPosition(date);
+  const r = Math.max(24, width * 0.045);
+  ctx.save();
+  ctx.shadowColor = '#ffd86b';
+  ctx.shadowBlur = r * 1.25;
+  const g = ctx.createRadialGradient(pos.x-r*0.3,pos.y-r*0.3,r*0.12,pos.x,pos.y,r);
+  g.addColorStop(0,'#fff9c7');
+  g.addColorStop(0.55,'#ffd95e');
+  g.addColorStop(1,'#ff9f38');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,210,0.24)';
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,r*1.65,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawTownMoon(date, t, period){
+  if (!(period === '밤' || period === '새벽')) return;
+  const pos = getTownMoonPosition(date);
+  const r = Math.max(20, width * 0.038);
+  const phase = getTownMoonPhase(date);
+  const illum = (1 - Math.cos(phase.phase * Math.PI * 2)) / 2;
+  const waxing = phase.phase < 0.5;
+  ctx.save();
+  ctx.shadowColor = '#d8e8ff';
+  ctx.shadowBlur = r * 0.9;
+  ctx.fillStyle = 'rgba(224,235,255,0.28)';
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,r*1.55,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(32,44,72,0.58)';
+  ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,Math.PI*2); ctx.fill();
+  if (illum > 0.03) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,Math.PI*2); ctx.clip();
+    const litW = Math.max(r*0.10, r * (0.18 + illum * 1.82));
+    const litX = waxing ? pos.x + r - litW/2 : pos.x - r + litW/2;
+    const mg = ctx.createRadialGradient(pos.x-r*0.25,pos.y-r*0.32,r*0.05,pos.x,pos.y,r*1.08);
+    mg.addColorStop(0,'#ffffff'); mg.addColorStop(0.62,'#edf4ff'); mg.addColorStop(1,'#bfd3ef');
+    ctx.fillStyle = mg;
+    ctx.beginPath(); ctx.ellipse(litX,pos.y,litW/2,r,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+  ctx.font = `800 ${Math.max(10, Math.floor(width*0.016))}px ${getUIFontFamily()}`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(phase.name, pos.x, pos.y + r + Math.max(13, r*0.62));
+  ctx.restore();
+}
+
 function drawTownScreen(timestamp){
   const t = timestamp || performance.now();
+  const now = new Date();
+  const period = getTownDayPeriod(now);
+  const pal = getTownSkyPalette(period);
   ctx.save();
+
   const sky = ctx.createLinearGradient(0,0,0,height);
-  sky.addColorStop(0,'#84d9ff');
-  sky.addColorStop(0.55,'#b8ffd8');
-  sky.addColorStop(1,'#4ab36f');
+  sky.addColorStop(0,pal.top);
+  sky.addColorStop(0.52,pal.mid);
+  sky.addColorStop(1,pal.bottom);
   ctx.fillStyle = sky;
   ctx.fillRect(0,0,width,height);
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+
+  const starAlpha = period === '밤' ? 0.78 : (period === '새벽' ? 0.26 : 0);
+  drawTownStars(t, starAlpha);
+  drawTownSun(now, period);
+  drawTownMoon(now, t, period);
+
+  // 구름: 시간대별 색감 반영
+  ctx.fillStyle = pal.cloud;
   for (let i=0;i<5;i++) {
     const cx = (i*190 + (t*0.01)%190) % (width+120) - 60;
     const cy = 60 + (i%3)*35;
     ctx.beginPath(); ctx.ellipse(cx,cy,48,18,0,0,Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(cx+38,cy+4,36,15,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx-34,cy+5,30,13,0,0,Math.PI*2); ctx.fill();
   }
-  ctx.fillStyle = 'rgba(55,125,65,0.72)';
+
+  // 밤/새벽 마을 조도 오버레이
+  if (period === '밤') {
+    ctx.fillStyle = 'rgba(0,8,28,0.20)';
+    ctx.fillRect(0,0,width,height);
+  } else if (period === '새벽') {
+    ctx.fillStyle = 'rgba(25,35,75,0.10)';
+    ctx.fillRect(0,0,width,height);
+  } else if (period === '저녁') {
+    ctx.fillStyle = 'rgba(255,116,42,0.08)';
+    ctx.fillRect(0,0,width,height);
+  }
+
+  ctx.fillStyle = pal.ground || 'rgba(55,125,65,0.72)';
   ctx.beginPath(); ctx.ellipse(width*0.5,height*0.88,width*0.62,height*0.18,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle = 'rgba(120,72,34,0.85)';
+  ctx.fillStyle = period === '밤' ? 'rgba(82,52,38,0.92)' : 'rgba(120,72,34,0.85)';
   ctx.fillRect(width*0.08,height*0.70,width*0.84,Math.max(18,height*0.045));
+
+  // 저녁~밤~새벽 가로등 / 창문 불빛 느낌
+  if (period === '저녁' || period === '밤' || period === '새벽') {
+    for (let i=0;i<4;i++){
+      const lx = width*(0.18 + i*0.21);
+      const ly = height*0.68;
+      ctx.fillStyle = 'rgba(255,226,120,0.16)';
+      ctx.beginPath(); ctx.ellipse(lx, ly+10, width*0.06, height*0.055, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,44,35,0.8)'; ctx.lineWidth = Math.max(2,width*0.004);
+      ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx,ly+height*0.08); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,238,140,0.92)';
+      ctx.beginPath(); ctx.arc(lx,ly,Math.max(4,width*0.008),0,Math.PI*2); ctx.fill();
+    }
+  }
+
   ctx.fillStyle = 'rgba(255,243,185,0.94)';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font = `1000 ${Math.max(30, Math.floor(width*0.055))}px ${getUIFontFamily()}`;
   ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.42)';
   ctx.strokeText('슬라임 마을', width/2, height*0.14);
   ctx.fillText('슬라임 마을', width/2, height*0.14);
+  ctx.font = `800 ${Math.max(12, Math.floor(width*0.020))}px ${getUIFontFamily()}`;
+  ctx.fillStyle = '#ffffff';
+  const moonInfo = getTownMoonPhase(now);
+  const timeText = `${period} · ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}${(period === '밤' || period === '새벽') ? ' · ' + moonInfo.name : ''}`;
+  ctx.strokeText(timeText, width/2, height*0.195);
+  ctx.fillText(timeText, width/2, height*0.195);
   ctx.font = `800 ${Math.max(13, Math.floor(width*0.022))}px ${getUIFontFamily()}`;
   ctx.fillStyle = '#ffffff';
-  ctx.strokeText('💡 퀘스트 가능 · … 진행 중 · 📖 완료 가능', width/2, height*0.205);
-  ctx.fillText('💡 퀘스트 가능 · … 진행 중 · 📖 완료 가능', width/2, height*0.205);
+  ctx.strokeText('💡 퀘스트 가능 · … 진행 중 · 📖 완료 가능', width/2, height*0.235);
+  ctx.fillText('💡 퀘스트 가능 · … 진행 중 · 📖 완료 가능', width/2, height*0.235);
   const town = ensureTownQuestState();
   if (town.active) {
     const q = town.active;
     ctx.font = `900 ${Math.max(12, Math.floor(width*0.019))}px ${getUIFontFamily()}`;
     ctx.fillStyle = '#fff5b8';
-    ctx.strokeText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.25);
-    ctx.fillText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.25);
+    ctx.strokeText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.28);
+    ctx.fillText(`진행 중: ${q.title} (${formatNumber(q.progress||0)}/${formatNumber(q.target||1)})`, width/2, height*0.28);
   }
   clearGuideQuestIfNoLongerNeeded();
   getVisibleTownNpcs().forEach((npc) => {
@@ -13280,11 +13439,13 @@ function drawTownScreen(timestamp){
     const y = height * npc.y + Math.sin(t/420 + x) * 5;
     const r = Math.max(26, Math.min(44, width*0.052));
     ctx.save();
-    ctx.shadowColor = npc.color; ctx.shadowBlur = 16;
+    ctx.globalAlpha = Math.max(0.72, pal.light || 1);
+    ctx.shadowColor = npc.color; ctx.shadowBlur = period === '밤' ? 22 : 16;
     const g = ctx.createRadialGradient(x-r*0.35,y-r*0.42,r*0.16,x,y,r*1.15);
     g.addColorStop(0,'#ffffff'); g.addColorStop(0.28,npc.color); g.addColorStop(1,'rgba(30,90,70,0.92)');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.ellipse(x,y,r*1.08,r*0.86,0,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(x-r*0.34,y-r*0.12,r*0.17,0,Math.PI*2); ctx.arc(x+r*0.34,y-r*0.12,r*0.17,0,Math.PI*2); ctx.fill();
