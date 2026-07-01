@@ -3873,8 +3873,8 @@ let __lastExpBarPercent = 0;
 const FEVER_GAIN_PER_KILL = 0.5;       // 1킬당 +0.5%
 const FEVER_DURATION_MS = 15000;       // 피버 지속 15초
 const FEVER_SPAWN_MULTIPLIER = 1.4;    // 피버 중 몬스터 스폰량 40% 증가
-const FEVER_EXP_MULTIPLIER = 1.2;      // 피버 중 EXP +20%
-const FEVER_GOLD_MULTIPLIER = 1.3;     // 피버 중 골드/보석 획득량 +30%
+const FEVER_EXP_MULTIPLIER = 1.25;     // 피버 중 EXP +25%
+const FEVER_GOLD_MULTIPLIER = 1.5;     // 피버 중 골드/보석 획득량 +50%
 const FEVER_EXP_DROP_BONUS = 0.10;     // 피버 중 EXP 구슬 드롭 확률 +10%p
 const FEVER_MAGNET_RANGE = 360;        // 피버 중 EXP/골드 자동 흡수 거리
 let feverGauge = 0;
@@ -3891,8 +3891,8 @@ function getFeverReturnBgmName() {
 }
 
 function isFeverEligibleMode() {
-  // 던전/미니게임은 피버 제외. 타이틀 이동 시 게이지는 유지됩니다.
-  return gameMode !== 'dungeon' && gameMode !== 'minigame';
+  // 피버는 전투 모드 전체에 적용됩니다. 미니게임은 기존처럼 제외합니다.
+  return gameMode !== 'minigame';
 }
 
 function isFeverActive() {
@@ -3945,7 +3945,7 @@ function startFeverMode() {
   feverPreviousBgmName = getFeverReturnBgmName();
   try { initAudio(); playBgmTrack('fever'); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
-  try { showToast('🔥 FEVER TIME! 15초 동안 스폰+40% / EXP+20% / 골드+30%!', '#ffd86b', 1600); } catch(e) {}
+  try { showToast('🔥 FEVER TIME! EXP+25% / 골드+50% / 공격 강화 / 스킬 쿨타임 75% 감소!', '#ffd86b', 1800); } catch(e) {}
   try { updateTownQuestProgress('fever', 1); } catch(e) {}
 }
 
@@ -3989,7 +3989,7 @@ function updateFeverUI() {
   if (feverBarFillEl) feverBarFillEl.style.width = percent.toFixed(1) + '%';
   if (feverTextEl) {
     feverTextEl.textContent = isFeverActive()
-      ? `FEVER! ${(feverTimeLeft / 1000).toFixed(1)}초 · EXP+20%`
+      ? `FEVER! ${(feverTimeLeft / 1000).toFixed(1)}초 · EXP+25% / 골드+50%`
       : `${percent.toFixed(1)}%`;
   }
 }
@@ -19691,16 +19691,17 @@ if (gameMode === 'stage') {
     // ✅ [v.161.2] 스테이지 모드: 목표 처치 수에 맞춘 초당 생성량을 한 번에 부채꼴로 생성
     if (gameMode === 'stage') enemyCount = getStageMonsterSpawnBatchSize(stage);
 
-    // ✅ 피버 중에는 같은 모드에서 몬스터가 좀 더 많이 쏟아집니다.
-    if (isFeverActive()) {
-      enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
-    }
-
     // ✅ [v.194.2] 무한/던전을 제외한 모드: 5마리 고정 묶음형 리스폰
     // 기존 시간 리스폰(0.5초/1초 등)은 사용하지 않고, 화면의 5마리가 전부 처치되거나
     // 바닥 밑으로 완전히 사라져 제거된 뒤에만 다음 5마리를 생성합니다.
     if (useTenMonsterBatchRespawn()) {
       enemyCount = 5;
+    }
+
+    // ✅ [v.203.21] 피버 중에는 모든 전투 모드에서 몬스터 생성량 +40%
+    // 묶음형 5마리 리스폰도 7마리로 증가하도록, 고정값 적용 이후에 계산합니다.
+    if (isFeverActive()) {
+      enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
     }
 
     // ✅ [v.117 패치] 1웨이브 최대 제한(피버 중에는 조금 완화)
@@ -19709,7 +19710,7 @@ if (gameMode === 'stage') {
     }
 
     // ✅ [v.101/v.154.2/v.194.1] 화면 내 몬스터 과밀 방지
-    const MAX_ENEMIES_ON_SCREEN = useTenMonsterBatchRespawn() ? 5 : ((gameMode === 'stage') ? 20 : ((gameMode === 'mission') ? 55 : 70));
+    const MAX_ENEMIES_ON_SCREEN = useTenMonsterBatchRespawn() ? (isFeverActive() ? 7 : 5) : ((gameMode === 'stage') ? (isFeverActive() ? 28 : 20) : ((gameMode === 'mission') ? (isFeverActive() ? 77 : 55) : (isFeverActive() ? 98 : 70)));
     const spawnRoom = Math.max(0, MAX_ENEMIES_ON_SCREEN - enemies.length);
     if (spawnRoom <= 0) return;
     enemyCount = Math.min(enemyCount, spawnRoom);
@@ -30992,6 +30993,225 @@ try {
       try { showToast('튜토리얼 완료! LV.11 / EXP 0%로 맞춰졌습니다.', '#b8ffd8', 1800); } catch(e) {}
     }
     return ret;
+  };
+} catch(e) {}
+
+
+
+/* ===============================
+   ✅ [v.203.21] 피버 혜택 전면 적용
+   - 게임 나가기/게임 오버 시 피버 자동 종료
+   - EXP +25%, 골드 +50%, 무한 점수 +20%
+   - 플레이어 공격력 +30%, 공격 속도 +50%
+   - 펫 공격력 +20%, 펫 공격 속도 +30%
+   - 스킬 재사용 시간 75% 감소
+   - 몬스터 생성량 +40%
+   =============================== */
+const FEVER_PLAYER_DAMAGE_MULTIPLIER_V20321 = 1.30;
+const FEVER_PLAYER_ATTACK_SPEED_MULTIPLIER_V20321 = 1.50;
+const FEVER_PET_DAMAGE_MULTIPLIER_V20321 = 1.20;
+const FEVER_PET_ATTACK_SPEED_MULTIPLIER_V20321 = 1.30;
+const FEVER_SKILL_COOLDOWN_MULTIPLIER_V20321 = 0.25;
+const FEVER_INFINITE_SCORE_MULTIPLIER_V20321 = 1.20;
+
+function getFeverPlayerDamageMultiplierV20321(){ return (typeof isFeverActive === 'function' && isFeverActive()) ? FEVER_PLAYER_DAMAGE_MULTIPLIER_V20321 : 1; }
+function getFeverPlayerAttackIntervalV20321(baseMs){
+  const base = Math.max(1, Number(baseMs) || 1);
+  return (typeof isFeverActive === 'function' && isFeverActive()) ? Math.max(1, base / FEVER_PLAYER_ATTACK_SPEED_MULTIPLIER_V20321) : base;
+}
+function getFeverPetDamageMultiplierV20321(){ return (typeof isFeverActive === 'function' && isFeverActive()) ? FEVER_PET_DAMAGE_MULTIPLIER_V20321 : 1; }
+function getFeverPetFireIntervalV20321(baseMs){
+  const base = Math.max(1, Number(baseMs) || 1);
+  return (typeof isFeverActive === 'function' && isFeverActive()) ? Math.max(1, base / FEVER_PET_ATTACK_SPEED_MULTIPLIER_V20321) : base;
+}
+
+try {
+  const __getPlayerAttackPowerBeforeFeverV20321 = getPlayerAttackPower;
+  getPlayerAttackPower = function(){
+    const base = __getPlayerAttackPowerBeforeFeverV20321.apply(this, arguments);
+    return Math.max(0, Math.round((Number(base) || 0) * getFeverPlayerDamageMultiplierV20321()));
+  };
+} catch(e) {}
+
+try {
+  const __applyHyperSkillCooldownBeforeFeverV20321 = applyHyperSkillCooldown;
+  applyHyperSkillCooldown = function(ms){
+    const base = Math.max(0, Number(__applyHyperSkillCooldownBeforeFeverV20321.apply(this, arguments)) || 0);
+    return (typeof isFeverActive === 'function' && isFeverActive()) ? Math.max(1, Math.round(base * FEVER_SKILL_COOLDOWN_MULTIPLIER_V20321)) : base;
+  };
+} catch(e) {}
+
+try {
+  const __getPetActiveSkillCooldownBeforeFeverV20321 = getPetActiveSkillCooldownByStar;
+  getPetActiveSkillCooldownByStar = function(star, type = ''){
+    const base = Math.max(1, Number(__getPetActiveSkillCooldownBeforeFeverV20321.apply(this, arguments)) || 1);
+    return (typeof isFeverActive === 'function' && isFeverActive()) ? Math.max(1, Math.round(base * FEVER_SKILL_COOLDOWN_MULTIPLIER_V20321)) : base;
+  };
+} catch(e) {}
+
+try {
+  const __resolveScoreAmountBeforeFeverV20321 = resolveScoreAmount;
+  resolveScoreAmount = function(amount, source = 'monster', options = {}){
+    let resolved = Math.max(0, Math.floor(Number(__resolveScoreAmountBeforeFeverV20321.apply(this, arguments)) || 0));
+    if (gameMode === 'infinite' && source === 'monster' && typeof isFeverActive === 'function' && isFeverActive()) {
+      resolved = Math.max(0, Math.floor(resolved * FEVER_INFINITE_SCORE_MULTIPLIER_V20321));
+    }
+    return resolved;
+  };
+} catch(e) {}
+
+try {
+  const __shootBulletBeforeFeverV20321 = shootBullet;
+  shootBullet = function(currentTime){
+    if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
+    if (!player || !player.alive || isPlayerDying) return;
+    const interval = getFeverPlayerAttackIntervalV20321(FIRE_INTERVAL);
+    if (currentTime - lastShotTime < interval) return;
+    lastShotTime = currentTime;
+
+    let bulletDamage = getPlayerBaseDamageByLevelV192(level);
+    bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * getFeverPlayerDamageMultiplierV20321()));
+    const shotCount = Math.min(5, 1 + Math.floor(level / 10));
+    SFX.shoot();
+
+    const isHoming = (level >= 61) && (saveData.homingEnabled !== false);
+    const speed = Math.abs(BULLET_SPEED) * getBuffMult('speed');
+    const angleStep = 0.26;
+    const doubleShotActive = isInfiniteItemEffectActive('doubleShot');
+    const sideOffsets = doubleShotActive ? [-9, 9] : [0];
+    for (let i = 0; i < shotCount; i++) {
+      const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
+      for (const sideOffset of sideOffsets) {
+        bullets.push({
+          x: player.x + sideOffset,
+          y: player.y - player.size,
+          radius: BULLET_RADIUS,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          damage: bulletDamage,
+          homing: isHoming,
+          element: getPlayerElementKey()
+        });
+        addQuestStat('bullets', 1);
+      }
+    }
+  };
+} catch(e) {}
+
+try {
+  const __shootPetBulletBeforeFeverV20321 = shootPetBullet;
+  shootPetBullet = function(currentTime){
+    if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
+    const equipped = getEquippedPet('right');
+    if (!equipped) return;
+    if (!pet || !player || !player.alive || isPlayerDying) return;
+    pet.x = clamp(player.x + PET_OFFSET_X, 20, width - 20);
+    pet.y = clamp(player.y + PET_OFFSET_Y, 40, height - 40);
+
+    if (isPetActiveSkillType(equipped.type)) {
+      tryUsePetActiveSkill('right', currentTime);
+      return;
+    }
+
+    const interval = getFeverPetFireIntervalV20321(PET_FIRE_INTERVAL);
+    if (currentTime - lastPetShotTime < interval) return;
+    lastPetShotTime = currentTime;
+
+    let petDamage = Math.max(1, Math.floor(getPlayerBaseDamageByLevelV192(level) * 0.35));
+    petDamage = Math.max(1, Math.floor(petDamage * getBuffMult('dmg') * getBuffMult('pet') * getPetAttackMultiplier() * (1 + equipped.star * 0.08) * getFeverPetDamageMultiplierV20321()));
+    const shots = clamp(equipped.star, 1, 5);
+    const speed = Math.abs(PET_BULLET_SPEED) * getBuffMult('speed');
+    const color = getPetDef(equipped.type).color;
+
+    if (shots === 1) {
+      petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vy: PET_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet', color });
+    } else {
+      const angleStep = 0.18;
+      for (let i = 0; i < shots; i++) {
+        const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
+        petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet', color });
+      }
+    }
+  };
+} catch(e) {}
+
+try {
+  const __shootPet2BulletBeforeFeverV20321 = shootPet2Bullet;
+  shootPet2Bullet = function(currentTime){
+    if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
+    const equipped = getEquippedPet('left');
+    if (!equipped) return;
+    if (!pet2 || !player || !player.alive || isPlayerDying) return;
+    pet2.x = clamp(player.x + PET2_OFFSET_X, 20, width - 20);
+    pet2.y = clamp(player.y + PET2_OFFSET_Y, 40, height - 40);
+
+    if (isPetActiveSkillType(equipped.type)) {
+      tryUsePetActiveSkill('left', currentTime);
+      return;
+    }
+
+    const interval = getFeverPetFireIntervalV20321(PET2_FIRE_INTERVAL);
+    if (currentTime - lastPet2ShotTime < interval) return;
+    lastPet2ShotTime = currentTime;
+
+    const petDamage = Math.max(1, Math.floor(level * 2 * getBuffMult('dmg') * getPetAttackMultiplier() * (1 + equipped.star * 0.08) * getFeverPetDamageMultiplierV20321()));
+    const shots = clamp(equipped.star, 1, 5);
+    const speed = Math.abs(PET2_BULLET_SPEED) * getBuffMult('speed');
+    const color = getPetDef(equipped.type).color;
+
+    if (shots === 1) {
+      pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vy: PET2_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet2', color });
+    } else {
+      const angleStep = 0.18;
+      for (let i = 0; i < shots; i++) {
+        const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
+        pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color });
+      }
+    }
+  };
+} catch(e) {}
+
+try {
+  const __endFeverModeBeforeV20321 = endFeverMode;
+  endFeverMode = function(showNotice = true){
+    const wasActive = !!(feverActive || feverTimeLeft > 0 || feverGauge > 0);
+    feverActive = false;
+    feverTimeLeft = 0;
+    feverGauge = 0;
+    feverNoticeTimer = showNotice && wasActive ? 1200 : 0;
+    try { document.body.classList.remove('fever-mode'); } catch(e) {}
+    if (showNotice && wasActive) {
+      try { playBgmTrack(feverPreviousBgmName || getFeverReturnBgmName()); } catch(e) {}
+      try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(e) {}
+    }
+    feverPreviousBgmName = null;
+    try { updateFeverUI(); } catch(e) {}
+  };
+} catch(e) {}
+
+try {
+  const __goToTitleBeforeFeverV20321 = goToTitle;
+  goToTitle = function(){
+    try { if (typeof endFeverMode === 'function') endFeverMode(false); } catch(e) {}
+    return __goToTitleBeforeFeverV20321.apply(this, arguments);
+  };
+} catch(e) {}
+
+try {
+  const __gameOverBeforeFeverV20321 = gameOver;
+  gameOver = function(){
+    try { if (typeof endFeverMode === 'function') endFeverMode(false); } catch(e) {}
+    return __gameOverBeforeFeverV20321.apply(this, arguments);
+  };
+} catch(e) {}
+
+
+
+try {
+  const __getPetSkillDamageBeforeFeverV20321 = getPetSkillDamage;
+  getPetSkillDamage = function(petData, baseMult = 1){
+    const base = Math.max(1, Number(__getPetSkillDamageBeforeFeverV20321.apply(this, arguments)) || 1);
+    return Math.max(1, Math.floor(base * getFeverPetDamageMultiplierV20321()));
   };
 } catch(e) {}
 
