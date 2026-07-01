@@ -12624,9 +12624,9 @@ const TOWN_QUEST_POOL = [
   { npcId:'dungeonSlime', id:'dungeon_slime_kills', type:'dungeonKills', title:'던전에서 몬스터 N마리 처치', target:250, fixedTarget:false, minLevel:100, expPct200:0.90, gold:()=>Math.max(2800, level * 100), item:'smallPotion', dialogue:'던전에서 몬스터 {n}마리를 처치해줘. 던전 몬스터만 계산하니까 다른 모드에서는 진행되지 않아!' },
 
   // ===== 차원의 슬라임: 디멘션 인베이드 전용 3종 =====
-  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:150, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:150, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N분 안에 보스 처치', target:5, fixedTarget:false, minLevel:150, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:50, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:50, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N분 안에 보스 처치', target:5, fixedTarget:false, minLevel:50, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
 
   // ===== 크리스탈 슬라임: 엔드게임 전용 3종 =====
   { npcId:'crystalSlime', id:'crystal_slime_kills', type:'crystalKills', title:'크리스탈 슬라임 N마리 처치', target:500, fixedTarget:false, minLevel:200, expPct200:1.00, gold:()=>Math.max(6500, level * 160), item:'expMediumPack', dialogue:'크리스탈 슬라임 {n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.' },
