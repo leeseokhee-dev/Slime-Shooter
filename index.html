@@ -22823,11 +22823,11 @@ const petEqCount = getEquippedPetList().length;
 const rankInfo = getRankInfo(level);
 const isWatchHud = document.body.classList.contains('watch-ui') || document.getElementById('gameContainer')?.classList.contains('watch-ui');
 const compactPlayerText = isWatchHud
-  ? `LV.${level} ${nn} · ${rankInfo.name}`
-  : `LV.${level} ${nn} · ${rankInfo.name}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
+  ? `LV.${level} ${nn}`
+  : `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
 if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
 updateRankIcon();
-levelEl.textContent = `LV. ${level} · ${nn} · ${rankInfo.name} ${playerElementMeta.icon}${playerElementMeta.name}`;
+levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, isWatchHud ? 9 : (window.innerWidth <= 520 ? 18 : 22), isWatchHud ? 5 : 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
