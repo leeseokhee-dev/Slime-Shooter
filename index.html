@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.203.15 Pet Quest Expansion)</title>
+<title>Slime Shooter - Ultimate Evolution (v.203.18 Apple Watch HUD Fit)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1498,6 +1498,82 @@ function shouldShowTutorial(id){
   font-weight:900;
 }
 
+
+
+/* ===== [v.203.17] 게임 중 마을 NPC 퀘스트 상시 현황 ===== */
+#townQuestTracker{
+  position:absolute;
+  left:12px;
+  top:180px;
+  width:min(270px, 42vw);
+  max-height:128px;
+  overflow:hidden;
+  z-index:64;
+  pointer-events:none;
+  padding:9px 10px;
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(8,18,28,0.78), rgba(3,8,15,0.68));
+  border:1px solid rgba(124,255,181,0.34);
+  box-shadow:0 10px 24px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter:blur(8px) saturate(130%);
+  -webkit-backdrop-filter:blur(8px) saturate(130%);
+  color:#eefcff;
+  font-size:11px;
+  line-height:1.25;
+  text-shadow:0 1px 3px rgba(0,0,0,0.85);
+}
+#townQuestTracker.hidden{ display:none !important; }
+#townQuestTrackerTitle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:5px;
+  color:#b8ffd8;
+  font-weight:1000;
+  letter-spacing:-0.2px;
+}
+.town-quest-tracker-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:6px;
+  align-items:center;
+  padding:3px 0;
+  border-top:1px solid rgba(255,255,255,0.07);
+}
+.town-quest-tracker-name{
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#eefcff;
+  font-weight:800;
+}
+.town-quest-tracker-count{
+  color:#ffe98a;
+  font-weight:1000;
+  white-space:nowrap;
+}
+.town-quest-tracker-complete .town-quest-tracker-name,
+.town-quest-tracker-complete .town-quest-tracker-count{
+  color:#fff1a8;
+}
+@media (max-width:520px){
+  #townQuestTracker{
+    left:8px;
+    width:min(205px, 48vw);
+    max-height:108px;
+    padding:7px 8px;
+    font-size:9.5px;
+    border-radius:12px;
+  }
+}
+body.title-mode #townQuestTracker,
+body.tutorial-mode #townQuestTracker,
+body.dead-mode #townQuestTracker{
+  display:none !important;
+}
+
 /* ===== Stage Clear UI 리파인 ===== */
 #stageClearModal{
   max-width: 440px;
@@ -2868,6 +2944,200 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 }
 </style>
 
+
+<style id="appleWatchHudFitV20318">
+/* ===============================
+   ✅ [v.203.18] 애플워치 초소형 HUD 비율 맞춤
+   - 레벨 / 닉네임 / 계급 / EXP / 피버 / 설정을 한 화면 안에 유지
+   - 게임 캔버스는 남은 높이에 맞춰 자동 축소
+   =============================== */
+body.watch-ui{
+  min-height:100dvh !important;
+  height:100dvh !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+  padding:1px 0 !important;
+  overflow:hidden !important;
+}
+#gameContainer.watch-ui{
+  width:100vw !important;
+  max-width:100vw !important;
+  height:100dvh !important;
+  max-height:100dvh !important;
+  padding:1px 0 !important;
+  gap:0 !important;
+}
+#gameContainer.watch-ui #hud{
+  width:100vw !important;
+  max-width:100vw !important;
+  max-height:none !important;
+  overflow:hidden !important;
+  padding:1px 2px !important;
+  margin:0 !important;
+  gap:1px !important;
+  border-width:1px !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+/* 플레이 중에도 애플워치에서는 설정 접근 가능 */
+body.watch-ui.playing-ui #settingsBar,
+body.watch-ui:not(.playing-ui) #settingsBar,
+#gameContainer.watch-ui #settingsBar{
+  display:flex !important;
+}
+#gameContainer.watch-ui #settingsBar{
+  flex-wrap:nowrap !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+  gap:2px !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-height:18px !important;
+  max-height:18px !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  scrollbar-width:none !important;
+  -webkit-overflow-scrolling:touch;
+}
+#gameContainer.watch-ui #settingsBar::-webkit-scrollbar{ display:none !important; }
+#gameContainer.watch-ui #settingsBar .ui-btn,
+#gameContainer.watch-ui #settingsBar #fontSelect,
+#gameContainer.watch-ui #settingsBar #fpsSelect{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:30px !important;
+  max-width:58px !important;
+  height:17px !important;
+  min-height:17px !important;
+  padding:1px 3px !important;
+  font-size:6px !important;
+  line-height:1 !important;
+  border-radius:4px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+#gameContainer.watch-ui #fontSelect{ max-width:62px !important; }
+#gameContainer.watch-ui #fpsSelect{ max-width:42px !important; }
+#gameContainer.watch-ui #playerHudCompact{
+  display:flex !important;
+  align-items:center !important;
+  min-height:15px !important;
+  max-height:15px !important;
+  margin:0 !important;
+  gap:1px !important;
+  overflow:hidden !important;
+}
+#gameContainer.watch-ui #rankIconBtn{
+  display:inline-flex !important;
+  width:14px !important;
+  height:14px !important;
+  min-width:14px !important;
+  margin-right:2px !important;
+  padding:0 !important;
+  transform:none !important;
+}
+#gameContainer.watch-ui #rankIconBtn canvas{
+  width:14px !important;
+  height:14px !important;
+}
+#gameContainer.watch-ui #playerCompactText{
+  display:inline-block !important;
+  font-size:8px !important;
+  line-height:14px !important;
+  letter-spacing:-0.55px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+#gameContainer.watch-ui #hudTop{
+  display:flex !important;
+  margin:0 !important;
+  min-height:11px !important;
+  max-height:12px !important;
+  gap:2px !important;
+  font-size:7px !important;
+  line-height:1 !important;
+  overflow:hidden !important;
+}
+/* 필수 정보가 아닌 전투 숫자는 초소형 화면에서 접음 */
+#gameContainer.watch-ui #scoreText,
+#gameContainer.watch-ui #highScoreText,
+#gameContainer.watch-ui #hotTimeText,
+#gameContainer.watch-ui #goldText,
+#gameContainer.watch-ui #hpText,
+#gameContainer.watch-ui #levelText{
+  display:none !important;
+}
+#gameContainer.watch-ui #stageText{
+  display:block !important;
+  font-size:7px !important;
+  line-height:11px !important;
+  max-width:100vw !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+#gameContainer.watch-ui #expRow,
+#gameContainer.watch-ui #feverRow{
+  display:flex !important;
+  margin:0 !important;
+  width:100% !important;
+  min-height:10px !important;
+  max-height:11px !important;
+}
+#gameContainer.watch-ui #feverRow.hidden{
+  display:flex !important;
+  opacity:.75 !important;
+}
+#gameContainer.watch-ui #expLabel,
+#gameContainer.watch-ui #feverLabel{
+  min-width:24px !important;
+  max-width:24px !important;
+  padding:0 1px !important;
+  font-size:6px !important;
+  line-height:10px !important;
+  letter-spacing:-0.4px !important;
+}
+#gameContainer.watch-ui #expWrapper,
+#gameContainer.watch-ui #feverWrapper{
+  height:10px !important;
+  min-height:10px !important;
+  max-height:10px !important;
+}
+#gameContainer.watch-ui #expText,
+#gameContainer.watch-ui #feverText{
+  font-size:6px !important;
+  line-height:10px !important;
+  padding:0 1px !important;
+  letter-spacing:-0.65px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+}
+#gameContainer.watch-ui #gameCanvas{
+  width:100vw !important;
+  max-width:100vw !important;
+  min-height:120px !important;
+  border-width:1px !important;
+  border-radius:0 !important;
+  margin:0 !important;
+}
+#gameContainer.watch-ui #pauseBtn{
+  width:22px !important;
+  height:22px !important;
+  min-width:22px !important;
+  top:2px !important;
+  right:2px !important;
+  font-size:11px !important;
+  border-width:1px !important;
+}
+/* 초소형 화면에서는 퀵 아이템/퀘스트 패널을 접어 플레이 공간 보호 */
+#gameContainer.watch-ui #consumableQuickBar,
+#gameContainer.watch-ui #townQuestHud{
+  display:none !important;
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -2972,6 +3242,8 @@ body:not(.playing-ui) #settingsBar{ display:flex; }
 </div>
 
 <canvas id="gameCanvas" width="960" height="640"></canvas>
+<div id="townQuestTracker" class="hidden" aria-live="polite"></div>
+
 <button id="pauseBtn" class="ui-btn hidden" type="button" aria-label="일시정지" title="일시정지">⏸</button>
 <div id="pauseOverlay" class="overlay-screen hidden">
   <div class="overlay-content">
@@ -12178,6 +12450,7 @@ const townQuestModal = document.getElementById('townQuestModal');
 const townQuestBody = document.getElementById('townQuestBody');
 const townQuestActionBtn = document.getElementById('townQuestActionBtn');
 const townQuestCloseBtn = document.getElementById('townQuestCloseBtn');
+const townQuestTrackerEl = document.getElementById('townQuestTracker');
 let selectedTownNpc = null;
 const TOWN_NPCS = [
   {
@@ -13176,6 +13449,60 @@ function completeBeginnerGuideQuestInGame(q){
   return true;
 }
 
+
+function getAllActiveTownQuestTargets(){
+  const town = ensureTownQuestState();
+  const list = [];
+  if (town.active) list.push(town.active);
+  if (Array.isArray(town.activeList)) list.push(...town.activeList);
+  return list.filter(q => q && !q.beginnerLevelUp);
+}
+function isGameplayStateForTownQuestTracker(){
+  return state === 'playing' || state === 'bonus' || state === 'stageClear';
+}
+function updateTownQuestTrackerPosition(){
+  if (!townQuestTrackerEl || !canvas) return;
+  try {
+    const top = Math.max(6, Math.floor(canvas.offsetTop || 0) + 10);
+    const left = Math.max(6, Math.floor(canvas.offsetLeft || 0) + 10);
+    townQuestTrackerEl.style.top = top + 'px';
+    townQuestTrackerEl.style.left = left + 'px';
+  } catch(e) {}
+}
+function renderTownQuestTrackerRow(q){
+  const progress = Math.max(0, Math.floor(Number(q.progress || 0)));
+  const target = Math.max(1, Math.floor(Number(q.target || 1)));
+  const done = progress >= target;
+  const label = `${q.npcName || '마을 NPC'} · ${getTownQuestTypeLabel(q.type)}`;
+  return `<div class="town-quest-tracker-row${done ? ' town-quest-tracker-complete' : ''}"><span class="town-quest-tracker-name">${done ? '📖 ' : ''}${label}</span><span class="town-quest-tracker-count">${formatNumber(progress)}/${formatNumber(target)}</span></div>`;
+}
+function updateTownQuestTracker(){
+  if (!townQuestTrackerEl) return;
+  try {
+    updateTownQuestTrackerPosition();
+    const list = getAllActiveTownQuestTargets();
+    if (!isGameplayStateForTownQuestTracker() || !list.length) {
+      townQuestTrackerEl.classList.add('hidden');
+      townQuestTrackerEl.innerHTML = '';
+      return;
+    }
+    const visible = list.slice(0, 4);
+    const completeCount = list.filter(q => (q.progress || 0) >= (q.target || 1)).length;
+    const moreText = list.length > visible.length ? `<div class="town-quest-tracker-row"><span class="town-quest-tracker-name">외 ${formatNumber(list.length - visible.length)}개 진행 중</span><span class="town-quest-tracker-count">＋</span></div>` : '';
+    townQuestTrackerEl.innerHTML = `<div id="townQuestTrackerTitle"><span>🏡 NPC 퀘스트</span><span>${completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`}</span></div>` + visible.map(renderTownQuestTrackerRow).join('') + moreText;
+    townQuestTrackerEl.classList.remove('hidden');
+  } catch(e) {
+    try { townQuestTrackerEl.classList.add('hidden'); } catch(_e) {}
+  }
+}
+function showTownQuestCompletionNotice(q){
+  try {
+    if (!q || q.__completionNoticeShown) return;
+    q.__completionNoticeShown = true;
+    showToast('퀘스트 완료! 마을의 NPC에게 보상을 받으세요!', '#fff1a8', 1800);
+  } catch(e) {}
+}
+
 function renderActiveTownQuestHtml(q){
   const pct = Math.min(100, (Math.max(0, q.progress || 0) / Math.max(1, q.target || 1)) * 100);
   const itemText = q.item ? `<br>아이템: ${getTownItemName(q.item)} x1` : '';
@@ -13323,6 +13650,7 @@ function acceptTownQuest(q){
     rec.baseIds = [q.baseId].concat((rec.baseIds || []).filter(id => id !== q.baseId)).slice(0, limit);
   }
   saveGameData();
+  try { updateTownQuestTracker(); } catch(e) {}
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
   closeTownQuestModal();
   if (isBeginnerGuideQuest(q)) startBeginnerGuideRun(q);
@@ -13358,6 +13686,7 @@ function claimTownQuestReward(questId){
   else town.active = null;
   saveGameData();
   updateHUD();
+  try { updateTownQuestTracker(); } catch(e) {}
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
   closeTownQuestModal();
   alert(`마을 퀘스트 완료!${expReward > 0 ? `\n+${formatNumber(expReward)} EXP (${getTownQuestPercentText(q)})` : ''}\n+${formatNumber(goldReward)} 골드${itemName ? `\n+${itemName} x1` : ''}`);
@@ -13381,12 +13710,15 @@ function updateTownQuestProgress(type, amount){
         showToast(progressLabel, '#dffff0', 1500);
       }
     } catch(e) {}
+    if (justCompleted && !isBeginnerGuideQuest(q) && state !== 'town') {
+      showTownQuestCompletionNotice(q);
+    }
     if (justCompleted && isBeginnerGuideQuest(q) && state !== 'town') {
       completeBeginnerGuideQuestInGame(q);
       return;
     }
   }
-  if (changed) saveGameDataDebounced();
+  if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
 }
 
 function completeTimedTownQuestProgress(type, elapsedSeconds){
@@ -13409,11 +13741,12 @@ function completeTimedTownQuestProgress(type, elapsedSeconds){
         if (state !== 'town') {
           const unit = type === 'dimensionBossTime' ? '분' : '초';
           showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}${unit} 이내)`, '#dffff0', 1500);
+          showTownQuestCompletionNotice(q);
         }
       } catch(e) {}
     }
   }
-  if (changed) saveGameDataDebounced();
+  if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
   return changed;
 }
 
@@ -22422,6 +22755,7 @@ if (boss && !bossInvincible) {
 }
 
 function updateHUD() {
+  try { updateTownQuestTracker(); } catch(e){}
   try { updateConsumableQuickBar(); } catch(e){}
   try { updateFeverUI(); } catch(e){}
 scoreEl.textContent = '점수: ' + formatNumber(score);
@@ -22486,11 +22820,15 @@ __lastExpBarPercent = nextPercent;
 const nn = (saveData.nickname || 'PLAYER').trim();
 const playerElementMeta = getElementMeta(saveData.playerElement || 'fire');
 const petEqCount = getEquippedPetList().length;
-const compactPlayerText = `LV.${level} ${nn}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
+const rankInfo = getRankInfo(level);
+const isWatchHud = document.body.classList.contains('watch-ui') || document.getElementById('gameContainer')?.classList.contains('watch-ui');
+const compactPlayerText = isWatchHud
+  ? `LV.${level} ${nn} · ${rankInfo.name}`
+  : `LV.${level} ${nn} · ${rankInfo.name}${petEqCount ? ` · 펫 ${petEqCount}` : ''}`;
 if (playerCompactEl) playerCompactEl.textContent = compactPlayerText;
 updateRankIcon();
-levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerElementMeta.name}`;
-if (playerCompactEl) fitTextElementToWidth(playerCompactEl, window.innerWidth <= 520 ? 18 : 22, 11);
+levelEl.textContent = `LV. ${level} · ${nn} · ${rankInfo.name} ${playerElementMeta.icon}${playerElementMeta.name}`;
+if (playerCompactEl) fitTextElementToWidth(playerCompactEl, isWatchHud ? 9 : (window.innerWidth <= 520 ? 18 : 22), isWatchHud ? 5 : 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
   if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 남은시간 ${formatMMSS(dungeonState.timeLeft)}`;
