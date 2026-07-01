@@ -13183,7 +13183,7 @@ function townNpcSpeak(npc, text){
     return base.replace(/[.!?。]*$/, '') + ' 차근차근 알려드릴게요.';
   }
   if (id === 'blue' || id === 'pink') {
-    if (/(습니다|드릴게요|주세요|하세요|됩니다|이에요|예요|좋아요)[.!?]?$/.test(base)) return base;
+    if (/(습니다|입니다|드릴게요|주세요|하세요|됩니다|이에요|예요|좋아요)[.!?]?$/.test(base)) return base;
     if (base.includes('부탁') || base.includes('도와')) return base.replace(/[.!?。]*$/, '') + ' 부탁드립니다.';
     if (base.includes('보상') || base.includes('선물')) return base.replace(/[.!?。]*$/, '') + ' 드릴게요.';
     return base.replace(/[.!?。]*$/, '') + ' 해주세요.';
