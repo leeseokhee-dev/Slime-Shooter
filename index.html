@@ -3674,7 +3674,7 @@ function startFeverMode() {
   try { initAudio(); playBgmTrack('fever'); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
   try { showToast('🔥 FEVER TIME! 15초 동안 스폰+40% / EXP+20% / 골드+30%!', '#ffd86b', 1600); } catch(e) {}
-  try { if (gameMode === 'tutorial' && tutorialModeActive) updateTownQuestProgress('fever', 1); } catch(e) {}
+  try { updateTownQuestProgress('fever', 1); } catch(e) {}
 }
 
 function endFeverMode() {
@@ -10236,6 +10236,7 @@ function useInventoryItem(itemKey) {
         spawnDamageText(player.x, player.y - 34, `+${formatNumber(gainedExp)} EXP`, '#ffe98a');
       }
     } catch(e){}
+    try { updateTownQuestProgress('itemUses', used); } catch(e) {}
     saveGameDataDebounced();
     return { ok:true, msg:`${item.title} ${formatNumber(used)}개 사용! +${formatNumber(gainedExp)} EXP` };
   }
@@ -10243,6 +10244,7 @@ function useInventoryItem(itemKey) {
   const r = item.use();
   if (!r.ok) return r;
   inv[itemKey] = Math.max(0, owned - 1);
+  try { updateTownQuestProgress('itemUses', 1); } catch(e) {}
   saveGameDataDebounced();
   return r;
 }
@@ -11411,7 +11413,7 @@ function flushMultiKillIfReady(force = false) {
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, gained || bonus);
   addQuestStat('multiKills', 1);
-  try { updateTownQuestProgress('multiKills', 1); } catch(e) {}
+  try { updateTownQuestProgress('multiKills', 1); updateTownQuestProgress('bubbleMultiKills', 1); } catch(e) {}
   if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
   if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
   if (skillCount > 0) addQuestStat('skillKills', skillCount);
@@ -12199,7 +12201,7 @@ const TOWN_NPCS = [
     id:'blue', name:'물방울 슬라임', emoji:'🔵', x:0.50, y:0.50, color:'#78d8ff', unlockLevel:1,
     line:'최근 몬스터를 처치한 뒤 나타나는 EXP 구슬의 빛이 예전보다 불안정하게 흔들리고 있습니다. 단순한 성장 에너지가 아니라, 마을 주변에 퍼진 이상 현상과 연결되어 있을 가능성이 있어요. 구슬을 모아 주시면 빛의 흐름을 분석해서 몬스터가 왜 갑자기 늘어나는지 조사해보겠습니다.',
     tips:['EXP 구슬 퀘스트는 몬스터가 많이 나오는 모드와 잘 어울립니다.', '체력이 낮을 때는 무리해서 구슬을 줍기보다 먼저 회피하는 게 좋습니다.'],
-    questTypes:['fever','pet']
+    questTypes:['fever','bubbleMultiKills']
   },
   {
     id:'gold', name:'황금 슬라임', emoji:'🟡', x:0.75, y:0.58, color:'#ffe16b', unlockLevel:1,
@@ -12211,13 +12213,13 @@ const TOWN_NPCS = [
     id:'pink', name:'분홍 슬라임', emoji:'🟣', x:0.36, y:0.74, color:'#ff9de8', unlockLevel:1,
     line:'요즘 몬스터들이 혼자 움직이지 않고 무리를 지어 몰려오고 있습니다. 그냥 공격만으로는 마을 방어선이 오래 버티기 어려울지도 몰라요. 여러 스킬의 사용 기록을 모아 주시면 어떤 기술이 몬스터 무리를 막는 데 가장 효과적인지 분석해볼 수 있습니다.',
     tips:['스킬 사용 퀘스트는 쿨타임을 보면서 꾸준히 누르면 쉽게 채울 수 있습니다.', '범위 스킬은 몬스터가 모였을 때 쓰면 멀티킬까지 노릴 수 있습니다.'],
-    questTypes:['infiniteScore','skillUses']
+    questTypes:['infiniteScore','skillUses','itemUses']
   },
   {
     id:'elder', name:'장로 슬라임', emoji:'👑', x:0.64, y:0.75, color:'#d9ff8a', unlockLevel:1,
     line:'마을에 닥친 이상 현상은 결코 우연이 아니란다. 처음에는 작은 몬스터 몇 마리뿐이었지만, 이제는 보스까지 움직이며 마을을 압박하고 있지. 네가 전투 기록을 모아준다면, 이 모든 일이 어디서 시작되었는지 조금씩 실마리를 찾을 수 있을 것이야.',
     tips:['보스 처치 퀘스트는 10단위 스테이지나 보스가 나오는 모드에서 진행해보렴.', '모든 의뢰에는 이유가 있단다. 숫자 뒤에 숨은 이야기를 보아야 하느니라.'],
-    questTypes:['bossKills','sRankClears','multiKills']
+    questTypes:['bossKills','sRankClears']
   },
   {
     id:'petKeeper', name:'펫 관리 슬라임', emoji:'🐾', x:0.14, y:0.39, color:'#d9b8ff', unlockLevel:20,
@@ -12316,17 +12318,22 @@ const TOWN_QUEST_POOL = [
   { npcId:'green', id:'green_stage_20', type:'stageClears', title:'숲길 순찰 기록', target:20, fixedTarget:true, expPct200:0.55, gold:()=>Math.max(520, level * 28), item:'expSmallPack', dialogue:'숲길 끝에서 이상한 발자국이 계속 발견되고 있어. 스테이지를 {n}회 클리어하면서 길목을 확인해줘. 어디서 몬스터가 몰려오는지 알 수 있을 거야!' },
   { npcId:'green', id:'green_kill_80', type:'kills', title:'창고 앞 방어전', target:80, fixedTarget:true, expPct200:0.60, gold:()=>Math.max(760, level * 34), item:'largePotion', dialogue:'이번엔 창고 앞까지 몬스터들이 내려왔어. 몬스터 {n}마리를 처치해서 물자 창고를 지켜줘! 창고가 무너지면 마을이 꽤 곤란해질 거야.' },
 
-  // ===== 분홍 슬라임: 무한 모드 점수 / 스킬 사용 =====
+  // ===== 분홍 슬라임: 무한 모드 점수 / 스킬 사용 / 아이템 사용 =====
   { npcId:'pink', id:'pink_infinite_50000', type:'infiniteScore', title:'끝없는 방어선 기록', target:50000, fixedTarget:true, expPct200:0.45, gold:()=>Math.max(500, level * 22), item:null, dialogue:'끝없이 몰려오는 몬스터를 오래 막아내는 기록이 필요합니다. 무한 모드에서 {n}점을 달성해 주세요. 이 기록이 있으면 마을 방어선을 얼마나 버틸 수 있는지 계산할 수 있어요.' },
   { npcId:'pink', id:'pink_infinite_120000', type:'infiniteScore', title:'장기 방어 자료 수집', target:120000, fixedTarget:true, expPct200:0.75, gold:()=>Math.max(900, level * 36), item:'expSmallPack', dialogue:'몬스터가 계속 몰려오는 상황에서는 순간 판단이 정말 중요합니다. 무한 모드에서 {n}점을 달성해 주세요. 그 전투 흐름을 분석하면 다음 습격 때 큰 도움이 될 거예요.' },
   { npcId:'pink', id:'pink_skill_18', type:'skillUses', title:'스킬 반응 조사', target:18, fixedTarget:true, expPct200:0.25, gold:()=>Math.max(260, level * 14), item:null, dialogue:'몬스터들이 무리를 지어 움직이고 있어서 어떤 스킬이 가장 효과적인지 기록해야 합니다. 스킬을 {n}회 사용해 주세요. 이 자료가 쌓이면 마을 방어 전략을 더 똑똑하게 세울 수 있어요!' },
   { npcId:'pink', id:'pink_skill_40', type:'skillUses', title:'방어 기술 실험', target:40, fixedTarget:true, expPct200:0.52, gold:()=>Math.max(620, level * 25), item:'smallPotion', dialogue:'이번에는 조금 더 많은 전투 기록이 필요합니다. 스킬을 {n}회 사용해 주세요. 여러 스킬의 효과를 비교하면 몬스터 무리를 막는 방법이 훨씬 선명해질 거예요.' },
 
-  // ===== 물방울 슬라임: 피버 모드 / 펫 관련 =====
+  // ===== 물방울 슬라임: 피버 모드 / 거품 스킬 멀티킬 =====
   { npcId:'blue', id:'blue_fever_3', type:'fever', title:'피버 에너지 관찰', target:3, fixedTarget:true, expPct200:0.30, gold:()=>Math.max(280, level * 16), item:null, dialogue:'피버 모드가 발동될 때마다 주변 물의 흐름이 크게 흔들립니다. 피버 모드를 {n}회 발동해 주세요. 그 에너지 변화를 관찰하면 균열의 움직임을 더 정확히 알 수 있을 것 같아요.' },
   { npcId:'blue', id:'blue_fever_7', type:'fever', title:'불안정한 빛의 파동', target:7, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(680, level * 30), item:'expSmallPack', dialogue:'최근 피버 에너지의 빛이 평소보다 불안정합니다. 피버 모드를 {n}회 발동해 주시면 빛의 파동을 분석해 몬스터 증가와 어떤 관련이 있는지 조사해보겠습니다.' },
   { npcId:'blue', id:'blue_pet_30', type:'pet', title:'펫 동행 반응 조사', target:30, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(340, level * 18), item:'smallPotion', dialogue:'펫과 함께 전투할 때 몬스터의 움직임이 조금 달라지는 것 같습니다. 펫과 함께 몬스터 {n}마리를 처치해 주세요. 동행 전투 기록을 모으면 펫이 전투에 주는 영향을 확인할 수 있어요.' },
   { npcId:'blue', id:'blue_pet_80', type:'pet', title:'동료의 전투 흐름', target:80, fixedTarget:true, expPct200:0.70, gold:()=>Math.max(820, level * 36), item:'expMediumPack', dialogue:'펫은 단순히 따라다니는 존재가 아니라 전투 흐름을 함께 바꾸는 동료입니다. 펫과 함께 몬스터 {n}마리를 처치해 주세요. 그 기록이 있으면 펫의 성장 방향도 더 잘 파악할 수 있습니다.' },
+
+  // ===== 물방울 슬라임: 피버 / 거품 스킬 멀티킬 =====
+  { npcId:'blue', id:'blue_fever_1', type:'fever', title:'피버 에너지 관찰', target:2, fixedTarget:false, expPct200:0.18, gold:()=>Math.floor(350 + level * 8), item:null, dialogue:'피버 모드가 발동될 때 마을 주변의 에너지가 크게 흔들립니다. 피버 모드 {n}회를 발동해 주세요!' },
+  { npcId:'blue', id:'blue_bubble_multi_1', type:'bubbleMultiKills', title:'거품 연쇄 반응 실험', target:1, fixedTarget:false, expPct200:0.22, gold:()=>Math.floor(420 + level * 10), item:'smallPotion', dialogue:'거품 스킬로 멀티킬 {n}회를 성공해 주세요. 복합 전투 기록이라 연구에 아주 중요합니다!' },
+  { npcId:'blue', id:'blue_bubble_multi_2', type:'bubbleMultiKills', title:'거품 파동 안정화', target:3, fixedTarget:false, expPct200:0.34, gold:()=>Math.floor(520 + level * 12), item:'expSmallPack', dialogue:'거품 스킬이 여러 몬스터를 동시에 정리할 때 파동이 안정됩니다. 거품 스킬 멀티킬 {n}회를 성공해 주세요!' },
 
   // ===== 황금 슬라임: 골드 / 보석 / 무한 모드 아이템 수집 =====
   { npcId:'gold', id:'gold_gold_1200', type:'goldEarned', title:'상점 복구 자금', target:1200, fixedTarget:true, expPct200:0.30, gold:()=>Math.max(420, level * 20), item:null, dialogue:'반짝! 몬스터 습격 이후로 상점 물자가 많이 비었어. 골드 {n}개를 모아오면 무너진 진열대도 고치고 회복약 재료도 다시 들여올 수 있어. 이건 그냥 돈 모으기가 아니라 마을을 다시 움직이게 만드는 일이야!' },
@@ -12336,7 +12343,9 @@ const TOWN_QUEST_POOL = [
   { npcId:'gold', id:'gold_item_5', type:'infiniteItems', title:'무한 모드 아이템 회수', target:5, fixedTarget:true, expPct200:0.34, gold:()=>Math.max(460, level * 21), item:'smallPotion', dialogue:'무한 모드에서 떨어지는 자석이나 더블 샷 같은 아이템에는 특별한 에너지가 담겨 있어. 무한 모드 아이템을 {n}개 수집해줘! 그걸 연구하면 상점 물품을 더 튼튼하게 만들 수 있어.' },
   { npcId:'gold', id:'gold_item_15', type:'infiniteItems', title:'반짝 보급품 수집', target:15, fixedTarget:true, expPct200:0.72, gold:()=>Math.max(1200, level * 50), item:'expMediumPack', dialogue:'이번에는 보급품을 조금 더 많이 모아야 해. 무한 모드 아이템을 {n}개 수집해줘! 자석, 더블 샷, 대시, 더블 스코어 같은 아이템 기록이 쌓이면 마을 보급 체계가 훨씬 좋아질 거야.' },
 
-  // ===== 장로 슬라임: 보스 처치 / S랭크 / 동시 처치 =====
+  { npcId:'pink', id:'pink_item_use_1', type:'itemUses', title:'성장 아이템 활용 기록', target:3, fixedTarget:false, expPct200:0.16, gold:()=>Math.floor(280 + level * 7), item:null, dialogue:'성장은 전투력만이 아니라 아이템 활용까지 포함됩니다. 아이템을 {n}회 사용해 주세요!' },
+
+  // ===== 장로 슬라임: 보스 처치 / S랭크 스테이지 클리어 =====
   { npcId:'elder', id:'elder_boss_2', type:'bossKills', title:'보스 움직임 조사', target:2, fixedTarget:true, expPct200:0.55, gold:()=>Math.max(600, level * 30), item:'largePotion', dialogue:'보스의 움직임은 평범한 몬스터와 다르단다. 보스 {n}마리를 처치하고 그 흔적을 살펴보거라. 그 기록이 있어야 이번 사태의 뿌리에 조금 더 가까워질 수 있을 것이야.' },
   { npcId:'elder', id:'elder_boss_5', type:'bossKills', title:'강적의 지휘 흔적', target:5, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1500, level * 62), item:'expMediumPack', dialogue:'몬스터 무리 뒤에는 강한 지휘 흔적이 남아 있단다. 보스 {n}마리를 처치해 보거라. 결코 쉬운 임무는 아니지만, 자네라면 마을의 불안을 덜어낼 수 있을 것이야.' },
   { npcId:'elder', id:'elder_srank_3', type:'sRankClears', title:'완벽한 전투 증명', target:3, fixedTarget:true, expPct200:0.72, gold:()=>Math.max(900, level * 40), item:null, dialogue:'단순히 이기는 것과 완벽하게 지켜내는 것은 다르단다. 스테이지 S랭크를 {n}회 달성해 보거라. 그 기록은 자네가 진정으로 성장했다는 증거가 될 것이야.' },
@@ -12413,19 +12422,62 @@ function getTownQuestPercentText(q, lv = level){
   const pct = getTownQuestScaledPercentByLevel(q, lv);
   return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%`;
 }
+function getTownDailyQuestKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function getTownDailyNpcRecord(town, npcId){
+  if (!town.dailyNpcRecords || typeof town.dailyNpcRecords !== 'object') town.dailyNpcRecords = {};
+  if (!town.dailyNpcRecords[npcId] || typeof town.dailyNpcRecords[npcId] !== 'object') town.dailyNpcRecords[npcId] = { accepted:0, completed:0, baseIds:[] };
+  const rec = town.dailyNpcRecords[npcId];
+  if (typeof rec.accepted !== 'number') rec.accepted = 0;
+  if (typeof rec.completed !== 'number') rec.completed = 0;
+  if (!Array.isArray(rec.baseIds)) rec.baseIds = [];
+  return rec;
+}
+function getTownNpcDailyLimit(npc){
+  if (!npc || npc.id === 'guide') return 1;
+  return 3;
+}
+function getTownActiveQuestList(){
+  const town = ensureTownQuestState();
+  return Array.isArray(town.activeList) ? town.activeList : [];
+}
+function getTownActiveQuestsForNpc(npcId){
+  return getTownActiveQuestList().filter(q => q && q.npcId === npcId);
+}
+function getFirstClaimableTownQuest(npcId){
+  return getTownActiveQuestsForNpc(npcId).find(q => (q.progress || 0) >= (q.target || 1)) || null;
+}
 function ensureTownQuestState(){
-  if (!saveData.townQuest || typeof saveData.townQuest !== 'object') saveData.townQuest = { active:null, completed:0, npcTalks:0 };
-  if (typeof saveData.townQuest.completed !== 'number') saveData.townQuest.completed = 0;
-  if (typeof saveData.townQuest.npcTalks !== 'number') saveData.townQuest.npcTalks = 0;
-  if (!Array.isArray(saveData.townQuest.recentBaseIds)) saveData.townQuest.recentBaseIds = [];
-  if (typeof saveData.townQuest.guideStep !== 'number') saveData.townQuest.guideStep = 0;
-  const q = saveData.townQuest.active;
-  if (q && (typeof q.progress !== 'number' || !isFinite(q.progress))) q.progress = 0;
-  if (q && typeof q.expPct200 !== 'number') {
-    const tpl = TOWN_QUEST_POOL.find(t => t.id === q.baseId);
-    q.expPct200 = tpl ? Number(tpl.expPct200 || 0.1) : 0.1;
+  if (!saveData.townQuest || typeof saveData.townQuest !== 'object') saveData.townQuest = { active:null, activeList:[], completed:0, npcTalks:0 };
+  const town = saveData.townQuest;
+  if (typeof town.completed !== 'number') town.completed = 0;
+  if (typeof town.npcTalks !== 'number') town.npcTalks = 0;
+  if (!Array.isArray(town.recentBaseIds)) town.recentBaseIds = [];
+  if (!Array.isArray(town.activeList)) town.activeList = [];
+  if (typeof town.guideStep !== 'number') town.guideStep = 0;
+  const todayKey = getTownDailyQuestKey();
+  if (town.dailyKey !== todayKey) {
+    town.dailyKey = todayKey;
+    town.dailyNpcRecords = {};
+    town.activeList = [];
+    if (town.active && !town.active.beginnerLevelUp) town.active = null;
   }
-  if (q) {
+  if (town.active && !town.active.beginnerLevelUp) {
+    if (!town.activeList.some(q => q && q.id === town.active.id)) town.activeList.push(town.active);
+    town.active = null;
+  }
+  const normalizeOne = (q) => {
+    if (!q) return;
+    if (typeof q.progress !== 'number' || !isFinite(q.progress)) q.progress = 0;
+    if (typeof q.expPct200 !== 'number') {
+      const tpl = TOWN_QUEST_POOL.find(t => t.id === q.baseId);
+      q.expPct200 = tpl ? Number(tpl.expPct200 || 0.1) : 0.1;
+    }
     const tpl = TOWN_QUEST_POOL.find(t => t && t.id === q.baseId);
     if (tpl && !q.beginnerLevelUp && q.difficultyVersion !== 'v203.10') {
       q.target = getTownQuestFinalTarget(tpl, level);
@@ -12434,8 +12486,14 @@ function ensureTownQuestState(){
       if (!q.storyDialogue) q.storyDialogue = tpl.dialogue || '';
     }
     normalizeTownQuestDisplay(q);
-  }
-  return saveData.townQuest;
+  };
+  normalizeOne(town.active);
+  town.activeList.forEach(normalizeOne);
+  try {
+    const visible = getVisibleTownNpcs ? getVisibleTownNpcs().filter(n => n && n.id !== 'guide') : [];
+    visible.forEach(n => getTownDailyNpcRecord(town, n.id));
+  } catch(e) {}
+  return town;
 }
 function getTownQuestTypeLabel(type){
   return type === 'control' ? '기본 조작'
@@ -12446,6 +12504,8 @@ function getTownQuestTypeLabel(type){
     : type === 'gems' ? '보석 획득'
     : type === 'expOrbs' ? 'EXP 구슬'
     : type === 'skillUses' ? '스킬 사용'
+    : type === 'itemUses' ? '아이템 사용'
+    : type === 'bubbleMultiKills' ? '거품 멀티킬'
     : type === 'stageClears' ? '스테이지 클리어'
     : type === 'bossKills' ? '보스 처치'
     : type === 'multiKills' ? '멀티킬'
@@ -12500,27 +12560,27 @@ function getTownQuestTargetRangeV20310(type, difficultyName){
   const ranges = {
     '매우 쉬움': {
       stageClears:[1,3], kills:[5,20], multiKills:[1,3], bossKills:[1,1],
-      sRankClears:[1,2], infiniteScore:[5000,20000], skillUses:[3,10], fever:[1,2], pet:[5,20],
+      sRankClears:[1,2], infiniteScore:[5000,20000], skillUses:[3,10], itemUses:[1,3], fever:[1,2], bubbleMultiKills:[1,2], pet:[5,20],
       goldEarned:[200,1000], gems:[1,5], infiniteItems:[1,3], expOrbs:[1,4], survival:[5,12], bonusStage:[1,1]
     },
     '쉬움': {
       stageClears:[3,6], kills:[20,50], multiKills:[3,8], bossKills:[1,3],
-      sRankClears:[2,5], infiniteScore:[30000,100000], skillUses:[10,25], fever:[2,4], pet:[20,60],
+      sRankClears:[2,5], infiniteScore:[30000,100000], skillUses:[10,25], itemUses:[3,8], fever:[2,4], bubbleMultiKills:[2,4], pet:[20,60],
       goldEarned:[1000,5000], gems:[5,20], infiniteItems:[3,8], expOrbs:[4,12], survival:[12,25], bonusStage:[1,2]
     },
     '보통': {
       stageClears:[6,12], kills:[50,120], multiKills:[8,18], bossKills:[3,6],
-      sRankClears:[5,10], infiniteScore:[100000,300000], skillUses:[25,50], fever:[4,8], pet:[60,150],
+      sRankClears:[5,10], infiniteScore:[100000,300000], skillUses:[25,50], itemUses:[8,20], fever:[4,8], bubbleMultiKills:[4,8], pet:[60,150],
       goldEarned:[5000,20000], gems:[20,60], infiniteItems:[8,20], expOrbs:[12,30], survival:[25,45], dungeonClears:[3,8], dimensionClears:[2,5], bonusStage:[2,4]
     },
     '어려움': {
       stageClears:[12,25], kills:[120,350], multiKills:[18,45], bossKills:[6,15],
-      sRankClears:[10,25], infiniteScore:[300000,2000000], skillUses:[50,120], fever:[8,20], pet:[150,400],
+      sRankClears:[10,25], infiniteScore:[300000,2000000], skillUses:[50,120], itemUses:[20,60], fever:[8,20], bubbleMultiKills:[8,20], pet:[150,400],
       goldEarned:[20000,100000], gems:[60,180], infiniteItems:[20,60], expOrbs:[30,80], survival:[45,90], dungeonClears:[8,25], dimensionClears:[5,15], crystalKills:[80,250], bonusStage:[4,8]
     },
     '매우 어려움': {
       stageClears:[25,45], kills:[350,1000], multiKills:[45,120], bossKills:[15,40],
-      sRankClears:[25,60], infiniteScore:[2000000,20000000], skillUses:[120,250], fever:[20,50], pet:[400,1200],
+      sRankClears:[25,60], infiniteScore:[2000000,20000000], skillUses:[120,250], itemUses:[60,150], fever:[20,50], bubbleMultiKills:[20,50], pet:[400,1200],
       goldEarned:[100000,500000], gems:[180,500], infiniteItems:[60,150], expOrbs:[80,200], survival:[90,180], dungeonClears:[25,80], dimensionClears:[15,40], crystalKills:[250,2000], bonusStage:[8,20],
       kingCrystalKills:[2000,2000], kingDimensionClears:[30,30], kingDungeonClears:[100,100], kingSRankClears:[50,50], kingInfiniteScore:[1000000000,1000000000]
     }
@@ -12562,6 +12622,8 @@ function makeTownQuestDesc(type, target){
   if (type === 'gems') return `마법 수정의 빛이 약해지고 있어요. 보석 ${n}개를 모아 수정의 힘을 되살려 주세요!`;
   if (type === 'expOrbs') return `몬스터 증가의 단서가 EXP 구슬에 남아 있어요. EXP 구슬 ${n}개를 모아 원인을 조사해주세요!`;
   if (type === 'skillUses') return `마을 방어에 어떤 스킬이 효과적인지 기록해야 해요. 스킬을 ${n}회 사용해서 전투 자료를 모아주세요!`;
+  if (type === 'itemUses') return `성장을 위해서는 회복약과 보조 아이템 활용도 중요합니다. 아이템을 ${n}회 사용해서 전투 준비 능력을 보여주세요!`;
+  if (type === 'bubbleMultiKills') return `피버와 스킬 흐름을 함께 보는 복합 훈련입니다. 거품 스킬로 멀티킬 ${n}회를 성공해 주세요!`;
   if (type === 'stageClears') return `마을 밖 옛길에 균열의 흔적이 남아 있어요. 스테이지를 ${n}회 클리어해서 흔적을 조사해주세요!`;
   if (type === 'bossKills') return `몬스터들을 지휘하는 보스가 마을을 노리고 있어요. 보스 ${n}마리를 처치해서 습격을 막아주세요!`;
   if (type === 'multiKills') return `몬스터들이 한꺼번에 몰려와 방어선이 흔들리고 있어요. 멀티킬 ${n}회를 달성해 무리를 빠르게 정리해주세요!`;
@@ -12615,6 +12677,14 @@ function makeTownQuestNpcDialogue(npc, type, target){
     if (id === 'pink') return `몬스터들이 무리를 지어 몰려오고 있어서, 어떤 스킬이 방어에 가장 효과적인지 기록해야 합니다. 스킬을 ${n}회 사용해 주세요. 이 자료가 쌓이면 다음 습격 때 훨씬 똑똑하게 대응할 수 있어요!`;
     if (id === 'blue') return `스킬을 사용할 때마다 주변 에너지 흐름이 크게 흔들립니다. 스킬 ${n}회 사용 기록을 모아 주시면 마법 반응을 분석하는 데 도움이 될 것 같습니다.`;
     return `마을 방어에 어떤 스킬이 효과적인지 기록해야 해요. 스킬을 ${n}회 사용해서 전투 자료를 모아주세요!`;
+  }
+  if (type === 'itemUses') {
+    if (id === 'pink') return `성장은 공격력만으로 완성되지 않습니다. 회복약과 보조 아이템을 알맞게 쓰는 것도 실력이에요. 아이템을 ${n}회 사용해서 전투 준비 기록을 남겨주세요!`;
+    return `아이템을 ${n}회 사용해서 전투 준비 능력을 보여주세요!`;
+  }
+  if (type === 'bubbleMultiKills') {
+    if (id === 'blue') return `피버 에너지와 거품 스킬의 반응을 함께 관찰하고 싶습니다. 거품 스킬로 멀티킬 ${n}회를 성공해 주세요. 복합 전투 기록이라 연구 가치가 높습니다!`;
+    return `거품 스킬로 멀티킬 ${n}회를 성공해 주세요!`;
   }
   if (type === 'stageClears') {
     if (id === 'rankJudge') return `모험가의 실력은 말보다 기록으로 증명됩니다. 스테이지를 ${n}회 클리어해 주세요. 클리어 기록이 쌓이면 더 어려운 임무를 맡길 수 있는지 심사할 수 있습니다.`;
@@ -13078,15 +13148,20 @@ function getTownNpcById(id){
 }
 function getTownNpcStatus(npc){
   const town = ensureTownQuestState();
-  const q = town.active;
-  if (q) {
-    if (q.npcId === npc.id) {
+  if (npc && npc.id === 'guide') {
+    const q = town.active;
+    if (q && q.npcId === npc.id) {
       const done = (q.progress || 0) >= (q.target || 1);
       return done ? { icon:'📖', text:'완료 가능', color:'#fff1a8' } : { icon:'…', text:'진행 중', color:'#d8e8ff' };
     }
-    return { icon:'💬', text:'대화', color:'#d8e8ff' };
+    return { icon:'💡', text:'안내 가능', color:'#fff1a8' };
   }
-  return { icon:'💡', text:'퀘스트 가능', color:'#fff1a8' };
+  const list = getTownActiveQuestsForNpc(npc.id);
+  if (list.some(q => (q.progress || 0) >= (q.target || 1))) return { icon:'📖', text:'완료 가능', color:'#fff1a8' };
+  if (list.length > 0) return { icon:'…', text:`진행 중 ${list.length}/${getTownNpcDailyLimit(npc)}`, color:'#d8e8ff' };
+  const rec = getTownDailyNpcRecord(town, npc.id);
+  if (rec.accepted >= getTownNpcDailyLimit(npc)) return { icon:'💬', text:'오늘 완료', color:'#d8e8ff' };
+  return { icon:'💡', text:`퀘스트 ${rec.accepted}/${getTownNpcDailyLimit(npc)}`, color:'#fff1a8' };
 }
 function pickTownQuestForNpc(npc){
   const types = Array.isArray(npc.questTypes) ? npc.questTypes : [];
@@ -13096,56 +13171,123 @@ function pickTownQuestForNpc(npc){
   }
   const town = ensureTownQuestState();
   const recent = Array.isArray(town.recentBaseIds) ? town.recentBaseIds : [];
+  const rec = getTownDailyNpcRecord(town, npc.id);
+  const usedToday = Array.isArray(rec.baseIds) ? rec.baseIds : [];
   const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
   const baseList = TOWN_QUEST_POOL.filter(q => {
     if (!q) return false;
     if (q.npcId && q.npcId !== npc.id) return false;
     if (q.minLevel && lv < Number(q.minLevel)) return false;
+    if (usedToday.includes(q.id)) return false;
     return !types.length || types.includes(q.type);
   });
-  const source = baseList.length ? baseList : TOWN_QUEST_POOL.filter(q => (!q.npcId || q.npcId === npc.id) && (!q.minLevel || lv >= Number(q.minLevel)));
+  const source = baseList.length ? baseList : TOWN_QUEST_POOL.filter(q => (!q.npcId || q.npcId === npc.id) && (!q.minLevel || lv >= Number(q.minLevel)) && !usedToday.includes(q.id));
   const freshList = source.filter(q => !recent.includes(q.id));
   const list = freshList.length ? freshList : source;
+  if (!list.length) return null;
   return list[Math.floor(Math.random() * list.length)];
 }
 function pickTownNpcTip(npc){
   const arr = Array.isArray(npc.tips) && npc.tips.length ? npc.tips : ['퀘스트 표시는 상태에 따라 바뀝니다. 전구는 받을 수 있음, 점 세 개는 진행 중, 책은 완료 가능이에요.'];
   return arr[Math.floor(Math.random() * arr.length)];
 }
+function renderTownNpcDailySummary(npc){
+  const town = ensureTownQuestState();
+  const rec = getTownDailyNpcRecord(town, npc.id);
+  const limit = getTownNpcDailyLimit(npc);
+  return `<div class="town-tip-box">오늘 ${npc.name} 퀘스트: ${Math.min(limit, rec.accepted)}/${limit}개 수락 · 완료 ${Math.min(limit, rec.completed)}/${limit}개<br>각 NPC는 하루에 서로 다른 퀘스트 3개까지만 제공합니다.</div>`;
+}
 function talkToTownNpc(npc){
   selectedTownNpc = npc;
   const town = ensureTownQuestState();
   town.npcTalks += 1;
-  const active = town.active;
-  if (active) {
-    const done = (active.progress || 0) >= (active.target || 1);
-    const owner = getTownNpcById(active.npcId);
-    const isOwner = active.npcId === npc.id;
-    if (!isOwner) {
-      const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, pickTownNpcTip(npc))}”</div><div class="town-tip-box">현재 ${owner.name}의 퀘스트를 진행 중입니다. 완료하거나 보상을 받은 뒤 새 퀘스트를 받을 수 있어요.</div></div>` + renderActiveTownQuestHtml(active);
-      openTownQuestModal(html, '확인', closeTownQuestModal);
+  if (npc && npc.id === 'guide') {
+    const active = town.active;
+    if (active) {
+      const done = (active.progress || 0) >= (active.target || 1);
+      const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${done ? pickTownNpcSpeech(npc, 'complete', '수고했습니다. 약속한 보상을 바로 드릴게요.') : (active.dialogue || makeTownQuestNpcDialogue(npc, active.type, active.target) || npc.line)}”</div></div>` + renderActiveTownQuestHtml(active);
+      openTownQuestModal(html, done ? '보상 받기' : '확인', done ? claimTownQuestReward : closeTownQuestModal);
       saveGameDataDebounced();
       return;
     }
-    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${done ? pickTownNpcSpeech(npc, 'complete', '수고했습니다. 약속한 보상을 바로 드릴게요.') : (active.dialogue || makeTownQuestNpcDialogue(npc, active.type, active.target) || npc.line)}”</div><div class="town-tip-box">${done ? 'NPC 위에 책 모양이 뜨면 완료 보상을 받을 수 있습니다.' : townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(active) + `<div style="margin-top:10px; color:#cfe8ff;">${done ? '📖 완료 가능! 보상을 받아가세요.' : '… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.'}</div>`;
-    openTownQuestModal(html, done ? '보상 받기' : '확인', done ? claimTownQuestReward : closeTownQuestModal);
+    const template = pickTownQuestForNpc(npc);
+    if (!template) {
+      const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, '이제 초보 안내는 충분히 마쳤습니다. 다른 슬라임들의 퀘스트에 도전해보세요!')}”</div></div>`;
+      openTownQuestModal(html, '확인', closeTownQuestModal);
+      return;
+    }
+    const q = buildTownQuestFromTemplate(template, npc);
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${q.dialogue || makeTownQuestNpcDialogue(npc, q.type, q.target) || npc.line}”</div>${getBeginnerGuideIntroHtml()}<div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(q);
+    openTownQuestModal(html, '전투에서 안내 퀘스트 시작', () => acceptTownQuest(q));
+    saveGameDataDebounced();
+    return;
+  }
+  const claimable = getFirstClaimableTownQuest(npc.id);
+  const activeList = getTownActiveQuestsForNpc(npc.id);
+  if (claimable) {
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${pickTownNpcSpeech(npc, 'complete', '수고했습니다. 약속한 보상을 바로 드릴게요.')}”</div><div class="town-tip-box">📖 완료 가능한 퀘스트가 있습니다. 보상을 받으면 오늘 남은 횟수 안에서 다음 퀘스트를 이어서 받을 수 있어요.</div></div>${renderTownNpcDailySummary(npc)}` + activeList.map(renderActiveTownQuestHtml).join('');
+    openTownQuestModal(html, '완료 보상 받기', () => claimTownQuestReward(claimable.id));
+    saveGameDataDebounced();
+    return;
+  }
+  const rec = getTownDailyNpcRecord(town, npc.id);
+  const limit = getTownNpcDailyLimit(npc);
+  if (activeList.length > 0) {
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, pickTownNpcTip(npc))}”</div><div class="town-tip-box">… 진행 중입니다. 전투를 다녀오면 진행도가 올라갑니다.</div></div>${renderTownNpcDailySummary(npc)}` + activeList.map(renderActiveTownQuestHtml).join('');
+    openTownQuestModal(html, '확인', closeTownQuestModal);
+    saveGameDataDebounced();
+    return;
+  }
+  if (rec.accepted >= limit) {
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">오늘 퀘스트 완료</span><div class="town-dialogue-box">“${townNpcSpeak(npc, '오늘 부탁드릴 일은 모두 끝났어요! 내일 다시 찾아와 주세요.')}”</div></div>${renderTownNpcDailySummary(npc)}`;
+    openTownQuestModal(html, '확인', closeTownQuestModal);
     saveGameDataDebounced();
     return;
   }
   const template = pickTownQuestForNpc(npc);
   if (!template) {
-    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, '이제 초보 안내는 충분히 마쳤습니다. 다른 슬라임들의 퀘스트에 도전해보세요!')}”</div></div>`;
+    const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<div class="town-dialogue-box">“${townNpcSpeak(npc, '오늘은 더 이상 새로운 의뢰가 떠오르지 않네요. 내일 다시 찾아와 주세요!')}”</div></div>${renderTownNpcDailySummary(npc)}`;
     openTownQuestModal(html, '확인', closeTownQuestModal);
     return;
   }
   const q = buildTownQuestFromTemplate(template, npc);
-  const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${q.dialogue || makeTownQuestNpcDialogue(npc, q.type, q.target) || npc.line}”</div>${npc.id === 'guide' ? getBeginnerGuideIntroHtml() : ''}<div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>` + renderActiveTownQuestHtml(q);
-  openTownQuestModal(html, isBeginnerGuideQuest(q) ? '전투에서 안내 퀘스트 시작' : '퀘스트 수락', () => acceptTownQuest(q));
+  const html = `<div class="town-npc-card">${renderTownNpcFace(npc)}<span class="town-status-chip">💡 퀘스트 가능</span><div class="town-dialogue-box">“${q.dialogue || makeTownQuestNpcDialogue(npc, q.type, q.target) || npc.line}”</div><div class="town-tip-box">${townNpcSpeak(npc, pickTownNpcTip(npc))}</div></div>${renderTownNpcDailySummary(npc)}` + renderActiveTownQuestHtml(q);
+  openTownQuestModal(html, '퀘스트 수락', () => acceptTownQuest(q));
   saveGameDataDebounced();
 }
-function claimTownQuestReward(){
+function acceptTownQuest(q){
   const town = ensureTownQuestState();
-  const q = town.active;
+  if (isBeginnerGuideQuest(q)) {
+    town.active = q;
+  } else {
+    const npc = getTownNpcById(q.npcId);
+    const rec = getTownDailyNpcRecord(town, q.npcId);
+    const limit = getTownNpcDailyLimit(npc);
+    if (rec.accepted >= limit) {
+      showToast('오늘 이 NPC의 퀘스트는 모두 완료했습니다!', '#ffe98a', 1400);
+      closeTownQuestModal();
+      return;
+    }
+    if (!Array.isArray(town.activeList)) town.activeList = [];
+    if (!town.activeList.some(x => x && x.id === q.id)) town.activeList.push(q);
+    rec.accepted += 1;
+    rec.baseIds = [q.baseId].concat((rec.baseIds || []).filter(id => id !== q.baseId)).slice(0, limit);
+  }
+  saveGameData();
+  try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
+  closeTownQuestModal();
+  if (isBeginnerGuideQuest(q)) startBeginnerGuideRun(q);
+  else showToast(`💡 ${q.npcName} 퀘스트를 수락했습니다!`, '#b8ffd8', 1200);
+}
+function claimTownQuestReward(questId){
+  const town = ensureTownQuestState();
+  let q = null;
+  let fromList = false;
+  if (questId && Array.isArray(town.activeList)) {
+    q = town.activeList.find(x => x && x.id === questId) || null;
+    fromList = !!q;
+  }
+  if (!q && town.active) q = town.active;
   if (!q || (q.progress || 0) < (q.target || 1)) { closeTownQuestModal(); return; }
   const expReward = getTownQuestExpReward(q);
   addExpDirect(expReward);
@@ -13158,8 +13300,13 @@ function claimTownQuestReward(){
   const itemName = grantTownItem(q.item, 1);
   town.completed += 1;
   if (q.beginnerLevelUp && q.npcId === 'guide') town.guideStep = Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Math.max(0, Math.floor(Number(town.guideStep) || 0)) + 1);
-  town.recentBaseIds = [q.baseId].concat(Array.isArray(town.recentBaseIds) ? town.recentBaseIds.filter(id => id !== q.baseId) : []).slice(0, 6);
-  town.active = null;
+  if (!q.beginnerLevelUp && q.npcId) {
+    const rec = getTownDailyNpcRecord(town, q.npcId);
+    rec.completed = Math.min(getTownNpcDailyLimit(getTownNpcById(q.npcId)), Math.max(0, Math.floor(rec.completed || 0)) + 1);
+  }
+  town.recentBaseIds = [q.baseId].concat(Array.isArray(town.recentBaseIds) ? town.recentBaseIds.filter(id => id !== q.baseId) : []).slice(0, 12);
+  if (fromList) town.activeList = town.activeList.filter(x => x && x.id !== q.id);
+  else town.active = null;
   saveGameData();
   updateHUD();
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
@@ -13168,25 +13315,31 @@ function claimTownQuestReward(){
 }
 function updateTownQuestProgress(type, amount){
   const town = ensureTownQuestState();
-  const q = town.active;
-  if (!q || q.type !== type) return;
-  if ((q.progress || 0) >= (q.target || 1)) return;
-  q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
-  normalizeTownQuestDisplay(q);
-  const justCompleted = (q.progress || 0) >= (q.target || 1);
-  try {
-    if (state !== 'town') {
-      const progressLabel = (q.type === 'pet')
-        ? `펫과 함께 몬스터 처치 (${formatNumber(q.progress)}/${formatNumber(q.target)})`
-        : `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`;
-      showToast(progressLabel, '#dffff0', 1500);
+  const targets = [];
+  if (town.active) targets.push(town.active);
+  if (Array.isArray(town.activeList)) targets.push(...town.activeList);
+  let changed = false;
+  for (const q of targets) {
+    if (!q || q.type !== type) continue;
+    if ((q.progress || 0) >= (q.target || 1)) continue;
+    q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
+    normalizeTownQuestDisplay(q);
+    changed = true;
+    const justCompleted = (q.progress || 0) >= (q.target || 1);
+    try {
+      if (state !== 'town') {
+        const progressLabel = (q.type === 'pet')
+          ? `펫과 함께 몬스터 처치 (${formatNumber(q.progress)}/${formatNumber(q.target)})`
+          : `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`;
+        showToast(progressLabel, '#dffff0', 1500);
+      }
+    } catch(e) {}
+    if (justCompleted && isBeginnerGuideQuest(q) && state !== 'town') {
+      completeBeginnerGuideQuestInGame(q);
+      return;
     }
-  } catch(e) {}
-  if (justCompleted && isBeginnerGuideQuest(q) && state !== 'town') {
-    completeBeginnerGuideQuestInGame(q);
-    return;
   }
-  saveGameDataDebounced();
+  if (changed) saveGameDataDebounced();
 }
 
 function ensureTownNpcUnlockSave(){
@@ -15840,7 +15993,7 @@ function finalizeMultiKillBonus() {
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, Math.floor(granted || bonusExp));
   addQuestStat('multiKills', 1);
-  try { updateTownQuestProgress('multiKills', 1); } catch(e) {}
+  try { updateTownQuestProgress('multiKills', 1); updateTownQuestProgress('bubbleMultiKills', 1); } catch(e) {}
   if (saveData.dailyStats) saveData.dailyStats.bestMultiKill = Math.max(saveData.dailyStats.bestMultiKill || 0, count);
   if (saveData.weeklyStats) saveData.weeklyStats.bestMultiKill = Math.max(saveData.weeklyStats.bestMultiKill || 0, count);
   if (gameMode === 'infinite' && suddenQuest && suddenQuest.active && suddenQuest.type === 'multi') {
