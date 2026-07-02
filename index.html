@@ -12720,7 +12720,7 @@ const TOWN_QUEST_POOL = [
   // ===== 차원의 슬라임: 디멘션 인베이드 전용 3종 =====
   { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:50, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
   { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:50, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N초 안에 보스 처치', target:600, fixedTarget:false, minLevel:50, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}초 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드 N초 안에 클리어하기', target:600, fixedTarget:false, minLevel:50, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드를 {n}초 안에 클리어해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
 
   // ===== 크리스탈 슬라임: 엔드게임 전용 3종 =====
   { npcId:'crystalSlime', id:'crystal_slime_kills', type:'crystalKills', title:'크리스탈 슬라임 N마리 처치', target:500, fixedTarget:false, minLevel:200, expPct200:1.00, gold:()=>Math.max(6500, level * 160), item:'expMediumPack', dialogue:'크리스탈 슬라임 {n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.' },
@@ -12896,7 +12896,7 @@ function getTownQuestTypeLabel(type){
     : type === 'dimensionClears' ? '디멘션 클리어'
     : type === 'dimensionWaves' ? '디멘션 웨이브 클리어'
     : type === 'dimensionKills' ? '디멘션 몬스터 처치'
-    : type === 'dimensionBossTime' ? '디멘션 보스 시간 처치'
+    : type === 'dimensionBossTime' ? '디멘션 시간 클리어'
     : type === 'crystalKills' ? '크리스탈 처치'
     : type === 'bossFastKills' ? '보스 빠른 처치'
     : type === 'kingCrystalKills' ? '왕의 크리스탈 토벌'
@@ -13024,7 +13024,7 @@ function makeTownQuestDesc(type, target){
   if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 균열의 원인을 조사해주세요!`;
   if (type === 'dimensionWaves') return `디멘션 인베이드에서 웨이브를 ${n}회 클리어해 주세요. 차원 균열 분석에 필요한 기록입니다!`;
   if (type === 'dimensionKills') return `디멘션 인베이드에서 몬스터 ${n}마리를 처치해 주세요. 차원 몬스터만 기록됩니다!`;
-  if (type === 'dimensionBossTime') return `디멘션 인베이드에서 ${n}초 안에 보스를 처치해 주세요. 제한 시간 안에 처치하면 완료됩니다!`;
+  if (type === 'dimensionBossTime') return `디멘션 인베이드를 ${n}초 안에 클리어해 주세요. 제한 시간 안에 클리어하면 완료됩니다!`;
   if (type === 'crystalKills') return `크리스탈 슬라임의 수정화가 확산되고 있어요. 크리스탈 슬라임 ${n}마리를 처치해 연구 기록을 확보해주세요!`;
   if (type === 'bossFastKills') return `보스를 ${n}초 안에 처치해 주세요. 최대 60초 안에 처치한 기록만 인정됩니다!`;
   if (type === 'kingCrystalKills') return `왕의 명령입니다. 크리스탈 슬라임 ${n}마리를 처치해 왕국을 뒤덮는 수정화를 막으세요!`;
@@ -13103,7 +13103,7 @@ function makeTownQuestNpcDialogue(npc, type, target){
   if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 주세요. 균열 너머의 움직임을 기록해야 이 세계가 왜 흔들리는지 알아낼 수 있습니다.`;
   if (type === 'dimensionWaves') return `디멘션 인베이드에서 웨이브를 ${n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.`;
   if (type === 'dimensionKills') return `디멘션 인베이드에서 몬스터 ${n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.`;
-  if (type === 'dimensionBossTime') return `디멘션 인베이드에서 ${n}초 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.`;
+  if (type === 'dimensionBossTime') return `디멘션 인베이드를 ${n}초 안에 클리어해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.`;
   if (type === 'crystalKills') return `크리스탈 슬라임 ${n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.`;
   if (type === 'bossFastKills') return `보스를 ${n}초 안에 처치해 주시기 바랍니다. 최대 60초 안에 마무리한 전투만 기록으로 인정하겠습니다.`;
   if (type === 'kingCrystalKills') return `왕의 명이니라. 크리스탈 슬라임 ${n}마리를 처치하여 왕국을 뒤덮는 수정화를 막거라. 어려운 임무이나, 그대라면 해낼 수 있으리라 믿노라.`;
@@ -13117,7 +13117,7 @@ function normalizeTownQuestDisplay(q){
   if (!q) return q;
   q.target = Math.max(1, Math.floor(Number(q.target || 1)));
   if (q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = Math.max(150, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level))));
+    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
     q.target = q.timeLimitSeconds;
     if (typeof q.remainingSeconds !== 'number' || !isFinite(q.remainingSeconds)) q.remainingSeconds = q.timeLimitSeconds;
   }
@@ -13142,7 +13142,7 @@ function buildTownQuestFromTemplate(t, npc){
     progress: 0,
     timeLimitSeconds: t.type === 'dimensionBossTime' ? finalTarget : 0,
     remainingSeconds: t.type === 'dimensionBossTime' ? finalTarget : 0,
-    timerStartedAt: t.type === 'dimensionBossTime' ? Date.now() : 0,
+    timerStartedAt: 0,
     failed: false,
     expPct200: Math.max(0.01, Number(t.expPct200 || t.expPct || 0.1)),
     gold: Math.max(0, Math.floor(goldReward || 0)),
@@ -13457,11 +13457,11 @@ function startBeginnerGuideRun(q){
 function acceptTownQuest(q){
   const town = ensureTownQuestState();
   if (q && q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = Math.max(150, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level))));
+    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
     q.target = q.timeLimitSeconds;
     q.progress = 0;
     q.remainingSeconds = q.timeLimitSeconds;
-    q.timerStartedAt = Date.now();
+    q.timerStartedAt = 0;
     q.failed = false;
   }
   town.active = q;
@@ -13622,12 +13622,59 @@ function showTownQuestCompletionNotice(q){
   } catch(e) {}
 }
 
+
+function isTownQuestCurrentlyActive(q){
+  try {
+    if (!q || !q.id) return false;
+    const town = ensureTownQuestState();
+    if (town.active && town.active.id === q.id) return true;
+    return Array.isArray(town.activeList) && town.activeList.some(x => x && x.id === q.id);
+  } catch(e) { return false; }
+}
+function abandonTownQuest(questId){
+  const town = ensureTownQuestState();
+  let q = null;
+  let fromList = false;
+  if (questId && Array.isArray(town.activeList)) {
+    q = town.activeList.find(x => x && x.id === questId) || null;
+    fromList = !!q;
+  }
+  if (!q && town.active && (!questId || town.active.id === questId)) q = town.active;
+  if (!q || q.beginnerLevelUp) {
+    showToast('이 퀘스트는 포기할 수 없습니다.', '#ffdf9b', 1400);
+    return;
+  }
+  const penalty = Math.min(50000, Math.max(500, Math.floor(Math.max(0, Number(gold) || 0) * 0.03)));
+  const realPenalty = Math.min(Math.max(0, Math.floor(Number(gold) || 0)), penalty);
+  if (!confirm(`퀘스트를 포기할까요?\n\n패널티: 골드 ${formatNumber(realPenalty)} 차감\n포기하면 진행도는 사라지지만, 오늘 수락 횟수 1회가 복구되어 다시 받을 수 있습니다.`)) return;
+  if (fromList) town.activeList = town.activeList.filter(x => x && x.id !== q.id);
+  else if (town.active && town.active.id === q.id) town.active = null;
+  if (q.npcId) {
+    const rec = getTownDailyNpcRecord(town, q.npcId);
+    rec.accepted = Math.max(0, Math.floor(Number(rec.accepted) || 0) - 1);
+    if (Array.isArray(rec.baseIds)) rec.baseIds = rec.baseIds.filter(id => id !== q.baseId);
+  }
+  if (realPenalty > 0) {
+    gold = Math.max(0, Math.floor(Number(gold) || 0) - realPenalty);
+    if (saveData) {
+      saveData.gold = gold;
+      saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0) + realPenalty);
+    }
+  }
+  saveGameData();
+  updateHUD();
+  try { updateTownQuestTracker(); } catch(e) {}
+  closeTownQuestModal();
+  showToast(`퀘스트 포기 완료 · 골드 -${formatNumber(realPenalty)}`, '#ffb8b8', 1600);
+}
 function renderActiveTownQuestHtml(q){
   const displayProgress = (q && q.type === 'dimensionBossTime' && !isTownQuestCompleted(q)) ? getDimensionBossQuestRemainingSeconds(q) : Math.max(0, q.progress || 0);
   const pct = q && q.type === 'dimensionBossTime' && !isTownQuestCompleted(q)
     ? Math.min(100, (displayProgress / Math.max(1, q.target || 1)) * 100)
     : Math.min(100, (Math.max(0, q.progress || 0) / Math.max(1, q.target || 1)) * 100);
   const itemText = q.item ? `<br>아이템: ${getTownItemName(q.item)} x1` : '';
+  const canAbandon = isTownQuestCurrentlyActive(q) && !isTownQuestCompleted(q) && !q.beginnerLevelUp;
+  const abandonBtn = canAbandon ? `<button class="ui-btn" style="margin-top:10px; width:100%; border-color:#ff8a8a; color:#ffe1e1; background:linear-gradient(to bottom,#5a2020,#2a0c0c);" onclick="abandonTownQuest('${String(q.id).replace(/'/g, '')}')">퀘스트 포기하기 · 패널티 적용</button>` : '';
   return `
     <div class="town-npc-card">
       <div style="font-size:18px; font-weight:1000; color:#b8ffd8;">${q.title}</div>
@@ -13639,6 +13686,7 @@ function renderActiveTownQuestHtml(q){
       </div>
       <div style="margin-top:6px; font-weight:900;">${getTownQuestTypeLabel(q.type)}: ${formatNumber(displayProgress || 0)} / ${formatNumber(q.target || 1)}${q.failed ? ' · 실패' : ''}</div>
       <div class="town-quest-reward">보상: EXP ${formatNumber(getTownQuestExpReward(q))} (${getTownQuestPercentText(q)}) / 골드 ${formatNumber(q.gold)}${itemText}</div>
+      ${abandonBtn}
     </div>`;
 }
 function getTownNpcById(id){
@@ -13756,11 +13804,11 @@ function talkToTownNpc(npc){
 function acceptTownQuest(q){
   const town = ensureTownQuestState();
   if (q && q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = Math.max(150, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level))));
+    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
     q.target = q.timeLimitSeconds;
     q.progress = 0;
     q.remainingSeconds = q.timeLimitSeconds;
-    q.timerStartedAt = Date.now();
+    q.timerStartedAt = 0;
     q.failed = false;
   }
   if (isBeginnerGuideQuest(q)) {
@@ -13795,7 +13843,8 @@ function getDimensionBossQuestRemainingSeconds(q){
   if (q.failed) return 0;
   if (isTownQuestCompleted(q)) return Math.max(0, Math.floor(Number(q.target || 0)));
   const limit = Math.max(1, Math.floor(Number(q.timeLimitSeconds || q.target || 1)));
-  const started = Math.max(0, Number(q.timerStartedAt || q.acceptedAt || Date.now()));
+  const started = Math.max(0, Number(q.timerStartedAt || 0));
+  if (!started) return limit;
   const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000));
   return Math.max(0, limit - elapsed);
 }
@@ -13813,7 +13862,7 @@ function refreshDimensionBossTimedTownQuests(){
       q.failed = true;
       q.remainingSeconds = 0;
       changed = true;
-      try { if (state !== 'town') showToast('디멘션 보스 시간 처치 실패! 다시 퀘스트를 수락해 주세요.', '#ff9b9b', 1800); } catch(e) {}
+      try { if (state !== 'town') showToast('디멘션 시간 클리어 실패! 마을에서 퀘스트를 포기한 뒤 다시 수락해 주세요.', '#ff9b9b', 1800); } catch(e) {}
     }
   }
   if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
@@ -13827,7 +13876,7 @@ function resetDimensionBossTimedTownQuestsForRun(){
   let changed = false;
   for (const q of targets) {
     if (!q || q.type !== 'dimensionBossTime' || isTownQuestCompleted(q)) continue;
-    q.timeLimitSeconds = Math.max(150, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level))));
+    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
     q.target = q.timeLimitSeconds;
     q.progress = 0;
     q.remainingSeconds = q.timeLimitSeconds;
@@ -13880,6 +13929,7 @@ function updateTownQuestProgress(type, amount){
   let changed = false;
   for (const q of targets) {
     if (!q || q.type !== type) continue;
+    if (q.failed) continue;
     if (isTownQuestCompleted(q)) continue;
     q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
     normalizeTownQuestDisplay(q);
@@ -13921,7 +13971,7 @@ function completeTimedTownQuestProgress(type, elapsedSeconds){
       try {
         if (state !== 'town') {
           const unit = '초';
-          showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}${unit} 이내)`, '#dffff0', 1500);
+          showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}${unit} 이내 클리어)`, '#dffff0', 1500);
           showTownQuestCompletionNotice(q);
         }
       } catch(e) {}
@@ -31894,16 +31944,10 @@ try {
     retryBtn.addEventListener('click', function(ev){
       if (!isNormalStageModeV2041()) return;
       ev.preventDefault();
-      ev.stopPropagation();
-      if (typeof retryCurrentStageFromClearModal === 'function') {
-        retryCurrentStageFromClearModal();
-        return;
-      }
+      ev.stopImmediatePropagation();
       const current = Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(stage) || 1)));
       const modal = document.getElementById('stageClearModal');
       if (modal) modal.classList.add('hidden');
-      try { if (typeof stageClearExpAnimToken !== 'undefined') stageClearExpAnimToken++; } catch(e) {}
-      try { isPaused = false; } catch(e) {}
       stage = current;
       lastSelectedStage = current;
       runStartStage = current;
@@ -32217,57 +32261,6 @@ try {
   } else {
     polishStageResultV2044();
   }
-})();
-</script>
-
-<script>
-/* ===============================
-   ✅ [v.204.6] 현재 스테이지 다시하기 버튼 클릭 보강
-   - 기존 v.204.1 동적 버튼/캡처 이벤트와 충돌해도 같은 스테이지 재시작 보장
-   =============================== */
-(function(){
-  const PATCH_ID = 'v204_6_retry_stage_button_click_fix';
-  if (window[PATCH_ID]) return;
-  window[PATCH_ID] = true;
-
-  function bindRetryStageButtonV2046(){
-    const retry = document.getElementById('retryStageBtn');
-    if (!retry) return;
-    retry.type = 'button';
-    retry.disabled = false;
-    retry.style.pointerEvents = 'auto';
-    retry.style.touchAction = 'manipulation';
-    retry.onclick = function(ev){
-      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-      if (typeof retryCurrentStageFromClearModal === 'function') {
-        retryCurrentStageFromClearModal();
-        return false;
-      }
-      const cap = (typeof MAX_STAGE_CAP !== 'undefined' ? MAX_STAGE_CAP : 300);
-      const current = Math.max(1, Math.min(cap, Math.floor(Number(stage) || Number(lastSelectedStage) || 1)));
-      const modal = document.getElementById('stageClearModal');
-      if (modal) modal.classList.add('hidden');
-      try { isPaused = false; } catch(e) {}
-      stage = current;
-      lastSelectedStage = current;
-      runStartStage = current;
-      if (typeof startStage === 'function') startStage();
-      else if (typeof startGame === 'function') startGame(current);
-      return false;
-    };
-  }
-
-  const __showStageClearModalAnimatedBeforeV2046 = (typeof showStageClearModalAnimated === 'function') ? showStageClearModalAnimated : null;
-  if (__showStageClearModalAnimatedBeforeV2046) {
-    showStageClearModalAnimated = function(){
-      const ret = __showStageClearModalAnimatedBeforeV2046.apply(this, arguments);
-      bindRetryStageButtonV2046();
-      return ret;
-    };
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindRetryStageButtonV2046);
-  else bindRetryStageButtonV2046();
 })();
 </script>
 
