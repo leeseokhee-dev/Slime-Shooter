@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.204.6 Retry Stage Button Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.204.8 Town Quest Abandon Button Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -13169,6 +13169,30 @@ function closeTownQuestModal(){
   if (townQuestModal) townQuestModal.classList.add('hidden');
 }
 
+// ✅ [v.204.8] 마을 퀘스트 포기 버튼 터치/클릭 보강
+// 일부 모바일 환경에서는 innerHTML로 만든 inline onclick이 씹히는 경우가 있어,
+// 모달 내부 버튼을 이벤트 위임으로 한 번 더 확실하게 받습니다.
+function handleTownAbandonButtonEvent(ev){
+  const btn = ev && ev.target && ev.target.closest ? ev.target.closest('.town-abandon-btn') : null;
+  if (!btn) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const questId = btn.getAttribute('data-town-quest-id') || '';
+  if (!questId) {
+    showToast('포기할 퀘스트를 찾을 수 없습니다.', '#ffdf9b', 1400);
+    return;
+  }
+  abandonTownQuest(questId);
+}
+try {
+  if (townQuestBody && !townQuestBody.__townAbandonFixed) {
+    townQuestBody.__townAbandonFixed = true;
+    townQuestBody.addEventListener('click', handleTownAbandonButtonEvent, true);
+    townQuestBody.addEventListener('touchend', handleTownAbandonButtonEvent, { capture:true, passive:false });
+  }
+  window.abandonTownQuest = abandonTownQuest;
+} catch(e) {}
+
 const TOWN_NPC_SPEECH_STYLE = {
   guide: {
     speaker:'길잡이 슬라임', icon:'🧭', honorific:true,
@@ -13674,7 +13698,8 @@ function renderActiveTownQuestHtml(q){
     : Math.min(100, (Math.max(0, q.progress || 0) / Math.max(1, q.target || 1)) * 100);
   const itemText = q.item ? `<br>아이템: ${getTownItemName(q.item)} x1` : '';
   const canAbandon = isTownQuestCurrentlyActive(q) && !isTownQuestCompleted(q) && !q.beginnerLevelUp;
-  const abandonBtn = canAbandon ? `<button class="ui-btn" style="margin-top:10px; width:100%; border-color:#ff8a8a; color:#ffe1e1; background:linear-gradient(to bottom,#5a2020,#2a0c0c);" onclick="abandonTownQuest('${String(q.id).replace(/'/g, '')}')">퀘스트 포기하기 · 패널티 적용</button>` : '';
+  const safeQuestId = String(q.id || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const abandonBtn = canAbandon ? `<button type="button" class="ui-btn town-abandon-btn" data-town-quest-id="${safeQuestId}" style="margin-top:10px; width:100%; border-color:#ff8a8a; color:#ffe1e1; background:linear-gradient(to bottom,#5a2020,#2a0c0c); touch-action:manipulation; pointer-events:auto; position:relative; z-index:2;">퀘스트 포기하기 · 패널티 적용</button>` : '';
   return `
     <div class="town-npc-card">
       <div style="font-size:18px; font-weight:1000; color:#b8ffd8;">${q.title}</div>
@@ -16738,15 +16763,21 @@ function addScore(amount, source = 'monster', options = {}) {
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
   if (gameMode === 'stage' && source === 'monster') {
     const baseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
-    // ✅ [v.204.3] 레벨 차이 보정 결과가 핫타임/펫/쿠폰 반올림으로 다시 2가 되는 문제 방지
-    // 스테이지 일반 몬스터 EXP는 보정 완료값 그대로 지급합니다.
-    const gainedExp = addExpDirect(baseExp);
+    // ✅ [v.204.10] 레벨 차이 보정값은 유지하되, 착용 펫 EXP 보너스 %는 다시 적용합니다.
+    // - baseExp: 몬스터/플레이어 레벨 차이 보정이 끝난 기본 EXP
+    // - petExpMult: 장착 중인 펫 EXP 보너스 배율
+    // - 핫타임/쿠폰/상점 EXP 버프는 기존 의도대로 스테이지 몬스터 보정값을 흔들지 않게 제외
+    const petExpMult = Math.max(1, Number((typeof getPetExpMultiplier === 'function') ? getPetExpMultiplier() : 1) || 1);
+    const petBonusExp = Math.max(0, Math.round(baseExp * Math.max(0, petExpMult - 1)));
+    const finalExp = Math.max(1, Math.floor(baseExp) + petBonusExp);
+    const gainedExp = addExpDirect(finalExp);
     if (gainedExp > 0) {
       stageRunExpMonsters += Math.max(0, Math.floor(gainedExp || 0));
-      // ✅ [v.204.5] 스테이지 일반 몬스터 EXP는 addExpDirect로 지급하므로
-      // 기존 addExp()의 획득 안내가 자동으로 뜨지 않습니다. 직접 복구합니다.
       try {
-        pushGainMessage(`경험치를 얻었습니다(+${formatNumber(Math.round(gainedExp))})`, '#7dffb2');
+        pushGainMessage(`경험치를 얻었습니다(+${formatNumber(Math.round(baseExp))})`, '#7dffb2');
+        if (petBonusExp > 0) {
+          pushGainMessage(`펫 추가 경험치 ${Math.round((petExpMult - 1) * 100)}%(+${formatNumber(petBonusExp)})`, '#ffe07a');
+        }
       } catch(e) {}
     }
     if (options.multikillEligible === true) {
@@ -32262,6 +32293,204 @@ try {
     polishStageResultV2044();
   }
 })();
+</script>
+
+
+
+<script>
+/* ===============================
+   ✅ [v.204.9] 황금 슬라임 골드 퀘스트 분리
+   - goldEarned: 전투/보상으로 새로 획득한 골드 수집형
+   - goldPayment: 보유 골드를 실제 차감하여 마을 복구비로 납부하는 차감형
+   =============================== */
+try {
+  function getCurrentGoldForTownPaymentV2049(){
+    return Math.max(0, Math.floor(Number(typeof gold !== 'undefined' ? gold : (saveData && saveData.gold)) || 0));
+  }
+
+  function syncTownGoldPaymentProgressV2049(q){
+    if (!q || q.type !== 'goldPayment') return q;
+    q.progress = Math.min(Math.max(1, Math.floor(Number(q.target) || 1)), getCurrentGoldForTownPaymentV2049());
+    return q;
+  }
+
+  if (typeof getTownQuestTypeLabel === 'function') {
+    const __getTownQuestTypeLabelBeforeGoldSplitV2049 = getTownQuestTypeLabel;
+    getTownQuestTypeLabel = function(type){
+      if (type === 'goldPayment') return '골드 납부';
+      if (type === 'goldEarned') return '골드 수집';
+      return __getTownQuestTypeLabelBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof makeTownQuestDesc === 'function') {
+    const __makeTownQuestDescBeforeGoldSplitV2049 = makeTownQuestDesc;
+    makeTownQuestDesc = function(type, target){
+      const n = typeof formatNumber === 'function' ? formatNumber(Math.max(1, Math.floor(Number(target) || 1))) : String(target || 1);
+      if (type === 'goldPayment') return `마을 복구비로 보유 골드 ${n}개를 납부해 주세요. 보상 수령 시 해당 골드가 실제로 차감됩니다!`;
+      if (type === 'goldEarned') return `전투와 보상에서 새로 획득한 골드 ${n}개를 수집해 주세요. 보유 골드를 쓰는 퀘스트가 아니라 새로 모으는 기록입니다!`;
+      return __makeTownQuestDescBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof makeTownQuestNpcDialogue === 'function') {
+    const __makeTownQuestNpcDialogueBeforeGoldSplitV2049 = makeTownQuestNpcDialogue;
+    makeTownQuestNpcDialogue = function(npc, type, target){
+      const n = typeof formatNumber === 'function' ? formatNumber(Math.max(1, Math.floor(Number(target) || 1))) : String(target || 1);
+      const id = npc && npc.id;
+      if (type === 'goldPayment') {
+        if (id === 'gold') return `반짝! 이번 의뢰는 골드를 새로 모으는 게 아니라, 보유 골드 ${n}개를 마을 복구비로 직접 맡기는 일이야. 보상 받을 때 실제로 차감되니까 준비되면 말해줘!`;
+        return `마을 복구비로 보유 골드 ${n}개가 필요합니다. 보상 수령 시 해당 골드가 실제 차감됩니다.`;
+      }
+      if (type === 'goldEarned') {
+        if (id === 'gold') return `반짝! 이번 의뢰는 납부가 아니라 수집 기록이야. 전투와 보상으로 골드 ${n}개를 새로 모아오면 마을 물자 흐름을 확인할 수 있어!`;
+      }
+      return __makeTownQuestNpcDialogueBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof getTownQuestTargetScale === 'function') {
+    const __getTownQuestTargetScaleBeforeGoldSplitV2049 = getTownQuestTargetScale;
+    getTownQuestTargetScale = function(type, lv){
+      if (type === 'goldPayment') return 1 + (Math.max(1, Math.floor(Number(lv) || 1)) / 45);
+      return __getTownQuestTargetScaleBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof getTownQuestTargetRangeV20310 === 'function') {
+    const __getTownQuestTargetRangeBeforeGoldSplitV2049 = getTownQuestTargetRangeV20310;
+    getTownQuestTargetRangeV20310 = function(type, bracketName){
+      if (type === 'goldPayment') {
+        const table = {
+          '초급':[150,700],
+          '견습':[700,2500],
+          '숙련':[2500,12000],
+          '정예':[12000,60000],
+          '마스터':[60000,250000],
+          '전설':[250000,1000000],
+          '초월':[1000000,3000000]
+        };
+        return table[bracketName] || [1000,5000];
+      }
+      return __getTownQuestTargetRangeBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof buildTownQuestFromTemplate === 'function') {
+    const __buildTownQuestFromTemplateBeforeGoldSplitV2049 = buildTownQuestFromTemplate;
+    buildTownQuestFromTemplate = function(t, npc){
+      const q = __buildTownQuestFromTemplateBeforeGoldSplitV2049.apply(this, arguments);
+      if (q && q.type === 'goldPayment') {
+        q.paymentRequired = Math.max(1, Math.floor(Number(q.target) || 1));
+        q.progress = Math.min(q.paymentRequired, getCurrentGoldForTownPaymentV2049());
+        q.desc = q.storyDialogue ? formatTownQuestStoryDialogue(q.storyDialogue, q.target) : makeTownQuestNpcDialogue(npc, q.type, q.target);
+        q.dialogue = q.desc;
+        q.goldPaymentQuest = true;
+      }
+      return q;
+    };
+  }
+
+  if (typeof isTownQuestCompleted === 'function') {
+    const __isTownQuestCompletedBeforeGoldSplitV2049 = isTownQuestCompleted;
+    isTownQuestCompleted = function(q){
+      if (q && q.type === 'goldPayment') {
+        if (q.paymentSettled) return true;
+        return getCurrentGoldForTownPaymentV2049() >= Math.max(1, Math.floor(Number(q.target) || 1));
+      }
+      return __isTownQuestCompletedBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof normalizeTownQuestDisplay === 'function') {
+    const __normalizeTownQuestDisplayBeforeGoldSplitV2049 = normalizeTownQuestDisplay;
+    normalizeTownQuestDisplay = function(q){
+      const out = __normalizeTownQuestDisplayBeforeGoldSplitV2049.apply(this, arguments);
+      return syncTownGoldPaymentProgressV2049(out || q);
+    };
+  }
+
+  if (typeof renderActiveTownQuestHtml === 'function') {
+    const __renderActiveTownQuestHtmlBeforeGoldSplitV2049 = renderActiveTownQuestHtml;
+    renderActiveTownQuestHtml = function(q){
+      if (q && q.type === 'goldPayment') syncTownGoldPaymentProgressV2049(q);
+      let html = __renderActiveTownQuestHtmlBeforeGoldSplitV2049.apply(this, arguments);
+      if (q && q.type === 'goldPayment') {
+        const need = Math.max(1, Math.floor(Number(q.target) || 1));
+        const have = getCurrentGoldForTownPaymentV2049();
+        const note = `<div class="town-tip-box" style="border-color:rgba(255,216,107,0.34); background:rgba(255,216,107,0.10); color:#fff1b8;">🪙 차감형 퀘스트입니다.<br>현재 보유 골드: ${formatNumber(have)} / 필요 골드: ${formatNumber(need)}<br>보상 수령 시 골드 ${formatNumber(need)}개가 실제로 차감됩니다.</div>`;
+        html = String(html).replace('</div>', note + '</div>');
+      }
+      return html;
+    };
+  }
+
+  if (typeof renderTownQuestTrackerRow === 'function') {
+    const __renderTownQuestTrackerRowBeforeGoldSplitV2049 = renderTownQuestTrackerRow;
+    renderTownQuestTrackerRow = function(q){
+      if (q && q.type === 'goldPayment') syncTownGoldPaymentProgressV2049(q);
+      return __renderTownQuestTrackerRowBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (typeof claimTownQuestReward === 'function') {
+    const __claimTownQuestRewardBeforeGoldSplitV2049 = claimTownQuestReward;
+    claimTownQuestReward = function(questId){
+      try {
+        const town = ensureTownQuestState();
+        let q = null;
+        if (questId && Array.isArray(town.activeList)) q = town.activeList.find(x => x && x.id === questId) || null;
+        if (!q && town.active && (!questId || town.active.id === questId)) q = town.active;
+        if (q && q.type === 'goldPayment') {
+          const need = Math.max(1, Math.floor(Number(q.target) || 1));
+          const have = getCurrentGoldForTownPaymentV2049();
+          if (have < need) {
+            alert(`골드가 부족합니다!\n필요 골드: ${formatNumber(need)}\n보유 골드: ${formatNumber(have)}`);
+            return;
+          }
+          if (!confirm(`마을 복구비로 골드 ${formatNumber(need)}개를 납부할까요?\n보상 수령과 동시에 실제 골드가 차감됩니다.`)) return;
+          q.paymentSettled = true;
+          q.progress = q.target;
+          gold = Math.max(0, have - need);
+          if (saveData) {
+            saveData.gold = gold;
+            saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0) + need);
+          }
+        }
+      } catch(e) {}
+      return __claimTownQuestRewardBeforeGoldSplitV2049.apply(this, arguments);
+    };
+  }
+
+  if (Array.isArray(TOWN_QUEST_POOL)) {
+    const extraGoldSplitQuestsV2049 = [
+      { npcId:'gold', id:'gold_pay_800', type:'goldPayment', title:'상점 긴급 수리비', target:800, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(260, level * 14), item:'smallPotion', dialogue:'반짝! 이번엔 모으는 게 아니라 마을 상점 수리비를 직접 맡기는 의뢰야. 보유 골드 {n}개를 납부하면 무너진 진열대부터 바로 고칠 수 있어!' },
+      { npcId:'gold', id:'gold_pay_3500', type:'goldPayment', title:'창고 문 보강비', target:3500, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(700, level * 30), item:'expSmallPack', dialogue:'창고 문이 또 삐걱거리고 있어. 보유 골드 {n}개를 복구비로 납부해주면 다음 습격 때 물자를 더 안전하게 지킬 수 있어!' },
+      { npcId:'gold', id:'gold_pay_12000', type:'goldPayment', title:'황금 슬라임 복구 계약', target:12000, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1800, level * 70), item:'expMediumPack', dialogue:'이번엔 큰 복구 계약이야. 보유 골드 {n}개를 맡겨주면 상점, 창고, 표지판까지 한 번에 손볼 수 있어. 대신 실제로 차감되니까 준비하고 와!' },
+      { npcId:'gold', id:'gold_collect_2000', type:'goldEarned', title:'새 골드 흐름 조사', target:2000, fixedTarget:true, expPct200:0.32, gold:()=>Math.max(460, level * 21), item:null, dialogue:'반짝! 이건 납부가 아니라 수집형이야. 전투와 보상으로 골드 {n}개를 새로 모아오면 마을에 골드가 얼마나 잘 돌고 있는지 확인할 수 있어!' },
+      { npcId:'gold', id:'gold_collect_8000', type:'goldEarned', title:'반짝 수집 기록', target:8000, fixedTarget:true, expPct200:0.74, gold:()=>Math.max(1300, level * 52), item:'largePotion', dialogue:'이번에도 보유 골드를 쓰는 게 아니야. 골드 {n}개를 새로 수집해서 금빛 기록을 세워보자. 수집 기록이 높을수록 마을 보급 계획도 좋아져!' }
+    ];
+    extraGoldSplitQuestsV2049.forEach(q => {
+      if (!TOWN_QUEST_POOL.some(x => x && x.id === q.id)) TOWN_QUEST_POOL.push(q);
+    });
+  }
+
+  if (Array.isArray(TOWN_NPCS)) {
+    const goldNpc = TOWN_NPCS.find(n => n && n.id === 'gold');
+    if (goldNpc) {
+      if (!Array.isArray(goldNpc.questTypes)) goldNpc.questTypes = [];
+      ['goldEarned','goldPayment','gems','infiniteItems'].forEach(t => {
+        if (!goldNpc.questTypes.includes(t)) goldNpc.questTypes.push(t);
+      });
+      goldNpc.tips = Array.isArray(goldNpc.tips) ? goldNpc.tips : [];
+      if (!goldNpc.tips.some(t => String(t).includes('차감형'))) {
+        goldNpc.tips.push('골드 퀘스트는 새로 모으는 수집형과 보유 골드를 실제로 납부하는 차감형으로 나뉘어.');
+      }
+    }
+  }
+
+  try { if (typeof updateTownQuestTracker === 'function') updateTownQuestTracker(); } catch(e) {}
+} catch(e) {}
 </script>
 
 </body>
