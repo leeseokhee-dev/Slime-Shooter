@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.204.8 Town Quest Abandon Button Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.204.12 60FPS Thermal Optimization)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2792,6 +2792,29 @@ body.rank-modal-open{ overflow:hidden; }
 body.playing-ui #settingsBar{ display:none !important; }
 body:not(.playing-ui) #settingsBar{ display:flex; }
 
+
+
+/* ✅ [v.204.12] 60FPS 발열 완화: 고FPS/저사양에서는 비싼 그림자·블러 축소 */
+body.perf-eco #gameCanvas,
+body.perf-eco.fever-mode #gameCanvas{
+  box-shadow: 0 0 10px rgba(0,0,0,0.55) !important;
+}
+body.perf-eco #hud,
+body.perf-eco .modal,
+body.perf-eco .overlay-content{
+  box-shadow: 0 8px 18px rgba(0,0,0,0.42) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.perf-eco .laser-skill,
+body.perf-eco .bubble-skill,
+body.perf-eco .blizzard-skill,
+body.perf-eco .meteor-skill,
+body.perf-eco .lightning-skill,
+body.perf-eco .quake-skill{
+  box-shadow: 0 5px 12px rgba(0,0,0,0.35) !important;
+}
+
 </style>
 
 
@@ -4771,8 +4794,10 @@ function updateRankIcon(){
 // 15fps/저사양 모드에서도 계급 회전·오라·파티클은 계속 유지됩니다.
 if(!window.__rankIconAnimationRAF){
   window.__rankIconAnimationRAF = true;
-  const __rankIconLoop = ()=>{
-    if(rankIconBtn && rankIconBtn.offsetParent){
+  const __rankIconLoop = (nowMs)=>{
+    const interval = isLowPower() ? 500 : (isHighFpsMode() ? 160 : 90);
+    if(rankIconBtn && rankIconBtn.offsetParent && (!lastRankIconUpdateMs || nowMs - lastRankIconUpdateMs >= interval)){
+      lastRankIconUpdateMs = nowMs;
       updateRankIcon();
     }
     requestAnimationFrame(__rankIconLoop);
@@ -6632,6 +6657,16 @@ let lastRenderTs = 0;
 const FPS_OPTIONS = [15, 20, 30, 60];
 const DEFAULT_TARGET_FPS = 60;
 
+// ✅ [v.204.12] 60FPS 발열 완화용 런타임 최적화 상태
+let perfFrameAvgMs = 16.67;
+let perfThermalEcoUntil = 0;
+let perfFrameNo = 0;
+let lastHudDomUpdateMs = 0;
+let lastPauseUiUpdateMs = 0;
+let lastRankIconUpdateMs = 0;
+let lastPerfEcoClassMs = 0;
+
+
 // 저장 데이터
 let saveData = {
   tutorialShown: false,
@@ -8395,6 +8430,35 @@ function maybeShowSkillUnlockNotice(oldLv, newLv) {
 function randRange(min, max) { return Math.random() * (max - min) + min; }
 function isLowPower() { return !!saveData.lowPower; }
 function areEffectsEnabled() { return saveData.effectsEnabled !== false; }
+function getActiveTargetFps() { return FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS; }
+function isHighFpsMode() { return getActiveTargetFps() >= 60; }
+function isThermalEcoActive(now = performance.now()) { return isLowPower() || (isHighFpsMode() && now < perfThermalEcoUntil); }
+function getParticleBudget() {
+  if (!areEffectsEnabled()) return 0;
+  if (isLowPower()) return 70;
+  if (isThermalEcoActive()) return 105;
+  if (isHighFpsMode()) return 150;
+  return 240;
+}
+function trimEffectArrays() {
+  const particleBudget = getParticleBudget();
+  if (particles.length > particleBudget) particles.splice(0, particles.length - particleBudget);
+  const textBudget = isLowPower() ? 22 : (isHighFpsMode() ? 34 : 48);
+  if (dmgTexts.length > textBudget) dmgTexts.splice(0, dmgTexts.length - textBudget);
+  if (gainMessages && gainMessages.length > 8) gainMessages.splice(0, gainMessages.length - 8);
+}
+function shouldDrawCosmeticFrame(kind = 'normal') {
+  if (!isHighFpsMode()) return true;
+  if (isLowPower()) return (perfFrameNo % 3) === 0;
+  if (isThermalEcoActive()) return (perfFrameNo % 2) === 0;
+  return true;
+}
+function markFrameCost(dt) {
+  const sample = Math.max(0, Math.min(80, Number(dt) || 0));
+  perfFrameAvgMs = perfFrameAvgMs * 0.94 + sample * 0.06;
+  if (isHighFpsMode() && perfFrameAvgMs > 19.2) perfThermalEcoUntil = performance.now() + 4500;
+}
+
 // ===== [핫타임 EXP] =====
 // 매일 08:00~12:00, 18:00~22:00
 function isHotTimeNow(date = new Date()) {
@@ -22598,29 +22662,32 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
-const delta = dt / 16.67;
-particles.forEach(p => {
-  // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
-  if (p.maxLife == null) p.maxLife = p.life;
-  // 위치/수명
-  p.x += (p.vx || 0) * delta;
-  p.y += (p.vy || 0) * delta;
-  p.life -= dt;
-
-  // ✅ 확장/회전 같은 추가 속성 지원(없으면 무시)
-  if (p.grow) p.r = (p.r || 0) + p.grow * delta;
-  if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
-});
-particles = particles.filter(p => p.life > 0);
+  if (!areEffectsEnabled()) { particles = []; return; }
+  const delta = dt / 16.67;
+  const budget = getParticleBudget();
+  if (particles.length > budget) particles.splice(0, particles.length - budget);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    if (p.maxLife == null) p.maxLife = p.life;
+    p.x += (p.vx || 0) * delta;
+    p.y += (p.vy || 0) * delta;
+    p.life -= dt;
+    if (p.grow) p.r = (p.r || 0) + p.grow * delta;
+    if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
 }
 
 function updateDamageTexts(dt) {
   const delta = dt / 16.67;
-  dmgTexts.forEach(t => {
+  const budget = isLowPower() ? 22 : (isHighFpsMode() ? 34 : 48);
+  if (dmgTexts.length > budget) dmgTexts.splice(0, dmgTexts.length - budget);
+  for (let i = dmgTexts.length - 1; i >= 0; i--) {
+    const t = dmgTexts[i];
     t.y += t.vy * delta * 2;
     t.life -= dt;
-  });
-  dmgTexts = dmgTexts.filter(t => t.life > 0);
+    if (t.life <= 0) dmgTexts.splice(i, 1);
+  }
 }
 
 function drawDamageTexts() {
@@ -23042,6 +23109,11 @@ if (boss && !bossInvincible) {
 }
 
 function updateHUD() {
+  // ✅ [v.204.12] DOM 갱신은 매 프레임 하지 않음
+  const __hudNow = performance.now();
+  const __hudInterval = isLowPower() ? 240 : (isHighFpsMode() ? 120 : 80);
+  if (state === 'playing' && lastHudDomUpdateMs && (__hudNow - lastHudDomUpdateMs) < __hudInterval) return;
+  lastHudDomUpdateMs = __hudNow;
   try { updateTownQuestTracker(); } catch(e){}
   try { updateConsumableQuickBar(); } catch(e){}
   try { updateFeverUI(); } catch(e){}
@@ -24713,13 +24785,17 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
-  particles.forEach(p => {
+  if (!areEffectsEnabled() || !particles.length) return;
+  if (!shouldDrawCosmeticFrame('particles')) return;
+  const budget = getParticleBudget();
+  const start = Math.max(0, particles.length - budget);
+  for (let __pi = start; __pi < particles.length; __pi++) {
+    const p = particles[__pi];
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
-    // ✅ 타입별 렌더링
     if (p.type === 'ring') {
       const r = (p.r != null) ? p.r : 10;
       ctx.strokeStyle = p.color || 'rgba(255,160,60,1)';
@@ -24735,7 +24811,6 @@ function drawParticles() {
       if (rot) ctx.rotate(rot);
       ctx.fillRect(-w/2, -h/2, w, h);
     } else {
-      // 기본 점/원 파티클
       ctx.fillStyle = p.color || '#fff';
       const r = (p.size != null) ? p.size : 2.2;
       ctx.beginPath();
@@ -24744,7 +24819,7 @@ function drawParticles() {
     }
 
     ctx.restore();
-  });
+  }
 }
 
 function drawTitleScreen() {
@@ -25138,12 +25213,15 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  const targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
+  const targetFps = getActiveTargetFps();
   const frameInterval = 1000 / targetFps;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
-    setPauseUI();
-requestAnimationFrame(gameLoop);
+    if (!lastPauseUiUpdateMs || timestamp - lastPauseUiUpdateMs > 180) {
+      lastPauseUiUpdateMs = timestamp;
+      setPauseUI();
+    }
+    requestAnimationFrame(gameLoop);
     return;
   }
   lastRenderTs = timestamp;
@@ -25152,6 +25230,13 @@ requestAnimationFrame(gameLoop);
   const rawDt = timestamp - lastTime;
   const dt = Math.max(0, Math.min(rawDt, 100));
   lastTime = timestamp;
+  perfFrameNo++;
+  markFrameCost(rawDt);
+  trimEffectArrays();
+  if (!lastPerfEcoClassMs || timestamp - lastPerfEcoClassMs > 500) {
+    lastPerfEcoClassMs = timestamp;
+    document.body.classList.toggle('perf-eco', isHighFpsMode() || isThermalEcoActive(timestamp));
+  }
 
   syncTopSettingsVisibility();
   // ✅ v.168.12: 계급 아이콘은 게임 FPS 루프가 아니라 별도 60fps requestAnimationFrame 루프에서 갱신
@@ -26401,7 +26486,11 @@ updateRankIcon = function(){
   window.__rankFlashActiveV1688 = true;
   window.__rankAnimationLoopV16812 = function(nowMs){
     window.__rankAnimTimeV16812 = nowMs || performance.now();
-    if(typeof updateRankIcon === 'function') updateRankIcon();
+    const interval = isLowPower() ? 500 : (isHighFpsMode() ? 160 : 90);
+    if(!lastRankIconUpdateMs || window.__rankAnimTimeV16812 - lastRankIconUpdateMs >= interval){
+      lastRankIconUpdateMs = window.__rankAnimTimeV16812;
+      if(typeof updateRankIcon === 'function') updateRankIcon();
+    }
     window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
   };
   window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
@@ -32490,6 +32579,120 @@ try {
   }
 
   try { if (typeof updateTownQuestTracker === 'function') updateTownQuestTracker(); } catch(e) {}
+} catch(e) {}
+</script>
+
+
+
+<script>
+/* ===============================
+   ✅ [v.204.11] 골드 차감형 퀘스트 등장 보장 + 디멘션 시간 퀘스트 클리어 판정 보강
+   - 황금 슬라임 퀘스트 3개 중 차감형이 최소 1회는 실제 후보로 우선 등장
+   - 디멘션 인베이드 클리어 순간, 퀘스트 타이머 기준으로 dimensionBossTime 성공 처리
+   =============================== */
+try {
+  function ensureGoldPaymentQuestTemplatesV20411(){
+    try {
+      if (!Array.isArray(TOWN_QUEST_POOL)) return;
+      const goldPaymentTemplates = [
+        { npcId:'gold', id:'gold_pay_800', type:'goldPayment', title:'상점 긴급 수리비', target:800, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(260, level * 14), item:'smallPotion', dialogue:'반짝! 이번엔 모으는 게 아니라 마을 상점 수리비를 직접 맡기는 의뢰야. 보유 골드 {n}개를 납부하면 무너진 진열대부터 바로 고칠 수 있어!' },
+        { npcId:'gold', id:'gold_pay_3500', type:'goldPayment', title:'창고 문 보강비', target:3500, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(700, level * 30), item:'expSmallPack', dialogue:'창고 문이 또 삐걱거리고 있어. 보유 골드 {n}개를 복구비로 납부해주면 다음 습격 때 물자를 더 안전하게 지킬 수 있어!' },
+        { npcId:'gold', id:'gold_pay_12000', type:'goldPayment', title:'황금 슬라임 복구 계약', target:12000, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1800, level * 70), item:'expMediumPack', dialogue:'이번엔 큰 복구 계약이야. 보유 골드 {n}개를 맡겨주면 상점, 창고, 표지판까지 한 번에 손볼 수 있어. 대신 실제로 차감되니까 준비하고 와!' }
+      ];
+      goldPaymentTemplates.forEach(t => {
+        if (!TOWN_QUEST_POOL.some(q => q && q.id === t.id)) TOWN_QUEST_POOL.push(t);
+      });
+      const goldNpc = Array.isArray(TOWN_NPCS) ? TOWN_NPCS.find(n => n && n.id === 'gold') : null;
+      if (goldNpc) {
+        if (!Array.isArray(goldNpc.questTypes)) goldNpc.questTypes = [];
+        ['goldPayment','goldEarned','gems','infiniteItems'].forEach(type => {
+          if (!goldNpc.questTypes.includes(type)) goldNpc.questTypes.push(type);
+        });
+      }
+    } catch(e) {}
+  }
+  ensureGoldPaymentQuestTemplatesV20411();
+
+  if (typeof pickTownQuestForNpc === 'function' && !window.__pickTownQuestForNpcGoldPaymentV20411) {
+    window.__pickTownQuestForNpcGoldPaymentV20411 = pickTownQuestForNpc;
+    pickTownQuestForNpc = function(npc){
+      try {
+        ensureGoldPaymentQuestTemplatesV20411();
+        if (npc && npc.id === 'gold') {
+          const town = ensureTownQuestState();
+          const rec = getTownDailyNpcRecord(town, npc.id);
+          const usedToday = Array.isArray(rec.baseIds) ? rec.baseIds : [];
+          const activeGoldPayment = Array.isArray(town.activeList) && town.activeList.some(q => q && q.npcId === 'gold' && q.type === 'goldPayment' && !isTownQuestCompleted(q));
+          const acceptedPaymentToday = usedToday.some(id => String(id || '').indexOf('gold_pay_') === 0);
+          const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
+          const paymentList = (TOWN_QUEST_POOL || []).filter(q => q && q.npcId === 'gold' && q.type === 'goldPayment' && (!q.minLevel || lv >= Number(q.minLevel)) && !usedToday.includes(q.id));
+          // 오늘 황금 슬라임 퀘스트에서 차감형을 아직 못 받았다면, 랜덤보다 먼저 차감형을 우선 제공합니다.
+          if (!activeGoldPayment && !acceptedPaymentToday && paymentList.length) {
+            return paymentList[Math.floor(Math.random() * paymentList.length)];
+          }
+        }
+      } catch(e) {}
+      return window.__pickTownQuestForNpcGoldPaymentV20411.apply(this, arguments);
+    };
+  }
+
+  function completeDimensionBossTimeTownQuestV20411(elapsedSeconds){
+    try {
+      const town = ensureTownQuestState();
+      const targets = [];
+      if (town.active) targets.push(town.active);
+      if (Array.isArray(town.activeList)) targets.push(...town.activeList);
+      let changed = false;
+      for (const q of targets) {
+        if (!q || q.type !== 'dimensionBossTime') continue;
+        if (isTownQuestCompleted(q)) continue;
+        const limit = Math.max(1, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level) || 1)));
+        let elapsed = Number(elapsedSeconds);
+        if (!isFinite(elapsed) || elapsed < 0) {
+          const started = Math.max(0, Number(q.timerStartedAt || stageRunStartTime || 0));
+          elapsed = started ? (Date.now() - started) / 1000 : 0;
+        }
+        if (elapsed <= limit + 0.25) {
+          q.failed = false;
+          q.timeLimitSeconds = limit;
+          q.target = limit;
+          q.progress = limit;
+          q.remainingSeconds = limit;
+          normalizeTownQuestDisplay(q);
+          changed = true;
+          try {
+            if (state !== 'town') {
+              showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}초 이내 클리어)`, '#dffff0', 1600);
+              showTownQuestCompletionNotice(q);
+            }
+          } catch(e) {}
+        } else {
+          q.failed = true;
+          q.remainingSeconds = 0;
+          changed = true;
+        }
+      }
+      if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
+      return changed;
+    } catch(e) { return false; }
+  }
+  window.completeDimensionBossTimeTownQuestV20411 = completeDimensionBossTimeTownQuestV20411;
+
+  if (typeof completeTimedTownQuestProgress === 'function' && !window.__completeTimedTownQuestProgressV20411) {
+    window.__completeTimedTownQuestProgressV20411 = completeTimedTownQuestProgress;
+    completeTimedTownQuestProgress = function(type, elapsedSeconds){
+      if (type === 'dimensionBossTime') return completeDimensionBossTimeTownQuestV20411(elapsedSeconds);
+      return window.__completeTimedTownQuestProgressV20411.apply(this, arguments);
+    };
+  }
+
+  if (typeof completeDimensionInvasionV175 === 'function' && !window.__completeDimensionInvasionV20411) {
+    window.__completeDimensionInvasionV20411 = completeDimensionInvasionV175;
+    completeDimensionInvasionV175 = function(){
+      try { completeDimensionBossTimeTownQuestV20411(); } catch(e) {}
+      return window.__completeDimensionInvasionV20411.apply(this, arguments);
+    };
+  }
 } catch(e) {}
 </script>
 
