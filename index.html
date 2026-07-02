@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.204 Quest Balance & Dimension Timer)</title>
+<title>Slime Shooter - Ultimate Evolution (v.204.6 Retry Stage Button Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1742,6 +1742,15 @@ body.dead-mode #townQuestTracker{
   color:#eafff4 !important;
   background: linear-gradient(to bottom, #19a561, #0b4b2f) !important;
   box-shadow: 0 10px 24px rgba(25,165,97,0.28);
+}
+#retryStageBtn{
+  width:100%;
+  border-color:#ffe48a !important;
+  color:#3a2600 !important;
+  background: linear-gradient(to bottom, #ffe48a, #ffb000) !important;
+  box-shadow: 0 10px 24px rgba(255,184,0,0.28);
+  touch-action: manipulation;
+  pointer-events: auto;
 }
 #clearToTitleBtn{
   width:100%;
@@ -3685,8 +3694,9 @@ body.watch-ui:not(.playing-ui) #settingsBar,
           </div>
         </div>
         <div id="stageClearButtonGroup">
-            <button id="nextStageBtn" class="ui-btn big-btn">다음 스테이지로 ▶</button>
-            <button id="clearToTitleBtn" class="ui-btn">타이틀 화면으로</button>
+            <button id="nextStageBtn" type="button" class="ui-btn big-btn">다음 스테이지로 ▶</button>
+            <button id="retryStageBtn" type="button" class="ui-btn big-btn">현재 스테이지 다시하기 ↻</button>
+            <button id="clearToTitleBtn" type="button" class="ui-btn">타이틀 화면으로</button>
         </div>
     </div>
 </div>
@@ -5104,6 +5114,7 @@ const closeMiniGameSelectBtn = document.getElementById('closeMiniGameSelectBtn')
 // [추가] 클리어 모달 DOM 및 이벤트
 const stageClearModal = document.getElementById('stageClearModal');
 const nextStageBtn = document.getElementById('nextStageBtn');
+const retryStageBtn = document.getElementById('retryStageBtn');
 const clearToTitleBtn = document.getElementById('clearToTitleBtn');
 const stageClearExpEl = document.getElementById('stageClearExpText');
 const stageClearExpDetailEl = document.getElementById('stageClearExpDetail');
@@ -5148,10 +5159,41 @@ function showStageClearModalAnimated(totalExp, rank) {
   animateStageClearExp(totalExp);
 }
 
-nextStageBtn.addEventListener('click', () => {
-    if (gameMode !== 'stage' && gameMode !== 'mission') { stageClearModal.classList.add('hidden'); return; }
+function hideStageClearModalForAction() {
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    stageClearExpAnimToken++;
+    isPaused = false;
+    if (pauseOverlay) pauseOverlay.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.remove('paused');
+}
 
-    stageClearModal.classList.add('hidden');
+function retryCurrentStageFromClearModal() {
+    if (gameMode !== 'stage' && gameMode !== 'mission') {
+      hideStageClearModalForAction();
+      return;
+    }
+
+    const retryStage = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stage) || Number(lastSelectedStage) || 1)));
+    hideStageClearModalForAction();
+
+    stage = retryStage;
+    lastSelectedStage = retryStage;
+
+    if (gameMode === 'mission') {
+      missionState.currentStage = retryStage;
+      runStartStage = 1;
+      startGame(retryStage);
+      return;
+    }
+
+    runStartStage = retryStage;
+    startStage();
+}
+
+if (nextStageBtn) nextStageBtn.addEventListener('click', () => {
+    if (gameMode !== 'stage' && gameMode !== 'mission') { hideStageClearModalForAction(); return; }
+
+    hideStageClearModalForAction();
     stage++;
     if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
 
@@ -5166,8 +5208,14 @@ nextStageBtn.addEventListener('click', () => {
     runStartStage = stage;
     startStage();
 });
-clearToTitleBtn.addEventListener('click', () => {
-    stageClearModal.classList.add('hidden');
+
+if (retryStageBtn) {
+  retryStageBtn.addEventListener('click', retryCurrentStageFromClearModal);
+  retryStageBtn.onclick = retryCurrentStageFromClearModal;
+}
+
+if (clearToTitleBtn) clearToTitleBtn.addEventListener('click', () => {
+    hideStageClearModalForAction();
     goToTitle();
 });
 
@@ -31846,10 +31894,16 @@ try {
     retryBtn.addEventListener('click', function(ev){
       if (!isNormalStageModeV2041()) return;
       ev.preventDefault();
-      ev.stopImmediatePropagation();
+      ev.stopPropagation();
+      if (typeof retryCurrentStageFromClearModal === 'function') {
+        retryCurrentStageFromClearModal();
+        return;
+      }
       const current = Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(stage) || 1)));
       const modal = document.getElementById('stageClearModal');
       if (modal) modal.classList.add('hidden');
+      try { if (typeof stageClearExpAnimToken !== 'undefined') stageClearExpAnimToken++; } catch(e) {}
+      try { isPaused = false; } catch(e) {}
       stage = current;
       lastSelectedStage = current;
       runStartStage = current;
@@ -32163,6 +32217,57 @@ try {
   } else {
     polishStageResultV2044();
   }
+})();
+</script>
+
+<script>
+/* ===============================
+   ✅ [v.204.6] 현재 스테이지 다시하기 버튼 클릭 보강
+   - 기존 v.204.1 동적 버튼/캡처 이벤트와 충돌해도 같은 스테이지 재시작 보장
+   =============================== */
+(function(){
+  const PATCH_ID = 'v204_6_retry_stage_button_click_fix';
+  if (window[PATCH_ID]) return;
+  window[PATCH_ID] = true;
+
+  function bindRetryStageButtonV2046(){
+    const retry = document.getElementById('retryStageBtn');
+    if (!retry) return;
+    retry.type = 'button';
+    retry.disabled = false;
+    retry.style.pointerEvents = 'auto';
+    retry.style.touchAction = 'manipulation';
+    retry.onclick = function(ev){
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      if (typeof retryCurrentStageFromClearModal === 'function') {
+        retryCurrentStageFromClearModal();
+        return false;
+      }
+      const cap = (typeof MAX_STAGE_CAP !== 'undefined' ? MAX_STAGE_CAP : 300);
+      const current = Math.max(1, Math.min(cap, Math.floor(Number(stage) || Number(lastSelectedStage) || 1)));
+      const modal = document.getElementById('stageClearModal');
+      if (modal) modal.classList.add('hidden');
+      try { isPaused = false; } catch(e) {}
+      stage = current;
+      lastSelectedStage = current;
+      runStartStage = current;
+      if (typeof startStage === 'function') startStage();
+      else if (typeof startGame === 'function') startGame(current);
+      return false;
+    };
+  }
+
+  const __showStageClearModalAnimatedBeforeV2046 = (typeof showStageClearModalAnimated === 'function') ? showStageClearModalAnimated : null;
+  if (__showStageClearModalAnimatedBeforeV2046) {
+    showStageClearModalAnimated = function(){
+      const ret = __showStageClearModalAnimatedBeforeV2046.apply(this, arguments);
+      bindRetryStageButtonV2046();
+      return ret;
+    };
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindRetryStageButtonV2046);
+  else bindRetryStageButtonV2046();
 })();
 </script>
 
