@@ -135,13 +135,14 @@ padding: 8px 0;
     flex: 0 1 auto;
 }
 #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     max-width: 148px;
     padding: 5px 8px;
 }
 @media (max-width: 520px){
   #settingsBar .ui-btn{ font-size: 11px; padding: 5px 8px; }
-  #settingsBar #fontSelect, #settingsBar #fpsSelect{ max-width: 124px; }
+  #settingsBar #fontSelect, #settingsBar #fpsSelect, #settingsBar #expPercentDigitsSelect{ max-width: 124px; }
 }
 /* 상단 EXP 행 */
     #expRow {
@@ -631,6 +632,7 @@ body.dead-mode #consumableQuickBar{
     /* 서체 셀렉트는 글자 안 잘리게 */
     #fontSelect { max-width: 170px; }
     #fpsSelect { max-width: 90px; }
+    #expPercentDigitsSelect { max-width: 96px; }
 
     .big-btn {
         font-size: 18px;
@@ -784,7 +786,8 @@ body.tutorial-mode #pauseBtn{
   gap: 3px;
 }
 #gameContainer.compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 118px;
 }
 #gameContainer.compact-ui #expLabel{
@@ -823,7 +826,8 @@ body.tutorial-mode #pauseBtn{
   gap: 2px;
 }
 #gameContainer.ultra-compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 108px;
 }
 #gameContainer.ultra-compact-ui .ui-btn{
@@ -1963,7 +1967,8 @@ body.watch-ui{
   }
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     width:100% !important;
     min-width:0 !important;
     max-width:none !important;
@@ -2022,7 +2027,8 @@ body.watch-ui{
 }
 #settingsBar .ui-btn,
 #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   font-size: var(--settings-btn-font) !important;
   padding: var(--settings-btn-pad-y) var(--settings-btn-pad-x) !important;
   line-height: 1 !important;
@@ -2032,7 +2038,8 @@ body.watch-ui{
   text-overflow: clip !important;
 }
 #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 118px !important;
 }
 #expWrapper{
@@ -2046,13 +2053,15 @@ body.watch-ui{
 
 #gameContainer.compact-ui #settingsBar .ui-btn,
 #gameContainer.compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   min-height: 20px !important;
   font-size: 8px !important;
   padding: 3px 4px !important;
 }
 #gameContainer.compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 104px !important;
 }
 #gameContainer.compact-ui #expWrapper{
@@ -2064,13 +2073,15 @@ body.watch-ui{
 
 #gameContainer.ultra-compact-ui #settingsBar .ui-btn,
 #gameContainer.ultra-compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   min-height: 18px !important;
   font-size: 7px !important;
   padding: 2px 3px !important;
 }
 #gameContainer.ultra-compact-ui #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 94px !important;
 }
 #gameContainer.ultra-compact-ui #expWrapper{
@@ -2084,13 +2095,15 @@ body.watch-ui{
 @media (max-width: 520px){
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     font-size: 8px !important;
     padding: 3px 4px !important;
     min-height: 20px !important;
   }
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{ max-width: 104px !important; }
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{ max-width: 104px !important; }
   #expWrapper{ height: 19px !important; }
   #expText{ font-size: 10px !important; padding: 0 4px !important; }
 }
@@ -2107,7 +2120,8 @@ body.watch-ui{
   }
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     min-height: 17px !important;
     font-size: 7px !important;
     line-height: 1 !important;
@@ -2140,7 +2154,8 @@ body.watch-ui{
 @media (orientation: landscape) and (max-height: 520px){
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     min-height: 16px !important;
     font-size: 7px !important;
     padding: 2px 3px !important;
@@ -2192,7 +2207,8 @@ body.watch-ui{
   }
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     min-height: 0 !important;
     height: 22px !important;
     font-size: 8px !important;
@@ -2262,7 +2278,8 @@ body.watch-ui{
   #settingsBar{ grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     height: 20px !important;
     font-size: 7px !important;
     padding: 1px !important;
@@ -2486,7 +2503,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 
 #settingsBar .ui-btn,
 #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   font-size: 7px !important;
   padding: 2px 3px !important;
   min-height: 16px !important;
@@ -2499,7 +2517,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 }
 
 #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
   max-width: 92px !important;
 }
 
@@ -2544,7 +2563,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -2591,7 +2611,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 @media (max-width: 390px){
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     font-size: 6px !important;
     padding: 1px 1px !important;
     min-height: 14px !important;
@@ -2611,7 +2632,8 @@ body.title-mode #titleUI #dailyRewardBtn{
 
   #settingsBar .ui-btn,
   #settingsBar #fontSelect,
-#settingsBar #fpsSelect{
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
     min-height: 14px !important;
   }
 
@@ -3233,6 +3255,10 @@ body.watch-ui:not(.playing-ui) #settingsBar,
             <option value="20">20FPS</option>
             <option value="30">30FPS</option>
             <option value="60">60FPS</option>
+        </select>
+        <select id="expPercentDigitsSelect" class="ui-btn" title="EXP 퍼센트 소수 자릿수">
+            <option value="2">EXP 2자리</option>
+            <option value="3">EXP 3자리</option>
         </select>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
@@ -4975,6 +5001,7 @@ const blackholeSkillBtn = document.getElementById('blackholeSkillBtn');
 const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
 const fpsSelect = document.getElementById('fpsSelect');
+const expPercentDigitsSelect = document.getElementById('expPercentDigitsSelect');
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
 const restoreBtn = document.getElementById('restoreBtn');
@@ -6855,6 +6882,7 @@ targetFps: DEFAULT_TARGET_FPS,
 homingEnabled: true,
 playerBulletCount: 5, // ✅ [v.207.3] 플레이어 탄환 수 선택(1~5)
 fontKey: 'system',
+expPercentDigits: 3, // ✅ EXP 퍼센트 표시 소수 자릿수(2~3)
 maxUnlockedStage: 1,
  
 
@@ -8945,6 +8973,7 @@ if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFA
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 saveData.playerBulletCount = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 5)));
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
+saveData.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
@@ -9466,6 +9495,11 @@ function updateSettingsUI() {
     fpsSelect.value = String(currentFps);
     fpsSelect.style.color = '#fff';
   }
+  if (expPercentDigitsSelect) {
+    const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+    expPercentDigitsSelect.value = String(digits);
+    expPercentDigitsSelect.style.color = digits === 3 ? '#44ffb8' : '#fff';
+  }
   syncTopSettingsVisibility();
   syncPauseSettingButtons();
   updateRankIcon();
@@ -9846,6 +9880,7 @@ function createCharacterData(name, options = {}) {
   data.nicknameLastChangedAt = 0;
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
   data.fontKey = saveData.fontKey || 'system';
+  data.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
@@ -10210,6 +10245,14 @@ saveGameData();
   lastRenderTs = 0;
   lastTime = 0;
   updateSettingsUI();
+  saveGameData();
+});
+
+(expPercentDigitsSelect && expPercentDigitsSelect.addEventListener) && expPercentDigitsSelect.addEventListener('change', () => {
+  const digits = Number(expPercentDigitsSelect.value);
+  saveData.expPercentDigits = [2,3].includes(digits) ? digits : 3;
+  updateSettingsUI();
+  updateHUD();
   saveGameData();
 });
 
@@ -11816,8 +11859,9 @@ function resetDailyQuestsIfNeeded() {
   if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
 
-  if (saveData.dailyQuest.key !== key || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
+  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v208.4' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
     saveData.dailyQuest.key = key;
+    saveData.dailyQuest.rewardVersion = 'v208.4';
     saveData.dailyQuest.claimed = {};
     saveData.dailyStats = getDefaultQuestStatsObj();
     saveData.dailyQuest.quests = generateDailyQuests(level);
@@ -11831,8 +11875,9 @@ function resetWeeklyQuestsIfNeeded() {
   if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
-  if (saveData.weeklyQuest.key !== key || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
+  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v208.4' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
     saveData.weeklyQuest.key = key;
+    saveData.weeklyQuest.rewardVersion = 'v208.4';
     saveData.weeklyQuest.claimed = {};
     saveData.weeklyStats = getDefaultQuestStatsObj();
     saveData.weeklyQuest.quests = generateWeeklyQuests(level);
@@ -11850,26 +11895,73 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// 일일 6개
+
+// ===============================
+// ✅ [v.208.4] 일일/주간 퀘스트 EXP 보상 퍼센트 산식
+// - 일일: LV.60 기준 쉬움 15% / 어려움 35%, 레벨당 0.2~0.3% 감소
+// - 주간: LV.100 기준 쉬움 23% / 어려움 51%, 레벨당 0.3~0.7% 감소
+// - 200레벨 이후 최저 보상률은 10레벨마다 절반으로 감소
+// ===============================
+function getQuestExpMinPercentAfter200(mode, lv) {
+  const baseMin = (mode === 'weekly') ? 0.07 : 0.01;
+  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
+  if (safeLv < 200) return baseMin;
+  const halves = Math.max(0, Math.floor((safeLv - 200) / 10));
+  return baseMin / Math.pow(2, halves);
+}
+
+function getQuestExpPercentByDifficulty(mode, lv, difficulty = 0) {
+  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
+  const d = clamp(Number(difficulty) || 0, 0, 1); // 0=쉬움, 1=어려움
+  const cfg = (mode === 'weekly')
+    ? { baseLv: 100, easyPct: 23, hardPct: 51, easyDrop: 0.3, hardDrop: 0.7 }
+    : { baseLv: 60, easyPct: 15, hardPct: 35, easyDrop: 0.2, hardDrop: 0.3 };
+
+  const basePct = cfg.easyPct + (cfg.hardPct - cfg.easyPct) * d;
+  const drop = cfg.easyDrop + (cfg.hardDrop - cfg.easyDrop) * d;
+  const minPct = getQuestExpMinPercentAfter200(mode, safeLv);
+
+  // 기준 레벨 이하에서는 기준 보상률 유지, 이후부터 감소
+  let pct = basePct;
+  if (safeLv > cfg.baseLv) pct = basePct - (safeLv - cfg.baseLv) * drop;
+  return Math.max(minPct, pct);
+}
+
+function getQuestRewardExpByDifficulty(mode, lv, difficulty = 0) {
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(lv) || 1)));
+  if (!EXP_TABLE || !EXP_TABLE[safeLv]) return 0;
+  const needed = Math.max(1, Math.floor(Number(EXP_TABLE[safeLv].needed) || 1));
+  const pct = getQuestExpPercentByDifficulty(mode, safeLv, difficulty);
+  return Math.max(1, Math.floor(needed * (pct / 100)));
+}
+
+function attachQuestRewardPercentMeta(q, mode, lv, difficulty) {
+  const pct = getQuestExpPercentByDifficulty(mode, lv, difficulty);
+  q.rewardPercent = pct;
+  q.rewardDifficulty = difficulty >= 0.72 ? '어려움' : (difficulty <= 0.28 ? '쉬움' : '보통');
+  return q;
+}
+
+// 일일 8개
 function generateDailyQuests(lv) {
   const mul = getQuestScale(lv, 'daily');
 
   const scoreGoal = Math.floor(randInt(5_000_000, 20_000_000) * mul);
-  const scoreReward = Math.floor(15000 * mul);
   const goldEarnGoal = Math.floor(50000 * mul);
-  const goldEarnReward = Math.floor(16000 * mul);
   const skillGoal = Math.max(20, Math.floor(60 * mul));
   const playGoal = Math.max(300, Math.floor(900 * mul)); // 접속/플레이 15분 기준
+  const makeReward = (difficulty) => getQuestRewardExpByDifficulty('daily', lv, difficulty);
+  const withMeta = (q, difficulty) => attachQuestRewardPercentMeta(q, 'daily', lv, difficulty);
 
   return [
-    { id:'d_playtime', type:'playTimeSec', title:'접속 시간 달성', target: playGoal, reward: Math.floor(18000 * mul), extra:{ unit:'sec' } },
-    { id:'d_gold_earn', type:'goldEarned', title:'골드 획득하기', target: goldEarnGoal, reward: goldEarnReward },
-    { id:'d_skill_use', type:'skillUses', title:'스킬 일정 횟수 사용하기', target: skillGoal, reward: Math.floor(22000 * mul) },
-    { id:'d_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(300 * mul), reward: Math.floor(20000 * mul) },
-    { id:'d_kills', type:'kills', title:'몬스터 처치의 달인', target: Math.floor(5000 * mul), reward: Math.floor(30000 * mul) },
-    { id:'d_stage', type:'stageClears', title:'스테이지 클리어의 달인', target: Math.floor(30 * mul), reward: Math.floor(45000 * mul) },
-    { id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
-    { id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: Math.floor(35000 * mul) }
+    withMeta({ id:'d_playtime', type:'playTimeSec', title:'접속 시간 달성', target: playGoal, reward: makeReward(0.00), extra:{ unit:'sec' } }, 0.00),
+    withMeta({ id:'d_gold_earn', type:'goldEarned', title:'골드 획득하기', target: goldEarnGoal, reward: makeReward(0.15) }, 0.15),
+    withMeta({ id:'d_skill_use', type:'skillUses', title:'스킬 일정 횟수 사용하기', target: skillGoal, reward: makeReward(0.35) }, 0.35),
+    withMeta({ id:'d_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(300 * mul), reward: makeReward(0.40) }, 0.40),
+    withMeta({ id:'d_kills', type:'kills', title:'몬스터 처치의 달인', target: Math.floor(5000 * mul), reward: makeReward(0.65) }, 0.65),
+    withMeta({ id:'d_stage', type:'stageClears', title:'스테이지 클리어의 달인', target: Math.floor(30 * mul), reward: makeReward(0.85) }, 0.85),
+    withMeta({ id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: makeReward(0.55), extra:{ scoreGoal } }, 0.55),
+    withMeta({ id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: makeReward(1.00) }, 1.00)
   ];
 }
 
@@ -11879,23 +11971,23 @@ function generateWeeklyQuests(lv) {
   const mul = getQuestScale(lv, 'weekly');
 
   const scoreGoal = Math.floor(randInt(50_000_000, 200_000_000) * mul);
-  const scoreReward = Math.floor(180000 * mul);
   const goldEarnGoal = Math.floor(700000 * mul);
-  const goldEarnReward = Math.floor(260000 * mul);
   const skillGoal = Math.max(200, Math.floor(700 * mul));
   const playGoal = Math.max(3600, Math.floor(9000 * mul)); // 접속/플레이 2시간 30분 기준
+  const makeReward = (difficulty) => getQuestRewardExpByDifficulty('weekly', lv, difficulty);
+  const withMeta = (q, difficulty) => attachQuestRewardPercentMeta(q, 'weekly', lv, difficulty);
 
   return [
-    { id:'w_playtime', type:'playTimeSec', title:'주간 접속 시간 달성', target: playGoal, reward: Math.floor(240000 * mul), extra:{ unit:'sec' } },
-    { id:'w_gold_earn', type:'goldEarned', title:'주간 골드 획득하기', target: goldEarnGoal, reward: goldEarnReward },
-    { id:'w_skill_use', type:'skillUses', title:'주간 스킬 사용하기', target: skillGoal, reward: Math.floor(210000 * mul) },
-    { id:'w_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(2000 * mul), reward: Math.floor(200000 * mul) },
-    { id:'w_kills', type:'kills', title:'몬스터 킬러', target: Math.floor(30000 * mul), reward: Math.floor(120000 * mul) },
-    { id:'w_boss', type:'bossKills', title:'보스 킬러', target: Math.floor(200 * mul), reward: Math.floor(500000 * mul) },
-    { id:'w_stage', type:'stageClears', title:'스테이지 클리어의 신', target: Math.floor(150 * mul), reward: Math.floor(450000 * mul) },
-    { id:'w_surv', type:'survivalSec', title:'생존의 신', target: Math.floor(10000 * mul), reward: Math.floor(115000 * mul) },
-    { id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: scoreReward, extra:{ scoreGoal } },
-    { id:'w_skill_kills', type:'skillKills', title:'범위형 스킬 처치 5,000마리', target: Math.floor(5000 * mul), reward: Math.floor(320000 * mul) }
+    withMeta({ id:'w_playtime', type:'playTimeSec', title:'주간 접속 시간 달성', target: playGoal, reward: makeReward(0.00), extra:{ unit:'sec' } }, 0.00),
+    withMeta({ id:'w_gold_earn', type:'goldEarned', title:'주간 골드 획득하기', target: goldEarnGoal, reward: makeReward(0.15) }, 0.15),
+    withMeta({ id:'w_skill_use', type:'skillUses', title:'주간 스킬 사용하기', target: skillGoal, reward: makeReward(0.35) }, 0.35),
+    withMeta({ id:'w_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(2000 * mul), reward: makeReward(0.40) }, 0.40),
+    withMeta({ id:'w_kills', type:'kills', title:'몬스터 킬러', target: Math.floor(30000 * mul), reward: makeReward(0.55) }, 0.55),
+    withMeta({ id:'w_boss', type:'bossKills', title:'보스 킬러', target: Math.floor(200 * mul), reward: makeReward(0.90) }, 0.90),
+    withMeta({ id:'w_stage', type:'stageClears', title:'스테이지 클리어의 신', target: Math.floor(150 * mul), reward: makeReward(0.85) }, 0.85),
+    withMeta({ id:'w_surv', type:'survivalSec', title:'생존의 신', target: Math.floor(10000 * mul), reward: makeReward(0.60) }, 0.60),
+    withMeta({ id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: makeReward(0.70), extra:{ scoreGoal } }, 0.70),
+    withMeta({ id:'w_skill_kills', type:'skillKills', title:'범위형 스킬 처치 5,000마리', target: Math.floor(5000 * mul), reward: makeReward(1.00) }, 1.00)
   ];
 }
 
@@ -12575,7 +12667,7 @@ function updateQuestUI() {
 
       createQuestItem(
         q.title,
-        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
+        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}${q.rewardPercent ? ` · 보상률 ${Number(q.rewardPercent).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%` : ''}`,
         q.reward,
         canClaim,
         () => { claimQuest(saveData.dailyQuest, q); },
@@ -12626,7 +12718,7 @@ function updateQuestUI() {
 
       createQuestItem(
         q.title,
-        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
+        `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}${q.rewardPercent ? ` · 보상률 ${Number(q.rewardPercent).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%` : ''}`,
         q.reward,
         canClaim,
         () => { claimQuest(saveData.weeklyQuest, q); },
@@ -13065,7 +13157,8 @@ function getTownQuestExpReward(q, lv = level){
 function getTownQuestPercentText(q, lv = level){
   if (q && q.beginnerLevelUp) return `고정 ${formatNumber(getTownQuestExpReward(q, lv))} EXP / 최대 LV.11 0%`;
   const pct = getTownQuestScaledPercentByLevel(q, lv);
-  return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}%`;
+  const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+  return `${pct.toFixed(digits)}%`;
 }
 function getTownDailyQuestKey(){
   const d = new Date();
@@ -13144,10 +13237,10 @@ function ensureTownQuestState(){
       q.expPct200 = tpl ? Number(tpl.expPct200 || 0.1) : 0.1;
     }
     const tpl = TOWN_QUEST_POOL.find(t => t && t.id === q.baseId);
-    if (tpl && !q.beginnerLevelUp && q.difficultyVersion !== 'v203.10') {
+    if (tpl && !q.beginnerLevelUp && q.difficultyVersion !== 'v208.3') {
       q.target = getTownQuestFinalTarget(tpl, level);
       q.progress = Math.min(Math.max(0, Math.floor(Number(q.progress || 0))), q.target);
-      q.difficultyVersion = 'v203.10';
+      q.difficultyVersion = 'v208.3';
       if (!q.storyDialogue) q.storyDialogue = tpl.dialogue || '';
     }
     normalizeTownQuestDisplay(q);
@@ -13255,7 +13348,7 @@ function getTownQuestTargetRangeV20310(type, difficultyName){
     },
     '매우 어려움': {
       stageClears:[25,45], kills:[350,1000], multiKills:[45,120], bossKills:[15,40],
-      sRankClears:[25,60], infiniteScore:[2000000,20000000], skillUses:[120,250], itemUses:[60,150], fever:[20,50], bubbleMultiKills:[20,50], pet:[400,1200],
+      sRankClears:[25,60], infiniteScore:[2000000,20000000], skillUses:[120,250], itemUses:[60,150], fever:[20,50], bubbleMultiKills:[20,50], pet:[400,1200], petDamage:[1500000,5000000], petOnlyKills:[80,200],
       goldSpend:[20000,80000], goldEarned:[100000,500000], gems:[180,500], infiniteItems:[60,150], expOrbs:[80,200], survival:[90,180], dungeonClears:[25,80], dungeonExp:[800000,5000000], dungeonKills:[700,2500], dimensionClears:[15,40], dimensionWaves:[30,100], dimensionKills:[1800,6000], dimensionBossTime:[150,600], crystalKills:[250,2000], bossFastKills:[20,60], bonusStage:[8,20],
       kingCrystalKills:[2000,2000], kingDimensionClears:[30,30], kingDungeonClears:[100,100], kingSRankClears:[50,50], kingInfiniteScore:[1000000000,1000000000]
     }
@@ -13292,6 +13385,7 @@ function getTownQuestFinalTarget(t, lv = level){
   else if (target >= 10000) target = Math.round(target / 1000) * 1000;
   else if (target >= 1000) target = Math.round(target / 100) * 100;
   else if (target >= 100) target = Math.round(target / 10) * 10;
+  if (type === 'petDamage' && Math.floor(Number(lv) || 1) >= 201) target = Math.max(1500000, target);
   return Math.max(1, Math.floor(target));
 }
 function makeTownQuestDesc(type, target){
@@ -13448,7 +13542,7 @@ function buildTownQuestFromTemplate(t, npc){
     fixedExp: Math.max(0, Math.floor(Number(t.fixedExp || 0))),
     tutorialStep: t.beginnerLevelUp ? (Math.max(0, Number(ensureTownQuestState()?.guideStep || 0)) + 1) : 0,
     dialogue: t.beginnerLevelUp ? (t.dialogue || '') : (t.dialogue ? formatTownQuestStoryDialogue(t.dialogue, finalTarget) : makeTownQuestNpcDialogue(npc, t.type, finalTarget)),
-    difficultyVersion: 'v203.10',
+    difficultyVersion: 'v208.3',
     acceptedAt: Date.now()
   });
 }
@@ -23434,9 +23528,7 @@ const prog = getLevelProgress(exp, level);
 const nextPercent = Math.min(100, prog.percent);
 
 // 중앙 표시 텍스트
-let percentDigits = 2;
-if (level >= 200) percentDigits = 3;
-else if (level >= 100) percentDigits = 2;
+const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
 
 expEl.textContent =
   `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
