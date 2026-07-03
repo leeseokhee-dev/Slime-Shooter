@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.203.18 Apple Watch HUD Fit)</title>
+<title>Slime Shooter - Ultimate Evolution (v.206.3 60FPS Optimized)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1506,10 +1506,10 @@ function shouldShowTutorial(id){
   left:12px;
   top:180px;
   width:min(270px, 42vw);
-  max-height:128px;
+  max-height:none;
   overflow:hidden;
   z-index:64;
-  pointer-events:none;
+  pointer-events:auto;
   padding:9px 10px;
   border-radius:14px;
   background:linear-gradient(180deg, rgba(8,18,28,0.78), rgba(3,8,15,0.68));
@@ -1532,6 +1532,26 @@ function shouldShowTutorial(id){
   color:#b8ffd8;
   font-weight:1000;
   letter-spacing:-0.2px;
+}
+#townQuestTrackerList{
+  max-height:54px; /* ✅ 2개까지만 보이게 */
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:thin;
+  padding-right:2px;
+}
+#townQuestTrackerList::-webkit-scrollbar{ width:4px; }
+#townQuestTrackerList::-webkit-scrollbar-thumb{ background:rgba(124,255,181,0.34); border-radius:999px; }
+#townQuestTrackerHint{
+  margin-top:4px;
+  text-align:right;
+  color:#b8ffd8;
+  opacity:0.82;
+  font-size:9.5px;
+  font-weight:900;
 }
 .town-quest-tracker-row{
   display:grid;
@@ -1562,11 +1582,13 @@ function shouldShowTutorial(id){
   #townQuestTracker{
     left:8px;
     width:min(205px, 48vw);
-    max-height:108px;
+    max-height:none;
     padding:7px 8px;
     font-size:9.5px;
     border-radius:12px;
   }
+  #townQuestTrackerList{ max-height:48px; }
+  #townQuestTrackerHint{ font-size:8.5px; }
 }
 body.title-mode #townQuestTracker,
 body.tutorial-mode #townQuestTracker,
@@ -1742,6 +1764,13 @@ body.dead-mode #townQuestTracker{
   color:#eafff4 !important;
   background: linear-gradient(to bottom, #19a561, #0b4b2f) !important;
   box-shadow: 0 10px 24px rgba(25,165,97,0.28);
+}
+#retryStageBtn{
+  width:100%;
+  border-color:#7ce7ff !important;
+  color:#eafaff !important;
+  background: linear-gradient(to bottom, #1c8fba, #0b3b58) !important;
+  box-shadow: 0 10px 24px rgba(28,143,186,0.26);
 }
 #clearToTitleBtn{
   width:100%;
@@ -3686,6 +3715,7 @@ body.watch-ui:not(.playing-ui) #settingsBar,
         </div>
         <div id="stageClearButtonGroup">
             <button id="nextStageBtn" class="ui-btn big-btn">다음 스테이지로 ▶</button>
+            <button id="retryStageBtn" class="ui-btn big-btn">현재 스테이지 다시하기 ↻</button>
             <button id="clearToTitleBtn" class="ui-btn">타이틀 화면으로</button>
         </div>
     </div>
@@ -4821,6 +4851,7 @@ function applyResponsiveUiDensity() {
 
 
 function fitCanvasToViewport() {
+  invalidateRenderCaches();
   applyResponsiveUiDensity();
   syncTopSettingsVisibility();
 
@@ -5104,6 +5135,7 @@ const closeMiniGameSelectBtn = document.getElementById('closeMiniGameSelectBtn')
 // [추가] 클리어 모달 DOM 및 이벤트
 const stageClearModal = document.getElementById('stageClearModal');
 const nextStageBtn = document.getElementById('nextStageBtn');
+const retryStageBtn = document.getElementById('retryStageBtn');
 const clearToTitleBtn = document.getElementById('clearToTitleBtn');
 const stageClearExpEl = document.getElementById('stageClearExpText');
 const stageClearExpDetailEl = document.getElementById('stageClearExpDetail');
@@ -5144,9 +5176,22 @@ function showStageClearModalAnimated(totalExp, rank) {
   stageClearModal.classList.remove('stage-clear-pop');
   void stageClearModal.offsetWidth;
   stageClearModal.classList.add('stage-clear-pop');
+  if (retryStageBtn) {
+    retryStageBtn.style.display = (gameMode === 'stage') ? '' : 'none';
+  }
   applyStageClearRank(rank);
   animateStageClearExp(totalExp);
 }
+
+retryStageBtn.addEventListener('click', () => {
+    if (gameMode !== 'stage') { stageClearModal.classList.add('hidden'); return; }
+
+    stageClearModal.classList.add('hidden');
+    stage = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stage) || 1)));
+    lastSelectedStage = stage;
+    runStartStage = stage;
+    startStage();
+});
 
 nextStageBtn.addEventListener('click', () => {
     if (gameMode !== 'stage' && gameMode !== 'mission') { stageClearModal.classList.add('hidden'); return; }
@@ -6583,6 +6628,22 @@ const keys = {};
 let lastRenderTs = 0;
 const FPS_OPTIONS = [15, 20, 30, 60];
 const DEFAULT_TARGET_FPS = 60;
+
+// ===== [v.206.3] 60FPS 발열 최적화: 배경/이펙트 캐시 =====
+// 그래픽 품질은 유지하되, 매 프레임 다시 만들 필요가 없는 배경/그라데이션 연산을 재사용합니다.
+let __bgCacheCanvas = null;
+let __bgCacheCtx = null;
+let __bgCacheKey = '';
+let __bgOverlayCacheCanvas = null;
+let __bgOverlayCacheCtx = null;
+let __bgOverlayCacheKey = '';
+const PARTICLE_LIMIT_60FPS = 220;
+const PARTICLE_LIMIT_LOWPOWER = 110;
+
+function invalidateRenderCaches(){
+  __bgCacheKey = '';
+  __bgOverlayCacheKey = '';
+}
 
 // 저장 데이터
 let saveData = {
@@ -12509,9 +12570,9 @@ const TOWN_NPCS = [
     questTypes:['dungeonClears','dungeonExp','dungeonKills']
   },
   {
-    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:150,
-    line:'150레벨에 도달하셨군요. 차원의 균열은 점점 불안정해지고 있습니다. 디멘션 인베이드의 웨이브, 몬스터 처치, 보스 처치 시간을 확인하겠습니다.',
-    firstIntro:['150레벨에 도달하셨군요. 차원의 슬라임이 마을에 합류했습니다.', '디멘션 인베이드에서 웨이브 클리어, 몬스터 처치, 제한 시간 안의 보스 처치 기록을 부탁드리겠습니다.'],
+    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:50,
+    line:'50레벨에 도달하셨군요. 차원의 균열은 점점 불안정해지고 있습니다. 디멘션 인베이드의 웨이브, 몬스터 처치, 보스 처치 시간을 확인하겠습니다.',
+    firstIntro:['50레벨에 도달하셨군요. 차원의 슬라임이 마을에 합류했습니다.', '디멘션 인베이드에서 웨이브 클리어, 몬스터 처치, 제한 시간 안의 보스 처치 기록을 부탁드리겠습니다.'],
     tips:['차원의 슬라임은 디멘션 인베이드 기록만 확인합니다.', '보스 제한 시간 의뢰는 빠르게 웨이브를 넘기고 보스를 마무리하는 것이 중요합니다.'],
     questTypes:['dimensionWaves','dimensionKills','dimensionBossTime']
   },
@@ -12624,9 +12685,9 @@ const TOWN_QUEST_POOL = [
   { npcId:'dungeonSlime', id:'dungeon_slime_kills', type:'dungeonKills', title:'던전에서 몬스터 N마리 처치', target:250, fixedTarget:false, minLevel:100, expPct200:0.90, gold:()=>Math.max(2800, level * 100), item:'smallPotion', dialogue:'던전에서 몬스터 {n}마리를 처치해줘. 던전 몬스터만 계산하니까 다른 모드에서는 진행되지 않아!' },
 
   // ===== 차원의 슬라임: 디멘션 인베이드 전용 3종 =====
-  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:150, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:150, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N분 안에 보스 처치', target:5, fixedTarget:false, minLevel:150, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:50, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:50, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N분 안에 보스 처치', target:5, fixedTarget:false, minLevel:50, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
 
   // ===== 크리스탈 슬라임: 엔드게임 전용 3종 =====
   { npcId:'crystalSlime', id:'crystal_slime_kills', type:'crystalKills', title:'크리스탈 슬라임 N마리 처치', target:500, fixedTarget:false, minLevel:200, expPct200:1.00, gold:()=>Math.max(6500, level * 160), item:'expMediumPack', dialogue:'크리스탈 슬라임 {n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.' },
@@ -13486,10 +13547,22 @@ function updateTownQuestTracker(){
       townQuestTrackerEl.innerHTML = '';
       return;
     }
-    const visible = list.slice(0, 4);
     const completeCount = list.filter(q => (q.progress || 0) >= (q.target || 1)).length;
-    const moreText = list.length > visible.length ? `<div class="town-quest-tracker-row"><span class="town-quest-tracker-name">외 ${formatNumber(list.length - visible.length)}개 진행 중</span><span class="town-quest-tracker-count">＋</span></div>` : '';
-    townQuestTrackerEl.innerHTML = `<div id="townQuestTrackerTitle"><span>🏡 NPC 퀘스트</span><span>${completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`}</span></div>` + visible.map(renderTownQuestTrackerRow).join('') + moreText;
+    const trackerSig = list.map(q => [q.npcName || '', q.type || '', Math.floor(Number(q.progress || 0)), Math.floor(Number(q.target || 1))].join(':')).join('|') + `|done:${completeCount}|total:${list.length}`;
+    if (townQuestTrackerEl.__trackerSig === trackerSig) {
+      townQuestTrackerEl.classList.remove('hidden');
+      return;
+    }
+    townQuestTrackerEl.__trackerSig = trackerSig;
+    const listHtml = list.map(renderTownQuestTrackerRow).join('');
+    const swipeHint = list.length > 2 ? `<div id="townQuestTrackerHint">↕ 스와이프로 ${formatNumber(list.length)}개 확인</div>` : '';
+    const oldScrollTop = townQuestTrackerEl.__questScrollTop || 0;
+    townQuestTrackerEl.innerHTML = `<div id="townQuestTrackerTitle"><span>🏡 NPC 퀘스트</span><span>${completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`}</span></div><div id="townQuestTrackerList">${listHtml}</div>${swipeHint}`;
+    const listEl = document.getElementById('townQuestTrackerList');
+    if (listEl) {
+      listEl.scrollTop = Math.min(oldScrollTop, Math.max(0, listEl.scrollHeight - listEl.clientHeight));
+      listEl.onscroll = () => { townQuestTrackerEl.__questScrollTop = listEl.scrollTop; };
+    }
     townQuestTrackerEl.classList.remove('hidden');
   } catch(e) {
     try { townQuestTrackerEl.classList.add('hidden'); } catch(_e) {}
@@ -16499,7 +16572,8 @@ function addScore(amount, source = 'monster', options = {}) {
 
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
   if (gameMode === 'stage' && source === 'monster') {
-    const baseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
+    const originalBaseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
+    const baseExp = getStageLevelAdjustedExp(originalBaseExp, stage);
     const hotMult = getHotMultiplier();
     const gainedExp = addExp(baseExp, { source: 'monster', baseAmount: baseExp, hotMultiplier: hotMult });
     if (gainedExp > 0) {
@@ -18389,7 +18463,8 @@ function handleBossKilledBySkill() {
     if (gameMode === 'infinite') {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
-      const bossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
+      const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
+      const bossExpReward = (gameMode === 'stage') ? getStageLevelAdjustedExp(originalBossExpReward, (boss && boss.level) || currentBossLevel || stage) : originalBossExpReward;
       const hotMult = getHotMultiplier();
       const grantedBossExp = addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: hotMult });
       if (gameMode === 'stage') {
@@ -19394,6 +19469,20 @@ function getBossEvoStageByLevel(bossLevel) {
 function getBossDisplayLevelByStage(stageValue) {
     const s = Math.max(1, Math.floor(Number(stageValue) || 1));
     return Math.min(MAX_STAGE_CAP, s);
+}
+
+
+function getStageLevelExpRate(playerLevelValue = level, stageValue = stage) {
+    const playerLv = Math.max(1, Math.floor(Number(playerLevelValue) || 1));
+    const stageLv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
+    const diff = Math.abs(playerLv - stageLv);
+    return Math.max(0.50, 1 - Math.min(10, diff) * 0.05);
+}
+
+function getStageLevelAdjustedExp(baseExp, stageValue = stage) {
+    const base = Math.max(0, Number(baseExp) || 0);
+    const rate = getStageLevelExpRate(level, stageValue);
+    return Math.max(base > 0 ? 1 : 0, Math.round(base * rate));
 }
 
 function getStageBossExpReward(stageValue) {
@@ -22312,20 +22401,25 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
-const delta = dt / 16.67;
-particles.forEach(p => {
-  // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
-  if (p.maxLife == null) p.maxLife = p.life;
-  // 위치/수명
-  p.x += (p.vx || 0) * delta;
-  p.y += (p.vy || 0) * delta;
-  p.life -= dt;
+  if (!particles.length) return;
+  const delta = dt / 16.67;
+  const cap = isLowPower() ? PARTICLE_LIMIT_LOWPOWER : PARTICLE_LIMIT_60FPS;
 
-  // ✅ 확장/회전 같은 추가 속성 지원(없으면 무시)
-  if (p.grow) p.r = (p.r || 0) + p.grow * delta;
-  if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
-});
-particles = particles.filter(p => p.life > 0);
+  // 60프레임에서 과열을 줄이기 위해 오래된 파티클부터 정리합니다.
+  if (particles.length > cap) {
+    particles.splice(0, particles.length - cap);
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    if (p.maxLife == null) p.maxLife = p.life;
+    p.x += (p.vx || 0) * delta;
+    p.y += (p.vy || 0) * delta;
+    p.life -= dt;
+    if (p.grow) p.r = (p.r || 0) + p.grow * delta;
+    if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
 }
 
 function updateDamageTexts(dt) {
@@ -22917,45 +23011,80 @@ if (hotTimeEl) {
 // ===== 그리기 =====
 function drawBackground() {
   const img = getStageBackgroundImage(stage, state);
-  const drew = drawCoverImage(img, 0, 0, width, height);
+  const imgReady = !!(img && img.complete && img.naturalWidth > 0);
+  const cacheKey = `${state}|${stage}|${width}x${height}|${imgReady ? (img.src || 'img') : 'fallback'}`;
 
-  if (!drew) {
-    const fallback = ctx.createLinearGradient(0, 0, 0, height);
-    if (state === 'title') {
-      fallback.addColorStop(0, '#7ed4ff');
-      fallback.addColorStop(1, '#1b2b4f');
-    } else if (stage <= 20) {
-      fallback.addColorStop(0, '#9be15d');
-      fallback.addColorStop(1, '#294a1f');
-    } else if (stage <= 40) {
-      fallback.addColorStop(0, '#f6d37f');
-      fallback.addColorStop(1, '#8a5b26');
-    } else if (stage <= 60) {
-      fallback.addColorStop(0, '#d9f8ff');
-      fallback.addColorStop(1, '#2e6ca8');
-    } else if (stage <= 80) {
-      fallback.addColorStop(0, '#ff9b54');
-      fallback.addColorStop(1, '#3f1108');
-    } else if (stage <= 200) {
-      fallback.addColorStop(0, '#1d2158');
-      fallback.addColorStop(1, '#04010f');
-    } else {
-      fallback.addColorStop(0, '#4b2aa8');
-      fallback.addColorStop(0.55, '#20134f');
-      fallback.addColorStop(1, '#050014');
-    }
-    ctx.fillStyle = fallback;
-    ctx.fillRect(0, 0, width, height);
+  if (!__bgCacheCanvas || __bgCacheCanvas.width !== width || __bgCacheCanvas.height !== height) {
+    __bgCacheCanvas = document.createElement('canvas');
+    __bgCacheCanvas.width = width;
+    __bgCacheCanvas.height = height;
+    __bgCacheCtx = __bgCacheCanvas.getContext('2d');
+    __bgCacheKey = '';
   }
 
-  ctx.save();
-  const overlay = ctx.createLinearGradient(0, 0, 0, height);
-  overlay.addColorStop(0, 'rgba(0,0,0,0.06)');
-  overlay.addColorStop(0.5, 'rgba(0,0,0,0.10)');
-  overlay.addColorStop(1, 'rgba(0,0,0,0.18)');
-  ctx.fillStyle = overlay;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
+  if (__bgCacheKey !== cacheKey) {
+    const cctx = __bgCacheCtx;
+    cctx.clearRect(0, 0, width, height);
+
+    let drew = false;
+    if (imgReady) {
+      // drawCoverImage와 동일한 cover 계산을 캐시 캔버스에 1회만 수행
+      const sRatio = img.naturalWidth / img.naturalHeight;
+      const dRatio = width / height;
+      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+      if (sRatio > dRatio) {
+        sw = img.naturalHeight * dRatio;
+        sx = (img.naturalWidth - sw) / 2;
+      } else {
+        sh = img.naturalWidth / dRatio;
+        sy = (img.naturalHeight - sh) / 2;
+      }
+      try {
+        cctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+        drew = true;
+      } catch(e) { drew = false; }
+    }
+
+    if (!drew) {
+      const fallback = cctx.createLinearGradient(0, 0, 0, height);
+      if (state === 'title') {
+        fallback.addColorStop(0, '#7ed4ff');
+        fallback.addColorStop(1, '#1b2b4f');
+      } else if (stage <= 20) {
+        fallback.addColorStop(0, '#9be15d');
+        fallback.addColorStop(1, '#294a1f');
+      } else if (stage <= 40) {
+        fallback.addColorStop(0, '#f6d37f');
+        fallback.addColorStop(1, '#8a5b26');
+      } else if (stage <= 60) {
+        fallback.addColorStop(0, '#d9f8ff');
+        fallback.addColorStop(1, '#2e6ca8');
+      } else if (stage <= 80) {
+        fallback.addColorStop(0, '#ff9b54');
+        fallback.addColorStop(1, '#3f1108');
+      } else if (stage <= 200) {
+        fallback.addColorStop(0, '#1d2158');
+        fallback.addColorStop(1, '#04010f');
+      } else {
+        fallback.addColorStop(0, '#4b2aa8');
+        fallback.addColorStop(0.55, '#20134f');
+        fallback.addColorStop(1, '#050014');
+      }
+      cctx.fillStyle = fallback;
+      cctx.fillRect(0, 0, width, height);
+    }
+
+    const overlay = cctx.createLinearGradient(0, 0, 0, height);
+    overlay.addColorStop(0, 'rgba(0,0,0,0.06)');
+    overlay.addColorStop(0.5, 'rgba(0,0,0,0.10)');
+    overlay.addColorStop(1, 'rgba(0,0,0,0.18)');
+    cctx.fillStyle = overlay;
+    cctx.fillRect(0, 0, width, height);
+
+    __bgCacheKey = cacheKey;
+  }
+
+  ctx.drawImage(__bgCacheCanvas, 0, 0);
 }
 
 function drawTitleSlimes(dt, timestamp) {
@@ -24427,13 +24556,14 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
-  particles.forEach(p => {
+  if (!particles.length) return;
+  ctx.save();
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
-    ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
-    // ✅ 타입별 렌더링
     if (p.type === 'ring') {
       const r = (p.r != null) ? p.r : 10;
       ctx.strokeStyle = p.color || 'rgba(255,160,60,1)';
@@ -24445,20 +24575,25 @@ function drawParticles() {
       ctx.fillStyle = p.color || '#fff';
       const w = p.w || 6, h = p.h || 6;
       const rot = p.rot || 0;
-      ctx.translate(p.x, p.y);
-      if (rot) ctx.rotate(rot);
-      ctx.fillRect(-w/2, -h/2, w, h);
+      if (rot) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(rot);
+        ctx.fillRect(-w/2, -h/2, w, h);
+        ctx.restore();
+      } else {
+        ctx.fillRect(p.x - w/2, p.y - h/2, w, h);
+      }
     } else {
-      // 기본 점/원 파티클
       ctx.fillStyle = p.color || '#fff';
       const r = (p.size != null) ? p.size : 2.2;
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    ctx.restore();
-  });
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 function drawTitleScreen() {
@@ -24867,7 +25002,11 @@ requestAnimationFrame(gameLoop);
   const dt = Math.max(0, Math.min(rawDt, 100));
   lastTime = timestamp;
 
-  syncTopSettingsVisibility();
+  // DOM 표시 동기화는 매 프레임이 아니라 약 4fps로 제한해 발열을 줄입니다.
+  if (!gameLoop._lastDomSync || timestamp - gameLoop._lastDomSync > 250) {
+    syncTopSettingsVisibility();
+    gameLoop._lastDomSync = timestamp;
+  }
   // ✅ v.168.12: 계급 아이콘은 게임 FPS 루프가 아니라 별도 60fps requestAnimationFrame 루프에서 갱신
   // 배경은 항상
   drawBackground();
@@ -28915,6 +29054,7 @@ function completeDimensionInvasionV175(){
   const d = ensureDimensionInvasionSaveV175();
   const boxRarity = grantDimensionBossBoxV176();
   d.clears += 1;
+  try { updateTownQuestProgress('dimensionClears', 1); updateTownQuestProgress('kingDimensionClears', 1); } catch(e) {}
   saveGameData();
   dimensionInvasionLastResultV175 = {
     completed: true,
@@ -28925,7 +29065,7 @@ function completeDimensionInvasionV175(){
     exp: Math.max(0, Math.floor(stageRunExpMonsters || 0)),
     bonusExp: Math.max(0, Math.floor(dimensionInvasionBonusExpTotalV175 || 0))
   };
-  try { completeTimedTownQuestProgress('dimensionBossTime', (Date.now() - Math.max(0, Number(stageRunStartTime)||Date.now())) / 1000); } catch(e) {}
+  try { completeTimedTownQuestProgress('dimensionBossTime', (performance.now() - Math.max(0, Number(stageRunStartTime)||performance.now())) / 1000); } catch(e) {}
   try { showToast(`🎁 보스 처치! ${boxRarity.name} 디멘션 상자 획득!`, boxRarity.color || '#d6b8ff', 2200); } catch(e) {}
   try { spawnDamageText(width / 2, height * 0.34, 'DIMENSION CLEAR!', '#ffffff', true); } catch(e) {}
   setTimeout(() => {
