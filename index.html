@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.204.12 60FPS Thermal Optimization)</title>
+<title>Slime Shooter - Ultimate Evolution (v.203.18 Apple Watch HUD Fit)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -1743,15 +1743,6 @@ body.dead-mode #townQuestTracker{
   background: linear-gradient(to bottom, #19a561, #0b4b2f) !important;
   box-shadow: 0 10px 24px rgba(25,165,97,0.28);
 }
-#retryStageBtn{
-  width:100%;
-  border-color:#ffe48a !important;
-  color:#3a2600 !important;
-  background: linear-gradient(to bottom, #ffe48a, #ffb000) !important;
-  box-shadow: 0 10px 24px rgba(255,184,0,0.28);
-  touch-action: manipulation;
-  pointer-events: auto;
-}
 #clearToTitleBtn{
   width:100%;
   padding: 12px !important;
@@ -2792,29 +2783,6 @@ body.rank-modal-open{ overflow:hidden; }
 body.playing-ui #settingsBar{ display:none !important; }
 body:not(.playing-ui) #settingsBar{ display:flex; }
 
-
-
-/* ✅ [v.204.12] 60FPS 발열 완화: 고FPS/저사양에서는 비싼 그림자·블러 축소 */
-body.perf-eco #gameCanvas,
-body.perf-eco.fever-mode #gameCanvas{
-  box-shadow: 0 0 10px rgba(0,0,0,0.55) !important;
-}
-body.perf-eco #hud,
-body.perf-eco .modal,
-body.perf-eco .overlay-content{
-  box-shadow: 0 8px 18px rgba(0,0,0,0.42) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-body.perf-eco .laser-skill,
-body.perf-eco .bubble-skill,
-body.perf-eco .blizzard-skill,
-body.perf-eco .meteor-skill,
-body.perf-eco .lightning-skill,
-body.perf-eco .quake-skill{
-  box-shadow: 0 5px 12px rgba(0,0,0,0.35) !important;
-}
-
 </style>
 
 
@@ -3717,9 +3685,8 @@ body.watch-ui:not(.playing-ui) #settingsBar,
           </div>
         </div>
         <div id="stageClearButtonGroup">
-            <button id="nextStageBtn" type="button" class="ui-btn big-btn">다음 스테이지로 ▶</button>
-            <button id="retryStageBtn" type="button" class="ui-btn big-btn">현재 스테이지 다시하기 ↻</button>
-            <button id="clearToTitleBtn" type="button" class="ui-btn">타이틀 화면으로</button>
+            <button id="nextStageBtn" class="ui-btn big-btn">다음 스테이지로 ▶</button>
+            <button id="clearToTitleBtn" class="ui-btn">타이틀 화면으로</button>
         </div>
     </div>
 </div>
@@ -4794,10 +4761,8 @@ function updateRankIcon(){
 // 15fps/저사양 모드에서도 계급 회전·오라·파티클은 계속 유지됩니다.
 if(!window.__rankIconAnimationRAF){
   window.__rankIconAnimationRAF = true;
-  const __rankIconLoop = (nowMs)=>{
-    const interval = isLowPower() ? 500 : (isHighFpsMode() ? 160 : 90);
-    if(rankIconBtn && rankIconBtn.offsetParent && (!lastRankIconUpdateMs || nowMs - lastRankIconUpdateMs >= interval)){
-      lastRankIconUpdateMs = nowMs;
+  const __rankIconLoop = ()=>{
+    if(rankIconBtn && rankIconBtn.offsetParent){
       updateRankIcon();
     }
     requestAnimationFrame(__rankIconLoop);
@@ -5139,7 +5104,6 @@ const closeMiniGameSelectBtn = document.getElementById('closeMiniGameSelectBtn')
 // [추가] 클리어 모달 DOM 및 이벤트
 const stageClearModal = document.getElementById('stageClearModal');
 const nextStageBtn = document.getElementById('nextStageBtn');
-const retryStageBtn = document.getElementById('retryStageBtn');
 const clearToTitleBtn = document.getElementById('clearToTitleBtn');
 const stageClearExpEl = document.getElementById('stageClearExpText');
 const stageClearExpDetailEl = document.getElementById('stageClearExpDetail');
@@ -5184,41 +5148,10 @@ function showStageClearModalAnimated(totalExp, rank) {
   animateStageClearExp(totalExp);
 }
 
-function hideStageClearModalForAction() {
-    if (stageClearModal) stageClearModal.classList.add('hidden');
-    stageClearExpAnimToken++;
-    isPaused = false;
-    if (pauseOverlay) pauseOverlay.classList.add('hidden');
-    if (pauseBtn) pauseBtn.classList.remove('paused');
-}
+nextStageBtn.addEventListener('click', () => {
+    if (gameMode !== 'stage' && gameMode !== 'mission') { stageClearModal.classList.add('hidden'); return; }
 
-function retryCurrentStageFromClearModal() {
-    if (gameMode !== 'stage' && gameMode !== 'mission') {
-      hideStageClearModalForAction();
-      return;
-    }
-
-    const retryStage = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stage) || Number(lastSelectedStage) || 1)));
-    hideStageClearModalForAction();
-
-    stage = retryStage;
-    lastSelectedStage = retryStage;
-
-    if (gameMode === 'mission') {
-      missionState.currentStage = retryStage;
-      runStartStage = 1;
-      startGame(retryStage);
-      return;
-    }
-
-    runStartStage = retryStage;
-    startStage();
-}
-
-if (nextStageBtn) nextStageBtn.addEventListener('click', () => {
-    if (gameMode !== 'stage' && gameMode !== 'mission') { hideStageClearModalForAction(); return; }
-
-    hideStageClearModalForAction();
+    stageClearModal.classList.add('hidden');
     stage++;
     if (stage > MAX_STAGE_CAP) stage = MAX_STAGE_CAP;
 
@@ -5233,14 +5166,8 @@ if (nextStageBtn) nextStageBtn.addEventListener('click', () => {
     runStartStage = stage;
     startStage();
 });
-
-if (retryStageBtn) {
-  retryStageBtn.addEventListener('click', retryCurrentStageFromClearModal);
-  retryStageBtn.onclick = retryCurrentStageFromClearModal;
-}
-
-if (clearToTitleBtn) clearToTitleBtn.addEventListener('click', () => {
-    hideStageClearModalForAction();
+clearToTitleBtn.addEventListener('click', () => {
+    stageClearModal.classList.add('hidden');
     goToTitle();
 });
 
@@ -6656,16 +6583,6 @@ const keys = {};
 let lastRenderTs = 0;
 const FPS_OPTIONS = [15, 20, 30, 60];
 const DEFAULT_TARGET_FPS = 60;
-
-// ✅ [v.204.12] 60FPS 발열 완화용 런타임 최적화 상태
-let perfFrameAvgMs = 16.67;
-let perfThermalEcoUntil = 0;
-let perfFrameNo = 0;
-let lastHudDomUpdateMs = 0;
-let lastPauseUiUpdateMs = 0;
-let lastRankIconUpdateMs = 0;
-let lastPerfEcoClassMs = 0;
-
 
 // 저장 데이터
 let saveData = {
@@ -8430,35 +8347,6 @@ function maybeShowSkillUnlockNotice(oldLv, newLv) {
 function randRange(min, max) { return Math.random() * (max - min) + min; }
 function isLowPower() { return !!saveData.lowPower; }
 function areEffectsEnabled() { return saveData.effectsEnabled !== false; }
-function getActiveTargetFps() { return FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS; }
-function isHighFpsMode() { return getActiveTargetFps() >= 60; }
-function isThermalEcoActive(now = performance.now()) { return isLowPower() || (isHighFpsMode() && now < perfThermalEcoUntil); }
-function getParticleBudget() {
-  if (!areEffectsEnabled()) return 0;
-  if (isLowPower()) return 70;
-  if (isThermalEcoActive()) return 105;
-  if (isHighFpsMode()) return 150;
-  return 240;
-}
-function trimEffectArrays() {
-  const particleBudget = getParticleBudget();
-  if (particles.length > particleBudget) particles.splice(0, particles.length - particleBudget);
-  const textBudget = isLowPower() ? 22 : (isHighFpsMode() ? 34 : 48);
-  if (dmgTexts.length > textBudget) dmgTexts.splice(0, dmgTexts.length - textBudget);
-  if (gainMessages && gainMessages.length > 8) gainMessages.splice(0, gainMessages.length - 8);
-}
-function shouldDrawCosmeticFrame(kind = 'normal') {
-  if (!isHighFpsMode()) return true;
-  if (isLowPower()) return (perfFrameNo % 3) === 0;
-  if (isThermalEcoActive()) return (perfFrameNo % 2) === 0;
-  return true;
-}
-function markFrameCost(dt) {
-  const sample = Math.max(0, Math.min(80, Number(dt) || 0));
-  perfFrameAvgMs = perfFrameAvgMs * 0.94 + sample * 0.06;
-  if (isHighFpsMode() && perfFrameAvgMs > 19.2) perfThermalEcoUntil = performance.now() + 4500;
-}
-
 // ===== [핫타임 EXP] =====
 // 매일 08:00~12:00, 18:00~22:00
 function isHotTimeNow(date = new Date()) {
@@ -11545,50 +11433,6 @@ function getQuestScale(lv, mode = 'daily') {
 }
 
 
-// ===== [v.204] 일일/주간 퀘스트 경험치 보상 재설계 =====
-// 일일: LV.60 기준 쉬움 15%, 어려움 35% → 레벨당 0.2~0.3% 감소, 200레벨 0.01%, 이후 10레벨마다 절반
-// 주간: LV.100 기준 쉬움 23%, 어려움 51% → 레벨당 0.3~0.7% 감소, 200레벨 0.07%, 이후 10레벨마다 절반
-function getRepeatQuestNeededExp(lv = level){
-  const maxLv = (typeof MAX_LEVEL !== 'undefined' ? MAX_LEVEL : 300);
-  const safeLv = Math.max(1, Math.min(maxLv - 1, Math.floor(Number(lv) || 1)));
-  return Math.max(1, Number(EXP_TABLE?.[safeLv]?.needed || 1));
-}
-function getRepeatQuestHighLevelScale(lv = level){
-  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
-  if (safeLv < 200) return 1;
-  return Math.pow(0.5, Math.max(0, Math.floor((safeLv - 200) / 10)));
-}
-function getRepeatQuestDifficultyWeight(q){
-  const id = String(q?.id || '');
-  const hardIds = ['kills','stage','score','multikill','boss','surv','skill_kills'];
-  return hardIds.some(k => id.includes(k)) ? 1 : 0;
-}
-function getDailyQuestRewardPercent(q, lv = level){
-  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
-  if (safeLv >= 200) return 0.01 * getRepeatQuestHighLevelScale(safeLv);
-  const weight = getRepeatQuestDifficultyWeight(q);
-  const start = 15 + (35 - 15) * weight;
-  const decPerLv = 0.2 + (0.3 - 0.2) * weight;
-  return Math.max(0.01, start - Math.max(0, safeLv - 60) * decPerLv);
-}
-function getWeeklyQuestRewardPercent(q, lv = level){
-  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
-  if (safeLv >= 200) return 0.07 * getRepeatQuestHighLevelScale(safeLv);
-  const weight = getRepeatQuestDifficultyWeight(q);
-  const start = 23 + (51 - 23) * weight;
-  const decPerLv = 0.3 + (0.7 - 0.3) * weight;
-  return Math.max(0.07, start - Math.max(0, safeLv - 100) * decPerLv);
-}
-function getRepeatQuestRewardExp(q, mode, lv = level){
-  const pct = mode === 'weekly' ? getWeeklyQuestRewardPercent(q, lv) : getDailyQuestRewardPercent(q, lv);
-  return Math.max(1, Math.floor(getRepeatQuestNeededExp(lv) * (pct / 100)));
-}
-function formatRepeatQuestRewardPercent(q, mode, lv = level){
-  const pct = mode === 'weekly' ? getWeeklyQuestRewardPercent(q, lv) : getDailyQuestRewardPercent(q, lv);
-  return pct >= 1 ? `${pct.toFixed(2).replace(/\.00$/,'')}%` : `${pct.toFixed(5).replace(/0+$/,'').replace(/\.$/,'')}%`;
-}
-
-
 
 // ===============================
 // ✅ [v.156] 멀티킬 / 돌발 퀘스트 공통 상태 보정
@@ -11745,9 +11589,7 @@ function claimQuest(pack, quest) {
   if (!pack || !quest) return;
   pack.claimed = pack.claimed || {};
   pack.claimed[quest.id] = true;
-  const mode = (pack === saveData.weeklyQuest) ? 'weekly' : (pack === saveData.dailyQuest ? 'daily' : 'normal');
-  const rewardExp = (mode === 'daily' || mode === 'weekly') ? getRepeatQuestRewardExp(quest, mode) : Math.max(0, Math.floor(Number(quest.reward || 0)));
-  addExpDirect(rewardExp);
+  addExpDirect(quest.reward || 0);
   saveGameData();
   updateQuestUI();
   if (SFX && SFX.questComplete) SFX.questComplete();
@@ -12375,7 +12217,7 @@ function updateQuestUI() {
       createQuestItem(
         q.title,
         `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
-        `${formatNumber(getRepeatQuestRewardExp(q, 'daily'))} EXP (${formatRepeatQuestRewardPercent(q, 'daily')})`,
+        q.reward,
         canClaim,
         () => { claimQuest(saveData.dailyQuest, q); },
         prog,
@@ -12426,7 +12268,7 @@ function updateQuestUI() {
       createQuestItem(
         q.title,
         `${q.title}: ${formatQuestProgressValue(q, prog)} / ${formatQuestProgressValue(q, q.target)}`,
-        `${formatNumber(getRepeatQuestRewardExp(q, 'weekly'))} EXP (${formatRepeatQuestRewardPercent(q, 'weekly')})`,
+        q.reward,
         canClaim,
         () => { claimQuest(saveData.weeklyQuest, q); },
         prog,
@@ -12667,9 +12509,9 @@ const TOWN_NPCS = [
     questTypes:['dungeonClears','dungeonExp','dungeonKills']
   },
   {
-    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:50,
-    line:'50레벨에 도달하셨군요. 차원의 균열은 점점 불안정해지고 있습니다. 디멘션 인베이드의 웨이브, 몬스터 처치, 보스 처치 시간을 확인하겠습니다.',
-    firstIntro:['50레벨에 도달하셨군요. 차원의 슬라임이 마을에 합류했습니다.', '디멘션 인베이드에서 웨이브 클리어, 몬스터 처치, 제한 시간 안의 보스 처치 기록을 부탁드리겠습니다.'],
+    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:150,
+    line:'150레벨에 도달하셨군요. 차원의 균열은 점점 불안정해지고 있습니다. 디멘션 인베이드의 웨이브, 몬스터 처치, 보스 처치 시간을 확인하겠습니다.',
+    firstIntro:['150레벨에 도달하셨군요. 차원의 슬라임이 마을에 합류했습니다.', '디멘션 인베이드에서 웨이브 클리어, 몬스터 처치, 제한 시간 안의 보스 처치 기록을 부탁드리겠습니다.'],
     tips:['차원의 슬라임은 디멘션 인베이드 기록만 확인합니다.', '보스 제한 시간 의뢰는 빠르게 웨이브를 넘기고 보스를 마무리하는 것이 중요합니다.'],
     questTypes:['dimensionWaves','dimensionKills','dimensionBossTime']
   },
@@ -12782,9 +12624,9 @@ const TOWN_QUEST_POOL = [
   { npcId:'dungeonSlime', id:'dungeon_slime_kills', type:'dungeonKills', title:'던전에서 몬스터 N마리 처치', target:250, fixedTarget:false, minLevel:100, expPct200:0.90, gold:()=>Math.max(2800, level * 100), item:'smallPotion', dialogue:'던전에서 몬스터 {n}마리를 처치해줘. 던전 몬스터만 계산하니까 다른 모드에서는 진행되지 않아!' },
 
   // ===== 차원의 슬라임: 디멘션 인베이드 전용 3종 =====
-  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:50, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:50, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
-  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드 N초 안에 클리어하기', target:600, fixedTarget:false, minLevel:50, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드를 {n}초 안에 클리어해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_waves', type:'dimensionWaves', title:'디멘션 인베이드에서 N회 웨이브 클리어', target:8, fixedTarget:false, minLevel:150, expPct200:0.95, gold:()=>Math.max(4200, level * 120), item:'largePotion', dialogue:'디멘션 인베이드에서 웨이브를 {n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_kills', type:'dimensionKills', title:'디멘션 인베이드에서 몬스터 N마리 처치', target:600, fixedTarget:false, minLevel:150, expPct200:0.90, gold:()=>Math.max(4600, level * 130), item:'expMediumPack', dialogue:'디멘션 인베이드에서 몬스터 {n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.' },
+  { npcId:'dimensionSlime', id:'dimension_slime_boss_time', type:'dimensionBossTime', title:'디멘션 인베이드에서 N분 안에 보스 처치', target:5, fixedTarget:false, minLevel:150, expPct200:1.00, gold:()=>Math.max(5200, level * 150), item:'largePotion', dialogue:'디멘션 인베이드에서 {n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.' },
 
   // ===== 크리스탈 슬라임: 엔드게임 전용 3종 =====
   { npcId:'crystalSlime', id:'crystal_slime_kills', type:'crystalKills', title:'크리스탈 슬라임 N마리 처치', target:500, fixedTarget:false, minLevel:200, expPct200:1.00, gold:()=>Math.max(6500, level * 160), item:'expMediumPack', dialogue:'크리스탈 슬라임 {n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.' },
@@ -12887,7 +12729,7 @@ function getTownActiveQuestsForNpc(npcId){
   return getTownActiveQuestList().filter(q => q && q.npcId === npcId);
 }
 function getFirstClaimableTownQuest(npcId){
-  return getTownActiveQuestsForNpc(npcId).find(q => isTownQuestCompleted(q)) || null;
+  return getTownActiveQuestsForNpc(npcId).find(q => (q.progress || 0) >= (q.target || 1)) || null;
 }
 function ensureTownQuestState(){
   if (!saveData.townQuest || typeof saveData.townQuest !== 'object') saveData.townQuest = { active:null, activeList:[], completed:0, npcTalks:0 };
@@ -12960,7 +12802,7 @@ function getTownQuestTypeLabel(type){
     : type === 'dimensionClears' ? '디멘션 클리어'
     : type === 'dimensionWaves' ? '디멘션 웨이브 클리어'
     : type === 'dimensionKills' ? '디멘션 몬스터 처치'
-    : type === 'dimensionBossTime' ? '디멘션 시간 클리어'
+    : type === 'dimensionBossTime' ? '디멘션 보스 시간 처치'
     : type === 'crystalKills' ? '크리스탈 처치'
     : type === 'bossFastKills' ? '보스 빠른 처치'
     : type === 'kingCrystalKills' ? '왕의 크리스탈 토벌'
@@ -13037,15 +12879,10 @@ function getTownQuestTemplateWeightV20310(t){
   const pct = Math.max(0.01, Number(t?.expPct200 ?? t?.expPct ?? 0.35));
   return Math.max(0, Math.min(1, (pct - 0.20) / 0.85));
 }
-function getDimensionBossQuestLimitSeconds(lv = level){
-  const safeLv = Math.max(50, Math.min(300, Math.floor(Number(lv) || 50)));
-  return Math.max(150, 600 - Math.max(0, safeLv - 50) * 2);
-}
 function getTownQuestFinalTarget(t, lv = level){
   const base = Math.max(1, Math.floor(Number(t?.target || 1)));
   if (t && t.beginnerLevelUp) return base;
   const type = t?.type || 'kills';
-  if (type === 'dimensionBossTime') return getDimensionBossQuestLimitSeconds(lv);
   const bracket = getTownQuestDifficultyBracketV20310(lv);
   const [minTarget, maxTarget] = getTownQuestTargetRangeV20310(type, bracket.name);
   if (minTarget === maxTarget) return Math.max(1, Math.floor(minTarget));
@@ -13088,7 +12925,7 @@ function makeTownQuestDesc(type, target){
   if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 균열의 원인을 조사해주세요!`;
   if (type === 'dimensionWaves') return `디멘션 인베이드에서 웨이브를 ${n}회 클리어해 주세요. 차원 균열 분석에 필요한 기록입니다!`;
   if (type === 'dimensionKills') return `디멘션 인베이드에서 몬스터 ${n}마리를 처치해 주세요. 차원 몬스터만 기록됩니다!`;
-  if (type === 'dimensionBossTime') return `디멘션 인베이드를 ${n}초 안에 클리어해 주세요. 제한 시간 안에 클리어하면 완료됩니다!`;
+  if (type === 'dimensionBossTime') return `디멘션 인베이드에서 ${n}분 안에 보스를 처치해 주세요. 제한 시간 안에 처치하면 완료됩니다!`;
   if (type === 'crystalKills') return `크리스탈 슬라임의 수정화가 확산되고 있어요. 크리스탈 슬라임 ${n}마리를 처치해 연구 기록을 확보해주세요!`;
   if (type === 'bossFastKills') return `보스를 ${n}초 안에 처치해 주세요. 최대 60초 안에 처치한 기록만 인정됩니다!`;
   if (type === 'kingCrystalKills') return `왕의 명령입니다. 크리스탈 슬라임 ${n}마리를 처치해 왕국을 뒤덮는 수정화를 막으세요!`;
@@ -13167,7 +13004,7 @@ function makeTownQuestNpcDialogue(npc, type, target){
   if (type === 'dimensionClears') return `차원의 균열이 점점 커지고 있습니다. 디멘션 인베이드를 ${n}회 클리어해 주세요. 균열 너머의 움직임을 기록해야 이 세계가 왜 흔들리는지 알아낼 수 있습니다.`;
   if (type === 'dimensionWaves') return `디멘션 인베이드에서 웨이브를 ${n}회 클리어해 주세요. 웨이브 기록은 차원 균열의 흔들림을 분석하는 데 꼭 필요합니다.`;
   if (type === 'dimensionKills') return `디멘션 인베이드에서 몬스터 ${n}마리를 처치해 주세요. 차원 몬스터의 움직임을 기록하겠습니다.`;
-  if (type === 'dimensionBossTime') return `디멘션 인베이드를 ${n}초 안에 클리어해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.`;
+  if (type === 'dimensionBossTime') return `디멘션 인베이드에서 ${n}분 안에 보스를 처치해 주세요. 빠른 봉인 기록이 있어야 균열 확산을 막을 수 있습니다.`;
   if (type === 'crystalKills') return `크리스탈 슬라임 ${n}마리를 처치해 주시기 바랍니다. 이 기록은 후반 지역의 수정화 확산을 파악하는 데 매우 중요합니다.`;
   if (type === 'bossFastKills') return `보스를 ${n}초 안에 처치해 주시기 바랍니다. 최대 60초 안에 마무리한 전투만 기록으로 인정하겠습니다.`;
   if (type === 'kingCrystalKills') return `왕의 명이니라. 크리스탈 슬라임 ${n}마리를 처치하여 왕국을 뒤덮는 수정화를 막거라. 어려운 임무이나, 그대라면 해낼 수 있으리라 믿노라.`;
@@ -13180,11 +13017,6 @@ function makeTownQuestNpcDialogue(npc, type, target){
 function normalizeTownQuestDisplay(q){
   if (!q) return q;
   q.target = Math.max(1, Math.floor(Number(q.target || 1)));
-  if (q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
-    q.target = q.timeLimitSeconds;
-    if (typeof q.remainingSeconds !== 'number' || !isFinite(q.remainingSeconds)) q.remainingSeconds = q.timeLimitSeconds;
-  }
   const npc = getTownNpcById(q.npcId);
   q.desc = q.storyDialogue ? formatTownQuestStoryDialogue(q.storyDialogue, q.target) : makeTownQuestNpcDialogue(npc, q.type, q.target);
   if (!q.beginnerLevelUp && q.npcId !== 'guide') q.dialogue = q.desc;
@@ -13204,10 +13036,6 @@ function buildTownQuestFromTemplate(t, npc){
     storyDialogue: t.dialogue || '',
     target: finalTarget,
     progress: 0,
-    timeLimitSeconds: t.type === 'dimensionBossTime' ? finalTarget : 0,
-    remainingSeconds: t.type === 'dimensionBossTime' ? finalTarget : 0,
-    timerStartedAt: 0,
-    failed: false,
     expPct200: Math.max(0.01, Number(t.expPct200 || t.expPct || 0.1)),
     gold: Math.max(0, Math.floor(goldReward || 0)),
     item: t.item || null,
@@ -13232,30 +13060,6 @@ function openTownQuestModal(html, actionText, actionFn){
 function closeTownQuestModal(){
   if (townQuestModal) townQuestModal.classList.add('hidden');
 }
-
-// ✅ [v.204.8] 마을 퀘스트 포기 버튼 터치/클릭 보강
-// 일부 모바일 환경에서는 innerHTML로 만든 inline onclick이 씹히는 경우가 있어,
-// 모달 내부 버튼을 이벤트 위임으로 한 번 더 확실하게 받습니다.
-function handleTownAbandonButtonEvent(ev){
-  const btn = ev && ev.target && ev.target.closest ? ev.target.closest('.town-abandon-btn') : null;
-  if (!btn) return;
-  ev.preventDefault();
-  ev.stopPropagation();
-  const questId = btn.getAttribute('data-town-quest-id') || '';
-  if (!questId) {
-    showToast('포기할 퀘스트를 찾을 수 없습니다.', '#ffdf9b', 1400);
-    return;
-  }
-  abandonTownQuest(questId);
-}
-try {
-  if (townQuestBody && !townQuestBody.__townAbandonFixed) {
-    townQuestBody.__townAbandonFixed = true;
-    townQuestBody.addEventListener('click', handleTownAbandonButtonEvent, true);
-    townQuestBody.addEventListener('touchend', handleTownAbandonButtonEvent, { capture:true, passive:false });
-  }
-  window.abandonTownQuest = abandonTownQuest;
-} catch(e) {}
 
 const TOWN_NPC_SPEECH_STYLE = {
   guide: {
@@ -13544,14 +13348,6 @@ function startBeginnerGuideRun(q){
 }
 function acceptTownQuest(q){
   const town = ensureTownQuestState();
-  if (q && q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
-    q.target = q.timeLimitSeconds;
-    q.progress = 0;
-    q.remainingSeconds = q.timeLimitSeconds;
-    q.timerStartedAt = 0;
-    q.failed = false;
-  }
   town.active = q;
   saveGameData();
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
@@ -13674,14 +13470,11 @@ function updateTownQuestTrackerPosition(){
   } catch(e) {}
 }
 function renderTownQuestTrackerRow(q){
+  const progress = Math.max(0, Math.floor(Number(q.progress || 0)));
   const target = Math.max(1, Math.floor(Number(q.target || 1)));
-  const done = isTownQuestCompleted(q);
-  const failed = !!(q && q.type === 'dimensionBossTime' && q.failed);
-  let progress = Math.max(0, Math.floor(Number(q.progress || 0)));
-  if (q && q.type === 'dimensionBossTime' && !done) progress = getDimensionBossQuestRemainingSeconds(q);
+  const done = progress >= target;
   const label = `${q.npcName || '마을 NPC'} · ${getTownQuestTypeLabel(q.type)}`;
-  const prefix = done ? '📖 ' : (failed ? '❌ ' : '');
-  return `<div class="town-quest-tracker-row${done ? ' town-quest-tracker-complete' : ''}"><span class="town-quest-tracker-name">${prefix}${label}</span><span class="town-quest-tracker-count">${formatNumber(progress)}/${formatNumber(target)}</span></div>`;
+  return `<div class="town-quest-tracker-row${done ? ' town-quest-tracker-complete' : ''}"><span class="town-quest-tracker-name">${done ? '📖 ' : ''}${label}</span><span class="town-quest-tracker-count">${formatNumber(progress)}/${formatNumber(target)}</span></div>`;
 }
 function updateTownQuestTracker(){
   if (!townQuestTrackerEl) return;
@@ -13694,7 +13487,7 @@ function updateTownQuestTracker(){
       return;
     }
     const visible = list.slice(0, 4);
-    const completeCount = list.filter(q => isTownQuestCompleted(q)).length;
+    const completeCount = list.filter(q => (q.progress || 0) >= (q.target || 1)).length;
     const moreText = list.length > visible.length ? `<div class="town-quest-tracker-row"><span class="town-quest-tracker-name">외 ${formatNumber(list.length - visible.length)}개 진행 중</span><span class="town-quest-tracker-count">＋</span></div>` : '';
     townQuestTrackerEl.innerHTML = `<div id="townQuestTrackerTitle"><span>🏡 NPC 퀘스트</span><span>${completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`}</span></div>` + visible.map(renderTownQuestTrackerRow).join('') + moreText;
     townQuestTrackerEl.classList.remove('hidden');
@@ -13710,60 +13503,9 @@ function showTownQuestCompletionNotice(q){
   } catch(e) {}
 }
 
-
-function isTownQuestCurrentlyActive(q){
-  try {
-    if (!q || !q.id) return false;
-    const town = ensureTownQuestState();
-    if (town.active && town.active.id === q.id) return true;
-    return Array.isArray(town.activeList) && town.activeList.some(x => x && x.id === q.id);
-  } catch(e) { return false; }
-}
-function abandonTownQuest(questId){
-  const town = ensureTownQuestState();
-  let q = null;
-  let fromList = false;
-  if (questId && Array.isArray(town.activeList)) {
-    q = town.activeList.find(x => x && x.id === questId) || null;
-    fromList = !!q;
-  }
-  if (!q && town.active && (!questId || town.active.id === questId)) q = town.active;
-  if (!q || q.beginnerLevelUp) {
-    showToast('이 퀘스트는 포기할 수 없습니다.', '#ffdf9b', 1400);
-    return;
-  }
-  const penalty = Math.min(50000, Math.max(500, Math.floor(Math.max(0, Number(gold) || 0) * 0.03)));
-  const realPenalty = Math.min(Math.max(0, Math.floor(Number(gold) || 0)), penalty);
-  if (!confirm(`퀘스트를 포기할까요?\n\n패널티: 골드 ${formatNumber(realPenalty)} 차감\n포기하면 진행도는 사라지지만, 오늘 수락 횟수 1회가 복구되어 다시 받을 수 있습니다.`)) return;
-  if (fromList) town.activeList = town.activeList.filter(x => x && x.id !== q.id);
-  else if (town.active && town.active.id === q.id) town.active = null;
-  if (q.npcId) {
-    const rec = getTownDailyNpcRecord(town, q.npcId);
-    rec.accepted = Math.max(0, Math.floor(Number(rec.accepted) || 0) - 1);
-    if (Array.isArray(rec.baseIds)) rec.baseIds = rec.baseIds.filter(id => id !== q.baseId);
-  }
-  if (realPenalty > 0) {
-    gold = Math.max(0, Math.floor(Number(gold) || 0) - realPenalty);
-    if (saveData) {
-      saveData.gold = gold;
-      saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0) + realPenalty);
-    }
-  }
-  saveGameData();
-  updateHUD();
-  try { updateTownQuestTracker(); } catch(e) {}
-  closeTownQuestModal();
-  showToast(`퀘스트 포기 완료 · 골드 -${formatNumber(realPenalty)}`, '#ffb8b8', 1600);
-}
 function renderActiveTownQuestHtml(q){
-  const displayProgress = (q && q.type === 'dimensionBossTime' && !isTownQuestCompleted(q)) ? getDimensionBossQuestRemainingSeconds(q) : Math.max(0, q.progress || 0);
-  const pct = q && q.type === 'dimensionBossTime' && !isTownQuestCompleted(q)
-    ? Math.min(100, (displayProgress / Math.max(1, q.target || 1)) * 100)
-    : Math.min(100, (Math.max(0, q.progress || 0) / Math.max(1, q.target || 1)) * 100);
+  const pct = Math.min(100, (Math.max(0, q.progress || 0) / Math.max(1, q.target || 1)) * 100);
   const itemText = q.item ? `<br>아이템: ${getTownItemName(q.item)} x1` : '';
-  const canAbandon = isTownQuestCurrentlyActive(q) && !isTownQuestCompleted(q) && !q.beginnerLevelUp;
-  const safeQuestId = String(q.id || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const abandonBtn = canAbandon ? `<button type="button" class="ui-btn town-abandon-btn" data-town-quest-id="${safeQuestId}" style="margin-top:10px; width:100%; border-color:#ff8a8a; color:#ffe1e1; background:linear-gradient(to bottom,#5a2020,#2a0c0c); touch-action:manipulation; pointer-events:auto; position:relative; z-index:2;">퀘스트 포기하기 · 패널티 적용</button>` : '';
   return `
     <div class="town-npc-card">
       <div style="font-size:18px; font-weight:1000; color:#b8ffd8;">${q.title}</div>
@@ -13773,9 +13515,8 @@ function renderActiveTownQuestHtml(q){
       <div style="margin-top:10px; height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,0.12);">
         <div style="width:${pct.toFixed(1)}%; height:100%; background:linear-gradient(90deg,#44ffb8,#ffe16b);"></div>
       </div>
-      <div style="margin-top:6px; font-weight:900;">${getTownQuestTypeLabel(q.type)}: ${formatNumber(displayProgress || 0)} / ${formatNumber(q.target || 1)}${q.failed ? ' · 실패' : ''}</div>
+      <div style="margin-top:6px; font-weight:900;">${getTownQuestTypeLabel(q.type)}: ${formatNumber(q.progress || 0)} / ${formatNumber(q.target || 1)}</div>
       <div class="town-quest-reward">보상: EXP ${formatNumber(getTownQuestExpReward(q))} (${getTownQuestPercentText(q)}) / 골드 ${formatNumber(q.gold)}${itemText}</div>
-      ${abandonBtn}
     </div>`;
 }
 function getTownNpcById(id){
@@ -13786,13 +13527,13 @@ function getTownNpcStatus(npc){
   if (npc && npc.id === 'guide') {
     const q = town.active;
     if (q && q.npcId === npc.id) {
-      const done = isTownQuestCompleted(q);
+      const done = (q.progress || 0) >= (q.target || 1);
       return done ? { icon:'📖', text:'완료 가능', color:'#fff1a8' } : { icon:'…', text:'진행 중', color:'#d8e8ff' };
     }
     return { icon:'💡', text:'안내 가능', color:'#fff1a8' };
   }
   const list = getTownActiveQuestsForNpc(npc.id);
-  if (list.some(q => isTownQuestCompleted(q))) return { icon:'📖', text:'완료 가능', color:'#fff1a8' };
+  if (list.some(q => (q.progress || 0) >= (q.target || 1))) return { icon:'📖', text:'완료 가능', color:'#fff1a8' };
   if (list.length > 0) return { icon:'…', text:`진행 중 ${list.length}/${getTownNpcDailyLimit(npc)}`, color:'#d8e8ff' };
   const rec = getTownDailyNpcRecord(town, npc.id);
   if (rec.accepted >= getTownNpcDailyLimit(npc)) return { icon:'💬', text:'오늘 완료', color:'#d8e8ff' };
@@ -13892,14 +13633,6 @@ function talkToTownNpc(npc){
 }
 function acceptTownQuest(q){
   const town = ensureTownQuestState();
-  if (q && q.type === 'dimensionBossTime') {
-    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
-    q.target = q.timeLimitSeconds;
-    q.progress = 0;
-    q.remainingSeconds = q.timeLimitSeconds;
-    q.timerStartedAt = 0;
-    q.failed = false;
-  }
   if (isBeginnerGuideQuest(q)) {
     town.active = q;
   } else {
@@ -13923,58 +13656,6 @@ function acceptTownQuest(q){
   if (isBeginnerGuideQuest(q)) startBeginnerGuideRun(q);
   else showToast(`💡 ${q.npcName} 퀘스트를 수락했습니다!`, '#b8ffd8', 1200);
 }
-function isTownQuestCompleted(q){
-  if (!q) return false;
-  return (q.progress || 0) >= (q.target || 1);
-}
-function getDimensionBossQuestRemainingSeconds(q){
-  if (!q || q.type !== 'dimensionBossTime') return 0;
-  if (q.failed) return 0;
-  if (isTownQuestCompleted(q)) return Math.max(0, Math.floor(Number(q.target || 0)));
-  const limit = Math.max(1, Math.floor(Number(q.timeLimitSeconds || q.target || 1)));
-  const started = Math.max(0, Number(q.timerStartedAt || 0));
-  if (!started) return limit;
-  const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000));
-  return Math.max(0, limit - elapsed);
-}
-function refreshDimensionBossTimedTownQuests(){
-  const town = ensureTownQuestState();
-  const targets = [];
-  if (town.active) targets.push(town.active);
-  if (Array.isArray(town.activeList)) targets.push(...town.activeList);
-  let changed = false;
-  for (const q of targets) {
-    if (!q || q.type !== 'dimensionBossTime' || isTownQuestCompleted(q) || q.failed) continue;
-    const remaining = getDimensionBossQuestRemainingSeconds(q);
-    if (q.remainingSeconds !== remaining) { q.remainingSeconds = remaining; changed = true; }
-    if (remaining <= 0) {
-      q.failed = true;
-      q.remainingSeconds = 0;
-      changed = true;
-      try { if (state !== 'town') showToast('디멘션 시간 클리어 실패! 마을에서 퀘스트를 포기한 뒤 다시 수락해 주세요.', '#ff9b9b', 1800); } catch(e) {}
-    }
-  }
-  if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
-}
-
-function resetDimensionBossTimedTownQuestsForRun(){
-  const town = ensureTownQuestState();
-  const targets = [];
-  if (town.active) targets.push(town.active);
-  if (Array.isArray(town.activeList)) targets.push(...town.activeList);
-  let changed = false;
-  for (const q of targets) {
-    if (!q || q.type !== 'dimensionBossTime' || isTownQuestCompleted(q)) continue;
-    q.timeLimitSeconds = getDimensionBossQuestLimitSeconds(level);
-    q.target = q.timeLimitSeconds;
-    q.progress = 0;
-    q.remainingSeconds = q.timeLimitSeconds;
-    q.timerStartedAt = Date.now();
-    q.failed = false;
-    changed = true;
-  }
-  if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
-}
 function claimTownQuestReward(questId){
   const town = ensureTownQuestState();
   let q = null;
@@ -13984,7 +13665,7 @@ function claimTownQuestReward(questId){
     fromList = !!q;
   }
   if (!q && town.active) q = town.active;
-  if (!q || !isTownQuestCompleted(q)) { closeTownQuestModal(); return; }
+  if (!q || (q.progress || 0) < (q.target || 1)) { closeTownQuestModal(); return; }
   const expReward = getTownQuestExpReward(q);
   addExpDirect(expReward);
   const goldReward = Math.max(0, Math.floor(q.gold || 0));
@@ -14018,12 +13699,11 @@ function updateTownQuestProgress(type, amount){
   let changed = false;
   for (const q of targets) {
     if (!q || q.type !== type) continue;
-    if (q.failed) continue;
-    if (isTownQuestCompleted(q)) continue;
+    if ((q.progress || 0) >= (q.target || 1)) continue;
     q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
     normalizeTownQuestDisplay(q);
     changed = true;
-    const justCompleted = isTownQuestCompleted(q);
+    const justCompleted = (q.progress || 0) >= (q.target || 1);
     try {
       if (state !== 'town') {
         const progressLabel = `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`;
@@ -14050,17 +13730,17 @@ function completeTimedTownQuestProgress(type, elapsedSeconds){
   const elapsed = Math.max(0, Number(elapsedSeconds) || 0);
   for (const q of targets) {
     if (!q || q.type !== type) continue;
-    if (isTownQuestCompleted(q)) continue;
-    const limit = Math.max(1, Math.floor(Number(q.timeLimitSeconds || q.target || 1)));
-    const limitSeconds = limit;
-    if (!q.failed && elapsed <= limitSeconds) {
+    if ((q.progress || 0) >= (q.target || 1)) continue;
+    const limit = Math.max(1, Math.floor(Number(q.target || 1)));
+    const limitSeconds = (type === 'dimensionBossTime') ? limit * 60 : limit;
+    if (elapsed <= limitSeconds) {
       q.progress = q.target;
       normalizeTownQuestDisplay(q);
       changed = true;
       try {
         if (state !== 'town') {
-          const unit = '초';
-          showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}${unit} 이내 클리어)`, '#dffff0', 1500);
+          const unit = type === 'dimensionBossTime' ? '분' : '초';
+          showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}${unit} 이내)`, '#dffff0', 1500);
           showTownQuestCompletionNotice(q);
         }
       } catch(e) {}
@@ -14069,13 +13749,6 @@ function completeTimedTownQuestProgress(type, elapsedSeconds){
   if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
   return changed;
 }
-try {
-  if (!window.__townDimensionBossTimerV204) {
-    window.__townDimensionBossTimerV204 = setInterval(() => {
-      try { refreshDimensionBossTimedTownQuests(); } catch(e) {}
-    }, 1000);
-  }
-} catch(e) {}
 
 
 function ensureTownNpcUnlockSave(){
@@ -16827,22 +16500,10 @@ function addScore(amount, source = 'monster', options = {}) {
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
   if (gameMode === 'stage' && source === 'monster') {
     const baseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
-    // ✅ [v.204.10] 레벨 차이 보정값은 유지하되, 착용 펫 EXP 보너스 %는 다시 적용합니다.
-    // - baseExp: 몬스터/플레이어 레벨 차이 보정이 끝난 기본 EXP
-    // - petExpMult: 장착 중인 펫 EXP 보너스 배율
-    // - 핫타임/쿠폰/상점 EXP 버프는 기존 의도대로 스테이지 몬스터 보정값을 흔들지 않게 제외
-    const petExpMult = Math.max(1, Number((typeof getPetExpMultiplier === 'function') ? getPetExpMultiplier() : 1) || 1);
-    const petBonusExp = Math.max(0, Math.round(baseExp * Math.max(0, petExpMult - 1)));
-    const finalExp = Math.max(1, Math.floor(baseExp) + petBonusExp);
-    const gainedExp = addExpDirect(finalExp);
+    const hotMult = getHotMultiplier();
+    const gainedExp = addExp(baseExp, { source: 'monster', baseAmount: baseExp, hotMultiplier: hotMult });
     if (gainedExp > 0) {
       stageRunExpMonsters += Math.max(0, Math.floor(gainedExp || 0));
-      try {
-        pushGainMessage(`경험치를 얻었습니다(+${formatNumber(Math.round(baseExp))})`, '#7dffb2');
-        if (petBonusExp > 0) {
-          pushGainMessage(`펫 추가 경험치 ${Math.round((petExpMult - 1) * 100)}%(+${formatNumber(petBonusExp)})`, '#ffe07a');
-        }
-      } catch(e) {}
     }
     if (options.multikillEligible === true) {
       recordMultiKillCandidate(gainedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
@@ -19764,28 +19425,17 @@ function getStageMonsterTotalExpReward(stageValue) {
     return Math.max(0, Math.floor(getStageBossExpReward(s) * 0.5));
 }
 
-function getStageMonsterLevelExpRate(stageValue, playerLevelValue = level) {
-    const monsterLv = Math.max(1, Math.floor(Number(stageValue) || 1));
-    const playerLv = Math.max(1, Math.floor(Number(playerLevelValue) || 1));
-    const diff = Math.abs(playerLv - monsterLv);
-    // ✅ ±1레벨마다 5% 감소, ±10레벨 이상은 50% 고정
-    return Math.max(0.5, 1 - Math.min(10, diff) * 0.05);
-}
-
 function getStageMonsterExpRewardForEnemy(stageValue, enemy) {
-    let baseExp = getStageMonsterExpReward(stageValue);
+    const baseExp = getStageMonsterExpReward(stageValue);
     const s = Math.max(1, Math.floor(Number(stageValue) || 1));
     const isElite = !!(enemy && enemy.isElite);
 
     // ✅ 101스테이지부터 등장하는 엘리트 몬스터만 EXP 2.5배 적용
+    // 기존 일반 몬스터 EXP는 그대로 유지합니다.
     if (s >= 101 && isElite) {
-        baseExp = Math.max(0, Math.floor(baseExp * 2.5));
+        return Math.max(0, Math.floor(baseExp * 2.5));
     }
-
-    // ✅ [v.204.3] 스테이지 몬스터 EXP 레벨 차이 보정
-    // 예: 플레이어 40레벨이 2스테이지 몬스터 처치 → diff 38 → 50% → 2 EXP는 1 EXP
-    const rate = getStageMonsterLevelExpRate(s, level);
-    return Math.max(1, Math.floor(baseExp * rate));
+    return baseExp;
 }
 
 function getBossWarningDescription(stageValue, kind = 'slime') {
@@ -22662,32 +22312,29 @@ enemyBullets = enemyBullets.filter(b => !b._remove && b.y > -20 && b.y < height 
 }
 
 function updateParticles(dt) {
-  if (!areEffectsEnabled()) { particles = []; return; }
-  const delta = dt / 16.67;
-  const budget = getParticleBudget();
-  if (particles.length > budget) particles.splice(0, particles.length - budget);
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    if (p.maxLife == null) p.maxLife = p.life;
-    p.x += (p.vx || 0) * delta;
-    p.y += (p.vy || 0) * delta;
-    p.life -= dt;
-    if (p.grow) p.r = (p.r || 0) + p.grow * delta;
-    if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
+const delta = dt / 16.67;
+particles.forEach(p => {
+  // ✅ maxLife가 없으면 최초 1회 세팅 (알파 계산 안정화)
+  if (p.maxLife == null) p.maxLife = p.life;
+  // 위치/수명
+  p.x += (p.vx || 0) * delta;
+  p.y += (p.vy || 0) * delta;
+  p.life -= dt;
+
+  // ✅ 확장/회전 같은 추가 속성 지원(없으면 무시)
+  if (p.grow) p.r = (p.r || 0) + p.grow * delta;
+  if (p.spin) p.rot = (p.rot || 0) + p.spin * delta;
+});
+particles = particles.filter(p => p.life > 0);
 }
 
 function updateDamageTexts(dt) {
   const delta = dt / 16.67;
-  const budget = isLowPower() ? 22 : (isHighFpsMode() ? 34 : 48);
-  if (dmgTexts.length > budget) dmgTexts.splice(0, dmgTexts.length - budget);
-  for (let i = dmgTexts.length - 1; i >= 0; i--) {
-    const t = dmgTexts[i];
+  dmgTexts.forEach(t => {
     t.y += t.vy * delta * 2;
     t.life -= dt;
-    if (t.life <= 0) dmgTexts.splice(i, 1);
-  }
+  });
+  dmgTexts = dmgTexts.filter(t => t.life > 0);
 }
 
 function drawDamageTexts() {
@@ -23109,11 +22756,6 @@ if (boss && !bossInvincible) {
 }
 
 function updateHUD() {
-  // ✅ [v.204.12] DOM 갱신은 매 프레임 하지 않음
-  const __hudNow = performance.now();
-  const __hudInterval = isLowPower() ? 240 : (isHighFpsMode() ? 120 : 80);
-  if (state === 'playing' && lastHudDomUpdateMs && (__hudNow - lastHudDomUpdateMs) < __hudInterval) return;
-  lastHudDomUpdateMs = __hudNow;
   try { updateTownQuestTracker(); } catch(e){}
   try { updateConsumableQuickBar(); } catch(e){}
   try { updateFeverUI(); } catch(e){}
@@ -24785,17 +24427,13 @@ function drawEnemyBullets() {
 
 function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
 function drawParticles() {
-  if (!areEffectsEnabled() || !particles.length) return;
-  if (!shouldDrawCosmeticFrame('particles')) return;
-  const budget = getParticleBudget();
-  const start = Math.max(0, particles.length - budget);
-  for (let __pi = start; __pi < particles.length; __pi++) {
-    const p = particles[__pi];
+  particles.forEach(p => {
     const maxL = (p.maxLife == null) ? (p.life || 1) : p.maxLife;
     const alpha = (maxL > 0) ? (p.life / maxL) : 0;
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
+    // ✅ 타입별 렌더링
     if (p.type === 'ring') {
       const r = (p.r != null) ? p.r : 10;
       ctx.strokeStyle = p.color || 'rgba(255,160,60,1)';
@@ -24811,6 +24449,7 @@ function drawParticles() {
       if (rot) ctx.rotate(rot);
       ctx.fillRect(-w/2, -h/2, w, h);
     } else {
+      // 기본 점/원 파티클
       ctx.fillStyle = p.color || '#fff';
       const r = (p.size != null) ? p.size : 2.2;
       ctx.beginPath();
@@ -24819,7 +24458,7 @@ function drawParticles() {
     }
 
     ctx.restore();
-  }
+  });
 }
 
 function drawTitleScreen() {
@@ -25213,15 +24852,12 @@ function drawBossWarningOverlay() {
 }
 
 function gameLoop(timestamp) {
-  const targetFps = getActiveTargetFps();
+  const targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
   const frameInterval = 1000 / targetFps;
 
   if (lastRenderTs && (timestamp - lastRenderTs) < frameInterval) {
-    if (!lastPauseUiUpdateMs || timestamp - lastPauseUiUpdateMs > 180) {
-      lastPauseUiUpdateMs = timestamp;
-      setPauseUI();
-    }
-    requestAnimationFrame(gameLoop);
+    setPauseUI();
+requestAnimationFrame(gameLoop);
     return;
   }
   lastRenderTs = timestamp;
@@ -25230,13 +24866,6 @@ function gameLoop(timestamp) {
   const rawDt = timestamp - lastTime;
   const dt = Math.max(0, Math.min(rawDt, 100));
   lastTime = timestamp;
-  perfFrameNo++;
-  markFrameCost(rawDt);
-  trimEffectArrays();
-  if (!lastPerfEcoClassMs || timestamp - lastPerfEcoClassMs > 500) {
-    lastPerfEcoClassMs = timestamp;
-    document.body.classList.toggle('perf-eco', isHighFpsMode() || isThermalEcoActive(timestamp));
-  }
 
   syncTopSettingsVisibility();
   // ✅ v.168.12: 계급 아이콘은 게임 FPS 루프가 아니라 별도 60fps requestAnimationFrame 루프에서 갱신
@@ -26486,11 +26115,7 @@ updateRankIcon = function(){
   window.__rankFlashActiveV1688 = true;
   window.__rankAnimationLoopV16812 = function(nowMs){
     window.__rankAnimTimeV16812 = nowMs || performance.now();
-    const interval = isLowPower() ? 500 : (isHighFpsMode() ? 160 : 90);
-    if(!lastRankIconUpdateMs || window.__rankAnimTimeV16812 - lastRankIconUpdateMs >= interval){
-      lastRankIconUpdateMs = window.__rankAnimTimeV16812;
-      if(typeof updateRankIcon === 'function') updateRankIcon();
-    }
+    if(typeof updateRankIcon === 'function') updateRankIcon();
     window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
   };
   window.__rankRafV16812 = requestAnimationFrame(window.__rankAnimationLoopV16812);
@@ -29388,7 +29013,6 @@ function startDimensionInvasionModeV175(){
   dimensionInvasionWaveClearPendingV179 = false;
   gameMode = 'stage';
   stage = getDimensionInvasionStageV175();
-  try { resetDimensionBossTimedTownQuestsForRun(); } catch(e) {}
   try { if (modeModal) modeModal.classList.add('hidden'); } catch(e) {}
   startGame(stage);
   dimensionInvasionWaveStartKillsV175 = Math.max(0, Math.floor(stageRunKillCount || 0));
@@ -31884,816 +31508,6 @@ try {
   // 기존 v.2023 후킹은 다음 가이드 제목이 먼저 보이거나, 대사가 중복될 수 있어 비활성화했습니다.
 
 })();
-</script>
-
-
-<style>
-/* ===============================
-   ✅ [v.204.1] 스테이지 결과 화면 리디자인 + 다시하기 버튼
-   =============================== */
-#stageClearModal.stage-result-v2041{
-  width:min(92vw, 480px);
-  border-radius:26px !important;
-  border:1px solid rgba(124,255,181,0.58) !important;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(124,255,181,0.22) 0%, rgba(68,255,184,0.10) 26%, rgba(10,16,30,0.98) 62%, rgba(4,7,16,0.99) 100%) !important;
-  box-shadow:
-    0 24px 76px rgba(0,0,0,0.72),
-    0 0 34px rgba(68,255,184,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.14) !important;
-  overflow:hidden;
-}
-#stageClearModal.stage-result-v2041::before{
-  content:"";
-  position:absolute;
-  left:-20%; top:-18%;
-  width:140%; height:44%;
-  background:linear-gradient(120deg, rgba(255,255,255,0.18), rgba(255,255,255,0.00) 56%);
-  pointer-events:none;
-}
-#stageClearModal.stage-result-v2041 .modal-header{
-  font-size:32px !important;
-  color:#b8ffd8 !important;
-  text-shadow:0 0 18px rgba(68,255,184,0.46), 0 3px 10px rgba(0,0,0,0.55) !important;
-}
-#stageClearModal.stage-result-v2041 #stageClearIntroText{
-  padding:10px 12px;
-  border-radius:16px;
-  background:rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.10);
-}
-#stageClearModal.stage-result-v2041 #stageClearStats{
-  max-width:390px !important;
-  border-color:rgba(124,255,181,0.30) !important;
-  background:linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)) !important;
-}
-#stageClearModal.stage-result-v2041 #stageClearExpValueWrap{
-  background:linear-gradient(180deg, rgba(68,255,184,0.20), rgba(68,255,184,0.06)) !important;
-  border-color:rgba(68,255,184,0.26) !important;
-}
-#stageClearModal.stage-result-v2041 #stageClearExpText{
-  font-size:34px !important;
-}
-#stageClearButtonGroup.stage-result-buttons-v2041{
-  max-width:340px !important;
-  gap:9px !important;
-}
-#stageClearButtonGroup.stage-result-buttons-v2041 .stage-action-row-v2041{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-  width:100%;
-}
-#nextStageBtn.stage-next-v2041,
-#retryStageBtn.stage-retry-v2041{
-  min-height:46px;
-  border-radius:15px !important;
-  font-size:14px !important;
-  font-weight:1000 !important;
-  line-height:1.2;
-  box-shadow:0 12px 28px rgba(0,0,0,0.32) !important;
-}
-#retryStageBtn.stage-retry-v2041{
-  width:100%;
-  border-color:#ffe98a !important;
-  color:#2d2100 !important;
-  background:linear-gradient(to bottom, #fff0a8, #ffb82e) !important;
-}
-#clearToTitleBtn.stage-title-v2041{
-  min-height:42px;
-  border-radius:14px !important;
-  background:linear-gradient(to bottom, rgba(74,87,112,0.95), rgba(22,30,48,0.95)) !important;
-}
-@media (max-width:520px){
-  #stageClearModal.stage-result-v2041 .modal-header{ font-size:26px !important; }
-  #stageClearButtonGroup.stage-result-buttons-v2041 .stage-action-row-v2041{ grid-template-columns:1fr; }
-}
-</style>
-<script>
-/* ===============================
-   ✅ [v.204.1] 스테이지 결과 UI + 현재 스테이지 다시하기 + 몬스터 EXP 레벨 차이 보정
-   - 같은 레벨 몬스터: 100%
-   - ±1레벨마다 -5%
-   - ±10레벨 이상: 최소 50%
-   =============================== */
-(function(){
-  const PATCH_ID = 'v204_1_stage_result_retry_and_monster_exp_level_scaling';
-  if (window[PATCH_ID]) return;
-  window[PATCH_ID] = true;
-
-  function isNormalStageModeV2041(){
-    try {
-      if (gameMode !== 'stage') return false;
-      if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
-      if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return false;
-      if (typeof window !== 'undefined' && window.__slimeRushActiveV187) return false;
-      if (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175()) return false;
-      if (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188()) return false;
-      return true;
-    } catch(e) { return false; }
-  }
-
-  function getMonsterExpLevelRateV2041(playerLv, monsterLv){
-    const p = Math.max(1, Math.floor(Number(playerLv) || 1));
-    const m = Math.max(1, Math.floor(Number(monsterLv) || p));
-    const diff = Math.min(10, Math.abs(m - p));
-    return Math.max(0.5, 1 - diff * 0.05);
-  }
-
-  function getMonsterDisplayLevelV2041(stageValue, enemy){
-    const fallback = Math.max(1, Math.floor(Number(stageValue) || 1));
-    try {
-      return Math.max(1, Math.floor(Number(
-        (enemy && (enemy._evolutionLevel || enemy.enemyLevel || enemy.level || enemy.stage)) || fallback
-      ) || fallback));
-    } catch(e) { return fallback; }
-  }
-
-  if (typeof getStageMonsterExpRewardForEnemy === 'function') {
-    const __getStageMonsterExpRewardForEnemyBeforeV2041 = getStageMonsterExpRewardForEnemy;
-    getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
-      const base = Math.max(0, Math.floor(Number(__getStageMonsterExpRewardForEnemyBeforeV2041.apply(this, arguments)) || 0));
-      if (!isNormalStageModeV2041()) return base;
-      const monsterLv = getMonsterDisplayLevelV2041(stageValue, enemy);
-      const rate = getMonsterExpLevelRateV2041(level, monsterLv);
-      const scaled = Math.max(1, Math.floor(base * rate));
-      try {
-        if (enemy) {
-          enemy._expLevelRateV2041 = rate;
-          enemy._expLevelDiffV2041 = monsterLv - Math.max(1, Math.floor(Number(level) || 1));
-        }
-      } catch(e) {}
-      return scaled;
-    };
-  }
-
-  function ensureStageRetryButtonV2041(){
-    const group = document.getElementById('stageClearButtonGroup');
-    const next = document.getElementById('nextStageBtn');
-    const title = document.getElementById('clearToTitleBtn');
-    if (!group || !next) return null;
-
-    let retry = document.getElementById('retryStageBtn');
-    if (!retry) {
-      retry = document.createElement('button');
-      retry.id = 'retryStageBtn';
-      retry.type = 'button';
-      retry.className = 'ui-btn stage-retry-v2041';
-      retry.textContent = '현재 스테이지 다시하기 ↻';
-    }
-
-    let row = group.querySelector('.stage-action-row-v2041');
-    if (!row) {
-      row = document.createElement('div');
-      row.className = 'stage-action-row-v2041';
-      group.insertBefore(row, group.firstChild);
-    }
-    if (next.parentElement !== row) row.appendChild(next);
-    if (retry.parentElement !== row) row.appendChild(retry);
-    if (title && title.parentElement !== group) group.appendChild(title);
-
-    group.classList.add('stage-result-buttons-v2041');
-    next.classList.add('stage-next-v2041');
-    retry.classList.add('stage-retry-v2041');
-    if (title) title.classList.add('stage-title-v2041');
-    return retry;
-  }
-
-  const retryBtn = ensureStageRetryButtonV2041();
-  if (retryBtn) {
-    retryBtn.addEventListener('click', function(ev){
-      if (!isNormalStageModeV2041()) return;
-      ev.preventDefault();
-      ev.stopImmediatePropagation();
-      const current = Math.max(1, Math.min(MAX_STAGE_CAP || 300, Math.floor(Number(stage) || 1)));
-      const modal = document.getElementById('stageClearModal');
-      if (modal) modal.classList.add('hidden');
-      stage = current;
-      lastSelectedStage = current;
-      runStartStage = current;
-      if (typeof startStage === 'function') startStage();
-      else if (typeof startGame === 'function') startGame(current);
-    }, true);
-  }
-
-  const __finalizeStageClearStatsBeforeV2041 = (typeof finalizeStageClearStats === 'function') ? finalizeStageClearStats : null;
-  if (__finalizeStageClearStatsBeforeV2041) {
-    finalizeStageClearStats = function(){
-      const result = __finalizeStageClearStatsBeforeV2041.apply(this, arguments);
-      try {
-        const modal = document.getElementById('stageClearModal');
-        const header = modal ? modal.querySelector('.modal-header') : null;
-        const intro = document.getElementById('stageClearIntroText');
-        const mini = document.getElementById('stageClearMiniTitle');
-        const next = document.getElementById('nextStageBtn');
-        const retry = ensureStageRetryButtonV2041();
-        const title = document.getElementById('clearToTitleBtn');
-        const petTitle = document.getElementById('stageClearPetBonusTitle');
-        const petText = document.getElementById('stageClearPetBonusText');
-        if (modal) modal.classList.add('stage-result-v2041');
-
-        if (isNormalStageModeV2041()) {
-          if (header) header.textContent = 'STAGE CLEAR!';
-          if (intro) intro.innerHTML = '스테이지 클리어 완료!<br>다음 스테이지로 갈 수도 있고, 같은 스테이지를 다시 돌아 EXP를 파밍할 수도 있습니다.';
-          if (mini) mini.textContent = 'Stage Farming Result';
-          if (next) { next.textContent = '다음 스테이지 ▶'; next.disabled = false; next.style.display = ''; }
-          if (retry) { retry.textContent = '현재 스테이지 다시하기 ↻'; retry.disabled = false; retry.style.display = ''; }
-          if (title) title.textContent = '타이틀 화면으로';
-          if (petTitle) petTitle.textContent = 'EXP 레벨 보정';
-          if (petText) {
-            petText.textContent = '몬스터와 내 레벨이 같으면 100%, 레벨 차이 1당 -5%, ±10레벨부터 최소 50%가 적용됩니다.';
-          }
-        } else if (retry) {
-          retry.style.display = 'none';
-        }
-      } catch(e) {}
-      return result;
-    };
-  }
-
-  const __showStageClearModalAnimatedBeforeV2041 = (typeof showStageClearModalAnimated === 'function') ? showStageClearModalAnimated : null;
-  if (__showStageClearModalAnimatedBeforeV2041) {
-    showStageClearModalAnimated = function(totalExp, rank){
-      try { ensureStageRetryButtonV2041(); } catch(e) {}
-      return __showStageClearModalAnimatedBeforeV2041.apply(this, arguments);
-    };
-  }
-
-  const __goToTitleBeforeV2041 = (typeof goToTitle === 'function') ? goToTitle : null;
-  if (__goToTitleBeforeV2041) {
-    goToTitle = function(){
-      try {
-        const retry = document.getElementById('retryStageBtn');
-        if (retry) retry.style.display = '';
-        const next = document.getElementById('nextStageBtn');
-        if (next) { next.textContent = '다음 스테이지로 ▶'; next.disabled = false; }
-      } catch(e) {}
-      return __goToTitleBeforeV2041.apply(this, arguments);
-    };
-  }
-})();
-</script>
-
-
-<script>
-/* ===============================
-   ✅ [v.204.2] 스테이지 몬스터 EXP 레벨 보정 재수정
-   - 몬스터 레벨은 일반 스테이지 기준 stageValue를 우선 사용
-   - 플레이어 40레벨 / 2스테이지처럼 차이가 10 이상이면 50% 적용
-   - 2 EXP × 50% = 1 EXP가 되도록 Math.floor 유지
-   - 1 EXP 몬스터는 최소 1 EXP 보장
-   =============================== */
-(function(){
-  const PATCH_ID = 'v204_2_stage_monster_exp_floor_stage_level_fix';
-  if (window[PATCH_ID]) return;
-  window[PATCH_ID] = true;
-
-  function isNormalStageModeV2042(){
-    try {
-      if (typeof gameMode !== 'undefined' && gameMode !== 'stage') return false;
-      if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
-      if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return false;
-      if (typeof window !== 'undefined' && window.__slimeRushActiveV187) return false;
-      if (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175()) return false;
-      if (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188()) return false;
-      return true;
-    } catch(e) { return false; }
-  }
-
-  function getStageExpLevelRateV2042(playerLv, stageValue){
-    const p = Math.max(1, Math.floor(Number(playerLv) || 1));
-    const m = Math.max(1, Math.floor(Number(stageValue) || 1));
-    const diff = Math.min(10, Math.abs(m - p));
-    return Math.max(0.5, 1 - diff * 0.05);
-  }
-
-  function getRawStageMonsterExpV2042(stageValue, enemy){
-    const s = Math.max(1, Math.min((typeof MAX_STAGE_CAP !== 'undefined' ? MAX_STAGE_CAP : 300), Math.floor(Number(stageValue) || 1)));
-    let base = 1;
-    try {
-      const target = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
-      const total = Math.floor(Number(getStageBossExpReward(s) || 0) * 0.5);
-      base = Math.max(1, Math.floor(total / target));
-    } catch(e) {
-      try { base = Math.max(1, Math.floor(Number(getStageMonsterExpReward(s)) || 1)); } catch(_e) { base = 1; }
-    }
-    try {
-      if (s >= 101 && enemy && enemy.isElite) base = Math.max(1, Math.floor(base * 2.5));
-    } catch(e) {}
-    return base;
-  }
-
-  if (typeof getStageMonsterExpRewardForEnemy === 'function') {
-    const __getStageMonsterExpRewardForEnemyBeforeV2042 = getStageMonsterExpRewardForEnemy;
-    getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
-      if (!isNormalStageModeV2042()) {
-        return __getStageMonsterExpRewardForEnemyBeforeV2042.apply(this, arguments);
-      }
-      const base = getRawStageMonsterExpV2042(stageValue, enemy);
-      const rate = getStageExpLevelRateV2042(level, stageValue);
-      const scaled = Math.max(1, Math.floor(base * rate));
-      try {
-        if (enemy) {
-          enemy._expLevelRateV2042 = rate;
-          enemy._expLevelDiffV2042 = Math.floor(Number(stageValue) || 1) - Math.max(1, Math.floor(Number(level) || 1));
-          enemy._expBaseBeforeLevelRateV2042 = base;
-          enemy._expAfterLevelRateV2042 = scaled;
-        }
-      } catch(e) {}
-      return scaled;
-    };
-  }
-
-  try {
-    console.log('[v.204.2] Stage monster EXP level scaling fixed: stage level first, floor, min 1.');
-  } catch(e) {}
-})();
-</script>
-
-
-
-<style>
-/* ===============================
-   ✅ [v.204.4] 스테이지 결과 화면 버튼 재정렬 + 더 예쁜 결과 UI
-   =============================== */
-#stageClearModal.stage-result-v2044{
-  max-width: 460px !important;
-  border-radius: 24px !important;
-  border: 1px solid rgba(255,225,120,0.72) !important;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255,226,120,0.26) 0%, rgba(255,226,120,0.08) 28%, rgba(11,17,34,0.98) 66%, rgba(5,8,18,0.99) 100%) !important;
-  box-shadow: 0 24px 70px rgba(0,0,0,0.72), 0 0 34px rgba(255,210,90,0.20) !important;
-}
-#stageClearModal.stage-result-v2044 .modal-header{
-  font-size: 32px !important;
-  letter-spacing: -0.6px !important;
-  color: #fff0a8 !important;
-  text-shadow: 0 0 18px rgba(255,210,80,0.45), 0 3px 8px rgba(0,0,0,0.45) !important;
-}
-#stageClearModal.stage-result-v2044 #stageClearIntroText{
-  color:#eaf7ff !important;
-  font-weight:800 !important;
-}
-#stageClearModal.stage-result-v2044 #stageClearStats{
-  border-radius: 20px !important;
-  border-color: rgba(255,225,120,0.34) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.045)) !important;
-}
-#stageClearButtonGroup.stage-result-buttons-v2044{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:10px !important;
-  width:100% !important;
-  max-width:330px !important;
-  margin:0 auto !important;
-}
-#stageClearButtonGroup.stage-result-buttons-v2044 .stage-action-row-v2041{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:10px !important;
-  width:100% !important;
-}
-#stageClearButtonGroup.stage-result-buttons-v2044 button{
-  width:100% !important;
-  min-height:44px !important;
-  border-radius:16px !important;
-  font-weight:1000 !important;
-}
-#retryStageBtn.stage-retry-v2044{
-  border-color: rgba(124,231,255,0.85) !important;
-  color:#e7fbff !important;
-  background:linear-gradient(to bottom, rgba(34,82,116,0.98), rgba(11,31,48,0.98)) !important;
-  box-shadow:0 10px 24px rgba(0,0,0,0.30), 0 0 18px rgba(124,231,255,0.16) !important;
-}
-#nextStageBtn.stage-next-v2044{
-  box-shadow:0 0 24px rgba(68,255,184,0.36) !important;
-}
-</style>
-<script>
-/* ===============================
-   ✅ [v.204.4] 스테이지 몬스터 EXP 보정 반올림 적용
-   - 같은 레벨: 100%
-   - 레벨 차이 1당 -5%
-   - ±10레벨 이상: 50%
-   - 최종 EXP는 반올림, 최소 1 EXP 보장
-   예) 11레벨이 1스테이지: 1×50%=0.5 → 반올림 1
-       12레벨이 2스테이지: 2×50%=1 → 1
-   =============================== */
-(function(){
-  const PATCH_ID = 'v204_4_stage_result_ui_and_exp_rounding';
-  if (window[PATCH_ID]) return;
-  window[PATCH_ID] = true;
-
-  function isNormalStageModeV2044(){
-    try {
-      if (typeof gameMode !== 'undefined' && gameMode !== 'stage') return false;
-      if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
-      if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return false;
-      if (typeof window !== 'undefined' && window.__slimeRushActiveV187) return false;
-      if (typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175()) return false;
-      if (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188()) return false;
-      return true;
-    } catch(e) { return false; }
-  }
-
-  function getStageExpLevelRateV2044(playerLv, stageValue){
-    const p = Math.max(1, Math.floor(Number(playerLv) || 1));
-    const m = Math.max(1, Math.floor(Number(stageValue) || 1));
-    const diff = Math.min(10, Math.abs(m - p));
-    return Math.max(0.5, 1 - diff * 0.05);
-  }
-
-  function getRawStageMonsterExpV2044(stageValue, enemy){
-    const cap = (typeof MAX_STAGE_CAP !== 'undefined' ? MAX_STAGE_CAP : 300);
-    const s = Math.max(1, Math.min(cap, Math.floor(Number(stageValue) || 1)));
-    let base = 1;
-    try {
-      const target = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
-      const total = Math.floor(Number(getStageBossExpReward(s) || 0) * 0.5);
-      base = Math.max(1, Math.floor(total / target));
-    } catch(e) {
-      try { base = Math.max(1, Math.floor(Number(getStageMonsterExpReward(s)) || 1)); } catch(_e) { base = 1; }
-    }
-    try {
-      if (s >= 101 && enemy && enemy.isElite) base = Math.max(1, Math.floor(base * 2.5));
-    } catch(e) {}
-    return base;
-  }
-
-  if (typeof getStageMonsterExpRewardForEnemy === 'function') {
-    const __getStageMonsterExpRewardForEnemyBeforeV2044 = getStageMonsterExpRewardForEnemy;
-    getStageMonsterExpRewardForEnemy = function(stageValue, enemy){
-      if (!isNormalStageModeV2044()) {
-        return __getStageMonsterExpRewardForEnemyBeforeV2044.apply(this, arguments);
-      }
-      const base = getRawStageMonsterExpV2044(stageValue, enemy);
-      const rate = getStageExpLevelRateV2044(level, stageValue);
-      const scaled = Math.max(1, Math.round(base * rate));
-      try {
-        if (enemy) {
-          enemy._expLevelRateV2044 = rate;
-          enemy._expLevelDiffV2044 = Math.floor(Number(stageValue) || 1) - Math.max(1, Math.floor(Number(level) || 1));
-          enemy._expBaseBeforeLevelRateV2044 = base;
-          enemy._expAfterLevelRateV2044 = scaled;
-        }
-      } catch(e) {}
-      return scaled;
-    };
-  }
-
-  function polishStageResultV2044(){
-    try {
-      const modal = document.getElementById('stageClearModal');
-      const group = document.getElementById('stageClearButtonGroup');
-      const next = document.getElementById('nextStageBtn');
-      const retry = document.getElementById('retryStageBtn');
-      const title = document.getElementById('clearToTitleBtn');
-      if (modal) modal.classList.add('stage-result-v2044');
-      if (group) group.classList.add('stage-result-buttons-v2044');
-      if (next) { next.classList.add('stage-next-v2044'); next.textContent = '다음 스테이지로 ▶'; }
-      if (retry) { retry.classList.add('stage-retry-v2044'); retry.textContent = '현재 스테이지 다시하기 ↻'; }
-      if (title) title.textContent = '타이틀 화면으로';
-      const petText = document.getElementById('stageClearPetBonusText');
-      if (petText) petText.textContent = '같은 레벨 100% · 레벨 차이 1당 -5% · ±10레벨부터 50% · 최종 EXP는 반올림됩니다.';
-    } catch(e) {}
-  }
-
-  const __showStageClearModalAnimatedBeforeV2044 = (typeof showStageClearModalAnimated === 'function') ? showStageClearModalAnimated : null;
-  if (__showStageClearModalAnimatedBeforeV2044) {
-    showStageClearModalAnimated = function(totalExp, rank){
-      const ret = __showStageClearModalAnimatedBeforeV2044.apply(this, arguments);
-      polishStageResultV2044();
-      return ret;
-    };
-  }
-
-  const __finalizeStageClearStatsBeforeV2044 = (typeof finalizeStageClearStats === 'function') ? finalizeStageClearStats : null;
-  if (__finalizeStageClearStatsBeforeV2044) {
-    finalizeStageClearStats = function(){
-      const ret = __finalizeStageClearStatsBeforeV2044.apply(this, arguments);
-      polishStageResultV2044();
-      return ret;
-    };
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', polishStageResultV2044);
-  } else {
-    polishStageResultV2044();
-  }
-})();
-</script>
-
-
-
-<script>
-/* ===============================
-   ✅ [v.204.9] 황금 슬라임 골드 퀘스트 분리
-   - goldEarned: 전투/보상으로 새로 획득한 골드 수집형
-   - goldPayment: 보유 골드를 실제 차감하여 마을 복구비로 납부하는 차감형
-   =============================== */
-try {
-  function getCurrentGoldForTownPaymentV2049(){
-    return Math.max(0, Math.floor(Number(typeof gold !== 'undefined' ? gold : (saveData && saveData.gold)) || 0));
-  }
-
-  function syncTownGoldPaymentProgressV2049(q){
-    if (!q || q.type !== 'goldPayment') return q;
-    q.progress = Math.min(Math.max(1, Math.floor(Number(q.target) || 1)), getCurrentGoldForTownPaymentV2049());
-    return q;
-  }
-
-  if (typeof getTownQuestTypeLabel === 'function') {
-    const __getTownQuestTypeLabelBeforeGoldSplitV2049 = getTownQuestTypeLabel;
-    getTownQuestTypeLabel = function(type){
-      if (type === 'goldPayment') return '골드 납부';
-      if (type === 'goldEarned') return '골드 수집';
-      return __getTownQuestTypeLabelBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof makeTownQuestDesc === 'function') {
-    const __makeTownQuestDescBeforeGoldSplitV2049 = makeTownQuestDesc;
-    makeTownQuestDesc = function(type, target){
-      const n = typeof formatNumber === 'function' ? formatNumber(Math.max(1, Math.floor(Number(target) || 1))) : String(target || 1);
-      if (type === 'goldPayment') return `마을 복구비로 보유 골드 ${n}개를 납부해 주세요. 보상 수령 시 해당 골드가 실제로 차감됩니다!`;
-      if (type === 'goldEarned') return `전투와 보상에서 새로 획득한 골드 ${n}개를 수집해 주세요. 보유 골드를 쓰는 퀘스트가 아니라 새로 모으는 기록입니다!`;
-      return __makeTownQuestDescBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof makeTownQuestNpcDialogue === 'function') {
-    const __makeTownQuestNpcDialogueBeforeGoldSplitV2049 = makeTownQuestNpcDialogue;
-    makeTownQuestNpcDialogue = function(npc, type, target){
-      const n = typeof formatNumber === 'function' ? formatNumber(Math.max(1, Math.floor(Number(target) || 1))) : String(target || 1);
-      const id = npc && npc.id;
-      if (type === 'goldPayment') {
-        if (id === 'gold') return `반짝! 이번 의뢰는 골드를 새로 모으는 게 아니라, 보유 골드 ${n}개를 마을 복구비로 직접 맡기는 일이야. 보상 받을 때 실제로 차감되니까 준비되면 말해줘!`;
-        return `마을 복구비로 보유 골드 ${n}개가 필요합니다. 보상 수령 시 해당 골드가 실제 차감됩니다.`;
-      }
-      if (type === 'goldEarned') {
-        if (id === 'gold') return `반짝! 이번 의뢰는 납부가 아니라 수집 기록이야. 전투와 보상으로 골드 ${n}개를 새로 모아오면 마을 물자 흐름을 확인할 수 있어!`;
-      }
-      return __makeTownQuestNpcDialogueBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof getTownQuestTargetScale === 'function') {
-    const __getTownQuestTargetScaleBeforeGoldSplitV2049 = getTownQuestTargetScale;
-    getTownQuestTargetScale = function(type, lv){
-      if (type === 'goldPayment') return 1 + (Math.max(1, Math.floor(Number(lv) || 1)) / 45);
-      return __getTownQuestTargetScaleBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof getTownQuestTargetRangeV20310 === 'function') {
-    const __getTownQuestTargetRangeBeforeGoldSplitV2049 = getTownQuestTargetRangeV20310;
-    getTownQuestTargetRangeV20310 = function(type, bracketName){
-      if (type === 'goldPayment') {
-        const table = {
-          '초급':[150,700],
-          '견습':[700,2500],
-          '숙련':[2500,12000],
-          '정예':[12000,60000],
-          '마스터':[60000,250000],
-          '전설':[250000,1000000],
-          '초월':[1000000,3000000]
-        };
-        return table[bracketName] || [1000,5000];
-      }
-      return __getTownQuestTargetRangeBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof buildTownQuestFromTemplate === 'function') {
-    const __buildTownQuestFromTemplateBeforeGoldSplitV2049 = buildTownQuestFromTemplate;
-    buildTownQuestFromTemplate = function(t, npc){
-      const q = __buildTownQuestFromTemplateBeforeGoldSplitV2049.apply(this, arguments);
-      if (q && q.type === 'goldPayment') {
-        q.paymentRequired = Math.max(1, Math.floor(Number(q.target) || 1));
-        q.progress = Math.min(q.paymentRequired, getCurrentGoldForTownPaymentV2049());
-        q.desc = q.storyDialogue ? formatTownQuestStoryDialogue(q.storyDialogue, q.target) : makeTownQuestNpcDialogue(npc, q.type, q.target);
-        q.dialogue = q.desc;
-        q.goldPaymentQuest = true;
-      }
-      return q;
-    };
-  }
-
-  if (typeof isTownQuestCompleted === 'function') {
-    const __isTownQuestCompletedBeforeGoldSplitV2049 = isTownQuestCompleted;
-    isTownQuestCompleted = function(q){
-      if (q && q.type === 'goldPayment') {
-        if (q.paymentSettled) return true;
-        return getCurrentGoldForTownPaymentV2049() >= Math.max(1, Math.floor(Number(q.target) || 1));
-      }
-      return __isTownQuestCompletedBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof normalizeTownQuestDisplay === 'function') {
-    const __normalizeTownQuestDisplayBeforeGoldSplitV2049 = normalizeTownQuestDisplay;
-    normalizeTownQuestDisplay = function(q){
-      const out = __normalizeTownQuestDisplayBeforeGoldSplitV2049.apply(this, arguments);
-      return syncTownGoldPaymentProgressV2049(out || q);
-    };
-  }
-
-  if (typeof renderActiveTownQuestHtml === 'function') {
-    const __renderActiveTownQuestHtmlBeforeGoldSplitV2049 = renderActiveTownQuestHtml;
-    renderActiveTownQuestHtml = function(q){
-      if (q && q.type === 'goldPayment') syncTownGoldPaymentProgressV2049(q);
-      let html = __renderActiveTownQuestHtmlBeforeGoldSplitV2049.apply(this, arguments);
-      if (q && q.type === 'goldPayment') {
-        const need = Math.max(1, Math.floor(Number(q.target) || 1));
-        const have = getCurrentGoldForTownPaymentV2049();
-        const note = `<div class="town-tip-box" style="border-color:rgba(255,216,107,0.34); background:rgba(255,216,107,0.10); color:#fff1b8;">🪙 차감형 퀘스트입니다.<br>현재 보유 골드: ${formatNumber(have)} / 필요 골드: ${formatNumber(need)}<br>보상 수령 시 골드 ${formatNumber(need)}개가 실제로 차감됩니다.</div>`;
-        html = String(html).replace('</div>', note + '</div>');
-      }
-      return html;
-    };
-  }
-
-  if (typeof renderTownQuestTrackerRow === 'function') {
-    const __renderTownQuestTrackerRowBeforeGoldSplitV2049 = renderTownQuestTrackerRow;
-    renderTownQuestTrackerRow = function(q){
-      if (q && q.type === 'goldPayment') syncTownGoldPaymentProgressV2049(q);
-      return __renderTownQuestTrackerRowBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (typeof claimTownQuestReward === 'function') {
-    const __claimTownQuestRewardBeforeGoldSplitV2049 = claimTownQuestReward;
-    claimTownQuestReward = function(questId){
-      try {
-        const town = ensureTownQuestState();
-        let q = null;
-        if (questId && Array.isArray(town.activeList)) q = town.activeList.find(x => x && x.id === questId) || null;
-        if (!q && town.active && (!questId || town.active.id === questId)) q = town.active;
-        if (q && q.type === 'goldPayment') {
-          const need = Math.max(1, Math.floor(Number(q.target) || 1));
-          const have = getCurrentGoldForTownPaymentV2049();
-          if (have < need) {
-            alert(`골드가 부족합니다!\n필요 골드: ${formatNumber(need)}\n보유 골드: ${formatNumber(have)}`);
-            return;
-          }
-          if (!confirm(`마을 복구비로 골드 ${formatNumber(need)}개를 납부할까요?\n보상 수령과 동시에 실제 골드가 차감됩니다.`)) return;
-          q.paymentSettled = true;
-          q.progress = q.target;
-          gold = Math.max(0, have - need);
-          if (saveData) {
-            saveData.gold = gold;
-            saveData.goldSpent = Math.max(0, Math.floor(Number(saveData.goldSpent) || 0) + need);
-          }
-        }
-      } catch(e) {}
-      return __claimTownQuestRewardBeforeGoldSplitV2049.apply(this, arguments);
-    };
-  }
-
-  if (Array.isArray(TOWN_QUEST_POOL)) {
-    const extraGoldSplitQuestsV2049 = [
-      { npcId:'gold', id:'gold_pay_800', type:'goldPayment', title:'상점 긴급 수리비', target:800, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(260, level * 14), item:'smallPotion', dialogue:'반짝! 이번엔 모으는 게 아니라 마을 상점 수리비를 직접 맡기는 의뢰야. 보유 골드 {n}개를 납부하면 무너진 진열대부터 바로 고칠 수 있어!' },
-      { npcId:'gold', id:'gold_pay_3500', type:'goldPayment', title:'창고 문 보강비', target:3500, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(700, level * 30), item:'expSmallPack', dialogue:'창고 문이 또 삐걱거리고 있어. 보유 골드 {n}개를 복구비로 납부해주면 다음 습격 때 물자를 더 안전하게 지킬 수 있어!' },
-      { npcId:'gold', id:'gold_pay_12000', type:'goldPayment', title:'황금 슬라임 복구 계약', target:12000, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1800, level * 70), item:'expMediumPack', dialogue:'이번엔 큰 복구 계약이야. 보유 골드 {n}개를 맡겨주면 상점, 창고, 표지판까지 한 번에 손볼 수 있어. 대신 실제로 차감되니까 준비하고 와!' },
-      { npcId:'gold', id:'gold_collect_2000', type:'goldEarned', title:'새 골드 흐름 조사', target:2000, fixedTarget:true, expPct200:0.32, gold:()=>Math.max(460, level * 21), item:null, dialogue:'반짝! 이건 납부가 아니라 수집형이야. 전투와 보상으로 골드 {n}개를 새로 모아오면 마을에 골드가 얼마나 잘 돌고 있는지 확인할 수 있어!' },
-      { npcId:'gold', id:'gold_collect_8000', type:'goldEarned', title:'반짝 수집 기록', target:8000, fixedTarget:true, expPct200:0.74, gold:()=>Math.max(1300, level * 52), item:'largePotion', dialogue:'이번에도 보유 골드를 쓰는 게 아니야. 골드 {n}개를 새로 수집해서 금빛 기록을 세워보자. 수집 기록이 높을수록 마을 보급 계획도 좋아져!' }
-    ];
-    extraGoldSplitQuestsV2049.forEach(q => {
-      if (!TOWN_QUEST_POOL.some(x => x && x.id === q.id)) TOWN_QUEST_POOL.push(q);
-    });
-  }
-
-  if (Array.isArray(TOWN_NPCS)) {
-    const goldNpc = TOWN_NPCS.find(n => n && n.id === 'gold');
-    if (goldNpc) {
-      if (!Array.isArray(goldNpc.questTypes)) goldNpc.questTypes = [];
-      ['goldEarned','goldPayment','gems','infiniteItems'].forEach(t => {
-        if (!goldNpc.questTypes.includes(t)) goldNpc.questTypes.push(t);
-      });
-      goldNpc.tips = Array.isArray(goldNpc.tips) ? goldNpc.tips : [];
-      if (!goldNpc.tips.some(t => String(t).includes('차감형'))) {
-        goldNpc.tips.push('골드 퀘스트는 새로 모으는 수집형과 보유 골드를 실제로 납부하는 차감형으로 나뉘어.');
-      }
-    }
-  }
-
-  try { if (typeof updateTownQuestTracker === 'function') updateTownQuestTracker(); } catch(e) {}
-} catch(e) {}
-</script>
-
-
-
-<script>
-/* ===============================
-   ✅ [v.204.11] 골드 차감형 퀘스트 등장 보장 + 디멘션 시간 퀘스트 클리어 판정 보강
-   - 황금 슬라임 퀘스트 3개 중 차감형이 최소 1회는 실제 후보로 우선 등장
-   - 디멘션 인베이드 클리어 순간, 퀘스트 타이머 기준으로 dimensionBossTime 성공 처리
-   =============================== */
-try {
-  function ensureGoldPaymentQuestTemplatesV20411(){
-    try {
-      if (!Array.isArray(TOWN_QUEST_POOL)) return;
-      const goldPaymentTemplates = [
-        { npcId:'gold', id:'gold_pay_800', type:'goldPayment', title:'상점 긴급 수리비', target:800, fixedTarget:true, expPct200:0.36, gold:()=>Math.max(260, level * 14), item:'smallPotion', dialogue:'반짝! 이번엔 모으는 게 아니라 마을 상점 수리비를 직접 맡기는 의뢰야. 보유 골드 {n}개를 납부하면 무너진 진열대부터 바로 고칠 수 있어!' },
-        { npcId:'gold', id:'gold_pay_3500', type:'goldPayment', title:'창고 문 보강비', target:3500, fixedTarget:true, expPct200:0.62, gold:()=>Math.max(700, level * 30), item:'expSmallPack', dialogue:'창고 문이 또 삐걱거리고 있어. 보유 골드 {n}개를 복구비로 납부해주면 다음 습격 때 물자를 더 안전하게 지킬 수 있어!' },
-        { npcId:'gold', id:'gold_pay_12000', type:'goldPayment', title:'황금 슬라임 복구 계약', target:12000, fixedTarget:true, expPct200:1.00, gold:()=>Math.max(1800, level * 70), item:'expMediumPack', dialogue:'이번엔 큰 복구 계약이야. 보유 골드 {n}개를 맡겨주면 상점, 창고, 표지판까지 한 번에 손볼 수 있어. 대신 실제로 차감되니까 준비하고 와!' }
-      ];
-      goldPaymentTemplates.forEach(t => {
-        if (!TOWN_QUEST_POOL.some(q => q && q.id === t.id)) TOWN_QUEST_POOL.push(t);
-      });
-      const goldNpc = Array.isArray(TOWN_NPCS) ? TOWN_NPCS.find(n => n && n.id === 'gold') : null;
-      if (goldNpc) {
-        if (!Array.isArray(goldNpc.questTypes)) goldNpc.questTypes = [];
-        ['goldPayment','goldEarned','gems','infiniteItems'].forEach(type => {
-          if (!goldNpc.questTypes.includes(type)) goldNpc.questTypes.push(type);
-        });
-      }
-    } catch(e) {}
-  }
-  ensureGoldPaymentQuestTemplatesV20411();
-
-  if (typeof pickTownQuestForNpc === 'function' && !window.__pickTownQuestForNpcGoldPaymentV20411) {
-    window.__pickTownQuestForNpcGoldPaymentV20411 = pickTownQuestForNpc;
-    pickTownQuestForNpc = function(npc){
-      try {
-        ensureGoldPaymentQuestTemplatesV20411();
-        if (npc && npc.id === 'gold') {
-          const town = ensureTownQuestState();
-          const rec = getTownDailyNpcRecord(town, npc.id);
-          const usedToday = Array.isArray(rec.baseIds) ? rec.baseIds : [];
-          const activeGoldPayment = Array.isArray(town.activeList) && town.activeList.some(q => q && q.npcId === 'gold' && q.type === 'goldPayment' && !isTownQuestCompleted(q));
-          const acceptedPaymentToday = usedToday.some(id => String(id || '').indexOf('gold_pay_') === 0);
-          const lv = Math.max(1, Math.floor(Number(level || saveData?.level || 1) || 1));
-          const paymentList = (TOWN_QUEST_POOL || []).filter(q => q && q.npcId === 'gold' && q.type === 'goldPayment' && (!q.minLevel || lv >= Number(q.minLevel)) && !usedToday.includes(q.id));
-          // 오늘 황금 슬라임 퀘스트에서 차감형을 아직 못 받았다면, 랜덤보다 먼저 차감형을 우선 제공합니다.
-          if (!activeGoldPayment && !acceptedPaymentToday && paymentList.length) {
-            return paymentList[Math.floor(Math.random() * paymentList.length)];
-          }
-        }
-      } catch(e) {}
-      return window.__pickTownQuestForNpcGoldPaymentV20411.apply(this, arguments);
-    };
-  }
-
-  function completeDimensionBossTimeTownQuestV20411(elapsedSeconds){
-    try {
-      const town = ensureTownQuestState();
-      const targets = [];
-      if (town.active) targets.push(town.active);
-      if (Array.isArray(town.activeList)) targets.push(...town.activeList);
-      let changed = false;
-      for (const q of targets) {
-        if (!q || q.type !== 'dimensionBossTime') continue;
-        if (isTownQuestCompleted(q)) continue;
-        const limit = Math.max(1, Math.floor(Number(q.timeLimitSeconds || q.target || getDimensionBossQuestLimitSeconds(level) || 1)));
-        let elapsed = Number(elapsedSeconds);
-        if (!isFinite(elapsed) || elapsed < 0) {
-          const started = Math.max(0, Number(q.timerStartedAt || stageRunStartTime || 0));
-          elapsed = started ? (Date.now() - started) / 1000 : 0;
-        }
-        if (elapsed <= limit + 0.25) {
-          q.failed = false;
-          q.timeLimitSeconds = limit;
-          q.target = limit;
-          q.progress = limit;
-          q.remainingSeconds = limit;
-          normalizeTownQuestDisplay(q);
-          changed = true;
-          try {
-            if (state !== 'town') {
-              showToast(`${getTownQuestTypeLabel(q.type)} 성공 (${formatNumber(limit)}초 이내 클리어)`, '#dffff0', 1600);
-              showTownQuestCompletionNotice(q);
-            }
-          } catch(e) {}
-        } else {
-          q.failed = true;
-          q.remainingSeconds = 0;
-          changed = true;
-        }
-      }
-      if (changed) { try { updateTownQuestTracker(); } catch(e) {} saveGameDataDebounced(); }
-      return changed;
-    } catch(e) { return false; }
-  }
-  window.completeDimensionBossTimeTownQuestV20411 = completeDimensionBossTimeTownQuestV20411;
-
-  if (typeof completeTimedTownQuestProgress === 'function' && !window.__completeTimedTownQuestProgressV20411) {
-    window.__completeTimedTownQuestProgressV20411 = completeTimedTownQuestProgress;
-    completeTimedTownQuestProgress = function(type, elapsedSeconds){
-      if (type === 'dimensionBossTime') return completeDimensionBossTimeTownQuestV20411(elapsedSeconds);
-      return window.__completeTimedTownQuestProgressV20411.apply(this, arguments);
-    };
-  }
-
-  if (typeof completeDimensionInvasionV175 === 'function' && !window.__completeDimensionInvasionV20411) {
-    window.__completeDimensionInvasionV20411 = completeDimensionInvasionV175;
-    completeDimensionInvasionV175 = function(){
-      try { completeDimensionBossTimeTownQuestV20411(); } catch(e) {}
-      return window.__completeDimensionInvasionV20411.apply(this, arguments);
-    };
-  }
-} catch(e) {}
 </script>
 
 </body>
