@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.206.3 60FPS Optimized)</title>
+<title>Slime Shooter - Ultimate Evolution (v.207.2 Practice DPS Mode)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3589,6 +3589,20 @@ body.watch-ui:not(.playing-ui) #settingsBar,
         <button id="modeStageBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffd700; color:#ffd700;">
             🎯 스테이지 모드
         </button>
+        <button id="modePracticeBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffb36b; color:#fff0dc; background:linear-gradient(to bottom, #5a3410, #231206);">
+            🧪 연습 모드 (50만 HP 데미지 측정)
+        </button>
+        <div id="modeBulletCountBox" style="padding:10px 12px; border:1px solid rgba(124,231,255,0.28); border-radius:12px; background:rgba(124,231,255,0.07); text-align:left; line-height:1.5;">
+            <label for="modeBulletCountSelect" style="display:block; font-size:13px; color:#dffbff; font-weight:900; margin-bottom:6px;">🔫 플레이어 총알 수</label>
+            <select id="modeBulletCountSelect" class="ui-btn" style="width:100%; color:#ffffff; border-color:#7ce7ff;">
+                <option value="5">5발 · 기본 데미지</option>
+                <option value="4">4발 · 2배 데미지</option>
+                <option value="3">3발 · 3배 데미지</option>
+                <option value="2">2발 · 4배 데미지</option>
+                <option value="1">1발 · 5배 데미지 · LV.11+ 범위형</option>
+            </select>
+            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">2발 LV.10 · 3발 LV.20 · 4발 LV.30 · 5발 LV.40 해금 / 1발 범위형은 LV.11부터</div>
+        </div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
         </button>
@@ -3619,6 +3633,7 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:6px;">
             튜토리얼 모드: 신규 캐릭터가 직접 조작하며 기본기를 배우는 전용 흐름<br>
             스테이지 모드: 스테이지 선택 → 플레이<br>
+            연습 모드: 50만 HP 허수아비 보스로 데미지 측정<br>
             무한 모드: 1스테이지부터 빠르게 진행<br>
             수련 모드: 5초마다 자동 EXP 획득<br>
             모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
@@ -5120,6 +5135,9 @@ const closeDungeonBtn = document.getElementById('closeDungeonBtn');
 const modeModal = document.getElementById('modeModal');
 const modeTutorialBtn = document.getElementById('modeTutorialBtn');
 const modeStageBtn = document.getElementById('modeStageBtn');
+const modePracticeBtn = document.getElementById('modePracticeBtn');
+const modeBulletCountSelect = document.getElementById('modeBulletCountSelect');
+const modeBulletCountHint = document.getElementById('modeBulletCountHint');
 const modeInfiniteBtn = document.getElementById('modeInfiniteBtn');
 const modeTrainingBtn = document.getElementById('modeTrainingBtn');
 const modeDungeonBtn = document.getElementById('modeDungeonBtn');
@@ -6029,7 +6047,7 @@ const TITLE_SLIME_PALETTE = [
 })();
 
 const BASE_PLAYER_SPEED = 3.0;
-const FIRE_INTERVAL = 150;
+const FIRE_INTERVAL = 150; // 기본값(튜토리얼/폴백용), 실제 플레이어 발사 간격은 총알 수 설정에 따라 결정
 const PLAYER_SIZE = 24;
 const BASE_PLAYER_DAMAGE = 5;
 const MAX_LEVEL = 300; // ✅ [v.170] 최대 레벨 300 확장
@@ -6043,14 +6061,14 @@ let evoAnim = {
   toStage: 1
 };
 const PET_SCALE = 0.6;             // 플레이어 대비 60% 크기
-const PET_FIRE_INTERVAL = 200;     // 0.15초마다 발사 (ms)
+const PET_FIRE_INTERVAL = 150;     // 펫은 항상 0.15초마다 발사 (ms)
 const PET_BULLET_SPEED = -6.5;     // 펫 탄속(원하시면 조절)
 const PET_BULLET_RADIUS = 2.5;     // 펫 탄 크기
 const PET_OFFSET_X = 75;           // 플레이어 옆 위치(원하시면 조절)
 const PET_OFFSET_Y = 0;           // 플레이어 위/아래 위치(원하시면 조절)
 const PET2_OFFSET_X = -75;          // 반대편(왼쪽)
 const PET2_OFFSET_Y = 0;
-const PET2_FIRE_INTERVAL = 200;     
+const PET2_FIRE_INTERVAL = 150;     // 펫2도 항상 0.15초마다 발사
 const PET2_BULLET_SPEED = -6.5;
 const PET2_BULLET_RADIUS = 2.5;
 
@@ -6267,13 +6285,13 @@ let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
 // ===== 모드 =====
-let gameMode = 'stage';      // 'stage' | 'infinite' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon' | 'tutorial'
+let gameMode = 'stage';      // 'stage' | 'infinite' | 'practice' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon' | 'tutorial'
 
 // ✅ [v.194.2] 5마리 묶음형 리스폰 적용 대상
 // - 무한 모드와 던전 모드는 기존 스폰 시스템 유지
 // - 나머지 일반 몬스터 사용 모드는 화면에 몬스터가 모두 사라진 뒤 다음 5마리 생성
 function useTenMonsterBatchRespawn() {
-  return gameMode !== 'infinite' && gameMode !== 'dungeon' && gameMode !== 'tutorial';
+  return gameMode !== 'infinite' && gameMode !== 'practice' && gameMode !== 'dungeon' && gameMode !== 'tutorial';
 }
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
@@ -6298,6 +6316,142 @@ let trainingState = {
   endedNaturally: false,
   lastGain: 0
 };
+
+// ===== [v.207.1] 연습 모드: 50만 HP 허수아비 보스 =====
+const PRACTICE_DUMMY_MAX_HP = 500000;
+let practiceState = {
+  active: false,
+  totalDamage: 0,
+  playerDamage: 0,
+  petDamage: 0,
+  lastDamage: 0,
+  lastSource: 'player',
+  startTime: 0,
+  respawnTimer: 0,
+  elapsedSec: 0,
+  playerDps: 0,
+  petDps: 0,
+  totalDps: 0
+};
+function resetPracticeDpsCounters() {
+  practiceState.totalDamage = 0;
+  practiceState.playerDamage = 0;
+  practiceState.petDamage = 0;
+  practiceState.lastDamage = 0;
+  practiceState.lastSource = 'player';
+  practiceState.elapsedSec = 0;
+  practiceState.playerDps = 0;
+  practiceState.petDps = 0;
+  practiceState.totalDps = 0;
+}
+function recordPracticeDamage(amount, source = 'player') {
+  if (!isPracticeModeActive()) return;
+  const dmg = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!dmg) return;
+  const src = (source === 'pet' || source === 'pet2' || source === 'petSkill' || source === 'petArea') ? 'pet' : 'player';
+  practiceState.lastDamage = dmg;
+  practiceState.lastSource = src;
+  practiceState.totalDamage = Math.max(0, Math.floor(practiceState.totalDamage || 0)) + dmg;
+  if (src === 'pet') practiceState.petDamage = Math.max(0, Math.floor(practiceState.petDamage || 0)) + dmg;
+  else practiceState.playerDamage = Math.max(0, Math.floor(practiceState.playerDamage || 0)) + dmg;
+  const elapsed = Math.max(0.001, (performance.now() - (practiceState.startTime || performance.now())) / 1000);
+  practiceState.elapsedSec = elapsed;
+  practiceState.playerDps = Math.floor((practiceState.playerDamage || 0) / elapsed);
+  practiceState.petDps = Math.floor((practiceState.petDamage || 0) / elapsed);
+  practiceState.totalDps = Math.floor((practiceState.totalDamage || 0) / elapsed);
+}
+function isPracticeModeActive() {
+  return gameMode === 'practice' || !!(practiceState && practiceState.active);
+}
+function createPracticeDummyBoss() {
+  const hp = PRACTICE_DUMMY_MAX_HP;
+  return {
+    x: width / 2,
+    y: Math.max(94, height * 0.22),
+    targetY: Math.max(94, height * 0.22),
+    enterSpeed: 0,
+    width: 112,
+    height: 98,
+    hp,
+    maxHp: hp,
+    element: sanitizeElementKey((typeof getPlayerElementKey === 'function') ? getPlayerElementKey() : 'fire'),
+    vx: 0,
+    vy: 0,
+    roamSpeed: 0,
+    roamTimer: 0,
+    roamChangeMs: 999999,
+    roamTX: width / 2,
+    roamTY: Math.max(94, height * 0.22),
+    moveState: 'practice',
+    stateTimer: 0,
+    dashCooldown: 999999,
+    dashChargeMs: 999999,
+    dashMs: 0,
+    dashSpeed: 0,
+    dashVX: 0,
+    dashVY: 0,
+    returnSpeed: 0,
+    attackTimer: 0,
+    attackMode: 0,
+    level: Math.max(1, Math.floor(level || 1)),
+    bounceTimer: 0,
+    evoStage: 1,
+    kind: 'practice',
+    _spawnedAt: Date.now(),
+    _practiceDummy: true
+  };
+}
+function startPracticeMode() {
+  try { if (modeModal) modeModal.classList.add('hidden'); } catch(e) {}
+  practiceState.active = true;
+  resetPracticeDpsCounters();
+  practiceState.startTime = performance.now();
+  practiceState.respawnTimer = 0;
+  gameMode = 'practice';
+  lastSelectedStage = 1;
+  runStartStage = 1;
+  startGame(1);
+}
+function initPracticeRun() {
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  expItems.length = 0;
+  goldDrops.length = 0;
+  fieldItems.length = 0;
+  parkItems.length = 0;
+  stageCleared = false;
+  bossSpawned = true;
+  waveIndex = 0;
+  bossIntro.active = false;
+  bossIntro.phase = 'done';
+  boss = createPracticeDummyBoss();
+  syncPlayerHealthToLevel({ refill: true });
+}
+function resetPracticeDummySoon() {
+  practiceState.respawnTimer = 900;
+}
+function updatePracticeMode(dt) {
+  if (!isPracticeModeActive()) return;
+  const elapsed = Math.max(0.001, (performance.now() - (practiceState.startTime || performance.now())) / 1000);
+  practiceState.elapsedSec = elapsed;
+  practiceState.playerDps = Math.floor((practiceState.playerDamage || 0) / elapsed);
+  practiceState.petDps = Math.floor((practiceState.petDamage || 0) / elapsed);
+  practiceState.totalDps = Math.floor((practiceState.totalDamage || 0) / elapsed);
+  enemies.length = 0;
+  enemyBullets.length = 0;
+  expItems.length = 0;
+  goldDrops.length = 0;
+  fieldItems.length = 0;
+  if (!boss && practiceState.respawnTimer > 0) {
+    practiceState.respawnTimer -= dt;
+    if (practiceState.respawnTimer <= 0) {
+      boss = createPracticeDummyBoss();
+      bossSpawned = true;
+      try { spawnDamageText(width * 0.5, height * 0.25, '허수아비 재소환', '#ffdda8'); } catch(e) {}
+    }
+  }
+}
+
 let itemParkState = {
   active: false,
   timeLeft: ITEM_PARK_DURATION_MS,
@@ -6664,6 +6818,7 @@ lowPower: false,
 effectsEnabled: true, // ✅ [v.174] 이펙트 효과 켬/끔(배터리 절약)
 targetFps: DEFAULT_TARGET_FPS,
 homingEnabled: true,
+playerBulletCount: 5, // ✅ [v.207.3] 플레이어 탄환 수 선택(1~5)
 fontKey: 'system',
 maxUnlockedStage: 1,
  
@@ -7877,8 +8032,8 @@ function getElementMultiplier(attackerElement, defenderElement) {
   return 1;
 }
 function getElementMultiplierText(mult) {
-  if (mult >= 1.2) return 'WEAK!';
-  if (mult <= 0.85) return 'RESIST';
+  // ✅ [v.207.1] 일반 전투의 데미지 숫자를 제거하면서 WEAK!/RESIST 같은 판정 문구도 숨깁니다.
+  // 데미지 측정은 연습 모드의 숫자 표시로만 확인합니다.
   return '';
 }
 function getStageElementKey(stg, seed = 0) {
@@ -8423,27 +8578,31 @@ function getHotMultiplier(date = new Date()) {
   return isWeekend ? 3 : 2;              // 핫타임이면 평일 2배, 토/일 3배
 }
 
-function spawnDamageText(x, y, amount, color = '#ffffff', isCrit = false) {
+function spawnDamageText(x, y, amount, color = '#ffffff', isCrit = false, source = 'player') {
+  const numericAmount = (typeof amount === 'number' && isFinite(amount)) ? Math.max(0, Math.floor(amount)) : null;
   const text = (typeof amount === 'string')
     ? amount
     : String(Math.max(0, Math.floor(amount)));
+  const trimmed = String(text).trim();
+  const isPlainPositiveNumber = /^\d+$/.test(trimmed);
+  const isElementJudgeText = /^(WEAK!?|RESIST!?|CRITICAL!?|MISS!?|GUARD!?)$/i.test(trimmed);
 
-  // ✅ 무한 모드에서는 적/보스에게 들어가는 일반 데미지 숫자는 숨기고,
-  // 처치 시 획득 점수 팝업만 보이도록 처리합니다.
-  // - 음수(-123): 플레이어 피격 등은 그대로 표시
-  // - +100점 / EXP+10 / MAX LEVEL 같은 문구형 팝업은 그대로 표시
-  if (gameMode === 'infinite') {
-    const trimmed = String(text).trim();
-    const isPlainPositiveNumber = /^\d+$/.test(trimmed);
-    if (isPlainPositiveNumber) return;
+  // ✅ [v.207.1] 일반 전투: 데미지 숫자와 WEAK!/RESIST 계열 판정 문구 제거
+  // ✅ 연습 모드: 50만 HP 허수아비에게 들어간 데미지 숫자만 표시 허용
+  if (!isPracticeModeActive()) {
+    if (isPlainPositiveNumber || isElementJudgeText) return;
+  } else if (isPlainPositiveNumber && numericAmount !== null) {
+    recordPracticeDamage(numericAmount, source);
+  } else if (isElementJudgeText) {
+    return;
   }
 
-  if (isLowPower() && dmgTexts.length > 40) return;
+  if (isLowPower() && dmgTexts.length > (isPracticeModeActive() ? 70 : 40)) return;
   dmgTexts.push({
     x, y,
     vy: -0.9,
-    life: 650,
-    maxLife: 650,
+    life: isPracticeModeActive() && isPlainPositiveNumber ? 760 : 650,
+    maxLife: isPracticeModeActive() && isPlainPositiveNumber ? 760 : 650,
     text,
     color,
     scale: isCrit ? 1.35 : 1.0
@@ -8749,6 +8908,7 @@ if (typeof saveData.effectsEnabled !== 'boolean') saveData.effectsEnabled = true
 if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFAULT_TARGET_FPS;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
+saveData.playerBulletCount = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 5)));
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
@@ -9263,6 +9423,8 @@ function updateSettingsUI() {
       homingBtn.style.color = on ? "#44ffb8" : "#fff";
     }
   }
+  syncPlayerBulletCountOptions();
+  if (modeBulletCountHint) modeBulletCountHint.textContent = getPlayerBulletSettingHint();
   if (fontSelect) fontSelect.value = (saveData.fontKey || 'system');
   if (fpsSelect) {
     const currentFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
@@ -9337,6 +9499,106 @@ function toggleHomingSetting() {
   saveGameData();
   updateSettingsUI();
 }
+
+// ✅ [v.207.3] 플레이어 총알 수 직접 조정 + 단발 범위형
+function getPlayerBulletUnlockLevel(count) {
+  const c = Math.max(1, Math.min(5, Math.floor(Number(count) || 1)));
+  return ({ 1:1, 2:10, 3:20, 4:30, 5:40 }[c] || 1);
+}
+function getUnlockedPlayerBulletCount() {
+  // ✅ [v.207.5] 총알 수 레벨 해금: 2발 LV.10, 3발 LV.20, 4발 LV.30, 5발 LV.40
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
+  if (lv >= 40) return 5;
+  if (lv >= 30) return 4;
+  if (lv >= 20) return 3;
+  if (lv >= 10) return 2;
+  return 1;
+}
+function normalizePlayerBulletCountValue(count, clampToUnlock = true) {
+  const raw = Math.max(1, Math.min(5, Math.floor(Number(count) || 1)));
+  return clampToUnlock ? Math.min(raw, getUnlockedPlayerBulletCount()) : raw;
+}
+function ensurePlayerBulletCountUnlocked() {
+  const fixed = normalizePlayerBulletCountValue(saveData.playerBulletCount, true);
+  if (Number(saveData.playerBulletCount) !== fixed) {
+    saveData.playerBulletCount = fixed;
+    try { saveGameDataDebounced(); } catch(e) { try { saveGameData(); } catch(_) {} }
+  }
+  return fixed;
+}
+function getPreferredPlayerBulletCount() {
+  return ensurePlayerBulletCountUnlocked();
+}
+function getEffectivePlayerBulletCount() {
+  return getPreferredPlayerBulletCount();
+}
+function getPlayerFireIntervalByBulletCount() {
+  // ✅ [v.207.4] 선택/실제 발사 탄 수에 따라 플레이어 발사 간격 변경
+  // 1발=0.08초, 2발=0.10초, 3발=0.13초, 4발=0.17초, 5발=0.20초
+  const count = Math.max(1, Math.min(5, Math.floor(Number(getEffectivePlayerBulletCount()) || 1)));
+  return ({ 1:80, 2:100, 3:130, 4:170, 5:200 }[count] || 150);
+}
+function getPlayerBulletDamageMultiplier() {
+  const count = getEffectivePlayerBulletCount();
+  return Math.max(1, 6 - count); // 5발=1배, 4발=2배, 3발=3배, 2발=4배, 1발=5배
+}
+function isPlayerSingleAreaShotActive() {
+  return getEffectivePlayerBulletCount() === 1 && Number(level || 1) >= 11;
+}
+function getPlayerAreaBulletRadius() {
+  if (!isPlayerSingleAreaShotActive()) return 0;
+  // LV.11부터 시작, 레벨이 오를수록 자연스럽게 범위 증가
+  return Math.max(34, Math.min(118, Math.round(34 + Math.max(0, Number(level || 1) - 11) * 0.28)));
+}
+function getPlayerBulletSettingHint() {
+  const count = getPreferredPlayerBulletCount();
+  const unlocked = getUnlockedPlayerBulletCount();
+  const mult = getPlayerBulletDamageMultiplier();
+  const range = getPlayerAreaBulletRadius();
+  let text = `선택 ${count}발 · 데미지 ${mult}배 · 현재 최대 ${unlocked}발 해금`;
+  if (count === 1) text += Number(level || 1) >= 11 ? ` · 범위 ${range}` : ' · 범위형은 LV.11부터';
+  if (unlocked < 5) text += ` · 다음 해금 LV.${getPlayerBulletUnlockLevel(unlocked + 1)}`;
+  return text;
+}
+function syncPlayerBulletCountOptions() {
+  if (!modeBulletCountSelect) return;
+  const unlocked = getUnlockedPlayerBulletCount();
+  const labels = {
+    5:'5발 · 기본 데미지',
+    4:'4발 · 2배 데미지',
+    3:'3발 · 3배 데미지',
+    2:'2발 · 4배 데미지',
+    1:'1발 · 5배 데미지 · LV.11+ 범위형'
+  };
+  Array.from(modeBulletCountSelect.options || []).forEach(opt => {
+    const n = Math.max(1, Math.min(5, Math.floor(Number(opt.value) || 1)));
+    const locked = n > unlocked;
+    opt.disabled = locked;
+    opt.textContent = locked ? `${labels[n]} · LV.${getPlayerBulletUnlockLevel(n)} 해금` : labels[n];
+  });
+  modeBulletCountSelect.value = String(getPreferredPlayerBulletCount());
+}
+function setPlayerBulletCountSetting(count) {
+  const requested = normalizePlayerBulletCountValue(count, false);
+  const unlocked = getUnlockedPlayerBulletCount();
+  if (requested > unlocked) {
+    saveData.playerBulletCount = unlocked;
+    saveGameData();
+    updateSettingsUI();
+    try { showToast(`${requested}발은 LV.${getPlayerBulletUnlockLevel(requested)}부터 해금됩니다.`, '#ffcc88', 1600); } catch(e) {}
+    return;
+  }
+  saveData.playerBulletCount = requested;
+  saveGameData();
+  updateSettingsUI();
+  try { showToast(`플레이어 총알 수: ${saveData.playerBulletCount}발`, '#aee6ff', 1400); } catch(e) {}
+}
+function cyclePlayerBulletCountSetting() {
+  const unlocked = getUnlockedPlayerBulletCount();
+  const cur = getPreferredPlayerBulletCount();
+  const next = cur <= 1 ? unlocked : cur - 1;
+  setPlayerBulletCountSetting(next);
+}
 function triggerRestoreFlow() {
   const ok = confirm('복원하면 현재 기기 진행상황이 백업 내용으로 덮어써져요.\n계속할까요?');
   if (!ok) return;
@@ -9389,6 +9651,7 @@ function getCanvasSettingsLayout() {
     { key:'lp',    label: () => `저사양: ${saveData.lowPower ? 'ON' : 'OFF'}`, action: toggleLowPowerFromCanvas },
     { key:'fx',    label: () => `이펙트: ${areEffectsEnabled() ? 'ON' : 'OFF'}`, action: toggleEffectsFromCanvas },
     { key:'hm',    label: () => (level < 61 ? `유도탄: LV.61 필요` : `유도탄: ${(saveData.homingEnabled !== false) ? 'ON' : 'OFF'}`), action: toggleHomingSetting },
+    { key:'bulletCount', label: () => `총알 수: ${getPreferredPlayerBulletCount()}발 (${getPlayerBulletSettingHint()})`, action: cyclePlayerBulletCountSetting },
     { key:'font',  label: () => `서체: ${FONT_LABELS[saveData.fontKey || 'system'] || '기본'} (탭)`, action: cycleFont },
     { key:'nick',  label: () => `캐릭터 관리`, action: openCharacterModal },
     { key:'profile', label: () => `프로필 보기`, action: () => { openProfile(); } },
@@ -13866,6 +14129,7 @@ function enterTown(){
 function leaveTown(){
   state = 'title';
   gameMode = 'stage';
+  try { practiceState.active = false; } catch(e) {}
   document.body.classList.add('title-mode');
   if (titleUI) titleUI.classList.remove('hidden');
   try { playBgmTrack('title'); } catch(e) {}
@@ -14256,6 +14520,15 @@ if (modeStageBtn) modeStageBtn.addEventListener('click', () => {
   gameMode = 'stage';
   modeModal.classList.add('hidden');
   openStageSelect();
+});
+
+if (modePracticeBtn) modePracticeBtn.addEventListener('click', () => {
+  stopIntroTutorial();
+  hideFocusMask();
+  startPracticeMode();
+});
+if (modeBulletCountSelect) modeBulletCountSelect.addEventListener('change', () => {
+  setPlayerBulletCountSetting(modeBulletCountSelect.value);
 });
 
 if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
@@ -17443,19 +17716,22 @@ levelUpTimer = 1500;
 function shootBullet(currentTime) {
   if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
   if (!player || !player.alive || isPlayerDying) return;
-  if (currentTime - lastShotTime < FIRE_INTERVAL) return;
+  const playerFireInterval = getPlayerFireIntervalByBulletCount();
+  if (currentTime - lastShotTime < playerFireInterval) return;
   lastShotTime = currentTime;
 
   let bulletDamage = getPlayerBaseDamageByLevelV192(level);
-  bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier()));
-  const shotCount = Math.min(5, 1 + Math.floor(level / 10));
+  bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * getPlayerBulletDamageMultiplier()));
+  const shotCount = getEffectivePlayerBulletCount();
+  const isAreaShot = isPlayerSingleAreaShotActive();
+  const areaRadius = getPlayerAreaBulletRadius();
   SFX.shoot();
 
-  const isHoming = (level >= 61) && (saveData.homingEnabled !== false);
+  const isHoming = (level >= 61) && (saveData.homingEnabled !== false) && !isAreaShot;
   const speed = Math.abs(BULLET_SPEED) * getBuffMult('speed');
   // ✅ [v.100] LV.10~40 구간도 LV.41과 동일하게 "여러 방향(부채꼴)" 발사로 통일
   const angleStep = 0.26;
-  const doubleShotActive = isInfiniteItemEffectActive('doubleShot');
+  const doubleShotActive = isInfiniteItemEffectActive('doubleShot') && !isAreaShot;
   const sideOffsets = doubleShotActive ? [-9, 9] : [0];
   for (let i = 0; i < shotCount; i++) {
     const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
@@ -17463,12 +17739,14 @@ function shootBullet(currentTime) {
       bullets.push({
         x: player.x + sideOffset,
         y: player.y - player.size,
-        radius: BULLET_RADIUS,
+        radius: isAreaShot ? Math.max(BULLET_RADIUS + 2, BULLET_RADIUS * 1.35) : BULLET_RADIUS,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         damage: bulletDamage,
         homing: isHoming,
-        element: getPlayerElementKey()
+        element: getPlayerElementKey(),
+        isPlayerAreaShot: isAreaShot,
+        areaRadius: areaRadius
       });
       addQuestStat('bullets', 1);
     }
@@ -17664,7 +17942,7 @@ function applyPetAreaDamage(cx, cy, radius, damage, color = '#fff', source = 'pe
       try { updateTownQuestProgress('petDamage', dmg); } catch(e) {}
       e.hp -= dmg;
       e.hitTimer = 100;
-      spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, color);
+      spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, color, false, 'pet');
       spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.12 : 1);
       if (e.hp <= 0) {
         try { updateTownQuestProgress('petOnlyKills', 1); } catch(e) {}
@@ -17682,7 +17960,7 @@ function applyPetAreaDamage(cx, cy, radius, damage, color = '#fff', source = 'pe
       const bdmg = calcLevelScaledDamage(Math.max(1, Math.floor(damage)), boss);
       try { updateTownQuestProgress('petDamage', bdmg); } catch(e) {}
       boss.hp -= bdmg;
-      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, color);
+      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, color, false, 'pet');
       if (boss.hp <= 0) handleBossKilledBySkill();
     }
   }
@@ -18011,7 +18289,7 @@ function applyLaserPetBeamTick(stream) {
       const dmg = calcLevelScaledDamage(baseTickDamage, e);
       e.hp -= dmg;
       e.hitTimer = 100;
-      spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#ff6ad5');
+      spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#ff6ad5', false, 'pet');
       spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
       if (e.hp <= 0) {
         handleEnemyKilledBySkill(e);
@@ -18026,7 +18304,7 @@ function applyLaserPetBeamTick(stream) {
     if (d2 <= rr * rr) {
       const bdmg = calcLevelScaledDamage(baseTickDamage, boss);
       boss.hp -= bdmg;
-      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, stream.color || '#ff6ad5');
+      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, stream.color || '#ff6ad5', false, 'pet');
       if (boss.hp <= 0) {
         handleBossKilledBySkill();
       }
@@ -18450,6 +18728,16 @@ function handleBossKilledBySkill() {
   boss._deadHandled = true;
 
   const bx = boss.x, by = boss.y;
+
+  if (isPracticeModeActive() || boss._practiceDummy) {
+    spawnExplosion(bx, by, '#ffb36b', 18);
+    try { SFX.explosion(); } catch(e) {}
+    try { spawnDamageText(bx, by - 70, `측정 완료 · 총 DPS ${formatNumber(practiceState.totalDps || 0)}`, '#ffdda8', true); } catch(e) {}
+    boss = null;
+    bossSpawned = true;
+    resetPracticeDummySoon();
+    return;
+  }
 
   // ✅ 보스 처치 보상: 점수 + EXP(구슬 100% 드랍) + 카운트
   const bossBonusScore = getBossBonusByStage(stage);
@@ -19606,6 +19894,8 @@ function createBoss() {
 
 function startStage() {
 
+    if (gameMode === 'practice') { initPracticeRun(); return; }
+
     // ✅ [v.197.4] 모험 모드 스테이지 값 보호
     // startGame()을 거치지 않고 이어질 때도 1~100 범위와 표시값을 확실히 유지
     if (typeof adventureModeActive !== 'undefined' && adventureModeActive && gameMode === 'stage') {
@@ -20042,7 +20332,7 @@ function getEnemyAttackStyle(stageNum, waveIdx, i){
 
 function spawnBossIfReady() {
   // ✅ [v.61] 보스는 5스테이지마다 1회 (던전 모드는 보스 없음)
-  if (gameMode === 'dungeon') return;
+  if (gameMode === 'dungeon' || gameMode === 'practice') return;
   const shouldSpawnBoss = (gameMode === 'mission') ? isMissionBossStage(stage) : isBossStage(stage);
   if (!shouldSpawnBoss) return;
 
@@ -20669,6 +20959,7 @@ else if (gameMode === 'itempark') initItemParkRun();
 else if (gameMode === 'minigame') initMiniGameRun();
 else if (gameMode === 'treasure') initTreasureRushRun();
 else if (gameMode === 'training') initTrainingRun();
+else if (gameMode === 'practice') initPracticeRun();
 else if (gameMode === 'tutorial') initTutorialModeRun();
 else if (gameMode === 'mission' && isMissionBonusStage(stage)) initMissionBonusStage();
 else startStage();
@@ -20682,6 +20973,7 @@ try {
 }
 
 function goToTitle() {
+  try { practiceState.active = false; } catch(e) {}
   try { tutorialModeActive = false; } catch(e) {}
 clearMissionAutoAdvanceTimer();
 closeMiniGameSelect();
@@ -20705,7 +20997,9 @@ setPauseUI();
 
 // 게임 오버 버튼 이벤트
 restartBtn.addEventListener('click', () => {
-  if (gameMode === 'stage') {
+  if (gameMode === 'practice') {
+    startPracticeMode();
+  } else if (gameMode === 'stage') {
     // ✅ 스테이지 모드: 선택했던 스테이지로 재도전
     startGame(lastSelectedStage || runStartStage || stage || 1);
   } else if (gameMode === 'mission') {
@@ -21780,6 +22074,9 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
     tryPickupExpItems();
     tryPickupGoldDrops();
 
+    updatePracticeMode(dt);
+    if (gameMode === 'practice') { updateHUD(); return; }
+
     if (gameMode === 'infinite') {
       if (!bossSpawned && !(bossIntro && bossIntro.active)) {
         infiniteWaveSpawnAcc += dt;
@@ -22166,6 +22463,14 @@ if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerD
 
 function updateBoss(dt) {
     if (!boss) return;
+    if (isPracticeModeActive() || boss._practiceDummy) {
+      boss.x = width / 2;
+      boss.y = Math.max(94, height * 0.22);
+      boss.targetY = boss.y;
+      boss.bounceTimer += dt;
+      boss.attackTimer = 0;
+      return;
+    }
     if (bossIntro.active || boss.y < boss.targetY) {
       boss.bounceTimer += dt; // 숨쉬기/바운스만 살려서 "살아있음" 느낌
       return;
@@ -22518,6 +22823,51 @@ function drawDamageTexts() {
   ctx.globalAlpha = 1;
 }
 
+
+function handleEnemyKillByPlayerBullet(e, b, opts = {}) {
+  if (!e) return;
+  if (gameMode === 'dungeon') {
+    const gained = calcDungeonKillExp(dungeonState.tier, level);
+    addExp(gained);
+  } else {
+    const killScoreInfo = getEnemyKillScore(e);
+    const scoreOpts = { enemy: e };
+    if (opts.area) {
+      scoreOpts.multikillEligible = true;
+      scoreOpts.multikillSource = 'playerAreaShot';
+    }
+    addScore(killScoreInfo.amount, 'monster', scoreOpts);
+    if (gameMode === 'infinite') {
+      spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
+    }
+    if (killScoreInfo.multiplier > 1) {
+      spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
+    }
+    spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
+    if (gameMode === 'infinite') {
+      trySpawnInfiniteDropItem(e.x, e.y);
+    }
+    spawnExpItemFromEnemy(e);
+  }
+  spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, opts.area ? 14 : 12);
+  SFX.enemyDie();
+  registerEnemyKill();
+}
+
+function applyPlayerBulletDamageToEnemy(e, b, opts = {}) {
+  if (!e || e.hp <= 0 || !b) return false;
+  const _dmg = calcLevelScaledDamage(b.damage, e);
+  e.hp -= _dmg;
+  e.hitTimer = 100;
+  SFX.hit();
+  spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, opts.area ? '#d7fff2' : '#ffe8a0', false, 'player');
+  const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element));
+  if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color);
+  spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
+  if (e.hp <= 0) handleEnemyKillByPlayerBullet(e, b, opts);
+  return true;
+}
+
 function checkCollisions() {
 if (!player || !player.alive || isPlayerDying) return;
 const px = player.x, py = player.y, pr = player.size * 0.7;
@@ -22546,7 +22896,7 @@ if (circleCollision(px, py, pr, e.x, e.y, enemyContactRadius)) {
 }
 }
 enemies = enemies.filter(e => e.hp > 0);
-if (boss) {
+if (boss && !boss._practiceDummy && !isPracticeModeActive()) {
 const bx = boss.x, by = boss.y, hw = boss.width/2 * 0.8, hh = boss.height/2 * 0.8;
 if (px > bx-hw && px < bx+hw && py > by-hh && py < by+hh) {
   if (hyperFlightActive) return;
@@ -22566,37 +22916,30 @@ if (circleCollision(px, py, pr, b.x, b.y, b.radius)) {
 const bossInvincible = isBossInvincible();
 
 bullets.forEach(b => {
+if (!b || b._hit) return;
+if (b.isPlayerAreaShot && Number(level || 1) >= 11) {
+  let impact = null;
+  for (const e of enemies) {
+    if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) { impact = e; break; }
+  }
+  if (impact) {
+    b._hit = true;
+    const cx = impact.x, cy = impact.y;
+    const areaRadius = Math.max(28, Number(b.areaRadius) || getPlayerAreaBulletRadius());
+    spawnExplosion(cx, cy, getElementMeta(getPlayerElementKey()).color || '#aee6ff', Math.min(26, 10 + Math.floor(areaRadius / 8)));
+    enemies.forEach(e => {
+      if (e.hp <= 0) return;
+      if (circleCollision(cx, cy, areaRadius, e.x, e.y, e.size * 0.92)) {
+        applyPlayerBulletDamageToEnemy(e, b, { area:true });
+      }
+    });
+  }
+  return;
+}
 enemies.forEach(e => {
 if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
-const _dmg = calcLevelScaledDamage(b.damage, e);
-e.hp -= _dmg; e.hitTimer = 100; b._hit = true;
-SFX.hit();
-spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#ffe8a0');
-const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
-if (e.hp <= 0) {
-if (gameMode === 'dungeon') {
-  const gained = calcDungeonKillExp(dungeonState.tier, level);
-  addExp(gained);
-} else {
-  const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster', { enemy: e });
-  if (gameMode === 'infinite') {
-    spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
-  }
-  if (killScoreInfo.multiplier > 1) {
-    spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
-  }
-  // 골드 미션이면 미션 모드에서도 골드 드랍 허용
-  spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
-  if (gameMode === 'infinite') {
-    trySpawnInfiniteDropItem(e.x, e.y);
-  }
-  spawnExpItemFromEnemy(e);
-}
-spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
-SFX.enemyDie();
-registerEnemyKill();
-}
+  b._hit = true;
+  applyPlayerBulletDamageToEnemy(e, b, { area:false });
 }
 });
 });
@@ -22660,7 +23003,7 @@ petBullets.forEach(b => {
       e.hitTimer = 100;
       b._hit = true;
 
-      spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0'); // 펫 데미지 색감
+      spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0', false, 'pet'); // 펫 데미지 색감
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
       // SFX.hit();
 
@@ -22700,7 +23043,7 @@ pet2Bullets.forEach(b => {
       e.hitTimer = 100;
       b._hit = true;
 
-      spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0');
+      spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0', false, 'pet');
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
 
       if (e.hp <= 0) {
@@ -22738,7 +23081,7 @@ petSkillProjectiles.forEach(p => {
       e.hp -= _dmg;
       e.hitTimer = 100;
       p.hitLeft = Math.max(0, (p.hitLeft ?? 1) - 1);
-      spawnDamageText(e.x, e.y - e.size * 0.68, _dmg, p.color || '#ffd27a');
+      spawnDamageText(e.x, e.y - e.size * 0.68, _dmg, p.color || '#ffd27a', false, 'pet');
       spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
       if (e.hp <= 0) {
         try { updateTownQuestProgress('petOnlyKills', 1); } catch(e) {}
@@ -22761,7 +23104,7 @@ petSkillBursts.forEach(b => {
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
       e.hp -= _dmg;
       e.hitTimer = 100;
-      spawnDamageText(e.x, e.y - e.size * 0.72, _dmg, b.color || '#fff1a8');
+      spawnDamageText(e.x, e.y - e.size * 0.72, _dmg, b.color || '#fff1a8', false, 'pet');
       if (e.hp <= 0) {
         try { updateTownQuestProgress('petOnlyKills', 1); } catch(e) {}
         handleEnemyKilledBySkill(e);
@@ -22778,12 +23121,15 @@ if (boss && !bossInvincible) {
 const bx = boss.x, by = boss.y, hw = boss.width/2, hh = boss.height/2;
 for (let b of bullets) {
 if (!boss) break;
-if (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh) {
+const areaHit = b.isPlayerAreaShot && Number(level || 1) >= 11 && circleCollision(b.x, b.y, Math.max(Number(b.areaRadius)||0, b.radius||BULLET_RADIUS), boss.x, boss.y, Math.max(hw, hh));
+const directHit = (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh);
+if (areaHit || directHit) {
 const _bdmg = calcLevelScaledDamage(b.damage, boss);
 boss.hp -= _bdmg; b._hit = true;
 SFX.hit();
-spawnDamageText(boss.x, boss.y, _bdmg, '#ffb3ff');
+spawnDamageText(boss.x, boss.y, _bdmg, b.isPlayerAreaShot ? '#d7fff2' : '#ffb3ff', false, 'player');
 const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 36, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
+if (b.isPlayerAreaShot) spawnExplosion(boss.x, boss.y, getElementMeta(getPlayerElementKey()).color || '#aee6ff', 18);
 if (boss.hp <= 0) { handleBossKilledBySkill(); }
 }
 }
@@ -22820,7 +23166,7 @@ if (boss && !bossInvincible) {
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
       try { updateTownQuestProgress('petDamage', _bdmg); } catch(e) {}
       boss.hp -= _bdmg; b._hit = true;
-      spawnDamageText(boss.x, boss.y + 10, _bdmg, '#a0ffb0');
+      spawnDamageText(boss.x, boss.y + 10, _bdmg, '#a0ffb0', false, 'pet');
       const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
       // SFX.hit();
 
@@ -22838,7 +23184,7 @@ if (boss && !bossInvincible) {
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
       try { updateTownQuestProgress('petDamage', _bdmg); } catch(e) {}
       boss.hp -= _bdmg; b._hit = true;
-      spawnDamageText(boss.x, boss.y + 20, _bdmg, '#9fd7ff');
+      spawnDamageText(boss.x, boss.y + 20, _bdmg, '#9fd7ff', false, 'pet');
       const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
 
       if (boss.hp <= 0) { handleBossKilledBySkill(); }
@@ -22857,7 +23203,7 @@ scoreEl.textContent = '점수: ' + formatNumber(score);
 highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 
   // ✅ 스테이지 모드에서는 점수 UI 숨김 (무한 모드에서만 표시)
-  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame' || gameMode === 'treasure' || gameMode === 'training');
+  const showScoreUI = (gameMode === 'infinite' || gameMode === 'mission' || gameMode === 'itempark' || gameMode === 'minigame' || gameMode === 'treasure' || gameMode === 'training' || gameMode === 'practice');
   if (scoreEl) scoreEl.style.display = showScoreUI ? '' : 'none';
   if (highScoreEl) highScoreEl.style.display = showScoreUI ? '' : 'none';
   if (gameMode === 'mission') {
@@ -22880,6 +23226,9 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
   } else if (gameMode === 'training') {
     if (scoreEl) scoreEl.textContent = `수련 EXP: ${formatNumber(trainingState.expGained || 0)}`;
     if (highScoreEl) highScoreEl.textContent = `틱 ${formatNumber(trainingState.tickCount || 0)}회 · 최근 +${formatNumber(trainingState.lastGain || 0)}`;
+  } else if (gameMode === 'practice') {
+    if (scoreEl) scoreEl.textContent = `총 DPS ${formatNumber(practiceState.totalDps || 0)} · 플레이어 ${formatNumber(practiceState.playerDps || 0)}/초`;
+    if (highScoreEl) highScoreEl.textContent = `펫 ${formatNumber(practiceState.petDps || 0)}/초 · 누적 ${formatNumber(practiceState.totalDamage || 0)} · 보상 없음`;
   }
 
   if (goldEl) goldEl.textContent = '골드: ' + formatNumber(gold);
@@ -22939,6 +23288,9 @@ if (gameMode === 'dungeon') {
 } else if (gameMode === 'training') {
   const left = Math.max(0, TRAINING_MAX_DAILY_RUNS - Number(saveData?.training?.used || 0));
   stageEl.textContent = `수련 모드 · 남은 ${formatMMSS(trainingState.timeLeft || 0)} · 오늘 ${left}회 남음`;
+} else if (gameMode === 'practice') {
+  const hpText = boss ? `${formatNumber(Math.max(0, Math.ceil(boss.hp || 0)))} / ${formatNumber(PRACTICE_DUMMY_MAX_HP)}` : `재소환 준비 중`;
+  stageEl.textContent = `연습 모드 · 허수아비 HP ${hpText} · ${Math.floor(practiceState.elapsedSec || 0)}초 측정`;
 } else {
   if (gameMode === 'stage') {
     const t = getStageKillTarget(stage);
@@ -22973,6 +23325,10 @@ if (hotTimeEl) {
     } else if (gameMode === 'training') {
       hotTimeEl.textContent = `🌱 자동 수련 · 5초마다 EXP · 남은 ${formatMMSS(trainingState.timeLeft || 0)}`;
       hotTimeEl.style.color = '#a8ffcb';
+    } else if (gameMode === 'practice') {
+      const srcLabel = practiceState.lastSource === 'pet' ? '펫' : '플레이어';
+      hotTimeEl.textContent = `🧪 DPS 측정 · 플레이어 ${formatNumber(practiceState.playerDps || 0)}/초 · 펫 ${formatNumber(practiceState.petDps || 0)}/초 · 마지막 ${srcLabel} ${formatNumber(practiceState.lastDamage || 0)}`;
+      hotTimeEl.style.color = '#ffdda8';
     } else if (gameMode === 'mission') {
       hotTimeEl.textContent = isMissionBonusStage(stage)
         ? `🎁 보너스 스테이지 · 남은 ${formatMMSS(missionState.bonusTimeLeft || 0)}`
@@ -23812,12 +24168,39 @@ function drawCrystalEnemyShape(e) {
     ctx.restore();
 
     const barWidth = size * 1.75;
-    const bx = x - barWidth / 2;
-    const by = y - size - 14;
-    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(bx, by, barWidth, 4);
+    const by = y - size - 15;
     const ratio = Math.max(0, hp / maxHp);
-    ctx.fillStyle = isElite ? '#ffaa00' : (tier === 'diamond' ? '#d7fbff' : '#7ce7ff');
-    ctx.fillRect(bx + 1, by + 1, (barWidth - 2) * ratio, 2);
+    drawRoundedMonsterHpBar(x, by, barWidth, ratio, isElite ? '#ffaa00' : (tier === 'diamond' ? '#d7fbff' : '#7ce7ff'));
+}
+
+
+function drawRoundedMonsterHpBar(x, y, barWidth, ratio, color) {
+  const barHeight = Math.max(6, Math.min(9, barWidth * 0.12));
+  const r = barHeight / 2;
+  const bx = x - barWidth / 2;
+  const by = y;
+  ratio = Math.max(0, Math.min(1, Number(ratio) || 0));
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, barWidth, barHeight, r); else ctx.rect(bx, by, barWidth, barHeight);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx + 1, by + 1, Math.max(0, barWidth - 2), Math.max(0, barHeight * 0.38), Math.max(1, r - 1)); else ctx.rect(bx + 1, by + 1, Math.max(0, barWidth - 2), Math.max(0, barHeight * 0.38));
+  ctx.fill();
+  if (ratio > 0) {
+    ctx.fillStyle = color || '#7cffb5';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx + 1, by + 1, Math.max(1, (barWidth - 2) * ratio), Math.max(1, barHeight - 2), Math.max(1, r - 1)); else ctx.rect(bx + 1, by + 1, Math.max(1, (barWidth - 2) * ratio), Math.max(1, barHeight - 2));
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, barWidth, barHeight, r); else ctx.rect(bx, by, barWidth, barHeight);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawEnemyShape(e) {
@@ -23938,12 +24321,9 @@ function drawEnemyShape(e) {
     ctx.fillText(elementMeta.name, x, y - size - 37);
     ctx.restore();
 
-    const barWidth = size * 1.6; const bx = x - barWidth / 2; const by = y - size - 12;
-    ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(bx, by, barWidth, 4);
+    const barWidth = size * 1.6; const by = y - size - 13;
     const ratio = Math.max(0, hp / maxHp);
-    ctx.fillStyle = 'rgba(255,255,255,0.20)'; ctx.fillRect(bx + 1, by + 1, barWidth - 2, 2);
-    ctx.fillStyle = isElite ? '#ffaa00' : visualPalette.mid;
-    ctx.fillRect(bx + 1, by + 1, (barWidth - 2) * ratio, 2);
+    drawRoundedMonsterHpBar(x, by, barWidth, ratio, isElite ? '#ffaa00' : visualPalette.mid);
 }
 
 function drawBoss() {
@@ -24147,8 +24527,9 @@ ctx.scale(1 / b, b);
         ctx.strokeRect(bx, by, barWidth, barHeight);
 
         // 보스 이름
-        let title = '아기 슬라임';
-        if (evoStage === 2) title = '어린이 슬라임';
+        let title = (kind === 'practice') ? '연습용 슬라임' : '아기 슬라임';
+        if (kind === 'practice') title = '연습용 슬라임';
+        else if (evoStage === 2) title = '어린이 슬라임';
         else if (evoStage === 3) title = '청소년 슬라임';
         else if (evoStage === 4) title = '왕 슬라임';
         else if (evoStage === 5) title = '신 슬라임';
@@ -24201,6 +24582,20 @@ function drawBullets() {
     const pulse = 0.86 + Math.sin(t * 0.018 + b.x * 0.01) * 0.14;
 
     ctx.save();
+
+    if (b.isPlayerAreaShot && !isLowPower()) {
+      const ar = Math.max(0, Number(b.areaRadius) || 0);
+      if (ar > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.14;
+        ctx.strokeStyle = pal.glow;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, ar, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     // ✅ [v.162.3] 플레이어 탄: 청록/형광 계열 고정 + 길쭉한 네온 탄
     if (!isLowPower()) {
@@ -31205,19 +31600,23 @@ try {
   shootBullet = function(currentTime){
     if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
     if (!player || !player.alive || isPlayerDying) return;
-    const interval = getFeverPlayerAttackIntervalV20321(FIRE_INTERVAL);
+    const baseInterval = (typeof getPlayerFireIntervalByBulletCount === 'function') ? getPlayerFireIntervalByBulletCount() : FIRE_INTERVAL;
+    const interval = getFeverPlayerAttackIntervalV20321(baseInterval);
     if (currentTime - lastShotTime < interval) return;
     lastShotTime = currentTime;
 
     let bulletDamage = getPlayerBaseDamageByLevelV192(level);
-    bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * getFeverPlayerDamageMultiplierV20321()));
-    const shotCount = Math.min(5, 1 + Math.floor(level / 10));
+    const bulletMult = (typeof getPlayerBulletDamageMultiplier === 'function') ? getPlayerBulletDamageMultiplier() : 1;
+    bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * bulletMult * getFeverPlayerDamageMultiplierV20321()));
+    const shotCount = (typeof getEffectivePlayerBulletCount === 'function') ? getEffectivePlayerBulletCount() : Math.min(5, 1 + Math.floor(level / 10));
+    const isAreaShot = (typeof isPlayerSingleAreaShotActive === 'function') ? isPlayerSingleAreaShotActive() : false;
+    const areaRadius = (typeof getPlayerAreaBulletRadius === 'function') ? getPlayerAreaBulletRadius() : 0;
     SFX.shoot();
 
-    const isHoming = (level >= 61) && (saveData.homingEnabled !== false);
+    const isHoming = (level >= 61) && (saveData.homingEnabled !== false) && !isAreaShot;
     const speed = Math.abs(BULLET_SPEED) * getBuffMult('speed');
     const angleStep = 0.26;
-    const doubleShotActive = isInfiniteItemEffectActive('doubleShot');
+    const doubleShotActive = isInfiniteItemEffectActive('doubleShot') && !isAreaShot;
     const sideOffsets = doubleShotActive ? [-9, 9] : [0];
     for (let i = 0; i < shotCount; i++) {
       const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
@@ -31225,12 +31624,14 @@ try {
         bullets.push({
           x: player.x + sideOffset,
           y: player.y - player.size,
-          radius: BULLET_RADIUS,
+          radius: isAreaShot ? Math.max(BULLET_RADIUS + 2, BULLET_RADIUS * 1.35) : BULLET_RADIUS,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           damage: bulletDamage,
           homing: isHoming,
-          element: getPlayerElementKey()
+          element: getPlayerElementKey(),
+          isPlayerAreaShot: isAreaShot,
+          areaRadius: areaRadius
         });
         addQuestStat('bullets', 1);
       }
