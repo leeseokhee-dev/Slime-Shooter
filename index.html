@@ -18825,6 +18825,16 @@ let blizzardFlakes = [];   // 싸락눈 파티클
 
 
 // ✅ 스킬로 처치해도 기존 보상(점수/EXP/퀘스트)이 들어가게 공통 처리
+
+// ✅ [v.208.2] 던전 몬스터 처치 퀘스트 진행도 공통 기록
+// 던전은 몬스터 처치 시 addScore()를 거치지 않고 EXP를 직접 지급하므로,
+// 던전 처치 퀘스트(dungeonKills)가 누락되지 않도록 별도로 연결합니다.
+function recordDungeonKillQuestProgressV2082(){
+  try {
+    if (gameMode === 'dungeon') updateTownQuestProgress('dungeonKills', 1);
+  } catch(e) {}
+}
+
 function handleEnemyKilledBySkill(e) {
   if (!e) return;
 
@@ -18832,6 +18842,7 @@ function handleEnemyKilledBySkill(e) {
   if (gameMode === 'dungeon') {
     const gained = calcDungeonKillExp(dungeonState.tier, level);
     const granted = addExp(gained);
+    recordDungeonKillQuestProgressV2082();
     recordMultiKillCandidate(granted || gained, e, { eligible: true, source: 'skill' });
   } else {
     const killScoreInfo = getEnemyKillScore(e);
@@ -23009,6 +23020,7 @@ function handleEnemyKillByPlayerBullet(e, b, opts = {}) {
   if (gameMode === 'dungeon') {
     const gained = calcDungeonKillExp(dungeonState.tier, level);
     addExp(gained);
+    recordDungeonKillQuestProgressV2082();
   } else {
     const killScoreInfo = getEnemyKillScore(e);
     const scoreOpts = { enemy: e };
@@ -23148,6 +23160,7 @@ bubbles.forEach(b => {
         if (gameMode === 'dungeon') {
           const gained = calcDungeonKillExp(dungeonState.tier, level);
           addExp(gained);
+          recordDungeonKillQuestProgressV2082();
         } else {
           const killScoreInfo = getEnemyKillScore(e);
   addScore(killScoreInfo.amount, 'monster', { enemy: e, multikillEligible: true, multikillSource: 'bubble' });
