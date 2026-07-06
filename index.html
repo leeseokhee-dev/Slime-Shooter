@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.207.2 Practice DPS Mode)</title>
+<title>Slime Shooter - Ultimate Evolution (v.208 Dungeon Target Mode)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6819,9 +6819,11 @@ function getMiniGameComboMultiplier(combo) {
  // ===== 던전 모드 =====
 let lastSelectedDungeonTier = 1;
 const DUNGEON_MAX_DAILY_RUNS = 10;
-const DUNGEON_DURATION_MS = 3 * 60 * 1000;
-const DUNGEON_TOTAL_MONSTERS = 900; // 5마리/초 * 180초
-const DUNGEON_PER_SECOND = 5;
+const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 이전 3분 제한 기록 호환용(현재 클리어 조건에는 사용하지 않음)
+const DUNGEON_KILL_TARGET = 1000;
+const DUNGEON_SPAWN_INTERVAL_MS = 2000;
+const DUNGEON_SPAWN_BATCH = 15;
+const DUNGEON_MAX_ENEMIES_ON_SCREEN = 20;
 const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500];
 // 던전 티어별 몬스터 타입(1~5단계)
 const DUNGEON_TIER_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star'];
@@ -6831,7 +6833,8 @@ const DUNGEON_TIER_STAGE_MAP = [1, 5, 10, 15, 20];
 let dungeonState = {
   active: false,
   tier: 1,
-  timeLeft: DUNGEON_DURATION_MS,
+  timeLeft: 0,
+  elapsed: 0,
   spawned: 0,
   spawnAcc: 0,
   runStartExp: 0,
@@ -10619,6 +10622,11 @@ function registerEnemyKill(isBoss = false, opts = {}) {
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
+
+  if (!isBoss && gameMode === 'dungeon' && dungeonState?.active && (stageRunKillCount || 0) >= DUNGEON_KILL_TARGET) {
+    endDungeonRun(true);
+    return;
+  }
 
   if (!isBoss && gameMode === 'infinite') {
     infiniteMonsterKillCount = Math.max(0, Math.floor(infiniteMonsterKillCount || 0)) + 1;
@@ -15607,7 +15615,8 @@ function startDungeonMode(tier = 1) {
 
   dungeonState.active = true;
   dungeonState.tier = tier;
-  dungeonState.timeLeft = DUNGEON_DURATION_MS;
+  dungeonState.timeLeft = 0;
+  dungeonState.elapsed = 0;
   dungeonState.spawned = 0;
   dungeonState.spawnAcc = 0;
   dungeonState.runStartExp = exp;
@@ -15639,7 +15648,8 @@ function startDungeon() {
   }
 
   // 던전 런 상태 초기화
-  dungeonState.timeLeft = DUNGEON_DURATION_MS;
+  dungeonState.timeLeft = 0;
+  dungeonState.elapsed = 0;
   dungeonState.spawned = 0;
   dungeonState.spawnAcc = 0;
 }
@@ -15656,19 +15666,25 @@ function spawnDungeonEnemy() {
 }
 
 function updateDungeonSpawns(dt) {
-  dungeonState.timeLeft -= dt;
-  if (dungeonState.timeLeft <= 0) {
-    dungeonState.timeLeft = 0;
+  dungeonState.elapsed = Math.max(0, (Number(dungeonState.elapsed) || 0) + dt);
+  dungeonState.timeLeft = 0;
+
+  const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+  if (killed >= DUNGEON_KILL_TARGET) {
     endDungeonRun(true);
     return;
   }
 
   dungeonState.spawnAcc += dt;
 
-  while (dungeonState.spawnAcc >= 1000 && dungeonState.spawned < DUNGEON_TOTAL_MONSTERS) {
-    dungeonState.spawnAcc -= 1000;
+  while (dungeonState.spawnAcc >= DUNGEON_SPAWN_INTERVAL_MS && state === 'playing') {
+    dungeonState.spawnAcc -= DUNGEON_SPAWN_INTERVAL_MS;
 
-    for (let i = 0; i < DUNGEON_PER_SECOND && dungeonState.spawned < DUNGEON_TOTAL_MONSTERS; i++) {
+    const onScreen = Array.isArray(enemies) ? enemies.length : 0;
+    const room = Math.max(0, DUNGEON_MAX_ENEMIES_ON_SCREEN - onScreen);
+    const spawnCount = Math.min(DUNGEON_SPAWN_BATCH, room);
+
+    for (let i = 0; i < spawnCount; i++) {
       spawnDungeonEnemy();
       dungeonState.spawned++;
     }
@@ -21710,8 +21726,8 @@ function updateGameOverModal() {
   if (isDungeon) {
     if (gameOverTitleEl) gameOverTitleEl.textContent = dungeonState.endedNaturally ? 'DUNGEON CLEAR' : 'DUNGEON FAIL';
     if (gameOverTitleEl) gameOverTitleEl.style.color = dungeonState.endedNaturally ? '#9bc7ff' : '#ff9b9b';
-    if (gameOverDescEl) gameOverDescEl.textContent = dungeonState.endedNaturally ? '던전 시간이 종료되었습니다.' : '플레이어가 쓰러졌습니다.';
-    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `${dungeonState.tier}단계`;
+    if (gameOverDescEl) gameOverDescEl.textContent = dungeonState.endedNaturally ? `목표 ${formatNumber(DUNGEON_KILL_TARGET)}마리 처치를 완료했습니다.` : '플레이어가 쓰러졌습니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `${dungeonState.tier}단계 · ${formatNumber(stageRunKillCount || 0)}/${formatNumber(DUNGEON_KILL_TARGET)}마리`;
     const gained = Math.max(0, exp - (dungeonState.runStartExp || 0));
     setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '획득 EXP', formatNumber(gained), { color: '#aef' });
     setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '처치 수', `${formatNumber(stageRunKillCount || 0)}마리`);
@@ -23560,7 +23576,7 @@ levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerEl
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, isWatchHud ? 9 : (window.innerWidth <= 520 ? 18 : 22), isWatchHud ? 5 : 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
-  if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 남은시간 ${formatMMSS(dungeonState.timeLeft)}`;
+  if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 처치 ${formatNumber(stageRunKillCount || 0)}/${formatNumber(DUNGEON_KILL_TARGET)} · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
   else stageEl.textContent = `던전 ${dungeonState.tier}단계`;
 } else if (gameMode === 'itempark') {
   const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
