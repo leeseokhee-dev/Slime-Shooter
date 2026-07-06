@@ -6375,6 +6375,8 @@ let titleLogoActive = true;
 let titleLogoStartTime = 0;
 let hotTimeTitlePopupVisible = false;
 let hotTimeTitlePopupDismissed = false;
+// ✅ [v.210.7] 첫 생성/첫 시작 길잡이 슬라임 튜토리얼 중에는 핫타임 팝업을 보류했다가, 튜토리얼 종료 후 표시
+let hotTimeTitlePopupPendingAfterTutorial = false;
 try { document.body.classList.add('logo-mode'); } catch(e) {}
 
 // ===== 모드 =====
@@ -8494,6 +8496,14 @@ function nextTutorialMessage() {
     document.body.classList.remove('tutorial-mode');
     if (tutorialOverlayDom) tutorialOverlayDom.classList.add('hidden');
     try { goToTitle(); } catch(e) {}
+    // ✅ [v.210.7] 튜토리얼 종료 후 타이틀로 돌아왔을 때 핫타임 안내 팝업 표시
+    try {
+      hotTimeTitlePopupDismissed = false;
+      hotTimeTitlePopupPendingAfterTutorial = true;
+      setTimeout(() => {
+        try { if (state === 'title') maybeOpenHotTimeTitlePopup(); } catch(_e) {}
+      }, 120);
+    } catch(e) {}
     return;
   }
 
@@ -10176,6 +10186,8 @@ function confirmInitialNickname() {
   saveGameData();
   updateHUD();
   closeInitialNicknameModal();
+  // ✅ 첫 생성 직후 길잡이 슬라임 안내가 우선. 핫타임은 튜토리얼 종료 후 표시.
+  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = true; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
   resetCurrentCharacterTutorialFlags();
   setTimeout(() => {
     try { startIntroTutorial(); } catch(e) {}
@@ -18011,7 +18023,8 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
   const slimeRushNoExpPenalty = (typeof window !== 'undefined' && !!window.__slimeRushActiveV187);
   const evolutionNoExpPenalty = (typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188());
   const noStageExpPenalty = dimensionNoExpPenalty || slimeRushNoExpPenalty || evolutionNoExpPenalty;
-  const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty)
+  const ignoreStageHitExpPenalty = !!(opts && opts.ignoreStageHitExpPenalty);
+  const stageHitRate = (gameMode === 'stage' && !noStageExpPenalty && !ignoreStageHitExpPenalty)
     ? Math.max(0, Math.min(1, Number(getStageHitExpRate(stageRunHits || 0)) || 1))
     : 1;
   const lostRate = (gameMode === 'stage' && !noStageExpPenalty) ? (1 - stageHitRate) : 0;
@@ -19258,10 +19271,16 @@ function handleBossKilledBySkill() {
     if (gameMode === 'infinite') {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
-      const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
-      const bossExpReward = (gameMode === 'stage') ? getStageLevelAdjustedExp(originalBossExpReward, (boss && boss.level) || currentBossLevel || stage) : originalBossExpReward;
+      // ✅ [v.210.9] 보스는 안내된 처치 경험치(getStageBossExpReward)를 그대로 기준으로 지급합니다.
+      // 일반 몬스터처럼 레벨 차이/피격 랭크로 보스 기본 EXP가 깎이지 않게 처리합니다.
+      const bossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
       const hotMult = getHotMultiplier();
-      const grantedBossExp = addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: hotMult });
+      const grantedBossExp = addExp(bossExpReward, {
+        source: 'boss',
+        baseAmount: bossExpReward,
+        hotMultiplier: hotMult,
+        ignoreStageHitExpPenalty: true
+      });
       if (gameMode === 'stage') {
         stageRunExpBoss = Math.max(0, Math.floor(stageRunExpBoss || 0)) + Math.max(0, Math.floor(grantedBossExp || 0));
       }
@@ -21571,9 +21590,9 @@ if (gameMode === 'stage' && level >= 31
   && !(typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188())) {
   let penaltyRate = 0;
   if (level <= 60) penaltyRate = 0.10;
-  else if (level <= 100) penaltyRate = 0.05;
-  else if (level <= 200) penaltyRate = 0.03;
-  else penaltyRate = 0.01;
+  else if (level <= 100) penaltyRate = 0.075;
+  else if (level <= 200) penaltyRate = 0.05;
+  else penaltyRate = 0.03;
 
   const curLevel = Math.max(1, Math.min(MAX_LEVEL - 1, level || 1));
   const neededExp = Math.max(0, Number(EXP_TABLE?.[curLevel]?.needed || 0));
@@ -25672,20 +25691,48 @@ function drawLogoSplashScreen(timestamp){
   }
 }
 
+function isBeginnerGuideHotTimePopupBlocked(){
+  try {
+    if (state !== 'title') return false;
+
+    // 닉네임을 처음 만드는 순간, 길잡이 슬라임 첫 안내와 핫타임 팝업이 겹치지 않게 보류
+    if (typeof isInitialNicknameRequired === 'function' && isInitialNicknameRequired()) return true;
+
+    const lv = Number(level || saveData?.level || 1) || 1;
+    const nick = String(saveData?.nickname || '').trim();
+    const guideStep = Math.max(0, Math.floor(Number(ensureTownQuestState?.()?.guideStep || 0)));
+    const guideTotal = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 0;
+    const guideFinished = guideTotal > 0 && guideStep >= guideTotal;
+
+    // 첫 캐릭터/첫 게임 시작용 길잡이 슬라임 안내가 아직 시작 전이거나 진행 중이면 핫타임 팝업 표시 금지
+    if (nick && lv <= 10 && !guideFinished) return true;
+    if (introTutorialActive || tutorialActive || tutorialModeActive) return true;
+    if (tutorialFlow && tutorialFlow !== 'none') return true;
+  } catch(e) {}
+  return false;
+}
+
 function maybeOpenHotTimeTitlePopup(){
   if (state !== 'title') return;
   if (hotTimeTitlePopupDismissed || hotTimeTitlePopupVisible) return;
+  if (isBeginnerGuideHotTimePopupBlocked()) {
+    hotTimeTitlePopupPendingAfterTutorial = true;
+    return;
+  }
   // ✅ [v.209.2] 공지사항 느낌의 핫타임 안내 팝업
   // 실제 핫타임이 아니어도 타이틀 진입 시 1회 안내로 표시하고,
   // 진행 중일 때는 보너스 적용 문구로 자동 전환합니다.
+  hotTimeTitlePopupPendingAfterTutorial = false;
   hotTimeTitlePopupVisible = true;
   try { document.body.classList.add('hot-time-popup-mode'); } catch(e) {}
   try { if (titleUI) titleUI.classList.add('title-buttons-hidden'); } catch(e) {}
 }
 
 function closeHotTimeTitlePopup(){
+  const wasVisible = !!hotTimeTitlePopupVisible;
   hotTimeTitlePopupVisible = false;
-  hotTimeTitlePopupDismissed = true;
+  // ✅ 보이지 않는 상태에서 startBtn 등이 호출할 때는 '확인 누름'으로 처리하지 않음
+  if (wasVisible) hotTimeTitlePopupDismissed = true;
   try { document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
   try { if (titleUI) titleUI.classList.remove('title-buttons-hidden'); } catch(e) {}
 }
@@ -26266,6 +26313,10 @@ requestAnimationFrame(gameLoop);
     // ✅ 튜토리얼(최초 1회)
     if (!tutorialActive) maybeShowFirstTutorial();
     drawTutorialOverlay();
+    // ✅ [v.210.7] 보류된 핫타임 팝업은 길잡이 슬라임 튜토리얼이 완전히 끝난 뒤에만 표시
+    if (hotTimeTitlePopupPendingAfterTutorial && !tutorialActive && !introTutorialActive && !tutorialModeActive && !isBeginnerGuideHotTimePopupBlocked()) {
+      maybeOpenHotTimeTitlePopup();
+    }
     // ✅ [v.209.1] 타이틀 화면 위에 핫타임 팝업을 실제로 렌더링
     drawHotTimeTitlePopup(timestamp);
     /* canvas settings disabled */
@@ -33002,6 +33053,112 @@ try {
   // ===== [v.203.12] 튜토리얼 완료 칭찬 대사는 원본 completeBeginnerGuideQuestInGame 내부에서 직접 표시합니다.
   // 기존 v.2023 후킹은 다음 가이드 제목이 먼저 보이거나, 대사가 중복될 수 있어 비활성화했습니다.
 
+})();
+</script>
+
+
+<script>
+/* ===============================
+   ✅ [v.210.8] 피버 완전 종료 보정
+   - 타이틀 이동 / 게임 오버 / 타이틀 상태 / 새 게임 시작 시 남은 피버 시간 제거
+   - 9.2초처럼 남은 시간이 다음 스테이지에 이어지는 현상 방지
+   =============================== */
+(function(){
+  const PATCH_ID = 'v210_8_force_clear_fever_on_exit_and_new_run';
+  if (window[PATCH_ID]) return;
+  window[PATCH_ID] = true;
+
+  function clearFeverStateV2108(){
+    try { if (typeof feverActive !== 'undefined') feverActive = false; } catch(e) {}
+    try { if (typeof feverGauge !== 'undefined') feverGauge = 0; } catch(e) {}
+    try { if (typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0; } catch(e) {}
+    try { if (typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = 0; } catch(e) {}
+    try { if (typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null; } catch(e) {}
+    try { document.body.classList.remove('fever-mode'); } catch(e) {}
+    try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(e) {}
+  }
+
+  // 기존 forceEndFever가 있더라도, 어디서 호출해도 확실히 0초로 정리되도록 재정의합니다.
+  try {
+    window.forceEndFever = clearFeverStateV2108;
+    if (typeof forceEndFever === 'function') {
+      forceEndFever = clearFeverStateV2108;
+    }
+  } catch(e) {}
+
+  // 타이틀 화면에서는 피버가 존재할 수 없도록 보정합니다.
+  try {
+    const __goToTitleBeforeV2108 = goToTitle;
+    goToTitle = function(){
+      clearFeverStateV2108();
+      const ret = __goToTitleBeforeV2108.apply(this, arguments);
+      clearFeverStateV2108();
+      return ret;
+    };
+  } catch(e) {}
+
+  // 게임 오버 순간에도 즉시 종료합니다.
+  try {
+    const __gameOverBeforeV2108 = gameOver;
+    gameOver = function(){
+      clearFeverStateV2108();
+      const ret = __gameOverBeforeV2108.apply(this, arguments);
+      clearFeverStateV2108();
+      return ret;
+    };
+  } catch(e) {}
+
+  // 새 게임 시작 시 title/gameover에서 넘어오는 경우 남은 피버 시간을 한 번 더 제거합니다.
+  try {
+    const __startGameBeforeV2108 = startGame;
+    startGame = function(startStageNum = 1){
+      try {
+        const fromTitleOrGameOver =
+          state === 'title' ||
+          state === 'gameover' ||
+          document.body.classList.contains('title-mode') ||
+          document.body.classList.contains('dead-mode');
+        if (fromTitleOrGameOver) clearFeverStateV2108();
+      } catch(e) {
+        clearFeverStateV2108();
+      }
+      const ret = __startGameBeforeV2108.apply(this, arguments);
+      try {
+        if (state === 'playing' && document.body.classList.contains('fever-mode') && !(feverActive && feverTimeLeft > 0)) {
+          clearFeverStateV2108();
+        }
+      } catch(e) {}
+      return ret;
+    };
+  } catch(e) {}
+
+  // 피버 업데이트 자체도 플레이 중이 아닐 때는 강제로 종료합니다.
+  try {
+    const __updateFeverModeBeforeV2108 = updateFeverMode;
+    updateFeverMode = function(dt){
+      try {
+        if (state !== 'playing' || document.body.classList.contains('title-mode') || document.body.classList.contains('dead-mode')) {
+          clearFeverStateV2108();
+          return;
+        }
+      } catch(e) {}
+      return __updateFeverModeBeforeV2108.apply(this, arguments);
+    };
+  } catch(e) {}
+
+  // 마을로 나가거나 마을에서 타이틀로 돌아가는 흐름도 안전하게 처리합니다.
+  try {
+    if (typeof enterTown === 'function') {
+      const __enterTownBeforeV2108 = enterTown;
+      enterTown = function(){ clearFeverStateV2108(); return __enterTownBeforeV2108.apply(this, arguments); };
+    }
+  } catch(e) {}
+  try {
+    if (typeof leaveTown === 'function') {
+      const __leaveTownBeforeV2108 = leaveTown;
+      leaveTown = function(){ clearFeverStateV2108(); const ret = __leaveTownBeforeV2108.apply(this, arguments); clearFeverStateV2108(); return ret; };
+    }
+  } catch(e) {}
 })();
 </script>
 
