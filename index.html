@@ -8652,6 +8652,9 @@ function isHotTimeNow(date = new Date()) {
 }
 
 function getHotMultiplier(date = new Date()) {
+  // ✅ [v.208.5] 던전 모드는 핫타임 EXP 보너스를 적용하지 않습니다.
+  if (typeof gameMode !== 'undefined' && gameMode === 'dungeon') return 1;
+
   const day = date.getDay(); // 0=일, 6=토
   const isWeekend = (day === 0 || day === 6);
 
@@ -17266,6 +17269,22 @@ function addScore(amount, source = 'monster', options = {}) {
     return 0;
   }
 
+  // ✅ [v.208.5] 던전 모드 몬스터 EXP는 플레이어/펫 처치 모두 같은 던전 전용 EXP를 지급합니다.
+  // - 기존 점수 환산 EXP를 거치지 않아 펫 처치와 플레이어 처치의 EXP 차이를 제거합니다.
+  // - 던전에서는 핫타임 보너스를 적용하지 않습니다.
+  // - 펫 EXP 보너스, EXP 버프, 피버 EXP 보너스는 addExp()의 공통 계산을 그대로 사용합니다.
+  if (gameMode === 'dungeon' && source === 'monster') {
+    const baseExp = calcDungeonKillExp(dungeonState?.tier || 1, level);
+    const gainedExp = addExp(baseExp, { source: 'monster', baseAmount: baseExp, hotMultiplier: 1 });
+    if (gainedExp > 0) {
+      stageRunExpMonsters = Math.max(0, Math.floor(Number(stageRunExpMonsters) || 0)) + Math.max(0, Math.floor(gainedExp || 0));
+    }
+    if (options.multikillEligible === true) {
+      recordMultiKillCandidate(gainedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
+    }
+    return gainedExp;
+  }
+
   // 스테이지 모드 몬스터 EXP는 점수 환산이 아닌 스테이지 구간표를 사용합니다.
   if (gameMode === 'stage' && source === 'monster') {
     const originalBaseExp = getStageMonsterExpRewardForEnemy(stage, options.enemy);
@@ -19084,7 +19103,10 @@ function handleEnemyKilledBySkill(e) {
   // 던전은 즉시 EXP 지급, 그 외는 EXP 구슬 드랍(기존 로직과 동일)
   if (gameMode === 'dungeon') {
     const gained = calcDungeonKillExp(dungeonState.tier, level);
-    const granted = addExp(gained);
+    const granted = addExp(gained, { source: 'monster', baseAmount: gained, hotMultiplier: 1 });
+    if (granted > 0) {
+      stageRunExpMonsters = Math.max(0, Math.floor(Number(stageRunExpMonsters) || 0)) + Math.max(0, Math.floor(granted || 0));
+    }
     recordDungeonKillQuestProgressV2082();
     recordMultiKillCandidate(granted || gained, e, { eligible: true, source: 'skill' });
   } else {
@@ -23747,7 +23769,7 @@ if (gameMode === 'dungeon') {
 
 if (hotTimeEl) {
     if (gameMode === 'dungeon') {
-      hotTimeEl.textContent = '던전 EXP';
+      hotTimeEl.textContent = '던전 EXP · 핫타임 미적용';
       hotTimeEl.style.color = '#44ffb8';
     } else if (gameMode === 'itempark') {
       hotTimeEl.textContent = `아이템 파크 · 남은 ${formatMMSS(itemParkState.timeLeft || 0)}`;
