@@ -3743,9 +3743,9 @@ body.watch-ui:not(.playing-ui) #settingsBar,
             <!-- JS로 생성 -->
         </div>
         <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:10px;">
-            • 목표: 몬스터 2,000마리 처치<br>
+            • 단계별 목표: 1단계 400마리, 2단계 800마리, 3단계 1,200마리처럼 단계마다 400마리씩 증가<br>
             • 2초마다 15마리 등장 · 화면 최대 20마리 유지<br>
-            • 200마리마다 1~10단계 던전 상자 획득<br>
+            • 목표 몬스터 처치 달성 시 해당 단계 던전 상자 획득<br>
             • 점수/EXP 구슬 없음 · 레이저 발사 불가 · 적 탄환 없음
         </div>
     </div>
@@ -6823,13 +6823,14 @@ function getMiniGameComboMultiplier(combo) {
 let lastSelectedDungeonTier = 1;
 const DUNGEON_MAX_DAILY_RUNS = 10;
 const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 레거시 저장값 호환용(현재 던전 클리어 조건에는 사용하지 않음)
-const DUNGEON_KILL_TARGET = 2000;
+const DUNGEON_KILL_TARGET_BASE = 400; // 단계별 목표: 1단계 400마리, 2단계 800마리...
+const DUNGEON_KILL_TARGET = DUNGEON_KILL_TARGET_BASE; // 레거시 표시/저장 호환용
 const DUNGEON_SPAWN_INTERVAL_MS = 2000;
 const DUNGEON_SPAWN_BATCH = 15;
 const DUNGEON_MAX_ENEMIES_ON_SCREEN = 20;
 const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500, 1900, 2400, 3000, 3800, 4800];
 const DUNGEON_MAX_TIER = 10;
-const DUNGEON_BOX_STEP_KILLS = 200;
+const DUNGEON_BOX_STEP_KILLS = DUNGEON_KILL_TARGET_BASE; // 레거시 호환용: 이제 중간 지급이 아닌 단계 목표 기준
 // 던전 티어별 몬스터 타입(1~10단계)
 const DUNGEON_TIER_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'circle', 'triangle', 'square', 'diamond', 'star'];
 // 던전 티어별 "스테이지" 매핑 (기존 evo/난이도 로직 재사용)
@@ -6843,6 +6844,7 @@ let dungeonState = {
   spawned: 0,
   spawnAcc: 0,
   runStartExp: 0,
+  killTarget: DUNGEON_KILL_TARGET_BASE,
   endedNaturally: false
 };
 
@@ -7848,7 +7850,7 @@ const BASE_TUTORIAL_MESSAGES = [
 "무한 모드에서는 골드를 획득할 수 있어 성장에 도움이 됩니다.",
 "세 번째는 아이템 파크입니다. 이 모드에서는 하늘에서 내려오는 다양한 아이템을 1분 동안 최대한 많이 모아야 합니다.",
 "네 번째는 미니게임입니다. 무작위 미니게임을 1분 동안 플레이하고, 획득한 점수에 따라 경험치를 받게 됩니다.",
-"마지막으로 던전 모드입니다. 던전 모드는 몬스터 2,000마리 처치를 목표로 하며, 200마리마다 단계별 상자를 얻는 특별한 모드입니다.",
+"마지막으로 던전 모드입니다. 던전 모드는 단계별 목표 몬스터를 처치하고, 클리어 시 해당 단계 상자를 얻는 특별한 모드입니다.",
 "이제 기본 플레이를 체험하기 위해 스테이지 모드를 선택해 보겠습니다.",
 "전투가 시작되었습니다.",
 "화면에 나타나는 몬스터들을 공격하여 처치해 보세요.",
@@ -10642,8 +10644,8 @@ function registerEnemyKill(isBoss = false, opts = {}) {
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
 
   if (!isBoss && gameMode === 'dungeon' && dungeonState?.active) {
-    grantDungeonMilestoneBoxes();
-    if ((stageRunKillCount || 0) >= DUNGEON_KILL_TARGET) {
+    const dungeonTarget = getCurrentDungeonKillTarget();
+    if ((stageRunKillCount || 0) >= dungeonTarget) {
       endDungeonRun(true);
       return;
     }
@@ -11068,7 +11070,7 @@ function renderInventoryContent() {
     <div style="padding:10px 12px; border:1px solid rgba(255,216,107,0.24); border-radius:12px; background:rgba(255,216,107,0.07); margin-bottom:10px;">
       <div style="font-weight:900; font-size:14px; color:#ffe6a0;">🎁 던전 상자</div>
       <div style="margin-top:6px; font-size:12px; color:#fff3cf; line-height:1.55;">
-        던전에서 200마리마다 1~10단계 상자를 획득합니다. 단계가 높을수록 경험치, 골드, 소모품 보상이 풍부합니다.
+        던전 목표 몬스터 처치 달성 시 해당 단계 상자를 획득합니다. 단계가 높을수록 경험치, 골드, 소모품 보상이 풍부합니다.
       </div>
       <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-top:8px;">
         ${Array.from({length:10}, (_, i) => {
@@ -15004,7 +15006,7 @@ if (modeDungeonBtn) modeDungeonBtn.addEventListener('click', () => {
   openDungeonSelect();
   showContextTutorial('dungeon', [
     '던전 모드 화면입니다. LV.100부터 입장할 수 있으며, 하루 입장 횟수가 제한됩니다.',
-    '목표는 몬스터 2,000마리 처치이며, 200마리마다 1~10단계 던전 상자를 획득합니다.',
+    '목표는 단계마다 400마리씩 증가하며, 목표 몬스터 처치 달성 시 해당 단계 던전 상자를 획득합니다.',
     '던전 단계가 올라갈수록 적이 강해지는 대신 몹당 경험치와 보상 기대치도 커집니다.'
   ]);
 });
@@ -15608,6 +15610,18 @@ function calcDungeonKillExp(tier, currentLevel) {
   return Math.round(base * mult);
 }
 
+function getDungeonKillTarget(tier = (dungeonState && dungeonState.tier) || 1) {
+  const t = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(tier) || 1)));
+  return DUNGEON_KILL_TARGET_BASE * t;
+}
+
+function getCurrentDungeonKillTarget() {
+  if (gameMode === 'dungeon' && dungeonState && dungeonState.active) {
+    return Math.max(1, Math.floor(Number(dungeonState.killTarget) || getDungeonKillTarget(dungeonState.tier || 1)));
+  }
+  return getDungeonKillTarget(lastSelectedDungeonTier || 1);
+}
+
 function openDungeonSelect() {
   // 다른 모달 닫기(겹침 방지)
   try { if (stageModal) stageModal.classList.add('hidden'); } catch(e){}
@@ -15626,7 +15640,7 @@ const canEnterByLevel = (level >= DUNGEON_REQUIRED_LEVEL);
 
   if (dungeonInfoEl) {
     const lvlMsg = canEnterByLevel ? '' : ` (LV.${DUNGEON_REQUIRED_LEVEL}부터 입장 가능)`;
-    dungeonInfoEl.textContent = `오늘 남은 입장: ${left} / ${DUNGEON_MAX_DAILY_RUNS}${lvlMsg} · 목표 ${formatNumber(DUNGEON_KILL_TARGET)}마리 · ${formatNumber(DUNGEON_BOX_STEP_KILLS)}마리마다 1~10단계 상자 지급`;
+    dungeonInfoEl.textContent = `오늘 남은 입장: ${left} / ${DUNGEON_MAX_DAILY_RUNS}${lvlMsg} · 단계별 목표: 단계 × ${formatNumber(DUNGEON_KILL_TARGET_BASE)}마리 · 클리어 시 해당 단계 상자 지급`;
   }
 
   for (let t = 1; t <= DUNGEON_MAX_TIER; t++) {
@@ -15639,11 +15653,11 @@ const canEnterByLevel = (level >= DUNGEON_REQUIRED_LEVEL);
     bt.style.fontSize = '13px';
 
     const expPerKill = calcDungeonKillExp(t, level);
-    bt.textContent = `${t}단계 던전 · 몹당 ${formatNumber(expPerKill)} EXP`;
+    bt.textContent = `${t}단계 던전 · 목표 ${formatNumber(getDungeonKillTarget(t))}마리 · 몹당 ${formatNumber(expPerKill)} EXP`;
 
     const unlockedTier = Math.max(1, Math.min(DUNGEON_MAX_TIER, (saveData.dungeon?.unlockedTier || 1)));
     const locked = (t > unlockedTier);
-    if (locked) bt.textContent = `🔒 ${t}단계 던전 · 몹당 ${formatNumber(expPerKill)} EXP`;
+    if (locked) bt.textContent = `🔒 ${t}단계 던전 · 목표 ${formatNumber(getDungeonKillTarget(t))}마리 · 몹당 ${formatNumber(expPerKill)} EXP`;
 
     const disabled = (!canEnterByLevel) || (left <= 0) || locked;
     if (disabled) {
@@ -15688,8 +15702,11 @@ function startDungeonMode(tier = 1) {
   dungeonState.spawned = 0;
   dungeonState.spawnAcc = 0;
   dungeonState.runStartExp = exp;
+  dungeonState.killTarget = getDungeonKillTarget(tier);
   dungeonState.endedNaturally = false;
   dungeonState.awardedBoxStages = [];
+  dungeonState.clearBoxGranted = false;
+  dungeonState.clearBoxGranted = false;
 
   const mappedStage = DUNGEON_TIER_STAGE_MAP[Math.max(0, Math.min(DUNGEON_MAX_TIER - 1, tier - 1))] || 1;
   // 던전은 기존 웨이브/보스 로직을 쓰지 않기 때문에 startGame 내부에서 startDungeon()이 실행됨
@@ -15721,6 +15738,7 @@ function startDungeon() {
   dungeonState.elapsed = 0;
   dungeonState.spawned = 0;
   dungeonState.spawnAcc = 0;
+  dungeonState.killTarget = getDungeonKillTarget(dungeonState.tier || lastSelectedDungeonTier || 1);
   dungeonState.awardedBoxStages = [];
 }
 
@@ -15750,19 +15768,17 @@ function grantDungeonBox(stageNo, amount = 1){
   if (!inventoryModal.classList.contains('hidden')) renderInventoryContent();
 }
 
+function grantDungeonClearBox(){
+  if (!(gameMode === 'dungeon' && dungeonState)) return;
+  if (dungeonState.clearBoxGranted) return;
+  const tier = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(dungeonState.tier) || 1)));
+  grantDungeonBox(tier, 1);
+  dungeonState.clearBoxGranted = true;
+}
+
 function grantDungeonMilestoneBoxes(){
-  if (!(gameMode === 'dungeon' && dungeonState && dungeonState.active)) return;
-  const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
-  if (!Array.isArray(dungeonState.awardedBoxStages)) dungeonState.awardedBoxStages = [];
-  const awarded = new Set(dungeonState.awardedBoxStages.map(v => Math.floor(Number(v) || 0)));
-  const maxStage = Math.min(10, Math.floor(killed / DUNGEON_BOX_STEP_KILLS));
-  for (let n = 1; n <= maxStage; n++) {
-    if (!awarded.has(n)) {
-      grantDungeonBox(n, 1);
-      awarded.add(n);
-      dungeonState.awardedBoxStages.push(n);
-    }
-  }
+  // v.208.6: 던전 상자는 중간 처치 보상이 아니라 목표 몬스터 처치 달성 후 클리어 시 1개만 지급합니다.
+  return;
 }
 
 function rollDungeonBoxReward(stageNo){
@@ -15805,7 +15821,8 @@ function updateDungeonSpawns(dt) {
   dungeonState.timeLeft = 0;
 
   const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
-  if (killed >= DUNGEON_KILL_TARGET) {
+  const dungeonTarget = getCurrentDungeonKillTarget();
+  if (killed >= dungeonTarget) {
     endDungeonRun(true);
     return;
   }
@@ -15832,7 +15849,7 @@ function endDungeonRun(endedNaturally = false) {
 
   // ✅ 던전 클리어 시 다음 단계 해금 (총 10단계)
   try {
-    grantDungeonMilestoneBoxes();
+    if (endedNaturally) grantDungeonClearBox();
     const curTier = Math.max(1, Math.min(DUNGEON_MAX_TIER, dungeonState.tier || 1));
     const unlocked = Math.max(1, Math.min(DUNGEON_MAX_TIER, (saveData.dungeon?.unlockedTier || 1)));
     if (endedNaturally && curTier >= unlocked && curTier < DUNGEON_MAX_TIER) {
@@ -21882,8 +21899,8 @@ function updateGameOverModal() {
   if (isDungeon) {
     if (gameOverTitleEl) gameOverTitleEl.textContent = dungeonState.endedNaturally ? 'DUNGEON CLEAR' : 'DUNGEON FAIL';
     if (gameOverTitleEl) gameOverTitleEl.style.color = dungeonState.endedNaturally ? '#9bc7ff' : '#ff9b9b';
-    if (gameOverDescEl) gameOverDescEl.textContent = dungeonState.endedNaturally ? `목표 ${formatNumber(DUNGEON_KILL_TARGET)}마리 처치를 완료했습니다.` : '플레이어가 쓰러졌습니다.';
-    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `${dungeonState.tier}단계 · ${formatNumber(stageRunKillCount || 0)}/${formatNumber(DUNGEON_KILL_TARGET)}마리`;
+    if (gameOverDescEl) gameOverDescEl.textContent = dungeonState.endedNaturally ? `목표 ${formatNumber(getCurrentDungeonKillTarget())}마리 처치를 완료했습니다.` : '플레이어가 쓰러졌습니다.';
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `${dungeonState.tier}단계 · ${formatNumber(stageRunKillCount || 0)}/${formatNumber(getCurrentDungeonKillTarget())}마리`;
     const gained = Math.max(0, exp - (dungeonState.runStartExp || 0));
     setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '획득 EXP', formatNumber(gained), { color: '#aef' });
     setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '처치 수', `${formatNumber(stageRunKillCount || 0)}마리`);
@@ -23733,7 +23750,7 @@ levelEl.textContent = `LV. ${level} · ${nn} ${playerElementMeta.icon}${playerEl
 if (playerCompactEl) fitTextElementToWidth(playerCompactEl, isWatchHud ? 9 : (window.innerWidth <= 520 ? 18 : 22), isWatchHud ? 5 : 11);
 if (expEl) fitTextElementToWidth(expEl, window.innerWidth <= 520 ? 12 : 15, window.innerWidth <= 520 ? 6 : 8);
 if (gameMode === 'dungeon') {
-  if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 처치 ${formatNumber(stageRunKillCount || 0)}/${formatNumber(DUNGEON_KILL_TARGET)} · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
+  if (state === 'playing') stageEl.textContent = `던전 ${dungeonState.tier}단계 · 처치 ${formatNumber(stageRunKillCount || 0)}/${formatNumber(getCurrentDungeonKillTarget())} · 클리어 상자 ${dungeonState.tier}단계 · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
   else stageEl.textContent = `던전 ${dungeonState.tier}단계`;
 } else if (gameMode === 'itempark') {
   const left = Math.max(0, ITEM_PARK_MAX_DAILY_RUNS - Number(saveData?.itemPark?.used || 0));
