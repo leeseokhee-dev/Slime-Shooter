@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.208.3 Dungeon 10 Tier Box Mode)</title>
+<title>Slime Shooter - Ultimate Evolution (v.209.9 Same Cute Guide Logo Slime)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -907,6 +907,27 @@ body.tutorial-mode #pauseBtn{
 }
 
 
+
+/* ===== [v.209] 로고 스플래시 / 핫타임 팝업 ===== */
+body.logo-mode #titleUI,
+body.logo-mode #hud,
+body.logo-mode .modal,
+body.logo-mode #consumableQuickBar,
+body.logo-mode .laser-skill,
+body.logo-mode .bubble-skill,
+body.logo-mode .blizzard-skill,
+body.logo-mode .meteor-skill,
+body.logo-mode .lightning-skill,
+body.logo-mode .quake-skill{
+  display:none !important;
+}
+body.hot-time-popup-mode #titleUI{
+  display:none !important; /* ✅ 핫타임 팝업은 캔버스 최상위로 보이도록 타이틀 버튼 완전 숨김 */
+}
+body.hot-time-popup-mode #titleUI.title-buttons-hidden .overlay-content{
+  pointer-events:none;
+}
+
 .hidden { display: none !important; }
 
     /* 퀘스트 / 스테이지 모달 */
@@ -1296,15 +1317,15 @@ function shouldShowTutorial(id){
   flex:0 0 70px;
   width:70px;
   height:70px;
-  border-radius:999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:38px;
-  background:radial-gradient(circle at 35% 28%, rgba(255,255,255,0.82), rgba(124,255,181,0.34) 42%, rgba(22,92,74,0.82) 100%);
-  border:3px solid rgba(184,255,216,0.94);
-  box-shadow:inset 0 2px 0 rgba(255,255,255,0.34), 0 0 16px rgba(124,255,181,0.35);
+  position:relative;
+  border:0;
+  border-radius:0;
+  background:transparent url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%2080%22%3E%0A%3Cdefs%3E%0A%3CradialGradient%20id%3D%22g%22%20cx%3D%2233%25%22%20cy%3D%2215%25%22%20r%3D%2275%25%22%3E%0A%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ffffff%22/%3E%0A%3Cstop%20offset%3D%220.18%22%20stop-color%3D%22%23baffc6%22/%3E%0A%3Cstop%20offset%3D%220.58%22%20stop-color%3D%22%2337c849%22/%3E%0A%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23168d32%22/%3E%0A%3C/radialGradient%3E%0A%3C/defs%3E%0A%3Cpath%20d%3D%22M15%2038%20C5%2025%204%2012%208%209%20C19%204%2027%2011%2032%2023%20C25%2026%2020%2031%2015%2038%20Z%22%20fill%3D%22%2312070b%22/%3E%0A%3Cpath%20d%3D%22M85%2038%20C95%2025%2096%2012%2092%209%20C81%204%2073%2011%2068%2023%20C75%2026%2080%2031%2085%2038%20Z%22%20fill%3D%22%2312070b%22/%3E%0A%3Cpath%20d%3D%22M50%204%20C73%2011%2088%2030%2089%2051%20C90%2070%2070%2077%2050%2076%20C30%2077%2010%2070%2011%2051%20C12%2030%2027%2011%2050%204%20Z%22%20fill%3D%22url%28%23g%29%22%20stroke%3D%22%23dffff0%22%20stroke-width%3D%222.8%22%20stroke-linejoin%3D%22round%22/%3E%0A%3Cellipse%20cx%3D%2233%22%20cy%3D%2237%22%20rx%3D%229.2%22%20ry%3D%228.0%22%20fill%3D%22%23fff%22/%3E%0A%3Cellipse%20cx%3D%2267%22%20cy%3D%2237%22%20rx%3D%229.2%22%20ry%3D%228.0%22%20fill%3D%22%23fff%22/%3E%0A%3Cellipse%20cx%3D%2233%22%20cy%3D%2237%22%20rx%3D%224.5%22%20ry%3D%223.9%22%20fill%3D%22%23050607%22/%3E%0A%3Cellipse%20cx%3D%2267%22%20cy%3D%2237%22%20rx%3D%224.5%22%20ry%3D%223.9%22%20fill%3D%22%23050607%22/%3E%0A%3Cellipse%20cx%3D%2236%22%20cy%3D%2216%22%20rx%3D%2215%22%20ry%3D%225%22%20fill%3D%22%23fff%22%20opacity%3D%22.35%22%20transform%3D%22rotate%28-24%2036%2016%29%22/%3E%0A%3C/svg%3E") center/contain no-repeat;
+  box-shadow:none;
+  filter: drop-shadow(0 0 12px rgba(124,255,181,.35));
 }
+#tutorialGuideIcon::before{ content:none !important; }
+#tutorialGuideIcon::after{ content:none !important; }
 #tutorialSpeechWrap{
   flex:1 1 auto;
   min-width:0;
@@ -3373,7 +3394,7 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 <!-- ✅ [v.89] 튜토리얼 오버레이 -->
 <div id="tutorialOverlay" class="hidden">
   <div id="tutorialBox">
-    <div id="tutorialGuideIcon" aria-hidden="true">🧭</div>
+    <div id="tutorialGuideIcon" aria-hidden="true"></div>
     <div id="tutorialSpeechWrap">
       <div id="tutorialSpeakerName">길잡이 슬라임</div>
       <span id="tutorialText"></span>
@@ -6348,6 +6369,14 @@ let isPaused = false;
 let autoBackgroundPaused = false;
   document.body.classList.add('title-mode'); // title, playing, gameover
 
+// ===== [v.209] 시작 로고 / 타이틀 핫타임 팝업 =====
+const TITLE_LOGO_DURATION_MS = 3600;
+let titleLogoActive = true;
+let titleLogoStartTime = 0;
+let hotTimeTitlePopupVisible = false;
+let hotTimeTitlePopupDismissed = false;
+try { document.body.classList.add('logo-mode'); } catch(e) {}
+
 // ===== 모드 =====
 let gameMode = 'stage';      // 'stage' | 'infinite' | 'practice' | 'training' | 'itempark' | 'minigame' | 'treasure' | 'dungeon' | 'tutorial'
 
@@ -6892,7 +6921,7 @@ targetFps: DEFAULT_TARGET_FPS,
 homingEnabled: true,
 playerBulletCount: 5, // ✅ [v.207.3] 플레이어 탄환 수 선택(1~5)
 fontKey: 'system',
-expPercentDigits: 3, // ✅ EXP 퍼센트 표시 소수 자릿수(2~3)
+expPercentDigits: 2, // ✅ EXP 퍼센트 표시 소수 자릿수 기본값(2자리, 설정에서 3자리 가능)
 maxUnlockedStage: 1,
  
 
@@ -8430,7 +8459,7 @@ function drawTutorialOverlay() {
 
   if (textEl) textEl.textContent = msg;
   if (tutorialSpeakerNameDom) tutorialSpeakerNameDom.textContent = '길잡이 슬라임';
-  if (tutorialGuideIconDom) tutorialGuideIconDom.textContent = '🧭';
+  if (tutorialGuideIconDom) tutorialGuideIconDom.textContent = ''; // ✅ 나침반 제거: CSS 표정 슬라임으로 표시
   if (overlay) overlay.classList.remove('hidden');
 }
 
@@ -8996,7 +9025,7 @@ if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFA
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 saveData.playerBulletCount = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 5)));
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
-saveData.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+saveData.expPercentDigits = 2; // ✅ 게임 실행 시 기본 EXP 퍼센트 표시는 항상 소수점 2자리
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
@@ -9519,7 +9548,7 @@ function updateSettingsUI() {
     fpsSelect.style.color = '#fff';
   }
   if (expPercentDigitsSelect) {
-    const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+    const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
     expPercentDigitsSelect.value = String(digits);
     expPercentDigitsSelect.style.color = digits === 3 ? '#44ffb8' : '#fff';
   }
@@ -9903,7 +9932,7 @@ function createCharacterData(name, options = {}) {
   data.nicknameLastChangedAt = 0;
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
   data.fontKey = saveData.fontKey || 'system';
-  data.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+  data.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
@@ -10273,7 +10302,7 @@ saveGameData();
 
 (expPercentDigitsSelect && expPercentDigitsSelect.addEventListener) && expPercentDigitsSelect.addEventListener('change', () => {
   const digits = Number(expPercentDigitsSelect.value);
-  saveData.expPercentDigits = [2,3].includes(digits) ? digits : 3;
+  saveData.expPercentDigits = [2,3].includes(digits) ? digits : 2;
   updateSettingsUI();
   updateHUD();
   saveGameData();
@@ -13235,7 +13264,7 @@ function getTownQuestExpReward(q, lv = level){
 function getTownQuestPercentText(q, lv = level){
   if (q && q.beginnerLevelUp) return `고정 ${formatNumber(getTownQuestExpReward(q, lv))} EXP / 최대 LV.11 0%`;
   const pct = getTownQuestScaledPercentByLevel(q, lv);
-  const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+  const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
   return `${pct.toFixed(digits)}%`;
 }
 function getTownDailyQuestKey(){
@@ -14745,6 +14774,10 @@ function handleTownPointer(clientX, clientY){
 if (townBtn) townBtn.addEventListener('click', enterTown);
 if (townQuestCloseBtn) townQuestCloseBtn.addEventListener('click', closeTownQuestModal);
 canvas.addEventListener('pointerdown', (e) => {
+  if (handleHotTimeTitlePopupPointer(e.clientX, e.clientY)) {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+    return;
+  }
   if (state === 'town') {
     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
     handleTownPointer(e.clientX, e.clientY);
@@ -14759,6 +14792,7 @@ if (isInitialNicknameRequired()) {
   return;
 }
 initAudio();
+closeHotTimeTitlePopup();
 openModeSelect();
 // ✅ 인트로 튜토리얼: [게임 시작] 클릭 후 → 모드 선택 안내
 if (introTutorialActive && introStep === 1) {
@@ -16000,7 +16034,7 @@ stageModal.classList.add('hidden');
 function handleInputStart() {
 initAudio();
 // [추가] 타이틀 화면에서 음악이 멈춰있다면(브라우저 차단 등) 강제로 재생
-if (state === 'title' && bgmEnabled && (!currentBgm || currentBgm.paused)) {
+if (state === 'title' && !titleLogoActive && bgmEnabled && (!currentBgm || currentBgm.paused)) {
     playBgmTrack('title');
 }
 }
@@ -23718,7 +23752,7 @@ const prog = getLevelProgress(exp, level);
 const nextPercent = Math.min(100, prog.percent);
 
 // 중앙 표시 텍스트
-const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 3;
+const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
 
 expEl.textContent =
   `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
@@ -25466,6 +25500,340 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+
+// ===== [v.209] 시작 로고 / 타이틀 핫타임 팝업 그리기 =====
+function drawSplashSlime(cx, cy, size, t){
+  ctx.save();
+  const bob = Math.sin(t / 420) * size * 0.035;
+  const squash = 1 + Math.sin(t / 520) * 0.012;
+  ctx.translate(cx, cy + bob);
+  ctx.scale(1 + (squash - 1) * 0.45, 1 - (squash - 1) * 0.35);
+
+  // 말랑한 그림자
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, size * 0.60, size * 0.72, size * 0.13, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // ✅ [v.209.9] 참고 이미지와 동일한 슬라임 실루엣: 뾰족한 윗부분 + 둥근 몸통 + 검은 옆날개
+  ctx.fillStyle = '#12070b';
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.72, size * 0.00);
+  ctx.bezierCurveTo(-size * 1.02, -size * 0.26, -size * 1.08, -size * 0.57, -size * 0.98, -size * 0.62);
+  ctx.bezierCurveTo(-size * 0.76, -size * 0.70, -size * 0.60, -size * 0.46, -size * 0.52, -size * 0.24);
+  ctx.bezierCurveTo(-size * 0.61, -size * 0.16, -size * 0.67, -size * 0.08, -size * 0.72, size * 0.00);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.72, size * 0.00);
+  ctx.bezierCurveTo(size * 1.02, -size * 0.26, size * 1.08, -size * 0.57, size * 0.98, -size * 0.62);
+  ctx.bezierCurveTo(size * 0.76, -size * 0.70, size * 0.60, -size * 0.46, size * 0.52, -size * 0.24);
+  ctx.bezierCurveTo(size * 0.61, -size * 0.16, size * 0.67, -size * 0.08, size * 0.72, size * 0.00);
+  ctx.closePath();
+  ctx.fill();
+
+  const bodyGrad = ctx.createRadialGradient(-size * 0.32, -size * 0.56, size * 0.05, 0, 0, size * 0.98);
+  bodyGrad.addColorStop(0, '#ffffff');
+  bodyGrad.addColorStop(0.18, '#baffc6');
+  bodyGrad.addColorStop(0.58, '#37c849');
+  bodyGrad.addColorStop(1, '#168d32');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.82);
+  ctx.bezierCurveTo(size * 0.40, -size * 0.70, size * 0.84, -size * 0.38, size * 0.88, size * 0.22);
+  ctx.bezierCurveTo(size * 0.92, size * 0.66, size * 0.46, size * 0.78, 0, size * 0.76);
+  ctx.bezierCurveTo(-size * 0.46, size * 0.78, -size * 0.92, size * 0.66, -size * 0.88, size * 0.22);
+  ctx.bezierCurveTo(-size * 0.84, -size * 0.38, -size * 0.40, -size * 0.70, 0, -size * 0.82);
+  ctx.closePath();
+  ctx.fill();
+  ctx.lineWidth = Math.max(2, size * 0.035);
+  ctx.strokeStyle = 'rgba(223,255,240,0.90)';
+  ctx.stroke();
+
+  // 부드러운 하이라이트
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.28, -size * 0.47, size * 0.25, size * 0.095, -0.43, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 안경처럼 보이지 않게, 흰자와 검은 눈동자를 분리해 단순하고 귀엽게 표시
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.32, -size * 0.13, size * 0.225, size * 0.225, 0, 0, Math.PI * 2);
+  ctx.ellipse(size * 0.32, -size * 0.13, size * 0.225, size * 0.225, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#050607';
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.32, -size * 0.13, size * 0.100, size * 0.103, 0, 0, Math.PI * 2);
+  ctx.ellipse(size * 0.32, -size * 0.13, size * 0.100, size * 0.103, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawLogoSplashScreen(timestamp){
+  if (!titleLogoStartTime) titleLogoStartTime = timestamp || performance.now();
+  const now = timestamp || performance.now();
+  const elapsed = now - titleLogoStartTime;
+  const fadeIn = 700;
+  const fadeOutStart = 2750;
+  const fadeOut = 850;
+  let alpha = 1;
+  if (elapsed < fadeIn) alpha = elapsed / fadeIn;
+  else if (elapsed > fadeOutStart) alpha = 1 - ((elapsed - fadeOutStart) / fadeOut);
+  alpha = Math.max(0, Math.min(1, alpha));
+
+  ctx.save();
+  ctx.clearRect(0, 0, width, height);
+  ctx.globalAlpha = alpha;
+
+  const bg = ctx.createRadialGradient(width * 0.5, height * 0.18, 10, width * 0.5, height * 0.52, Math.max(width, height) * 0.85);
+  bg.addColorStop(0, '#315b96');
+  bg.addColorStop(0.42, '#101b3a');
+  bg.addColorStop(1, '#02030a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  const starCount = isLowPower() ? 26 : 48;
+  for (let i = 0; i < starCount; i++) {
+    const x = (i * 73 + 37) % width;
+    const y = (i * 47 + 31) % height;
+    const tw = 0.45 + 0.55 * Math.sin(now / 430 + i * 1.77);
+    ctx.globalAlpha = alpha * (0.18 + tw * 0.58);
+    ctx.fillStyle = i % 5 === 0 ? '#b8ffd8' : '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, (i % 4 === 0 ? 2.0 : 1.2) * (0.72 + tw * 0.42), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = alpha;
+  const cx = width / 2;
+  const compact = height < 520;
+  const slimeSize = Math.max(56, Math.min(92, width * 0.115, height * 0.16));
+  const slimeY = compact ? height * 0.29 : height * 0.31;
+
+  ctx.save();
+  ctx.globalAlpha = alpha * (0.32 + 0.12 * Math.sin(now / 240));
+  const glow = ctx.createRadialGradient(cx, slimeY, 8, cx, slimeY, slimeSize * 2.8);
+  glow.addColorStop(0, '#7cffd2');
+  glow.addColorStop(0.45, 'rgba(124,255,210,0.30)');
+  glow.addColorStop(1, 'rgba(124,255,210,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - slimeSize * 3, slimeY - slimeSize * 3, slimeSize * 6, slimeSize * 6);
+  ctx.restore();
+
+  drawSplashSlime(cx, slimeY, slimeSize, now);
+
+  const titleY = compact ? height * 0.55 : height * 0.57;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(68,255,184,0.55)';
+  ctx.shadowBlur = isLowPower() ? 0 : 18;
+  ctx.lineWidth = Math.max(4, width * 0.007);
+  ctx.strokeStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `1000 ${Math.max(32, Math.min(64, width * 0.078))}px ${getUIFontFamily()}`;
+  ctx.strokeText('SLIME SHOOTER', cx, titleY);
+  ctx.fillText('SLIME SHOOTER', cx, titleY);
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#8fffe0';
+  ctx.font = `900 ${Math.max(16, Math.min(26, width * 0.034))}px ${getUIFontFamily()}`;
+  ctx.fillText('Ultimate Evolution', cx, titleY + Math.max(34, height * 0.065));
+
+  ctx.globalAlpha = alpha * 0.78;
+  ctx.fillStyle = '#dce8ff';
+  ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
+  ctx.fillText('Version 209.3', cx, height - Math.max(36, height * 0.075));
+
+  // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
+  // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
+  if (elapsed > fadeOutStart) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, 1 - alpha));
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  ctx.restore();
+
+  if (elapsed >= TITLE_LOGO_DURATION_MS) {
+    titleLogoActive = false;
+    try { document.body.classList.remove('logo-mode'); } catch(e) {}
+    try {
+      if (bgmEnabled) playBgmTrack('title');
+    } catch(e) {}
+    try { maybeOpenHotTimeTitlePopup(); } catch(e) {}
+  }
+}
+
+function maybeOpenHotTimeTitlePopup(){
+  if (state !== 'title') return;
+  if (hotTimeTitlePopupDismissed || hotTimeTitlePopupVisible) return;
+  // ✅ [v.209.2] 공지사항 느낌의 핫타임 안내 팝업
+  // 실제 핫타임이 아니어도 타이틀 진입 시 1회 안내로 표시하고,
+  // 진행 중일 때는 보너스 적용 문구로 자동 전환합니다.
+  hotTimeTitlePopupVisible = true;
+  try { document.body.classList.add('hot-time-popup-mode'); } catch(e) {}
+  try { if (titleUI) titleUI.classList.add('title-buttons-hidden'); } catch(e) {}
+}
+
+function closeHotTimeTitlePopup(){
+  hotTimeTitlePopupVisible = false;
+  hotTimeTitlePopupDismissed = true;
+  try { document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
+  try { if (titleUI) titleUI.classList.remove('title-buttons-hidden'); } catch(e) {}
+}
+
+function drawHotTimeTitlePopup(timestamp){
+  if (!hotTimeTitlePopupVisible || state !== 'title') return;
+  const t = timestamp || performance.now();
+  const nowDate = new Date();
+  const active = (typeof isHotTimeNow === 'function') ? !!isHotTimeNow(nowDate) : false;
+  const mult = active && (typeof getHotMultiplier === 'function') ? getHotMultiplier(nowDate) : 1;
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const nowMin = nowDate.getHours() * 60 + nowDate.getMinutes();
+  const windows = [{ start: 8 * 60, end: 12 * 60, label: '08:00~12:00' }, { start: 18 * 60, end: 22 * 60, label: '18:00~22:00' }];
+  let timeLine = '';
+  if (active) {
+    const cur = windows.find(w => nowMin >= w.start && nowMin < w.end) || windows[0];
+    timeLine = `현재 ${cur.label} 핫타임 진행 중 · 종료 ${pad2(Math.floor(cur.end / 60))}:00`;
+  } else {
+    const next = windows.find(w => nowMin < w.start) || windows[0];
+    const nextLabel = (next.start <= nowMin) ? `내일 ${next.label}` : `오늘 ${next.label}`;
+    timeLine = `현재 ${pad2(nowDate.getHours())}:${pad2(nowDate.getMinutes())} · 다음 핫타임 ${nextLabel}`;
+  }
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.68)';
+  ctx.fillRect(0, 0, width, height);
+
+  const boxW = Math.min(width * 0.88, 468);
+  const boxH = Math.min(height * 0.66, 420);
+  const x = (width - boxW) / 2;
+  const y = Math.max(18, (height - boxH) / 2 - 6);
+  const r = 22;
+
+  const cardGrad = ctx.createLinearGradient(0, y, 0, y + boxH);
+  cardGrad.addColorStop(0, '#17345b');
+  cardGrad.addColorStop(0.38, '#101b32');
+  cardGrad.addColorStop(1, '#070a14');
+  ctx.fillStyle = cardGrad;
+  drawRoundRect(x, y, boxW, boxH, r);
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = active ? '#ffd86b' : '#7cffd2';
+  ctx.stroke();
+
+  const headerH = 64;
+  const headerGrad = ctx.createLinearGradient(0, y, 0, y + headerH);
+  headerGrad.addColorStop(0, active ? '#ffb13d' : '#63d8ff');
+  headerGrad.addColorStop(1, active ? '#d15b16' : '#176bb8');
+  ctx.fillStyle = headerGrad;
+  drawRoundRect(x + 10, y + 10, boxW - 20, headerH, 16);
+  ctx.fill();
+
+  ctx.save();
+  ctx.globalAlpha = 0.20 + 0.08 * Math.sin(t / 190);
+  const glow = ctx.createRadialGradient(width/2, y + 92, 10, width/2, y + 92, boxW * 0.72);
+  glow.addColorStop(0, active ? '#fff59b' : '#b8ffd8');
+  glow.addColorStop(0.45, active ? '#ff8a00' : '#44cfff');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x, y, boxW, boxH);
+  ctx.restore();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(0,0,0,0.62)';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `1000 ${Math.max(24, Math.min(34, boxW * 0.076))}px ${getUIFontFamily()}`;
+  ctx.strokeText('📢 핫타임 안내', width/2, y + 42);
+  ctx.fillText('📢 핫타임 안내', width/2, y + 42);
+
+  drawSplashSlime(width/2, y + boxH * 0.36, Math.min(58, boxW * 0.135), t);
+
+  const badgeW = Math.min(260, boxW * 0.70);
+  const badgeH = 42;
+  const badgeX = width/2 - badgeW/2;
+  const badgeY = y + boxH * 0.50;
+  ctx.fillStyle = active ? 'rgba(255,216,107,0.18)' : 'rgba(124,255,210,0.13)';
+  drawRoundRect(badgeX, badgeY, badgeW, badgeH, 999);
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = active ? 'rgba(255,216,107,0.72)' : 'rgba(124,255,210,0.66)';
+  ctx.stroke();
+
+  ctx.font = `1000 ${Math.max(20, Math.min(27, boxW * 0.06))}px ${getUIFontFamily()}`;
+  const statusText = active ? `핫타임 ON · EXP ${mult}배` : '핫타임 OFF';
+  ctx.fillStyle = active ? '#fff2a8' : '#b8ffd8';
+  ctx.strokeStyle = 'rgba(0,0,0,0.70)';
+  ctx.lineWidth = 4;
+  ctx.strokeText(statusText, width/2, badgeY + badgeH/2 + 1);
+  ctx.fillText(statusText, width/2, badgeY + badgeH/2 + 1);
+
+  const noticeW = boxW - 50;
+  const noticeX = width/2 - noticeW/2;
+  const noticeY = badgeY + badgeH + 16;
+  const noticeH = Math.min(110, boxH * 0.27);
+  ctx.fillStyle = 'rgba(255,255,255,0.075)';
+  drawRoundRect(noticeX, noticeY, noticeW, noticeH, 14);
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.stroke();
+
+  const lines = [
+    timeLine,
+    '일정: 매일 08:00~12:00 / 18:00~22:00',
+    active ? '핫타임 EXP 보너스가 자동 적용됩니다.' : '시간이 되면 EXP 보너스가 자동 적용됩니다.',
+    '던전 모드는 핫타임 적용 제외입니다.'
+  ];
+  ctx.font = `800 ${Math.max(11, Math.min(14, boxW * 0.032))}px ${getUIFontFamily()}`;
+  lines.forEach((line, idx) => {
+    ctx.fillStyle = idx === 0 ? (active ? '#fff4b8' : '#b8ffd8') : '#e8f3ff';
+    ctx.fillText(line, width/2, noticeY + 20 + idx * 22);
+  });
+
+  const btnW = Math.min(220, boxW * 0.60);
+  const btnH = 46;
+  const bx = width/2 - btnW/2;
+  const by = y + boxH - 60;
+  const btnGrad = ctx.createLinearGradient(0, by, 0, by + btnH);
+  btnGrad.addColorStop(0, '#7cffd2');
+  btnGrad.addColorStop(1, '#168a64');
+  ctx.fillStyle = btnGrad;
+  drawRoundRect(bx, by, btnW, btnH, 999);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.stroke();
+  ctx.fillStyle = '#06271d';
+  ctx.font = `1000 18px ${getUIFontFamily()}`;
+  ctx.fillText('확인', width/2, by + btnH/2 + 1);
+
+  drawHotTimeTitlePopup._button = { x: bx, y: by, w: btnW, h: btnH };
+  ctx.restore();
+}
+
+function handleHotTimeTitlePopupPointer(clientX, clientY){
+  if (!hotTimeTitlePopupVisible) return false;
+  const rect = canvas.getBoundingClientRect();
+  const x = (clientX - rect.left) * (width / rect.width);
+  const y = (clientY - rect.top) * (height / rect.height);
+  const b = drawHotTimeTitlePopup._button;
+  if (!b || (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h)) {
+    closeHotTimeTitlePopup();
+  }
+  return true;
+}
+
 function drawTitleScreen() {
     ctx.save();
     ctx.textAlign = 'center';
@@ -25872,6 +26240,14 @@ requestAnimationFrame(gameLoop);
   const dt = Math.max(0, Math.min(rawDt, 100));
   lastTime = timestamp;
 
+  // ✅ [v.209] 타이틀보다 먼저 로고 스플래시 화면을 표시
+  if (titleLogoActive) {
+    setPauseUI();
+    drawLogoSplashScreen(timestamp);
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
   // DOM 표시 동기화는 매 프레임이 아니라 약 4fps로 제한해 발열을 줄입니다.
   if (!gameLoop._lastDomSync || timestamp - gameLoop._lastDomSync > 250) {
     syncTopSettingsVisibility();
@@ -25890,6 +26266,8 @@ requestAnimationFrame(gameLoop);
     // ✅ 튜토리얼(최초 1회)
     if (!tutorialActive) maybeShowFirstTutorial();
     drawTutorialOverlay();
+    // ✅ [v.209.1] 타이틀 화면 위에 핫타임 팝업을 실제로 렌더링
+    drawHotTimeTitlePopup(timestamp);
     /* canvas settings disabled */
   } else if (state === 'town') {
     updateFeverUI();
