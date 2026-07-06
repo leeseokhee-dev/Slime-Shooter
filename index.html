@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.210.11 Fever Full Reset Boss Exp Exact)</title>
+<title>Slime Shooter - Ultimate Evolution (v.210.12 Dungeon Spawn Weekly Quest Exp)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3765,7 +3765,7 @@ body.watch-ui:not(.playing-ui) #settingsBar,
         </div>
         <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:10px;">
             • 단계별 목표: 1단계 400마리, 2단계 800마리, 3단계 1,200마리처럼 단계마다 400마리씩 증가<br>
-            • 2초마다 15마리 등장 · 화면 최대 20마리 유지<br>
+            • 3초마다 단계 × 4마리 등장 · 화면 최대 50마리 누적<br>
             • 목표 몬스터 처치 달성 시 해당 단계 던전 상자 획득<br>
             • 점수/EXP 구슬 없음 · 레이저 발사 불가 · 적 탄환 없음
         </div>
@@ -6866,9 +6866,9 @@ const DUNGEON_MAX_DAILY_RUNS = 10;
 const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 레거시 저장값 호환용(현재 던전 클리어 조건에는 사용하지 않음)
 const DUNGEON_KILL_TARGET_BASE = 400; // 단계별 목표: 1단계 400마리, 2단계 800마리...
 const DUNGEON_KILL_TARGET = DUNGEON_KILL_TARGET_BASE; // 레거시 표시/저장 호환용
-const DUNGEON_SPAWN_INTERVAL_MS = 2000;
-const DUNGEON_SPAWN_BATCH = 15;
-const DUNGEON_MAX_ENEMIES_ON_SCREEN = 20;
+const DUNGEON_SPAWN_INTERVAL_MS = 3000;
+const DUNGEON_SPAWN_BATCH_BASE = 4;
+const DUNGEON_MAX_ENEMIES_ON_SCREEN = 50;
 const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500, 1900, 2400, 3000, 3800, 4800];
 const DUNGEON_MAX_TIER = 10;
 const DUNGEON_BOX_STEP_KILLS = DUNGEON_KILL_TARGET_BASE; // 레거시 호환용: 이제 중간 지급이 아닌 단계 목표 기준
@@ -11988,9 +11988,9 @@ function resetDailyQuestsIfNeeded() {
   if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
 
-  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v208.4' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
+  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v210.12' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
     saveData.dailyQuest.key = key;
-    saveData.dailyQuest.rewardVersion = 'v208.4';
+    saveData.dailyQuest.rewardVersion = 'v210.12';
     saveData.dailyQuest.claimed = {};
     saveData.dailyStats = getDefaultQuestStatsObj();
     saveData.dailyQuest.quests = generateDailyQuests(level);
@@ -12004,9 +12004,9 @@ function resetWeeklyQuestsIfNeeded() {
   if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
-  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v208.4' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
+  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v210.12' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
     saveData.weeklyQuest.key = key;
-    saveData.weeklyQuest.rewardVersion = 'v208.4';
+    saveData.weeklyQuest.rewardVersion = 'v210.12';
     saveData.weeklyQuest.claimed = {};
     saveData.weeklyStats = getDefaultQuestStatsObj();
     saveData.weeklyQuest.quests = generateWeeklyQuests(level);
@@ -12061,7 +12061,8 @@ function getQuestRewardExpByDifficulty(mode, lv, difficulty = 0) {
   if (!EXP_TABLE || !EXP_TABLE[safeLv]) return 0;
   const needed = Math.max(1, Math.floor(Number(EXP_TABLE[safeLv].needed) || 1));
   const pct = getQuestExpPercentByDifficulty(mode, safeLv, difficulty);
-  return Math.max(1, Math.floor(needed * (pct / 100)));
+  const modeBonus = (mode === 'weekly') ? 6 : 1;
+  return Math.max(1, Math.floor(needed * (pct / 100) * modeBonus));
 }
 
 function attachQuestRewardPercentMeta(q, mode, lv, difficulty) {
@@ -15892,7 +15893,8 @@ function updateDungeonSpawns(dt) {
 
     const onScreen = Array.isArray(enemies) ? enemies.length : 0;
     const room = Math.max(0, DUNGEON_MAX_ENEMIES_ON_SCREEN - onScreen);
-    const spawnCount = Math.min(DUNGEON_SPAWN_BATCH, room);
+    const tierBatch = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(dungeonState.tier) || 1))) * DUNGEON_SPAWN_BATCH_BASE;
+    const spawnCount = Math.min(tierBatch, room);
 
     for (let i = 0; i < spawnCount; i++) {
       spawnDungeonEnemy();
@@ -19018,7 +19020,10 @@ let bubbleAreaSeq = 0;
 
 function canUseBubbleSkill() {
   if (gameMode === 'tutorial' && tutorialModeActive) return true;
-  return (typeof level === 'number') && (level >= 11);
+  return (state === 'playing') &&
+         (gameMode !== 'dungeon') &&
+         player && player.alive && !isPlayerDying &&
+         (typeof level === 'number') && (level >= 11);
 }
 
 function getBubbleSkillShotCount() {
@@ -25686,7 +25691,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
