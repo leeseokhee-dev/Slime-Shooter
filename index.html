@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.208 Dungeon Target Mode)</title>
+<title>Slime Shooter - Ultimate Evolution (v.208.3 Dungeon 10 Tier Box Mode)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3743,7 +3743,9 @@ body.watch-ui:not(.playing-ui) #settingsBar,
             <!-- JS로 생성 -->
         </div>
         <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:10px;">
-            • 3분 진행 · 1초마다 5마리 (총 900마리)<br>
+            • 목표: 몬스터 2,000마리 처치<br>
+            • 2초마다 15마리 등장 · 화면 최대 20마리 유지<br>
+            • 200마리마다 1~10단계 던전 상자 획득<br>
             • 점수/EXP 구슬 없음 · 레이저 발사 불가 · 적 탄환 없음
         </div>
     </div>
@@ -6521,7 +6523,8 @@ let itemParkState = {
   caught: 0,
   expGained: 0,
   goldGained: 0,
-  endedNaturally: false
+  endedNaturally: false,
+  awardedBoxStages: []
 };
 
 let miniTargets = [];
@@ -6819,16 +6822,18 @@ function getMiniGameComboMultiplier(combo) {
  // ===== 던전 모드 =====
 let lastSelectedDungeonTier = 1;
 const DUNGEON_MAX_DAILY_RUNS = 10;
-const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 이전 3분 제한 기록 호환용(현재 클리어 조건에는 사용하지 않음)
-const DUNGEON_KILL_TARGET = 1000;
+const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 레거시 저장값 호환용(현재 던전 클리어 조건에는 사용하지 않음)
+const DUNGEON_KILL_TARGET = 2000;
 const DUNGEON_SPAWN_INTERVAL_MS = 2000;
 const DUNGEON_SPAWN_BATCH = 15;
 const DUNGEON_MAX_ENEMIES_ON_SCREEN = 20;
-const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500];
-// 던전 티어별 몬스터 타입(1~5단계)
-const DUNGEON_TIER_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star'];
+const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500, 1900, 2400, 3000, 3800, 4800];
+const DUNGEON_MAX_TIER = 10;
+const DUNGEON_BOX_STEP_KILLS = 200;
+// 던전 티어별 몬스터 타입(1~10단계)
+const DUNGEON_TIER_TYPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'circle', 'triangle', 'square', 'diamond', 'star'];
 // 던전 티어별 "스테이지" 매핑 (기존 evo/난이도 로직 재사용)
-const DUNGEON_TIER_STAGE_MAP = [1, 5, 10, 15, 20];
+const DUNGEON_TIER_STAGE_MAP = [1, 5, 10, 15, 20, 25, 50, 75, 100, 150];
 
 let dungeonState = {
   active: false,
@@ -6951,7 +6956,17 @@ expSmallPack: 0,
 expMediumPack: 0,
 expLargePack: 0,
 expXLargePack: 0,
-expSpecialPack: 0
+expSpecialPack: 0,
+dungeonBox1: 0,
+dungeonBox2: 0,
+dungeonBox3: 0,
+dungeonBox4: 0,
+dungeonBox5: 0,
+dungeonBox6: 0,
+dungeonBox7: 0,
+dungeonBox8: 0,
+dungeonBox9: 0,
+dungeonBox10: 0
 },
 
 dailyShop: {
@@ -7833,7 +7848,7 @@ const BASE_TUTORIAL_MESSAGES = [
 "무한 모드에서는 골드를 획득할 수 있어 성장에 도움이 됩니다.",
 "세 번째는 아이템 파크입니다. 이 모드에서는 하늘에서 내려오는 다양한 아이템을 1분 동안 최대한 많이 모아야 합니다.",
 "네 번째는 미니게임입니다. 무작위 미니게임을 1분 동안 플레이하고, 획득한 점수에 따라 경험치를 받게 됩니다.",
-"마지막으로 던전 모드입니다. 던전 모드는 제한 시간 동안 많은 몬스터를 처치하여 높은 경험치를 얻는 특별한 모드입니다.",
+"마지막으로 던전 모드입니다. 던전 모드는 몬스터 2,000마리 처치를 목표로 하며, 200마리마다 단계별 상자를 얻는 특별한 모드입니다.",
 "이제 기본 플레이를 체험하기 위해 스테이지 모드를 선택해 보겠습니다.",
 "전투가 시작되었습니다.",
 "화면에 나타나는 몬스터들을 공격하여 처치해 보세요.",
@@ -10512,7 +10527,7 @@ const TITLE_DEFS = [
   { id:'title_slime', name:'슬라임', desc:'기본 칭호', group:'기본', unlocked: () => true },
   { id:'title_first_hunt', name:'첫 사냥꾼', desc:'몬스터 10마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 10 },
   { id:'title_slime_hunter', name:'슬라임 사냥꾼', desc:'몬스터 100마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 100 },
-  { id:'title_monster_hunter', name:'몬스터 헌터', desc:'몬스터 1,000마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 1000 },
+  { id:'title_monster_hunter', name:'몬스터 헌터', desc:'몬스터 2,000마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 1000 },
   { id:'title_grand_hunter', name:'대사냥꾼', desc:'몬스터 10,000마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 10000 },
   { id:'title_dimension_hunter', name:'차원의 사냥꾼', desc:'몬스터 100,000마리 처치', group:'처치', unlocked: () => getTotalMonsterKillCount() >= 100000 },
 
@@ -10623,9 +10638,12 @@ function registerEnemyKill(isBoss = false, opts = {}) {
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
 
-  if (!isBoss && gameMode === 'dungeon' && dungeonState?.active && (stageRunKillCount || 0) >= DUNGEON_KILL_TARGET) {
-    endDungeonRun(true);
-    return;
+  if (!isBoss && gameMode === 'dungeon' && dungeonState?.active) {
+    grantDungeonMilestoneBoxes();
+    if ((stageRunKillCount || 0) >= DUNGEON_KILL_TARGET) {
+      endDungeonRun(true);
+      return;
+    }
   }
 
   if (!isBoss && gameMode === 'infinite') {
@@ -10681,7 +10699,17 @@ function getInventorySafe() {
       expMediumPack: 0,
       expLargePack: 0,
       expXLargePack: 0,
-      expSpecialPack: 0
+      expSpecialPack: 0,
+      dungeonBox1: 0,
+      dungeonBox2: 0,
+      dungeonBox3: 0,
+      dungeonBox4: 0,
+      dungeonBox5: 0,
+      dungeonBox6: 0,
+      dungeonBox7: 0,
+      dungeonBox8: 0,
+      dungeonBox9: 0,
+      dungeonBox10: 0
     };
   }
   [
@@ -10692,7 +10720,17 @@ function getInventorySafe() {
     'expMediumPack',
     'expLargePack',
     'expXLargePack',
-    'expSpecialPack'
+    'expSpecialPack',
+    'dungeonBox1',
+    'dungeonBox2',
+    'dungeonBox3',
+    'dungeonBox4',
+    'dungeonBox5',
+    'dungeonBox6',
+    'dungeonBox7',
+    'dungeonBox8',
+    'dungeonBox9',
+    'dungeonBox10'
   ].forEach((key) => {
     saveData.inventory[key] = Math.max(0, Math.floor(Number(saveData.inventory[key]) || 0));
   });
@@ -11024,6 +11062,27 @@ function renderInventoryContent() {
       회복 계열 소모품은 <b style="color:#7ce7ff;">공용 쿨타임 3초</b>가 적용됩니다.
     </div>
 
+    <div style="padding:10px 12px; border:1px solid rgba(255,216,107,0.24); border-radius:12px; background:rgba(255,216,107,0.07); margin-bottom:10px;">
+      <div style="font-weight:900; font-size:14px; color:#ffe6a0;">🎁 던전 상자</div>
+      <div style="margin-top:6px; font-size:12px; color:#fff3cf; line-height:1.55;">
+        던전에서 200마리마다 1~10단계 상자를 획득합니다. 단계가 높을수록 경험치, 골드, 소모품 보상이 풍부합니다.
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-top:8px;">
+        ${Array.from({length:10}, (_, i) => {
+          const n = i + 1;
+          const key = `dungeonBox${n}`;
+          const count = Math.floor(inv[key] || 0);
+          return `
+            <div style="padding:8px; border:1px solid rgba(255,255,255,0.10); border-radius:10px; background:rgba(0,0,0,0.20);">
+              <div style="font-weight:900; color:${n >= 10 ? '#ffd700' : n >= 7 ? '#d7b4ff' : n >= 4 ? '#9ee7ff' : '#d8ffcf'};">${n}단계 상자</div>
+              <div style="margin-top:3px; font-size:12px; color:#cfd6ff;">보유 ${formatNumber(count)}개</div>
+              <button class="ui-btn" data-open-dungeon-box="${n}" style="margin-top:6px; width:100%; ${count <= 0 ? 'opacity:0.45;' : 'border-color:#ffd700; color:#ffe08a;'}" ${count <= 0 ? 'disabled' : ''}>열기</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
     <div style="padding:10px 12px; border:1px solid rgba(124,231,255,0.18); border-radius:12px; background:rgba(124,231,255,0.06); margin-bottom:10px;">
       <div style="font-weight:900; font-size:14px; color:#e8fbff;">🥚 펫 장착</div>
       <div style="margin-top:6px; font-size:12px; color:#cfd6ff; line-height:1.55;">
@@ -11147,6 +11206,12 @@ function renderInventoryContent() {
       renderShop();
       updateConsumableQuickBar();
       updateHUD();
+    });
+  });
+
+  inventoryBodyEl.querySelectorAll('[data-open-dungeon-box]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openDungeonBox(btn.getAttribute('data-open-dungeon-box'));
     });
   });
 
@@ -14936,8 +15001,8 @@ if (modeDungeonBtn) modeDungeonBtn.addEventListener('click', () => {
   openDungeonSelect();
   showContextTutorial('dungeon', [
     '던전 모드 화면입니다. LV.100부터 입장할 수 있으며, 하루 입장 횟수가 제한됩니다.',
-    '제한 시간 동안 많은 몬스터를 처치해 높은 경험치를 얻는 집중 전투 모드입니다.',
-    '던전 티어가 올라갈수록 적이 강해지는 대신 보상 기대치도 커집니다.'
+    '목표는 몬스터 2,000마리 처치이며, 200마리마다 1~10단계 던전 상자를 획득합니다.',
+    '던전 단계가 올라갈수록 적이 강해지는 대신 몹당 경험치와 보상 기대치도 커집니다.'
   ]);
 });
 
@@ -15535,7 +15600,7 @@ function formatMMSS(ms) {
 }
 
 function calcDungeonKillExp(tier, currentLevel) {
-  const base = DUNGEON_TIER_BASE_EXP[Math.max(0, Math.min(4, tier - 1))] || 30;
+  const base = DUNGEON_TIER_BASE_EXP[Math.max(0, Math.min(DUNGEON_MAX_TIER - 1, tier - 1))] || 30;
   const mult = 1 + Math.max(0, (currentLevel - 1)) * 0.10;
   return Math.round(base * mult);
 }
@@ -15557,11 +15622,11 @@ function openDungeonSelect() {
 const canEnterByLevel = (level >= DUNGEON_REQUIRED_LEVEL);
 
   if (dungeonInfoEl) {
-    const lvlMsg = canEnterByLevel ? '' : ` (LV.60부터 입장 가능)`;
-    dungeonInfoEl.textContent = `오늘 남은 입장: ${left} / ${DUNGEON_MAX_DAILY_RUNS}${lvlMsg}`;
+    const lvlMsg = canEnterByLevel ? '' : ` (LV.${DUNGEON_REQUIRED_LEVEL}부터 입장 가능)`;
+    dungeonInfoEl.textContent = `오늘 남은 입장: ${left} / ${DUNGEON_MAX_DAILY_RUNS}${lvlMsg} · 목표 ${formatNumber(DUNGEON_KILL_TARGET)}마리 · ${formatNumber(DUNGEON_BOX_STEP_KILLS)}마리마다 1~10단계 상자 지급`;
   }
 
-  for (let t = 1; t <= 5; t++) {
+  for (let t = 1; t <= DUNGEON_MAX_TIER; t++) {
     const bt = document.createElement('button');
     bt.className = 'ui-btn';
     bt.style.padding = '12px 10px';
@@ -15573,7 +15638,7 @@ const canEnterByLevel = (level >= DUNGEON_REQUIRED_LEVEL);
     const expPerKill = calcDungeonKillExp(t, level);
     bt.textContent = `${t}단계 던전 · 몹당 ${formatNumber(expPerKill)} EXP`;
 
-    const unlockedTier = Math.max(1, Math.min(5, (saveData.dungeon?.unlockedTier || 1)));
+    const unlockedTier = Math.max(1, Math.min(DUNGEON_MAX_TIER, (saveData.dungeon?.unlockedTier || 1)));
     const locked = (t > unlockedTier);
     if (locked) bt.textContent = `🔒 ${t}단계 던전 · 몹당 ${formatNumber(expPerKill)} EXP`;
 
@@ -15621,8 +15686,9 @@ function startDungeonMode(tier = 1) {
   dungeonState.spawnAcc = 0;
   dungeonState.runStartExp = exp;
   dungeonState.endedNaturally = false;
+  dungeonState.awardedBoxStages = [];
 
-  const mappedStage = DUNGEON_TIER_STAGE_MAP[Math.max(0, Math.min(4, tier - 1))] || 1;
+  const mappedStage = DUNGEON_TIER_STAGE_MAP[Math.max(0, Math.min(DUNGEON_MAX_TIER - 1, tier - 1))] || 1;
   // 던전은 기존 웨이브/보스 로직을 쓰지 않기 때문에 startGame 내부에서 startDungeon()이 실행됨
   startGame(mappedStage);
 }
@@ -15652,17 +15718,83 @@ function startDungeon() {
   dungeonState.elapsed = 0;
   dungeonState.spawned = 0;
   dungeonState.spawnAcc = 0;
+  dungeonState.awardedBoxStages = [];
 }
 
 function spawnDungeonEnemy() {
   const tier = dungeonState.tier || 1;
-  const type = DUNGEON_TIER_TYPES[Math.max(0, Math.min(4, tier - 1))] || 'circle';
+  const type = DUNGEON_TIER_TYPES[Math.max(0, Math.min(DUNGEON_MAX_TIER - 1, tier - 1))] || 'circle';
 
   const x = randRange(40, width - 40);
   const y = -randRange(30, 120);
   const baseVy = 1.1 + (tier - 1) * 0.25;
 
   enemies.push(createEnemy(type, x, y, baseVy, 'straight', 0, { isElite: false }));
+}
+
+function getDungeonBoxName(stageNo){
+  const n = Math.max(1, Math.min(10, Math.floor(Number(stageNo) || 1)));
+  return `던전 ${n}단계 상자`;
+}
+
+function grantDungeonBox(stageNo, amount = 1){
+  const n = Math.max(1, Math.min(10, Math.floor(Number(stageNo) || 1)));
+  const inv = getInventorySafe();
+  const key = `dungeonBox${n}`;
+  inv[key] = Math.max(0, Math.floor(Number(inv[key]) || 0)) + Math.max(1, Math.floor(Number(amount) || 1));
+  try { showToast(`🎁 ${getDungeonBoxName(n)} 획득! 인벤토리에 보관되었습니다.`, '#ffd86b', 1600); } catch(e) {}
+  saveGameDataDebounced();
+  if (!inventoryModal.classList.contains('hidden')) renderInventoryContent();
+}
+
+function grantDungeonMilestoneBoxes(){
+  if (!(gameMode === 'dungeon' && dungeonState && dungeonState.active)) return;
+  const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+  if (!Array.isArray(dungeonState.awardedBoxStages)) dungeonState.awardedBoxStages = [];
+  const awarded = new Set(dungeonState.awardedBoxStages.map(v => Math.floor(Number(v) || 0)));
+  const maxStage = Math.min(10, Math.floor(killed / DUNGEON_BOX_STEP_KILLS));
+  for (let n = 1; n <= maxStage; n++) {
+    if (!awarded.has(n)) {
+      grantDungeonBox(n, 1);
+      awarded.add(n);
+      dungeonState.awardedBoxStages.push(n);
+    }
+  }
+}
+
+function rollDungeonBoxReward(stageNo){
+  const n = Math.max(1, Math.min(10, Math.floor(Number(stageNo) || 1)));
+  const expBase = [50000, 90000, 150000, 240000, 380000, 600000, 950000, 1500000, 2400000, 4000000][n - 1];
+  const goldBase = [8000, 14000, 22000, 35000, 55000, 85000, 130000, 200000, 320000, 500000][n - 1];
+  const table = [
+    { type:'exp', amount:expBase, text:`경험치 ${formatNumber(expBase)}` },
+    { type:'gold', amount:goldBase, text:`골드 ${formatNumber(goldBase)}` },
+    { type:'item', item:'smallPotion', amount:Math.max(1, Math.ceil(n / 3)), text:`작은 회복 물약 ${Math.max(1, Math.ceil(n / 3))}개` },
+    { type:'item', item:'largePotion', amount:Math.max(1, Math.ceil(n / 4)), text:`큰 회복 물약 ${Math.max(1, Math.ceil(n / 4))}개` },
+    { type:'item', item:n >= 4 ? 'expMediumPack' : 'expSmallPack', amount:1, text:n >= 4 ? '중형 EXP 꾸러미 1개' : '소형 EXP 꾸러미 1개' }
+  ];
+  if (n >= 6) table.push({ type:'item', item:'expLargePack', amount:1, text:'대형 EXP 꾸러미 1개' });
+  if (n >= 8) table.push({ type:'item', item:'expXLargePack', amount:1, text:'특대형 EXP 꾸러미 1개' });
+  if (n >= 10) table.push({ type:'item', item:'expSpecialPack', amount:1, text:'스페셜 EXP 꾸러미 1개' });
+  return table[Math.floor(Math.random() * table.length)];
+}
+
+function openDungeonBox(stageNo){
+  const n = Math.max(1, Math.min(10, Math.floor(Number(stageNo) || 1)));
+  const inv = getInventorySafe();
+  const key = `dungeonBox${n}`;
+  if ((inv[key] || 0) <= 0) return;
+  inv[key] -= 1;
+  const reward = rollDungeonBoxReward(n);
+  if (reward.type === 'exp') addExp(reward.amount, { baseAmount: reward.amount, hotMultiplier: 1 });
+  else if (reward.type === 'gold') gold += reward.amount;
+  else if (reward.type === 'item') {
+    inv[reward.item] = Math.max(0, Math.floor(Number(inv[reward.item]) || 0)) + reward.amount;
+  }
+  saveGameData();
+  try { showToast(`🎁 ${getDungeonBoxName(n)} 개봉: ${reward.text}`, '#ffd86b', 1900); } catch(e) { alert(`${getDungeonBoxName(n)} 개봉!\n${reward.text}`); }
+  renderInventoryContent();
+  updateHUD();
 }
 
 function updateDungeonSpawns(dt) {
@@ -15695,11 +15827,12 @@ function endDungeonRun(endedNaturally = false) {
   dungeonState.active = false;
   dungeonState.endedNaturally = !!endedNaturally;
 
-  // ✅ 던전 클리어(시간 종료) 시 다음 단계 해금 (총 5단계)
+  // ✅ 던전 클리어 시 다음 단계 해금 (총 10단계)
   try {
-    const curTier = Math.max(1, Math.min(5, dungeonState.tier || 1));
-    const unlocked = Math.max(1, Math.min(5, (saveData.dungeon?.unlockedTier || 1)));
-    if (endedNaturally && curTier >= unlocked && curTier < 5) {
+    grantDungeonMilestoneBoxes();
+    const curTier = Math.max(1, Math.min(DUNGEON_MAX_TIER, dungeonState.tier || 1));
+    const unlocked = Math.max(1, Math.min(DUNGEON_MAX_TIER, (saveData.dungeon?.unlockedTier || 1)));
+    if (endedNaturally && curTier >= unlocked && curTier < DUNGEON_MAX_TIER) {
       saveData.dungeon.unlockedTier = curTier + 1;
     }
   } catch(e) {}
@@ -21274,6 +21407,7 @@ try {
 }
 
 function goToTitle() {
+forceEndFever();
   try { practiceState.active = false; } catch(e) {}
   try { tutorialModeActive = false; } catch(e) {}
 clearMissionAutoAdvanceTimer();
@@ -21821,6 +21955,7 @@ function getDisplayedHudNumber(el, fallback = 0) {
 }
 
 function gameOver() {
+forceEndFever();
   if (gameMode === 'infinite') {
     const frozenHuntScore = getDisplayedHudNumber(scoreEl, score || 0);
     const frozenDistanceScore = getDisplayedHudNumber(highScoreEl, getInfiniteDistanceScore());
@@ -32145,6 +32280,19 @@ try {
   };
 } catch(e) {}
 
+
+function forceEndFever(){
+  try{
+    if(typeof feverActive !== 'undefined') feverActive = false;
+    if(typeof feverGauge !== 'undefined') feverGauge = 0;
+    if(typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0;
+    if(typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = 0;
+    if(typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null;
+    try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever && typeof stopBGM === 'function') stopBGM(); } catch(_) {}
+    document.body.classList.remove('fever-mode');
+    if (typeof updateFeverUI === 'function') updateFeverUI();
+  }catch(e){}
+}
 </script>
 
 <!-- ===============================
@@ -32443,3 +32591,5 @@ try {
 </body>
 </html>
 
+
+<!-- Dungeon updated: 2000 kills, chest every 200 kills (1-10). -->
