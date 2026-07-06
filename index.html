@@ -4025,7 +4025,9 @@ function isFeverEligibleMode() {
 }
 
 function isFeverActive() {
-  return feverActive && feverTimeLeft > 0 && isFeverEligibleMode();
+  // ✅ [v.210.9] 피버는 전투 진행 중에만 활성으로 인정합니다.
+  // 타이틀/게임오버/마을 화면에서는 남은 시간이 있어도 피버 이펙트와 버프가 절대 유지되지 않습니다.
+  return state === 'playing' && feverActive && feverTimeLeft > 0 && isFeverEligibleMode();
 }
 
 function getFeverSpawnMultiplier() {
@@ -4078,31 +4080,35 @@ function startFeverMode() {
   try { updateTownQuestProgress('fever', 1); } catch(e) {}
 }
 
-function endFeverMode() {
+function endFeverMode(silent = false) {
   feverActive = false;
   feverTimeLeft = 0;
   feverGauge = 0;
-  feverNoticeTimer = 1200;
+  feverNoticeTimer = (!silent && state === 'playing') ? 1200 : 0;
   document.body.classList.remove('fever-mode');
-  try { playBgmTrack(feverPreviousBgmName || getFeverReturnBgmName()); } catch(e) {}
+  if (!silent) { try { playBgmTrack(feverPreviousBgmName || getFeverReturnBgmName()); } catch(e) {} }
   feverPreviousBgmName = null;
-  try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(e) {}
+  if (!silent && state === 'playing') { try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(e) {} }
   updateFeverUI();
 }
 
 function updateFeverMode(dt) {
-  if (!isFeverEligibleMode()) {
-    const wasFeverActive = feverActive;
+  // ✅ [v.210.9] 타이틀/게임오버/마을/일시정지성 화면에서는 피버 타이머가 이어지지 않게 즉시 완전 종료
+  if (state !== 'playing' || !isFeverEligibleMode()) {
+    const wasFeverActive = feverActive || feverTimeLeft > 0 || feverGauge > 0 || feverNoticeTimer > 0;
     feverActive = false;
     feverTimeLeft = 0;
+    feverGauge = 0;
+    feverNoticeTimer = 0;
     document.body.classList.remove('fever-mode');
-    if (wasFeverActive) { try { playBgmTrack(getFeverReturnBgmName()); } catch(e) {} feverPreviousBgmName = null; }
+    if (wasFeverActive) { try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever) playBgmTrack(getFeverReturnBgmName()); } catch(e) {} }
+    feverPreviousBgmName = null;
     updateFeverUI();
     return;
   }
   if (feverActive) {
     feverTimeLeft = Math.max(0, feverTimeLeft - dt);
-    if (feverTimeLeft <= 0) endFeverMode();
+    if (feverTimeLeft <= 0) endFeverMode(false);
   }
   if (feverNoticeTimer > 0) feverNoticeTimer = Math.max(0, feverNoticeTimer - dt);
   updateFeverUI();
@@ -4110,10 +4116,14 @@ function updateFeverMode(dt) {
 
 function updateFeverUI() {
   if (!feverRowEl) return;
-  const show = isFeverEligibleMode() && state !== 'title';
+  const show = isFeverEligibleMode() && state === 'playing';
   feverRowEl.classList.toggle('hidden', !show);
   feverRowEl.classList.toggle('fever-active', isFeverActive());
-  if (!show) return;
+  if (!show) {
+    if (feverBarFillEl) feverBarFillEl.style.width = '0%';
+    if (feverTextEl) feverTextEl.textContent = '0.0%';
+    return;
+  }
   const percent = isFeverActive() ? 100 : Math.max(0, Math.min(100, feverGauge));
   if (feverBarFillEl) feverBarFillEl.style.width = percent.toFixed(1) + '%';
   if (feverTextEl) {
@@ -4124,7 +4134,7 @@ function updateFeverUI() {
 }
 
 function drawFeverOverlay() {
-  if (!isFeverActive()) return;
+  if (state !== 'playing' || !isFeverActive()) return;
   ctx.save();
   ctx.globalAlpha = 0.10 + 0.05 * Math.sin(Date.now() / 90);
   const g = ctx.createRadialGradient(width / 2, height * 0.18, 10, width / 2, height * 0.18, Math.max(width, height) * 0.85);
@@ -22047,7 +22057,7 @@ function getDisplayedHudNumber(el, fallback = 0) {
 }
 
 function gameOver() {
-forceEndFever();
+try { forceEndFever('gameover-core'); } catch(e) {}
   if (gameMode === 'infinite') {
     const frozenHuntScore = getDisplayedHudNumber(scoreEl, score || 0);
     const frozenDistanceScore = getDisplayedHudNumber(highScoreEl, getInfiniteDistanceScore());
@@ -25669,7 +25679,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -29151,6 +29161,7 @@ try {
 // - 스테이지 클리어 모달, 스테이지 클리어 연출, 자동 진행 타이머를 강제로 정리
 // - 몬스터 파크 보상 수령 후 터치 이동 및 파티 원정 종료 후에도 메인 타이틀이 정상 표시되도록 보정
 function forceResetToTitleStateV1721(){
+  try { if (typeof forceEndFever === 'function') forceEndFever('force-title-reset'); } catch(e) {}
   try { if (typeof clearMissionAutoAdvanceTimer === 'function') clearMissionAutoAdvanceTimer(); } catch(e) {}
   try { if (typeof clearAdventureAutoAdvanceV1711 === 'function') clearAdventureAutoAdvanceV1711(); } catch(e) {}
   try { if (typeof clearMonsterParkAutoAdvanceV1712 === 'function') clearMonsterParkAutoAdvanceV1712(); } catch(e) {}
@@ -32757,6 +32768,9 @@ function forceEndFever(reason){
     if(typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = 0;
     if(typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null;
     try { document.body.classList.remove('fever-mode'); } catch(_) {}
+    try { if (feverRowEl) feverRowEl.classList.remove('fever-active'); } catch(_) {}
+    try { if (feverBarFillEl) feverBarFillEl.style.width = '0%'; } catch(_) {}
+    try { if (feverTextEl) feverTextEl.textContent = '0.0%'; } catch(_) {}
     try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever && typeof stopBGM === 'function') stopBGM(); } catch(_) {}
     try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
     try { window.__lastForceEndFeverReason = reason || 'manual'; } catch(_) {}
@@ -33085,6 +33099,95 @@ try {
   // ===== [v.203.12] 튜토리얼 완료 칭찬 대사는 원본 completeBeginnerGuideQuestInGame 내부에서 직접 표시합니다.
   // 기존 v.2023 후킹은 다음 가이드 제목이 먼저 보이거나, 대사가 중복될 수 있어 비활성화했습니다.
 
+})();
+</script>
+
+
+
+<script>
+/* ===============================
+   ✅ [v.210.10] 피버 강제 종료 보정
+   - 피버가 켜진 상태에서 타이틀/게임오버로 가면 0%로 초기화
+   - 피버가 아닌 일반 충전 상태(예: 72.4%)는 유지
+   - 남은 시간/금빛 깜빡임/피버 BGM 잔상은 즉시 차단
+   =============================== */
+(function(){
+  function feverWasRunningV21010(){
+    try {
+      return !!(
+        (typeof feverActive !== 'undefined' && feverActive) ||
+        (typeof feverTimeLeft !== 'undefined' && feverTimeLeft > 0) ||
+        (document && document.body && document.body.classList.contains('fever-mode'))
+      );
+    } catch(e) { return false; }
+  }
+
+  window.forceEndFever = function(reason){
+    try {
+      const shouldResetGauge = feverWasRunningV21010();
+      if (typeof feverActive !== 'undefined') feverActive = false;
+      if (typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0;
+      if (typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = 0;
+      if (shouldResetGauge && typeof feverGauge !== 'undefined') feverGauge = 0;
+      if (typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null;
+      try { document.body.classList.remove('fever-mode'); } catch(_) {}
+      try { if (feverRowEl) feverRowEl.classList.remove('fever-active'); } catch(_) {}
+      try {
+        if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever) {
+          if (typeof playBgmTrack === 'function') playBgmTrack((typeof getFeverReturnBgmName === 'function') ? getFeverReturnBgmName() : 'game');
+          else if (typeof stopBGM === 'function') stopBGM();
+        }
+      } catch(_) {}
+      try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
+      try { window.__lastForceEndFeverReason = reason || 'manual'; } catch(_) {}
+    } catch(e) {}
+  };
+
+  const __endFeverModeBeforeV21010 = (typeof endFeverMode === 'function') ? endFeverMode : null;
+  window.endFeverMode = function(showNotice = true){
+    try {
+      const shouldResetGauge = feverWasRunningV21010();
+      if (typeof feverActive !== 'undefined') feverActive = false;
+      if (typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0;
+      if (typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = (showNotice && shouldResetGauge && typeof state !== 'undefined' && state === 'playing') ? 1200 : 0;
+      if (shouldResetGauge && typeof feverGauge !== 'undefined') feverGauge = 0;
+      try { document.body.classList.remove('fever-mode'); } catch(_) {}
+      if (showNotice && shouldResetGauge && typeof state !== 'undefined' && state === 'playing') {
+        try { playBgmTrack((typeof feverPreviousBgmName !== 'undefined' && feverPreviousBgmName) || getFeverReturnBgmName()); } catch(_) {}
+        try { spawnDamageText(width / 2, height * 0.22, 'FEVER END!', '#ffb36b', true); } catch(_) {}
+      }
+      if (typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null;
+      try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
+    } catch(e) {
+      try { if (__endFeverModeBeforeV21010) __endFeverModeBeforeV21010(showNotice); } catch(_) {}
+    }
+  };
+
+  const __updateFeverModeBeforeV21010 = (typeof updateFeverMode === 'function') ? updateFeverMode : null;
+  window.updateFeverMode = function(dt){
+    try {
+      const canRun = (typeof state !== 'undefined' && state === 'playing') && (typeof isFeverEligibleMode !== 'function' || isFeverEligibleMode());
+      if (!canRun) {
+        const shouldResetGauge = feverWasRunningV21010();
+        if (typeof feverActive !== 'undefined') feverActive = false;
+        if (typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0;
+        if (typeof feverNoticeTimer !== 'undefined') feverNoticeTimer = 0;
+        if (shouldResetGauge && typeof feverGauge !== 'undefined') feverGauge = 0;
+        try { document.body.classList.remove('fever-mode'); } catch(_) {}
+        if (typeof feverPreviousBgmName !== 'undefined') feverPreviousBgmName = null;
+        try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
+        return;
+      }
+      if (typeof feverActive !== 'undefined' && feverActive) {
+        feverTimeLeft = Math.max(0, (Number(feverTimeLeft) || 0) - (Number(dt) || 0));
+        if (feverTimeLeft <= 0) { window.endFeverMode(false); return; }
+      }
+      if (typeof feverNoticeTimer !== 'undefined' && feverNoticeTimer > 0) feverNoticeTimer = Math.max(0, feverNoticeTimer - (Number(dt) || 0));
+      try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
+    } catch(e) {
+      try { if (__updateFeverModeBeforeV21010) __updateFeverModeBeforeV21010(dt); } catch(_) {}
+    }
+  };
 })();
 </script>
 
