@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.209.9 Same Cute Guide Logo Slime)</title>
+<title>Slime Shooter - Ultimate Evolution (v.210.11 Fever Full Reset Boss Exp Exact)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -12948,6 +12948,7 @@ function pauseGameForBackground() {
 
 function handleBackgroundVisibilityLoss() {
   if (document.hidden) {
+    try { if (typeof forceEndFever === 'function') forceEndFever('visibility-hidden'); } catch(e) {}
     pauseGameForBackground();
   }
   lastTime = 0;
@@ -13012,6 +13013,7 @@ function closeGameWindow() {
 
 function exitGameFromTitle() {
   showConfirmDialog('게임을 종료하시겠습니까?', () => {
+    try { if (typeof forceEndFever === 'function') forceEndFever('exit-game'); } catch(e) {}
     hideConfirmDialog();
     if (closeGameWindow()) return;
     alert('게임을 종료합니다. 만약 게임이 종료되지 않을 경우 탭 닫기 또는 앱 나가기를 해주시기 바랍니다.');
@@ -19288,9 +19290,13 @@ function handleBossKilledBySkill() {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
       const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
-      const bossExpReward = (gameMode === 'stage') ? getStageLevelAdjustedExp(originalBossExpReward, (boss && boss.level) || currentBossLevel || stage) : originalBossExpReward;
-      const hotMult = getHotMultiplier();
-      const grantedBossExp = addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: hotMult });
+      // ✅ [v.210.11] 스테이지 보스 EXP는 표기된 기본값 그대로 지급합니다.
+      // - 레벨 차이 보정, 핫타임, 피버, 펫/버프 배수로 표시값과 실제 지급값이 달라지지 않게 고정합니다.
+      // - 예: 12레벨이 2스테이지 보스를 처치하면 20 EXP 표시 + 실제 20 EXP 지급.
+      const bossExpReward = Math.max(0, Math.floor(Number(originalBossExpReward) || 0));
+      const grantedBossExp = (gameMode === 'stage')
+        ? addExpDirect(bossExpReward)
+        : addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 });
       if (gameMode === 'stage') {
         stageRunExpBoss = Math.max(0, Math.floor(stageRunExpBoss || 0)) + Math.max(0, Math.floor(grantedBossExp || 0));
       }
@@ -21404,6 +21410,7 @@ function drawMiniTargets() {
 }
 
 function startGame(startStageNum = 1) {
+try { if (typeof forceEndFever === 'function') forceEndFever('start-game'); } catch(e) {}
 clearMissionAutoAdvanceTimer();
 initAudio();
 score = 0; bullets = []; bubbles = []; enemies = []; enemyBullets = []; particles = []; boss = null; lasers = []; expItems = []; goldDrops = []; fieldItems = []; parkItems = []; miniTargets = [];
@@ -25679,7 +25686,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -32762,6 +32769,12 @@ try {
 
 function forceEndFever(reason){
   try{
+    const wasFever = !!(
+      (typeof feverActive !== 'undefined' && feverActive) ||
+      (typeof feverTimeLeft !== 'undefined' && Number(feverTimeLeft) > 0) ||
+      (typeof feverGauge !== 'undefined' && Number(feverGauge) > 0) ||
+      (typeof feverNoticeTimer !== 'undefined' && Number(feverNoticeTimer) > 0)
+    );
     if(typeof feverActive !== 'undefined') feverActive = false;
     if(typeof feverGauge !== 'undefined') feverGauge = 0;
     if(typeof feverTimeLeft !== 'undefined') feverTimeLeft = 0;
@@ -32771,7 +32784,12 @@ function forceEndFever(reason){
     try { if (feverRowEl) feverRowEl.classList.remove('fever-active'); } catch(_) {}
     try { if (feverBarFillEl) feverBarFillEl.style.width = '0%'; } catch(_) {}
     try { if (feverTextEl) feverTextEl.textContent = '0.0%'; } catch(_) {}
-    try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever && typeof stopBGM === 'function') stopBGM(); } catch(_) {}
+    try {
+      if (wasFever && typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever) {
+        if (reason && String(reason).includes('title') && typeof playBgmTrack === 'function') playBgmTrack('title');
+        else if (typeof stopBGM === 'function') stopBGM();
+      }
+    } catch(_) {}
     try { if (typeof updateFeverUI === 'function') updateFeverUI(); } catch(_) {}
     try { window.__lastForceEndFeverReason = reason || 'manual'; } catch(_) {}
   }catch(e){}
@@ -32807,6 +32825,15 @@ try {
     return __startGameBeforeV2108FeverReset.apply(this, arguments);
   };
 } catch(e) {}
+
+// ✅ [v.210.11] 피버 종료 누락 방지 최종 안전망
+// 모든 화면 이탈/게임오버/재시작/튜토리얼 종료 경로에서 피버 상태와 금빛 이펙트를 즉시 제거합니다.
+try {
+  window.addEventListener('beforeunload', function(){ try { if (typeof forceEndFever === 'function') forceEndFever('beforeunload'); } catch(e) {} });
+  window.addEventListener('pagehide', function(){ try { if (typeof forceEndFever === 'function') forceEndFever('pagehide-final'); } catch(e) {} });
+} catch(e) {}
+
+
 </script>
 
 <!-- ===============================
