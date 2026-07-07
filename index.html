@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.210.12 Dungeon Spawn Weekly Quest Exp)</title>
+<title>Slime Shooter - Ultimate Evolution (v.211.4 Infinite Quest Fever Exit Reset)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4092,18 +4092,31 @@ function endFeverMode(silent = false) {
   updateFeverUI();
 }
 
-function updateFeverMode(dt) {
-  // ✅ [v.210.9] 타이틀/게임오버/마을/일시정지성 화면에서는 피버 타이머가 이어지지 않게 즉시 완전 종료
-  if (state !== 'playing' || !isFeverEligibleMode()) {
-    const wasFeverActive = feverActive || feverTimeLeft > 0 || feverGauge > 0 || feverNoticeTimer > 0;
-    feverActive = false;
-    feverTimeLeft = 0;
-    feverGauge = 0;
+function resetActiveFeverOnExit(reason = '') {
+  // ✅ [v.211.4] 피버가 '발동 중'일 때만 이탈/게임오버/타이틀 이동 시 0%로 초기화합니다.
+  // 아직 100%가 되지 않은 충전 게이지는 유지합니다.
+  const wasActive = !!(feverActive || feverTimeLeft > 0);
+  if (!wasActive) {
     feverNoticeTimer = 0;
     document.body.classList.remove('fever-mode');
-    if (wasFeverActive) { try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever) playBgmTrack(getFeverReturnBgmName()); } catch(e) {} }
-    feverPreviousBgmName = null;
     updateFeverUI();
+    return;
+  }
+  feverActive = false;
+  feverTimeLeft = 0;
+  feverGauge = 0;
+  feverNoticeTimer = 0;
+  document.body.classList.remove('fever-mode');
+  try { if (typeof currentBgm !== 'undefined' && typeof bgmTracks !== 'undefined' && currentBgm === bgmTracks.fever) playBgmTrack(getFeverReturnBgmName()); } catch(e) {}
+  feverPreviousBgmName = null;
+  updateFeverUI();
+}
+
+function updateFeverMode(dt) {
+  // ✅ [v.211.4] 플레이 중이 아니거나 피버 제외 모드로 나가면 '발동 중인 피버'만 종료합니다.
+  // 충전만 되어 있는 게이지는 다음 전투 진입 시 그대로 보존됩니다.
+  if (state !== 'playing' || !isFeverEligibleMode()) {
+    resetActiveFeverOnExit('state-change');
     return;
   }
   if (feverActive) {
@@ -7538,6 +7551,31 @@ function getInfiniteDistanceScoreStep() {
 }
 function getInfiniteTotalScore() {
   return Math.max(0, Math.floor(score || 0) + getInfiniteDistanceScore());
+}
+
+function resetInfiniteScoreQuestSync() {
+  try {
+    const town = ensureTownQuestState();
+    town.__lastInfTotalScore = 0;
+  } catch(e) {}
+}
+
+function syncInfiniteScoreTownQuestProgress(options = {}) {
+  if (gameMode !== 'infinite') return;
+  let totalInf = 0;
+  try { totalInf = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : Math.max(0, Math.floor(score || 0)); } catch(e) { totalInf = Math.max(0, Math.floor(score || 0)); }
+  totalInf = Math.max(0, Math.floor(Number(totalInf) || 0));
+  const town = ensureTownQuestState();
+  let last = Math.max(0, Math.floor(Number(town.__lastInfTotalScore) || 0));
+  // 새 무한 모드 런 또는 점수 리셋을 감지하면 기준점도 함께 리셋합니다.
+  if (totalInf < last) last = 0;
+  const delta = Math.max(0, totalInf - last);
+  if (delta > 0) {
+    const silent = !!options.silent;
+    updateTownQuestProgress('infiniteScore', delta, { silent });
+    updateTownQuestProgress('kingInfiniteScore', delta, { silent });
+  }
+  town.__lastInfTotalScore = totalInf;
 }
 function getInfiniteMonsterDistanceProfile() {
   const dist = Math.max(0, Math.floor(infiniteDistance || 0));
@@ -14429,21 +14467,23 @@ function completeTownGoldSpendQuest(questId){
 window.confirmAbandonTownQuest = confirmAbandonTownQuest;
 window.completeTownGoldSpendQuest = completeTownGoldSpendQuest;
 
-function updateTownQuestProgress(type, amount){
+function updateTownQuestProgress(type, amount, options = {}){
   const town = ensureTownQuestState();
   const targets = [];
   if (town.active) targets.push(town.active);
   if (Array.isArray(town.activeList)) targets.push(...town.activeList);
   let changed = false;
+  const incRaw = (amount === undefined || amount === null) ? 1 : Math.floor(Number(amount) || 0);
+  if (incRaw <= 0) return;
   for (const q of targets) {
     if (!q || q.type !== type) continue;
     if ((q.progress || 0) >= (q.target || 1)) continue;
-    q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + Math.max(1, Math.floor(amount || 1)));
+    q.progress = Math.min(q.target, Math.max(0, Math.floor(q.progress || 0)) + incRaw);
     normalizeTownQuestDisplay(q);
     changed = true;
     const justCompleted = (q.progress || 0) >= (q.target || 1);
     try {
-      if (state !== 'town') {
+      if (state !== 'town' && !options.silent) {
         const progressLabel = `${getTownQuestTypeLabel(q.type)} (${formatNumber(q.progress)}/${formatNumber(q.target)})`;
         showToast(progressLabel, '#dffff0', 1500);
       }
@@ -15511,6 +15551,7 @@ function startInfiniteMode() {
   // 무한 모드: 1스테이지부터 시작
   lastSelectedStage = 1;
   runStartStage = 1;
+  try { if (typeof resetInfiniteScoreQuestSync === 'function') resetInfiniteScoreQuestSync(); } catch(e) {}
   playBgmTrack('infinite')
   startGame(runStartStage || 1);
 }
@@ -17279,11 +17320,8 @@ function addScore(amount, source = 'monster', options = {}) {
   const prevScore = score;
   score += amount;
   try {
-    if (gameMode === 'infinite') {
-      const totalInf = (typeof getInfiniteTotalScore === 'function') ? getInfiniteTotalScore() : score;
-      updateTownQuestProgress('infiniteScore', Math.max(0, totalInf - ((ensureTownQuestState().active && ensureTownQuestState().active.__lastInfScore) || 0)));
-      updateTownQuestProgress('kingInfiniteScore', Math.max(0, totalInf - ((ensureTownQuestState().active && ensureTownQuestState().active.__lastInfScore) || 0)));
-      if (ensureTownQuestState().active) ensureTownQuestState().active.__lastInfScore = totalInf;
+    if (gameMode === 'infinite' && typeof syncInfiniteScoreTownQuestProgress === 'function') {
+      syncInfiniteScoreTownQuestProgress({ silent:false });
     }
   } catch(e) {}
   if (source === 'monster') {
@@ -22087,6 +22125,7 @@ SFX.gameOver();
 
 // High Score / 점수 퀘스트는 무한 모드에서만 처리
 if (gameMode === 'infinite') {
+  try { if (typeof syncInfiniteScoreTownQuestProgress === 'function') syncInfiniteScoreTownQuestProgress({ silent:true }); } catch(e) {}
   const finalTotalScore = (window.__finalTotalScore ?? getInfiniteTotalScore());
   if (finalTotalScore > saveData.highScore) { saveData.highScore = finalTotalScore; }
 
@@ -23766,6 +23805,7 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
   } else if (gameMode === 'infinite') {
     if (scoreEl) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
     if (highScoreEl) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
+    try { if (typeof syncInfiniteScoreTownQuestProgress === 'function') syncInfiniteScoreTownQuestProgress({ silent:true }); } catch(e) {}
   } else if (gameMode === 'itempark') {
     if (scoreEl) scoreEl.textContent = '수집 수: ' + formatNumber(itemParkState.caught || 0);
     if (highScoreEl) highScoreEl.textContent = '획득 EXP: ' + formatNumber(itemParkState.expGained || 0);
@@ -25691,7 +25731,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -27181,6 +27221,7 @@ updateHUD = function() {
       highScoreEl.style.display = '';
       highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
     }
+    try { if (typeof syncInfiniteScoreTownQuestProgress === 'function') syncInfiniteScoreTownQuestProgress({ silent:true }); } catch(e) {}
 
     const distText = `${formatNumber(Math.floor(infiniteDistance))}m`;
     if (stageEl) {
