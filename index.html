@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.211.6 Pet Types & Fire Rate)</title>
+<title>Slime Shooter - Ultimate Evolution (v.211.7 Time Spawn Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3764,9 +3764,9 @@ body.watch-ui:not(.playing-ui) #settingsBar,
             <!-- JS로 생성 -->
         </div>
         <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:10px;">
-            • 단계별 목표: 1단계 400마리, 2단계 800마리, 3단계 1,200마리처럼 단계마다 400마리씩 증가<br>
-            • 3초마다 단계 × 4마리 등장 · 화면 최대 50마리 누적<br>
-            • 목표 몬스터 처치 달성 시 해당 단계 던전 상자 획득<br>
+            • 시간 제한형 진행: 제한 시간 동안 몬스터를 처치하면 완료됩니다<br>
+            • 단계가 높을수록 1초당 출현 마릿수 증가 · 화면 최대 50마리 유지<br>
+            • 제한 시간 종료 시 해당 단계 던전 상자 획득<br>
             • 점수/EXP 구슬 없음 · 레이저 발사 불가 · 적 탄환 없음
         </div>
     </div>
@@ -6409,7 +6409,9 @@ let gameMode = 'stage';      // 'stage' | 'infinite' | 'practice' | 'training' |
 // - 무한 모드와 던전 모드는 기존 스폰 시스템 유지
 // - 나머지 일반 몬스터 사용 모드는 화면에 몬스터가 모두 사라진 뒤 다음 5마리 생성
 function useTenMonsterBatchRespawn() {
-  return gameMode !== 'infinite' && gameMode !== 'practice' && gameMode !== 'dungeon' && gameMode !== 'tutorial';
+  // ✅ [v.211.7] 일반 전투 모드는 다시 시간 누적 스폰 방식 사용
+  // 무한 모드는 기존 유지, 튜토리얼/연습/던전은 각 전용 로직 사용
+  return false;
 }
 let runStartStage = 1;       // 이번 런 시작 스테이지(리스타트용)
 let lastSelectedStage = 1;   // 스테이지 모드에서 선택한 스테이지
@@ -7343,10 +7345,9 @@ function getStageKillTarget(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  // ✅ 리스폰 속도 자동 계산
-  // 1마리 = 1초, 2마리 = 0.5초, 20마리 = 0.05초
-  const batch = Math.max(1, getStageMonsterSpawnBatchSize(stg));
-  return Math.max(50, Math.floor(1000 / batch));
+  // ✅ [v.211.7] 목표 처치 수가 아니라 '초당 출현량' 기준으로 스폰
+  // getStageMonsterSpawnBatchSize(stage)가 1초당 생성 마릿수를 반환합니다.
+  return 1000;
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -10877,13 +10878,7 @@ function registerEnemyKill(isBoss = false, opts = {}) {
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
 
-  if (!isBoss && gameMode === 'dungeon' && dungeonState?.active) {
-    const dungeonTarget = getCurrentDungeonKillTarget();
-    if ((stageRunKillCount || 0) >= dungeonTarget) {
-      endDungeonRun(true);
-      return;
-    }
-  }
+  // ✅ [v.211.7] 던전은 목표 처치 수가 아닌 제한 시간 종료로 클리어 처리
 
   if (!isBoss && gameMode === 'infinite') {
     infiniteMonsterKillCount = Math.max(0, Math.floor(infiniteMonsterKillCount || 0)) + 1;
@@ -20718,14 +20713,7 @@ spawnNextWave();
 }
 
 function spawnNextWave() {
-    // ✅ 스테이지 모드: 목표 달성 이후에는 더 이상 스폰하지 않음(보스 스테이지는 보스 트리거 후 스폰 중지)
-    if (gameMode === 'stage') {
-      const target = getStageKillTarget(stage);
-      if ((stageRunKillCount || 0) >= target) {
-        if (!isBossStage(stage) || stageBossTriggered) return;
-        // 보스 스테이지: 아직 보스 트리거 전이면 checkStageKillClearNow()가 처리함
-      }
-    }
+    // ✅ [v.211.7] 스테이지 모드는 목표 처치 수로 스폰을 멈추지 않고 제한 시간 동안 계속 스폰
 
     // ✅ [v.194.2] 무한/던전을 제외한 모드: 기존 시간 누적 스폰 대신 5마리 묶음 리스폰
     // 화면에 남은 몬스터가 1마리라도 있으면 새 몬스터를 만들지 않습니다.
@@ -21810,9 +21798,9 @@ if (gameMode === 'stage' && level >= 31
   && !(typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188())) {
   let penaltyRate = 0;
   if (level <= 60) penaltyRate = 0.10;
-  else if (level <= 100) penaltyRate = 0.05;
-  else if (level <= 200) penaltyRate = 0.03;
-  else penaltyRate = 0.01;
+  else if (level <= 100) penaltyRate = 0.075;
+  else if (level <= 200) penaltyRate = 0.05;
+  else penaltyRate = 0.03;
 
   const curLevel = Math.max(1, Math.min(MAX_LEVEL - 1, level || 1));
   const neededExp = Math.max(0, Number(EXP_TABLE?.[curLevel]?.needed || 0));
@@ -25895,7 +25883,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33431,6 +33419,155 @@ try {
       try { if (__updateFeverModeBeforeV21010) __updateFeverModeBeforeV21010(dt); } catch(_) {}
     }
   };
+/* ===============================
+   ✅ [v.211.7] 시간 제한형 스폰 밸런스
+   - 스테이지/모험: 목표 처치 수는 클리어 조건이 아니라 초당 출현량 계산 기준으로만 사용
+   - 목표 수가 낮은 초반은 초당 출현량 낮음, 후반은 초당 출현량 증가
+   - 무한 모드는 기존 로직 유지
+   - 던전은 제한 시간 종료 시 클리어 처리
+   =============================== */
+
+function getStageTimeLimitMsV2117(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  const target = Math.max(1, Math.floor(Number(getStageKillTarget(stg)) || 1));
+  const perSec = Math.max(1, Math.floor(Number(getStageMonsterSpawnBatchSize(stg)) || 1));
+  // 목표 수와 초당 출현량의 비율을 기준으로 하되, 초반은 너무 짧지 않게 보정
+  const sec = Math.max(25, Math.min(60, Math.ceil(target / perSec) + 20));
+  return sec * 1000;
+}
+
+function getStageTimeLeftMsV2117() {
+  if (gameMode !== 'stage') return 0;
+  const limit = getStageTimeLimitMsV2117(stage);
+  const started = Math.max(0, Number(stageRunStartTime) || performance.now());
+  return Math.max(0, limit - (performance.now() - started));
+}
+
+function finishStageByTimeV2117() {
+  if (gameMode !== 'stage') return false;
+  if (stageCleared) return false;
+  // 몬스터 파크는 사망 정산 전용 흐름을 유지
+  if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
+
+  if (isBossStage(stage)) {
+    if ((stageBossKillCount || 0) >= 1) {
+      stageCleared = true;
+    } else {
+      if (stageBossTriggered || (bossIntro && bossIntro.active) || boss) return true;
+      stageBossTriggered = true;
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      lasers = [];
+      boss = null;
+      bossSpawned = true;
+      startBossIntro();
+      updateHUD();
+      return true;
+    }
+  } else {
+    stageCleared = true;
+  }
+
+  stageTransitionTimer = (typeof adventureModeActive !== 'undefined' && adventureModeActive) ? 0 : 800;
+  try { clearStageCombatObjects({ clearDrops: false }); } catch(e) {
+    enemies.length = 0;
+    enemyBullets.length = 0;
+    lasers = [];
+    boss = null;
+  }
+  bossSpawned = false;
+  spawnExplosion(width / 2, height / 3, 'rgba(255, 240, 150, 1)', 25);
+  if (SFX && SFX.stageClear) SFX.stageClear();
+  addQuestStat('stageClears', 1);
+
+  if (stage + 1 > saveData.quests.stage.current) saveData.quests.stage.current = stage + 1;
+  if (stage + 1 > saveData.maxUnlockedStage) {
+    saveData.maxUnlockedStage = Math.min(MAX_STAGE_CAP, stage + 1);
+  }
+  saveGameDataDebounced();
+  return true;
+}
+
+// 기존 여러 패치에서 목표 처치 수 기반으로 덮어쓴 클리어 판정을 마지막에 다시 시간 기준으로 고정
+const checkStageKillClearNowBeforeV2117 = checkStageKillClearNow;
+checkStageKillClearNow = function() {
+  if (gameMode === 'mission') return checkMissionStageClearNow();
+  if (gameMode !== 'stage') return false;
+  if (stageCleared) return false;
+  if (getStageTimeLeftMsV2117() > 0 && !((isBossStage(stage) && (stageBossKillCount || 0) >= 1))) return false;
+  return finishStageByTimeV2117();
+};
+
+// 메인 update 이후에도 매 프레임 시간 클리어 판정을 확인
+const updateBeforeV2117 = update;
+update = function(dt, timestamp) {
+  const ret = updateBeforeV2117.apply(this, arguments);
+  try {
+    if (state === 'playing' && gameMode === 'stage' && !stageCleared) {
+      if (getStageTimeLeftMsV2117() <= 0 || (isBossStage(stage) && (stageBossKillCount || 0) >= 1)) {
+        finishStageByTimeV2117();
+      }
+    }
+  } catch(e) {}
+  return ret;
+};
+
+// HUD도 처치 목표 대신 남은 시간과 현재 출현량을 보여주도록 보정
+const updateHUDBeforeV2117 = updateHUD;
+updateHUD = function() {
+  const ret = updateHUDBeforeV2117.apply(this, arguments);
+  try {
+    if (state === 'playing' && gameMode === 'stage' && stageEl) {
+      const leftSec = Math.ceil(getStageTimeLeftMsV2117() / 1000);
+      const spawnPerSec = Math.max(1, Math.floor(Number(getStageMonsterSpawnBatchSize(stage)) || 1));
+      const bossTxt = isBossStage(stage)
+        ? ` · 보스 ${Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)))}/1`
+        : '';
+      const modeTxt = (typeof adventureModeActive !== 'undefined' && adventureModeActive) ? '모험 모드' : '스테이지';
+      stageEl.textContent = `${modeTxt} ${stage} · 남은 시간 ${leftSec}초 · 출현 ${spawnPerSec}/초 · 처치 ${formatNumber(stageRunKillCount || 0)}${bossTxt}`;
+    }
+    if (state === 'playing' && gameMode === 'dungeon' && stageEl && dungeonState && dungeonState.active) {
+      const leftSec = Math.ceil(Math.max(0, Number(dungeonState.timeLeft || 0)) / 1000);
+      const perSec = getDungeonSpawnBatchPerSecondV2117(dungeonState.tier);
+      stageEl.textContent = `던전 ${dungeonState.tier}단계 · 남은 시간 ${leftSec}초 · 출현 ${perSec}/초 · 처치 ${formatNumber(stageRunKillCount || 0)} · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
+    }
+  } catch(e) {}
+  return ret;
+};
+
+function getDungeonDurationMsV2117(tier) {
+  tier = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(tier) || 1)));
+  return Math.min(90000, 45000 + tier * 3000);
+}
+
+function getDungeonSpawnBatchPerSecondV2117(tier) {
+  tier = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(tier) || 1)));
+  return Math.min(50, 4 + tier * 4);
+}
+
+// 던전 전용 스폰도 1초 단위 시간 제한형으로 변경
+updateDungeonSpawns = function(dt) {
+  dungeonState.elapsed = Math.max(0, (Number(dungeonState.elapsed) || 0) + dt);
+  const duration = getDungeonDurationMsV2117(dungeonState.tier);
+  dungeonState.timeLeft = Math.max(0, duration - dungeonState.elapsed);
+
+  if (dungeonState.timeLeft <= 0) {
+    endDungeonRun(true);
+    return;
+  }
+
+  dungeonState.spawnAcc += dt;
+  while (dungeonState.spawnAcc >= 1000 && state === 'playing') {
+    dungeonState.spawnAcc -= 1000;
+    const room = Math.max(0, DUNGEON_MAX_ENEMIES_ON_SCREEN - (Array.isArray(enemies) ? enemies.length : 0));
+    const spawnCount = Math.min(getDungeonSpawnBatchPerSecondV2117(dungeonState.tier), room);
+    for (let i = 0; i < spawnCount; i++) {
+      spawnDungeonEnemy();
+      dungeonState.spawned++;
+    }
+  }
+};
+
 })();
 </script>
 
