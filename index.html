@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.211.5 Dimension EXP 20 Up)</title>
+<title>Slime Shooter - Ultimate Evolution (v.211.6 Pet Types & Fire Rate)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -9033,6 +9033,151 @@ if (SFX && SFX.expPickup) SFX.expPickup();
   }
 }
 
+
+
+// ===============================
+// ✅ [v.211.6] 수집형 펫 대리 수집 / 자석 보조
+// - 수집형 펫은 가까운 골드·보석, 무한모드 아이템, EXP 구슬을 대신 획득합니다.
+// - 3성 이상은 플레이어 기준 자동 자석 효과도 함께 발동합니다.
+// ===============================
+function getEquippedCollectorPetsV2116() {
+  try { return getEquippedPetList().filter(p => p && p.type === 'collectorpet'); } catch(e) { return []; }
+}
+function getCollectorPetRangeV2116(star = 1) {
+  const s = Math.max(1, Math.min(5, Number(star) || 1));
+  return ([0,150,190,240,300,380][s] || 150);
+}
+function getCollectorAnchorListV2116() {
+  const arr = [];
+  try {
+    const left = getEquippedPet('left');
+    if (left && left.type === 'collectorpet' && pet2) arr.push({ pet:left, x:pet2.x, y:pet2.y });
+    const right = getEquippedPet('right');
+    if (right && right.type === 'collectorpet' && pet) arr.push({ pet:right, x:pet.x, y:pet.y });
+  } catch(e) {}
+  return arr;
+}
+function pullDropToTargetV2116(obj, tx, ty, range, dt, basePull = 12) {
+  if (!obj) return;
+  const dx = tx - obj.x, dy = ty - obj.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+  if (dist > range) return;
+  const delta = (Number(dt) || 16.67) / 16.67;
+  const near = 1 - Math.min(1, dist / range);
+  const pull = basePull + near * basePull;
+  obj.x += (dx / dist) * pull * delta;
+  obj.y += (dy / dist) * pull * delta;
+}
+function applyCollectorPetMagnetV2116(list, dt, basePull = 12) {
+  const collectors = getCollectorAnchorListV2116();
+  if (!collectors.length || !Array.isArray(list)) return;
+  for (const c of collectors) {
+    const range = getCollectorPetRangeV2116(c.pet.star);
+    const magnetRange = c.pet.star >= 3 ? range + 180 : range;
+    for (const obj of list) pullDropToTargetV2116(obj, c.x, c.y, magnetRange, dt, basePull);
+  }
+}
+function circleAnyCollectorPetPickupV2116(x, y, r) {
+  const collectors = getCollectorAnchorListV2116();
+  for (const c of collectors) {
+    const pickupRange = Math.max(getCollectorPetRangeV2116(c.pet.star), 90);
+    if (circleCollision(c.x, c.y, pickupRange, x, y, r || 10)) return true;
+  }
+  return false;
+}
+try {
+  const __updateExpItemsBeforeCollectorV2116 = updateExpItems;
+  updateExpItems = function(dt){
+    __updateExpItemsBeforeCollectorV2116.apply(this, arguments);
+    if (gameMode !== 'dungeon') applyCollectorPetMagnetV2116(expItems, dt, 13);
+  };
+} catch(e) {}
+try {
+  const __updateGoldDropsBeforeCollectorV2116 = updateGoldDrops;
+  updateGoldDrops = function(dt){
+    __updateGoldDropsBeforeCollectorV2116.apply(this, arguments);
+    applyCollectorPetMagnetV2116(goldDrops, dt, 16);
+  };
+} catch(e) {}
+try {
+  const __updateFieldItemsBeforeCollectorV2116 = updateFieldItems;
+  updateFieldItems = function(dt){
+    __updateFieldItemsBeforeCollectorV2116.apply(this, arguments);
+    applyCollectorPetMagnetV2116(fieldItems, dt, 18);
+  };
+} catch(e) {}
+try {
+  const __tryPickupExpItemsBeforeCollectorV2116 = tryPickupExpItems;
+  tryPickupExpItems = function(){
+    if (!player || !player.alive || isPlayerDying) return __tryPickupExpItemsBeforeCollectorV2116.apply(this, arguments);
+    if (gameMode !== 'dungeon') {
+      for (let i = expItems.length - 1; i >= 0; i--) {
+        const it = expItems[i];
+        if (!it || !circleAnyCollectorPetPickupV2116(it.x, it.y, it.r)) continue;
+        const hotMult = getHotMultiplier() * getFeverExpMultiplier();
+        const baseExp = Math.max(0, it.roundReward ? Math.round(it.baseExp * (it.gradeMult || 1)) : Math.floor(it.baseExp * (it.gradeMult || 1)));
+        const gained = Math.floor(baseExp * hotMult);
+        if (gained > 0) {
+          addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
+          if (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'tutorial') stageRunExpOrbs += gained;
+        }
+        if (saveData.quests && saveData.quests.expOrb) {
+          saveData.quests.expOrb.count = (saveData.quests.expOrb.count || 0) + 1;
+          addQuestStat('expOrbs', 1);
+          try { updateTownQuestProgress('expOrbs', 1); } catch(e) {}
+          try { updateTownQuestProgress('bonusStage', 1); } catch(e) {}
+          saveGameDataDebounced();
+        }
+        spawnDamageText(it.x, it.y - 8, `펫 수집 EXP+${formatNumber(gained)}`, it.color || '#44ffb8');
+        if (SFX && SFX.expPickup) SFX.expPickup();
+        expItems.splice(i, 1);
+      }
+    }
+    return __tryPickupExpItemsBeforeCollectorV2116.apply(this, arguments);
+  };
+} catch(e) {}
+try {
+  const __tryPickupGoldDropsBeforeCollectorV2116 = tryPickupGoldDrops;
+  tryPickupGoldDrops = function(){
+    if (gameMode === 'infinite' || isMissionGoldDropObjectiveActive()) {
+      for (let i = goldDrops.length - 1; i >= 0; i--) {
+        const it = goldDrops[i];
+        if (!it || !circleAnyCollectorPetPickupV2116(it.x, it.y, it.r)) continue;
+        const baseGained = Math.max(1, Math.floor(it.amount || 1));
+        const gained = Math.max(1, Math.floor(baseGained * getPetGoldMultiplier() * getFeverGoldMultiplier()));
+        addGoldGainMessages(baseGained, gained, it.type || 'gold');
+        stageRunItemPickupCount = (stageRunItemPickupCount || 0) + 1;
+        if (it.type && it.type !== 'gold') {
+          stageRunGemPickupCount = (stageRunGemPickupCount || 0) + 1;
+          try { updateTownQuestProgress('gems', 1); } catch(e) {}
+        }
+        gold += gained;
+        stageRunGoldEarned = (stageRunGoldEarned || 0) + gained;
+        saveData.goldEarned = (saveData.goldEarned || 0) + gained;
+        addGoldEarnedStat(gained);
+        saveGameDataDebounced();
+        spawnDamageText(it.x, it.y - 10, `펫 수집 +${formatNumber(gained)}`, (it.type && it.type !== 'gold') ? '#7ce7ff' : '#ffd700');
+        if (SFX && SFX.expPickup) SFX.expPickup();
+        goldDrops.splice(i, 1);
+      }
+    }
+    return __tryPickupGoldDropsBeforeCollectorV2116.apply(this, arguments);
+  };
+} catch(e) {}
+try {
+  const __updateFieldItemsPickupBeforeCollectorV2116 = updateFieldItems;
+  updateFieldItems = function(dt){
+    __updateFieldItemsPickupBeforeCollectorV2116.apply(this, arguments);
+    if (gameMode !== 'infinite') return;
+    for (let i = fieldItems.length - 1; i >= 0; i--) {
+      const item = fieldItems[i];
+      if (!item || !circleAnyCollectorPetPickupV2116(item.x, item.y, item.radius)) continue;
+      pickupFieldItem(item);
+      fieldItems.splice(i, 1);
+    }
+  };
+} catch(e) {}
+
 // 데이터 로드/저장
 
 // ===============================
@@ -9712,10 +9857,10 @@ function getEffectivePlayerBulletCount() {
   return getPreferredPlayerBulletCount();
 }
 function getPlayerFireIntervalByBulletCount() {
-  // ✅ [v.207.4] 선택/실제 발사 탄 수에 따라 플레이어 발사 간격 변경
-  // 1발=0.08초, 2발=0.10초, 3발=0.13초, 4발=0.17초, 5발=0.20초
+  // ✅ [v.211.6] 선택/실제 발사 탄 수에 따라 플레이어 발사 간격 변경
+  // 1발=0.30초, 2발=0.24초, 3발=0.18초, 4발=0.12초, 5발=0.06초
   const count = Math.max(1, Math.min(5, Math.floor(Number(getEffectivePlayerBulletCount()) || 1)));
-  return ({ 1:80, 2:100, 3:130, 4:170, 5:200 }[count] || 150);
+  return ({ 1:300, 2:240, 3:180, 4:120, 5:60 }[count] || 300);
 }
 function getPlayerBulletDamageMultiplier() {
   const count = getEffectivePlayerBulletCount();
@@ -16333,6 +16478,9 @@ const PET_DEFS = {
   scorer:    { id:'scorer',    name:'점수형 펫',   icon:'🏆', color:'#ffcc55', accent:'#fff1bf', ability:'score'     },
   distancepet:{ id:'distancepet', name:'거리형 펫', icon:'📏', color:'#7ce7ff', accent:'#dff8ff', ability:'distance' },
   producer:  { id:'producer',  name:'생산형 펫',   icon:'📦', color:'#b48bff', accent:'#efe1ff', ability:'producer'  },
+  collectorpet:{ id:'collectorpet', name:'수집형 펫', icon:'🧲', color:'#7cffd2', accent:'#e8fff8', ability:'collectorpet' },
+  copypet:   { id:'copypet',   name:'복사형 펫',   icon:'🔁', color:'#9fd7ff', accent:'#eef8ff', ability:'copypet'   },
+  piercepet: { id:'piercepet', name:'관통형 펫',   icon:'🗡️', color:'#ffc46b', accent:'#fff2d0', ability:'piercepet' },
   laserpet:  { id:'laserpet',  name:'레이저형 펫', icon:'🔺', color:'#ff6ad5', accent:'#ffd8f5', ability:'laserpet'  },
   bombpet:   { id:'bombpet',   name:'폭탄형 펫',   icon:'💣', color:'#ffb347', accent:'#fff0bf', ability:'bombpet'   },
   tornadopet:{ id:'tornadopet',name:'토네이도형 펫', icon:'🌪️', color:'#9beeff', accent:'#e8fbff', ability:'tornadopet'}
@@ -16602,6 +16750,12 @@ function getPetAbilityText(pet) {
     const dmgPct = [0,60,90,120,150,200][star] || 60;
     return `능력: 5초마다 3초 토네이도 · 0.2초마다 공격력 ${dmgPct}% 범위 피해`;
   }
+  if ((pet && pet.type) === 'collectorpet') {
+    const range = [0,150,190,240,300,380][star] || 150;
+    return `능력: 가까운 골드·보석·아이템·EXP 구슬 대리 수집${star >= 3 ? ' · 자동 자석 효과' : ''} · 범위 ${range}`;
+  }
+  if ((pet && pet.type) === 'copypet') return `능력: 플레이어와 같은 속성의 총알 발사 · ${star}발`;
+  if ((pet && pet.type) === 'piercepet') return `능력: 몬스터를 관통하는 펫 총알 발사 · ${star}발`;
   if (getPetDef(pet && pet.type).ability === 'producer') return `능력: ${[0,6,5,4,3,2][star]}초마다 골드·보석·EXP 구슬 생산`;
   return '능력 없음';
 }
@@ -18339,15 +18493,18 @@ function shootPetBullet(currentTime) {
 
   const shots = clamp(equipped.star, 1, 5);
   const speed = Math.abs(PET_BULLET_SPEED) * getBuffMult('speed');
-  const color = getPetDef(equipped.type).color;
+  const petDef = getPetDef(equipped.type);
+  const petElement = equipped.type === 'copypet' ? getPlayerElementKey() : null;
+  const color = petElement ? (getElementMeta(petElement).color || petDef.color) : petDef.color;
+  const isPiercingPetBullet = equipped.type === 'piercepet';
 
   if (shots === 1) {
-    petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vy: PET_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet', color });
+    petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vy: PET_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
   } else {
     const angleStep = 0.18;
     for (let i = 0; i < shots; i++) {
       const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
-      petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet', color });
+      petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
     }
   }
 }
@@ -18371,15 +18528,18 @@ function shootPet2Bullet(currentTime) {
   const petDamage = Math.max(1, Math.floor(level * 2 * getBuffMult('dmg') * getPetAttackMultiplier() * (1 + equipped.star * 0.08)));
   const shots = clamp(equipped.star, 1, 5);
   const speed = Math.abs(PET2_BULLET_SPEED) * getBuffMult('speed');
-  const color = getPetDef(equipped.type).color;
+  const petDef = getPetDef(equipped.type);
+  const petElement = equipped.type === 'copypet' ? getPlayerElementKey() : null;
+  const color = petElement ? (getElementMeta(petElement).color || petDef.color) : petDef.color;
+  const isPiercingPetBullet = equipped.type === 'piercepet';
 
   if (shots === 1) {
-    pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vy: PET2_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet2', color });
+    pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vy: PET2_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet2', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
   } else {
     const angleStep = 0.18;
     for (let i = 0; i < shots; i++) {
       const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
-      pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color });
+      pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
     }
   }
 }
@@ -23587,12 +23747,13 @@ bubbles = bubbles.filter(b => b.isArea || !b._hit);
 // ===== PET 탄환 충돌(적) =====
 petBullets.forEach(b => {
   enemies.forEach(e => {
+    if (b.piercing && b._pierceHitSet && b._pierceHitSet.has(e)) return;
     if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
       const _dmg = calcLevelScaledDamage(b.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
       e.hp -= _dmg;
       e.hitTimer = 100;
-      b._hit = true;
+      if (b.piercing) { if (!b._pierceHitSet) b._pierceHitSet = new Set(); b._pierceHitSet.add(e); } else b._hit = true;
 
       spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0', false, 'pet'); // 펫 데미지 색감
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
@@ -23627,12 +23788,13 @@ petBullets = petBullets.filter(b => !b._hit);
 // ===== PET2 탄환 충돌(적) =====
 pet2Bullets.forEach(b => {
   enemies.forEach(e => {
+    if (b.piercing && b._pierceHitSet && b._pierceHitSet.has(e)) return;
     if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
       const _dmg = calcLevelScaledDamage(b.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
       e.hp -= _dmg;
       e.hitTimer = 100;
-      b._hit = true;
+      if (b.piercing) { if (!b._pierceHitSet) b._pierceHitSet = new Set(); b._pierceHitSet.add(e); } else b._hit = true;
 
       spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#a0ffb0', false, 'pet');
       const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
@@ -23716,7 +23878,7 @@ const areaHit = b.isPlayerAreaShot && Number(level || 1) >= 11 && circleCollisio
 const directHit = (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh);
 if (areaHit || directHit) {
 const _bdmg = calcLevelScaledDamage(b.damage, boss);
-boss.hp -= _bdmg; b._hit = true;
+boss.hp -= _bdmg; if (b.piercing) b._hitBoss = true; else b._hit = true;
 SFX.hit();
 spawnDamageText(boss.x, boss.y, _bdmg, b.isPlayerAreaShot ? '#d7fff2' : '#ffb3ff', false, 'player');
 const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 36, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
@@ -23753,10 +23915,11 @@ if (boss && !bossInvincible) {
   const bx = boss.x, by = boss.y, hw = boss.width/2, hh = boss.height/2;
   for (let b of petBullets) {
     if (!boss) break;
+    if (b.piercing && b._hitBoss) continue;
     if (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh) {
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
       try { updateTownQuestProgress('petDamage', _bdmg); } catch(e) {}
-      boss.hp -= _bdmg; b._hit = true;
+      boss.hp -= _bdmg; if (b.piercing) b._hitBoss = true; else b._hit = true;
       spawnDamageText(boss.x, boss.y + 10, _bdmg, '#a0ffb0', false, 'pet');
       const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
       // SFX.hit();
@@ -23771,10 +23934,11 @@ if (boss && !bossInvincible) {
   const bx = boss.x, by = boss.y, hw = boss.width/2, hh = boss.height/2;
   for (let b of pet2Bullets) {
     if (!boss) break;
+    if (b.piercing && b._hitBoss) continue;
     if (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh) {
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
       try { updateTownQuestProgress('petDamage', _bdmg); } catch(e) {}
-      boss.hp -= _bdmg; b._hit = true;
+      boss.hp -= _bdmg; if (b.piercing) b._hitBoss = true; else b._hit = true;
       spawnDamageText(boss.x, boss.y + 20, _bdmg, '#9fd7ff', false, 'pet');
       const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
 
@@ -25731,7 +25895,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 211.6', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -32718,15 +32882,18 @@ try {
     petDamage = Math.max(1, Math.floor(petDamage * getBuffMult('dmg') * getBuffMult('pet') * getPetAttackMultiplier() * (1 + equipped.star * 0.08) * getFeverPetDamageMultiplierV20321()));
     const shots = clamp(equipped.star, 1, 5);
     const speed = Math.abs(PET_BULLET_SPEED) * getBuffMult('speed');
-    const color = getPetDef(equipped.type).color;
+    const petDef = getPetDef(equipped.type);
+  const petElement = equipped.type === 'copypet' ? getPlayerElementKey() : null;
+  const color = petElement ? (getElementMeta(petElement).color || petDef.color) : petDef.color;
+  const isPiercingPetBullet = equipped.type === 'piercepet';
 
     if (shots === 1) {
-      petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vy: PET_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet', color });
+      petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vy: PET_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
     } else {
       const angleStep = 0.18;
       for (let i = 0; i < shots; i++) {
         const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
-        petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet', color });
+        petBullets.push({ x: pet.x, y: pet.y - pet.size, radius: PET_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
       }
     }
   };
@@ -32754,15 +32921,18 @@ try {
     const petDamage = Math.max(1, Math.floor(level * 2 * getBuffMult('dmg') * getPetAttackMultiplier() * (1 + equipped.star * 0.08) * getFeverPetDamageMultiplierV20321()));
     const shots = clamp(equipped.star, 1, 5);
     const speed = Math.abs(PET2_BULLET_SPEED) * getBuffMult('speed');
-    const color = getPetDef(equipped.type).color;
+    const petDef = getPetDef(equipped.type);
+  const petElement = equipped.type === 'copypet' ? getPlayerElementKey() : null;
+  const color = petElement ? (getElementMeta(petElement).color || petDef.color) : petDef.color;
+  const isPiercingPetBullet = equipped.type === 'piercepet';
 
     if (shots === 1) {
-      pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vy: PET2_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet2', color });
+      pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vy: PET2_BULLET_SPEED, vx: 0, damage: petDamage, from: 'pet2', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
     } else {
       const angleStep = 0.18;
       for (let i = 0; i < shots; i++) {
         const angle = -Math.PI / 2 + (i - (shots - 1) / 2) * angleStep;
-        pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color });
+        pet2Bullets.push({ x: pet2.x, y: pet2.y - pet2.size, radius: PET2_BULLET_RADIUS, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: petDamage, from: 'pet2', color, element: petElement, piercing: isPiercingPetBullet, _pierceHitSet: isPiercingPetBullet ? new Set() : null });
       }
     }
   };
