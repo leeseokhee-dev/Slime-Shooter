@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.211.7 Time Spawn Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.211.8 Town NPC Position Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -13213,9 +13213,10 @@ const townQuestActionBtn = document.getElementById('townQuestActionBtn');
 const townQuestCloseBtn = document.getElementById('townQuestCloseBtn');
 const townQuestTrackerEl = document.getElementById('townQuestTracker');
 let selectedTownNpc = null;
+// ✅ [v.211.8] 마을 NPC 위치 조정: 아이템/인벤토리 버튼 및 좌우 하단 퀵바와 겹치지 않도록 안전 구역으로 이동
 const TOWN_NPCS = [
   {
-    id:'guide', name:'길잡이 슬라임', emoji:'🧭', x:0.12, y:0.70, color:'#b8ffd8', unlockLevel:1,
+    id:'guide', name:'길잡이 슬라임', emoji:'🧭', x:0.18, y:0.68, color:'#b8ffd8', unlockLevel:1,
     tone:'guide',
     line:'안녕하세요. 슬라임 슈터에 오신 것을 환영합니다. 저는 안내를 맡은 길잡이 슬라임입니다.',
     tips:[
@@ -13226,7 +13227,7 @@ const TOWN_NPCS = [
     questTypes:['beginner']
   },
   {
-    id:'green', name:'초록 슬라임', emoji:'🟢', x:0.24, y:0.56, color:'#74ff9b', unlockLevel:1,
+    id:'green', name:'초록 슬라임', emoji:'🟢', x:0.28, y:0.54, color:'#74ff9b', unlockLevel:1,
     line:'요즘 숲 가장자리에서 몬스터들이 몰려와 마을 밭과 창고를 망가뜨리고 있어. 그냥 싸우는 게 아니라, 마을 생활을 되찾기 위한 토벌이야.',
     tips:['몬스터를 처치하는 이유는 단순한 싸움이 아니야. 마을의 하루를 되찾는 일이야.', '초반에는 밭과 창고를 지키는 작은 토벌부터 완료하면 성장 속도도 좋아져.'],
     questTypes:['stageClears','kills','multiKills']
@@ -13238,46 +13239,46 @@ const TOWN_NPCS = [
     questTypes:['fever','bubbleMultiKills']
   },
   {
-    id:'gold', name:'황금 슬라임', emoji:'🟡', x:0.75, y:0.58, color:'#ffe16b', unlockLevel:1,
+    id:'gold', name:'황금 슬라임', emoji:'🟡', x:0.72, y:0.56, color:'#ffe16b', unlockLevel:1,
     line:'몬스터 습격 이후로 마을 창고와 상점 물자가 많이 비었어. 골드를 모아오면 무너진 상점도 고치고, 마을 슬라임들이 다시 일상을 이어갈 수 있어.',
     tips:['골드는 그냥 숫자가 아니야. 마을이 다시 돌아가게 만드는 힘이지.', '골드 획득 퀘스트는 보상형 모드나 골드 드랍이 있는 전투에서 빨리 진행돼.'],
     questTypes:['goldEarned','gems','infiniteItems','goldSpend']
   },
   {
-    id:'pink', name:'분홍 슬라임', emoji:'🟣', x:0.36, y:0.74, color:'#ff9de8', unlockLevel:1,
+    id:'pink', name:'분홍 슬라임', emoji:'🟣', x:0.38, y:0.72, color:'#ff9de8', unlockLevel:1,
     line:'요즘 몬스터들이 혼자 움직이지 않고 무리를 지어 몰려오고 있습니다. 여러 스킬의 사용 기록을 모아 주시면 어떤 기술이 몬스터 무리를 막는 데 가장 효과적인지 분석해볼 수 있습니다.',
     tips:['스킬 사용 퀘스트는 쿨타임을 보면서 꾸준히 누르면 쉽게 채울 수 있습니다.', '범위 스킬은 몬스터가 모였을 때 쓰면 멀티킬까지 노릴 수 있습니다.'],
     questTypes:['infiniteScore','skillUses','itemUses']
   },
   {
-    id:'elder', name:'장로 슬라임', emoji:'👑', x:0.64, y:0.75, color:'#d9ff8a', unlockLevel:1,
+    id:'elder', name:'장로 슬라임', emoji:'👑', x:0.62, y:0.72, color:'#d9ff8a', unlockLevel:1,
     line:'마을에 닥친 이상 현상은 결코 우연이 아니란다. 보스까지 움직이며 마을을 압박하고 있지. 네가 전투 기록을 모아준다면, 이 모든 일이 어디서 시작되었는지 실마리를 찾을 수 있을 것이야.',
     tips:['보스 처치 퀘스트는 10단위 스테이지나 보스가 나오는 모드에서 진행해보렴.', '모든 의뢰에는 이유가 있단다. 숫자 뒤에 숨은 이야기를 보아야 하느니라.'],
     questTypes:['bossKills','sRankClears']
   },
   {
-    id:'petKeeper', name:'펫 관리 슬라임', emoji:'🐾', x:0.14, y:0.39, color:'#d9b8ff', unlockLevel:20,
+    id:'petKeeper', name:'펫 관리 슬라임', emoji:'🐾', x:0.20, y:0.38, color:'#d9b8ff', unlockLevel:20,
     line:'오! 이제 20레벨이니까 펫 슬라임도 마을에 왔어. 펫은 경험치를 올리는 존재가 아니라, 뽑기와 전투에서 쌓이는 활약 기록으로 빛나는 동료야.',
     firstIntro:['오! 이제 20레벨이니까 펫 슬라임도 마을에 왔어. 앞으로는 펫과 함께하는 의뢰도 맡길 수 있어.', '펫에게 경험치 시스템은 없으니까, 펫 뽑기와 부화, 장착, 그리고 펫이 직접 넣은 데미지 같은 기록을 중심으로 확인할게!'],
     tips:['펫 관련 의뢰는 펫 경험치가 아니라 뽑기, 부화, 장착, 전투 활약 기록을 중심으로 봐.', '펫 공격 누적 데미지는 플레이어 공격을 빼고, 펫이 직접 넣은 데미지만 보는 게 핵심이야!'],
     questTypes:['pet','petDamage','petOnlyKills']
   },
   {
-    id:'dungeonSlime', name:'던전 슬라임', emoji:'🏰', x:0.10, y:0.84, color:'#9bc7ff', unlockLevel:100,
+    id:'dungeonSlime', name:'던전 슬라임', emoji:'🏰', x:0.24, y:0.82, color:'#9bc7ff', unlockLevel:100,
     line:'100레벨이면 이제 던전도 슬슬 익숙해질 때지. 던전 안쪽은 마을 밖이랑 달라. 클리어 기록, 얻은 경험치, 처치한 몬스터 수를 제대로 보고 싶어.',
     firstIntro:['오, 100레벨이네! 이제 던전 슬라임도 마을에 왔어.', '던전에서는 클리어 횟수, 던전에서 얻은 경험치, 던전 몬스터 처치 기록을 확인할 거야. 준비 단단히 하고 들어가!'],
     tips:['던전 슬라임은 던전 클리어, 던전 경험치 획득, 던전 몬스터 처치만 확인해.', '던전 경험치 획득 의뢰는 보상이 EXP가 아니라 골드와 아이템이야.'],
     questTypes:['dungeonClears','dungeonExp','dungeonKills']
   },
   {
-    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.90, y:0.84, color:'#c7a8ff', unlockLevel:50,
+    id:'dimensionSlime', name:'차원의 슬라임', emoji:'🌌', x:0.76, y:0.82, color:'#c7a8ff', unlockLevel:50,
     line:'50레벨에 도달하셨군요. 차원의 균열은 점점 불안정해지고 있습니다. 디멘션 인베이드의 웨이브, 몬스터 처치, 보스 처치 시간을 확인하겠습니다.',
     firstIntro:['50레벨에 도달하셨군요. 차원의 슬라임이 마을에 합류했습니다.', '디멘션 인베이드에서 웨이브 클리어, 몬스터 처치, 제한 시간 안의 보스 처치 기록을 부탁드리겠습니다.'],
     tips:['차원의 슬라임은 디멘션 인베이드 기록만 확인합니다.', '보스 제한 시간 의뢰는 빠르게 웨이브를 넘기고 보스를 마무리하는 것이 중요합니다.'],
     questTypes:['dimensionWaves','dimensionKills','dimensionBossTime']
   },
   {
-    id:'crystalSlime', name:'크리스탈 슬라임', emoji:'💎', x:0.28, y:0.35, color:'#8ff5ff', unlockLevel:200,
+    id:'crystalSlime', name:'크리스탈 슬라임', emoji:'💎', x:0.32, y:0.34, color:'#8ff5ff', unlockLevel:200,
     line:'200레벨에 도달하셨군요. 이제부터는 크리스탈 슬라임과 고난도 전투 기록을 정중히 확인하겠습니다. 부디 최고의 전투를 보여주시기 바랍니다.',
     firstIntro:['200레벨 달성을 진심으로 축하드립니다. 크리스탈 슬라임이 마을에 합류했습니다.', '앞으로는 크리스탈 슬라임 처치, S랭크 달성, 그리고 보스 빠른 처치 기록을 정중히 확인하겠습니다.'],
     tips:['크리스탈 슬라임은 201스테이지 이후부터 본격적으로 등장합니다.', '보스를 N초 안에 처치하는 의뢰는 최대 60초 기준으로 진행됩니다.'],
