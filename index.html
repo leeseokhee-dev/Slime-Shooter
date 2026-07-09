@@ -20523,11 +20523,11 @@ function getStageLevelAdjustedExp(baseExp, stageValue = stage) {
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     const bands = [
-      [1,5,10],[6,15,43],[16,20,109],[21,40,235],[41,60,498],
-      [61,80,1023],[81,100,2109],[101,120,2704],[121,140,5501],
-      [141,160,11245],[161,180,23697],[181,200,48198],
-      [201,220,73795],[221,240,152894],[241,260,321883],
-      [261,280,662141],[281,300,1419337]
+      [1,5,10],[6,15,43],[16,20,129],[21,40,235],[41,60,598],
+      [61,80,1417],[81,100,3229],[101,120,7704],[121,140,13301],
+      [141,160,27245],[161,180,63697],[181,200,130198],
+      [201,220,142004],[221,240,312894],[241,260,631883],
+      [261,280,1272141],[281,300,2549772]
     ];
     for (const [a,b,per] of bands){
       if(lv>=a && lv<=b) return lv*per;
@@ -25890,7 +25890,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.7', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 212', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
