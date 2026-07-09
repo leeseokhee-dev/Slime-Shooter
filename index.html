@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.212.4 Stage EXP Growth)</title>
+<title>Slime Shooter - Ultimate Evolution (v.214.1 Boss Every 5 Stages)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -20531,65 +20531,33 @@ function getStageLevelAdjustedExp(baseExp, stageValue = stage) {
     return Math.max(base > 0 ? 1 : 0, Math.round(base * rate));
 }
 
-// ✅ [v.212.4] 스테이지 EXP 성장 공식
-// - 보스: 1~5스테이지는 스테이지당 10EXP, 6스테이지부터 12EXP로 시작해 구간별 비율 누적 성장
-// - 보스 총 EXP = 스테이지 × 현재 스테이지당 보스 EXP
-// - 몬스터: 1~5스테이지는 1~5EXP, 6스테이지부터 7EXP로 시작해 구간별 비율 누적 성장
-// - 몬스터 총 EXP = 1마리 EXP × 목표 처치 수
-function getStageBossExpPerStageV2124(stageValue) {
-    const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    if (lv <= 5) return 10;
-
-    let perExp = 12;
-    for (let s = 7; s <= lv; s++) {
-        let rate = 0.005;
-        if (s <= 30) rate = 0.15;
-        else if (s <= 60) rate = 0.10;
-        else if (s <= 100) rate = 0.05;
-        else if (s <= 150) rate = 0.04;
-        else if (s <= 200) rate = 0.03;
-        else if (s <= 220) rate = 0.02;
-        else if (s <= 250) rate = 0.01;
-        else rate = 0.005;
-        perExp *= (1 + rate);
-    }
-    return Math.max(1, Math.round(perExp));
-}
-
-function getStageMonsterExpPerEnemyV2124(stageValue) {
-    const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    if (lv <= 5) return lv;
-
-    let perExp = 7;
-    for (let s = 7; s <= lv; s++) {
-        let rate = 0.01;
-        if (s <= 15) rate = 0.12;
-        else if (s <= 20) rate = 0.10;
-        else if (s <= 40) rate = 0.08;
-        else if (s <= 100) rate = 0.06;
-        else if (s <= 200) rate = 0.03;
-        else if (s <= 220) rate = 0.02;
-        else if (s <= 250) rate = 0.015;
-        else rate = 0.01;
-        perExp *= (1 + rate);
-    }
-    return Math.max(1, Math.round(perExp));
-}
-
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    return Math.max(1, Math.round(lv * getStageBossExpPerStageV2124(lv)));
+    const bands = [
+      [1,5,10],[6,15,31],[16,20,127],[21,40,307],[41,60,1117],
+      [61,80,2509],[81,100,5105],[101,120,5883],[121,140,11281],
+      [141,160,22215],[161,180,33738],[181,200,70196],
+      [201,220,72753],[221,240,165812],[241,260,332036],
+      [261,280,622110],[281,300,1193124]
+    ];
+    for (const [a,b,per] of bands){
+      if(lv>=a && lv<=b) return lv*per;
+    }
+    return lv;
 }
 
 function getStageMonsterExpReward(stageValue) {
     const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    return getStageMonsterExpPerEnemyV2124(s);
+    // ✅ [v.154/v.169] 몬스터 EXP: 해당 스테이지 보스 EXP의 50%를 목표 처치 수로 나눈 1마리당 EXP
+    // 예) 5스테이지 보스 EXP 50 → 몬스터 총합 25 EXP → 목표 5마리 기준 1마리당 5 EXP
+    const target = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
+    const monsterTotalExp = Math.floor(getStageBossExpReward(s) * 0.5);
+    return Math.max(1, Math.floor(monsterTotalExp / target));
 }
 
 function getStageMonsterTotalExpReward(stageValue) {
     const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
-    const target = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
-    return Math.max(1, getStageMonsterExpReward(s) * target);
+    return Math.max(0, Math.floor(getStageBossExpReward(s) * 0.5));
 }
 
 function getStageMonsterExpRewardForEnemy(stageValue, enemy) {
@@ -21089,11 +21057,12 @@ function startBossIntro() {
 }
 
 // ===============================
-// ✅ [v.150] 스테이지 모드는 매 스테이지마다 보스 등장
+// ✅ [v.214.1] 스테이지 모드 보스는 5스테이지마다 등장
+// - 일반 스테이지: 5, 10, 15...처럼 5의 배수에서만 보스 출현
+// - 특수 모드/미션 모드는 기존 래핑 로직을 그대로 따름
 // ===============================
 function isBossStage(s){
   const stg = Math.max(1, Math.floor(Number(s) || 1));
-  if (gameMode === 'stage') return stg >= 1;
   return (stg % 5) === 0;
 }
 
@@ -25982,7 +25951,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 212.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 214.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
