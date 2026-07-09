@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.211.9 Stage Time Spawn Balance)</title>
+<title>Slime Shooter - Ultimate Evolution (v.214.1 Boss Every 5 Stages)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -9375,20 +9375,57 @@ function saveGameDataDebounced() {
 function buildBackupPayload() {
   // 현재 런의 exp/level, 설정값 등을 saveData에 반영 후 저장
   try { saveGameData(); } catch (e) {}
+  try { updateCharacterMetaSnapshot(); } catch (e) {}
 
-let dataObj = {};
+  let dataObj = {};
   try {
     const raw = localStorage.getItem(getCurrentSaveStorageKey());
     if (raw) dataObj = JSON.parse(raw);
   } catch (e) { dataObj = {}; }
 
+  // ✅ [v.214.2] 전체 플레이어 백업
+  // 기존 백업은 현재 선택된 플레이어 1명(data)만 담겼기 때문에,
+  // 캐릭터 목록 + 각 플레이어별 저장 데이터를 함께 담는다.
+  let characterIndex = [];
+  let characters = {};
+  try {
+    characterIndex = getCharacterIndex();
+    if (Array.isArray(characterIndex)) {
+      characterIndex.forEach(meta => {
+        if (!meta || !meta.id) return;
+        const id = String(meta.id);
+        const storageKey = getCharacterStorageKey(id);
+        let charData = null;
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) charData = JSON.parse(raw);
+        } catch (e) { charData = null; }
+        if (charData && typeof charData === 'object') {
+          characters[id] = {
+            storageKey,
+            meta: deepClone(meta),
+            data: charData
+          };
+        }
+      });
+    }
+  } catch (e) {
+    characterIndex = [];
+    characters = {};
+  }
+
   return {
     __slimeShooterBackup: 1,
+    backupVersion: 2,
+    includesAllPlayers: true,
     storageKey: getCurrentSaveStorageKey(),
     characterId: currentCharacterId,
+    currentCharacterId: currentCharacterId,
     nickname: saveData.nickname || 'PLAYER',
     savedAt: Date.now(),
-    data: dataObj
+    characterIndex: Array.isArray(characterIndex) ? characterIndex : [],
+    characters,
+    data: dataObj // ✅ 구버전 복원 호환용: 현재 플레이어 데이터도 유지
   };
 }
 
@@ -9446,7 +9483,55 @@ function applyRestoreObject(obj) {
   // obj는 saveData 전체거나, {data: saveData} 래퍼일 수 있음
   let data = obj;
 
-  if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.data && typeof obj.data === 'object') {
+  // ✅ [v.214.2] 전체 플레이어 백업 복원
+  // backupVersion 2부터는 characterIndex + characters 안에 모든 플레이어 기록이 들어간다.
+  if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.characters && typeof obj.characters === 'object') {
+    const restoredCharacters = obj.characters || {};
+    let restoredIndex = Array.isArray(obj.characterIndex) ? obj.characterIndex.filter(v => v && v.id) : [];
+    if (!restoredIndex.length) {
+      restoredIndex = Object.keys(restoredCharacters).map(id => {
+        const pack = restoredCharacters[id] || {};
+        const d = pack.data || {};
+        return {
+          id,
+          nickname: String(d.nickname || 'PLAYER'),
+          level: Number(d.level || 1) || 1,
+          highScore: Number(d.highScore || 0) || 0,
+          element: sanitizeElementKey(d.playerElement || 'fire'),
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+      });
+    }
+
+    if (!restoredIndex.length) throw new Error('invalid');
+
+    // 현재 기기의 기존 플레이어 저장 키를 정리한 뒤, 백업 안의 모든 플레이어를 저장
+    try {
+      getCharacterIndex().forEach(meta => {
+        if (meta && meta.id) localStorage.removeItem(getCharacterStorageKey(meta.id));
+      });
+    } catch (e) {}
+
+    restoredIndex.forEach(meta => {
+      if (!meta || !meta.id) return;
+      const id = String(meta.id);
+      const pack = restoredCharacters[id];
+      const charData = pack && pack.data && typeof pack.data === 'object' ? pack.data : null;
+      if (!charData) return;
+      if (typeof charData.exp !== 'number' || !isFinite(charData.exp)) charData.exp = 0;
+      if (typeof charData.level !== 'number' || !isFinite(charData.level)) charData.level = 1;
+      localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(charData));
+    });
+
+    setCharacterIndex(restoredIndex);
+    const nextCurrent = (obj.currentCharacterId || obj.characterId || (restoredIndex[0] && restoredIndex[0].id));
+    currentCharacterId = restoredIndex.some(v => v && v.id === nextCurrent) ? nextCurrent : restoredIndex[0].id;
+    localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
+
+    const currentPack = restoredCharacters[currentCharacterId];
+    data = currentPack && currentPack.data ? currentPack.data : (obj.data || {});
+  } else if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.data && typeof obj.data === 'object') {
     data = obj.data;
   }
 
@@ -9457,10 +9542,14 @@ function applyRestoreObject(obj) {
   if (typeof data.exp !== 'number' || !isFinite(data.exp)) data.exp = 0;
   if (typeof data.level !== 'number' || !isFinite(data.level)) data.level = 1;
 
-  localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
-  try {
-    if (currentCharacterId) localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
-  } catch (e) {}
+  // 구버전 백업은 현재 플레이어 1명만 덮어쓰기
+  if (!(obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.characters && typeof obj.characters === 'object')) {
+    localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
+    try {
+      if (currentCharacterId) localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
+    } catch (e) {}
+  }
+
   try {
     saveData = { ...saveData, ...data };
     exp = Number(data.exp || 0) || 0;
@@ -14095,8 +14184,8 @@ function getBeginnerQuestGuideMessages(q){
 function showBeginnerGuideInGame(q){
   if (!isBeginnerGuideQuest(q)) return;
   tutorialFlow = 'beginnerGuide';
-  // ✅ 튜토리얼 모드 대사 중에는 전투 화면을 완전히 일시정지합니다.
-  // 몬스터/탄환/자동공격/타이머가 진행되지 않아 설명을 안전하게 읽을 수 있습니다.
+  // ✅ [v.212.2] 튜토리얼 대사 중에는 전투/자동공격/스폰을 일시정지합니다.
+  // 대사가 모두 끝난 뒤에만 퀘스트 진행과 자동 발사가 다시 시작됩니다.
   tutorialNonBlocking = false;
   tutorialActive = true;
   tutorialIndex = 0;
@@ -14232,11 +14321,16 @@ function completeBeginnerGuideQuestInGame(q){
     const nextQuest = buildTownQuestFromTemplate(nextTemplate, npc);
     town.active = nextQuest;
     saveGameData();
-    setTimeout(() => {
-      showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
-      showBeginnerGuideInGame(nextQuest);
-      prependTutorialClearPraiseV20312(q);
-    }, 700);
+
+    // ✅ [v.212.2] 퀘스트 달성 즉시 전투를 멈추고 완료 대사 + 다음 퀘스트 안내를 표시합니다.
+    // 사용자가 대사를 모두 넘긴 뒤에만 다음 퀘스트 진행/자동 발사가 재개됩니다.
+    tutorialFlow = 'beginnerGuide';
+    tutorialNonBlocking = false;
+    tutorialActive = true;
+    tutorialIndex = 0;
+    tutorialMessages = [getTutorialClearPraiseMessageV20312(q)].concat(getBeginnerQuestGuideMessages(nextQuest));
+    try { if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay(); } catch(e) {}
+    showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
   } else {
     try {
       const capExp = Math.max(0, Number(EXP_TABLE?.[11]?.totalMin || 0));
@@ -14248,18 +14342,19 @@ function completeBeginnerGuideQuestInGame(q){
     } catch(e) {}
     tutorialModeActive = false;
     saveGameData();
-    setTimeout(() => {
-      tutorialFlow = 'beginnerGuideDone';
-      tutorialNonBlocking = false;
-      tutorialActive = true;
-      tutorialIndex = 0;
-      tutorialMessages = [
-        getTutorialClearPraiseMessageV20312(q),
-        '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-        '11단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
-        '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
-      ];
-    }, 700);
+
+    // ✅ [v.212.2] 마지막 퀘스트도 완료 즉시 멈추고 최종 안내를 표시합니다.
+    tutorialFlow = 'beginnerGuideDone';
+    tutorialNonBlocking = false;
+    tutorialActive = true;
+    tutorialIndex = 0;
+    tutorialMessages = [
+      getTutorialClearPraiseMessageV20312(q),
+      '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
+      '11단계 보상 적용이 끝났습니다. 이제 LV.11부터 일반 모드에서 본격적인 성장이 시작됩니다.',
+      '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
+    ];
+    try { if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay(); } catch(e) {}
   }
   return true;
 }
@@ -19495,15 +19590,20 @@ function handleBossKilledBySkill() {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
       const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
-      // ✅ [v.210.11] 스테이지 보스 EXP는 표기된 기본값 그대로 지급합니다.
-      // - 레벨 차이 보정, 핫타임, 피버, 펫/버프 배수로 표시값과 실제 지급값이 달라지지 않게 고정합니다.
-      // - 예: 12레벨이 2스테이지 보스를 처치하면 20 EXP 표시 + 실제 20 EXP 지급.
+      // ✅ [v.214.2] 스테이지 보스 EXP는 피격 감소 없이 지급합니다.
+      // - 기본 보스 EXP에는 레벨 차이 보정/피격 랭크 감소/펫·상점 EXP 버프/피버 배수를 적용하지 않습니다.
+      // - 단, 핫타임 시간에는 현재 핫타임 배율(평일 2배, 주말 3배)만 적용합니다.
       const bossExpReward = Math.max(0, Math.floor(Number(originalBossExpReward) || 0));
+      const bossHotMult = (gameMode === 'stage') ? Math.max(1, Number(getHotMultiplier()) || 1) : 1;
+      const bossFinalExpReward = Math.max(0, Math.floor(bossExpReward * bossHotMult));
       const grantedBossExp = (gameMode === 'stage')
-        ? addExpDirect(bossExpReward)
+        ? addExpDirect(bossFinalExpReward)
         : addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 });
       if (gameMode === 'stage') {
         stageRunExpBoss = Math.max(0, Math.floor(stageRunExpBoss || 0)) + Math.max(0, Math.floor(grantedBossExp || 0));
+        if (bossHotMult > 1 && bossExpReward > 0) {
+          try { pushGainMessage(`보스 핫타임 추가 경험치 ${Math.round((bossHotMult - 1) * 100)}%(+${formatNumber(bossFinalExpReward - bossExpReward)})`, '#ffb26b'); } catch(e) {}
+        }
       }
       spawnDamageText(bx, by - 62, `EXP +${formatNumber(Math.max(0, Math.floor(grantedBossExp || 0)))}`, '#8dffb1', true);
     }
@@ -20523,11 +20623,11 @@ function getStageLevelAdjustedExp(baseExp, stageValue = stage) {
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     const bands = [
-      [1,5,10],[6,15,43],[16,20,109],[21,40,235],[41,60,498],
-      [61,80,1023],[81,100,2109],[101,120,2704],[121,140,5501],
-      [141,160,11245],[161,180,23697],[181,200,48198],
-      [201,220,73795],[221,240,152894],[241,260,321883],
-      [261,280,662141],[281,300,1419337]
+      [1,5,10],[6,15,31],[16,20,127],[21,40,307],[41,60,1117],
+      [61,80,2509],[81,100,5105],[101,120,5883],[121,140,11281],
+      [141,160,22215],[161,180,33738],[181,200,70196],
+      [201,220,72753],[221,240,165812],[241,260,332036],
+      [261,280,622110],[281,300,1193124]
     ];
     for (const [a,b,per] of bands){
       if(lv>=a && lv<=b) return lv*per;
@@ -21046,11 +21146,12 @@ function startBossIntro() {
 }
 
 // ===============================
-// ✅ [v.150] 스테이지 모드는 매 스테이지마다 보스 등장
+// ✅ [v.214.1] 스테이지 모드 보스는 5스테이지마다 등장
+// - 일반 스테이지: 5, 10, 15...처럼 5의 배수에서만 보스 출현
+// - 특수 모드/미션 모드는 기존 래핑 로직을 그대로 따름
 // ===============================
 function isBossStage(s){
   const stg = Math.max(1, Math.floor(Number(s) || 1));
-  if (gameMode === 'stage') return stg >= 1;
   return (stg % 5) === 0;
 }
 
@@ -22437,11 +22538,60 @@ function tutorialShouldSpawnForQuest(q){
 
 function forceTutorialAutoShot(currentTime){
   if (!player || !player.alive || isPlayerDying) return false;
+  currentTime = Number(currentTime || performance.now()) || performance.now();
+
   const before = bullets.length;
   const oldLast = lastShotTime;
-  // FIRE_INTERVAL과 상관없이 튜토리얼에서는 0.15초마다 기본 공격이 나가게 강제합니다.
-  lastShotTime = currentTime - Math.max(FIRE_INTERVAL, 150) - 1;
-  shootBullet(currentTime);
+
+  // ✅ [v.212.1] 튜토리얼에서는 일반 공격 간격/피버 보정 때문에 막히지 않도록
+  // 먼저 기존 shootBullet을 강제로 통과시키고, 그래도 생성되지 않으면 직접 탄환을 생성합니다.
+  try {
+    const baseInterval = (typeof getPlayerFireIntervalByBulletCount === 'function') ? getPlayerFireIntervalByBulletCount() : FIRE_INTERVAL;
+    const feverInterval = (typeof getFeverPlayerAttackIntervalV20321 === 'function') ? getFeverPlayerAttackIntervalV20321(baseInterval) : baseInterval;
+    lastShotTime = currentTime - Math.max(Number(FIRE_INTERVAL) || 0, Number(baseInterval) || 0, Number(feverInterval) || 0, 150) - 5;
+    shootBullet(currentTime);
+  } catch(e) {}
+
+  if (bullets.length <= before) {
+    try {
+      let bulletDamage = (typeof getPlayerBaseDamageByLevelV192 === 'function') ? getPlayerBaseDamageByLevelV192(level) : Math.max(1, level || 1);
+      const bulletMult = (typeof getPlayerBulletDamageMultiplier === 'function') ? getPlayerBulletDamageMultiplier() : 1;
+      const feverDmg = (typeof getFeverPlayerDamageMultiplierV20321 === 'function') ? getFeverPlayerDamageMultiplierV20321() : 1;
+      bulletDamage = Math.max(1, Math.floor(bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * bulletMult * feverDmg));
+      const shotCount = (typeof getEffectivePlayerBulletCount === 'function') ? getEffectivePlayerBulletCount() : Math.min(5, 1 + Math.floor((level || 1) / 10));
+      const isAreaShot = (typeof isPlayerSingleAreaShotActive === 'function') ? isPlayerSingleAreaShotActive() : false;
+      const areaRadius = (typeof getPlayerAreaBulletRadius === 'function') ? getPlayerAreaBulletRadius() : 0;
+      const isHoming = (level >= 61) && (saveData.homingEnabled !== false) && !isAreaShot;
+      const speed = Math.abs(BULLET_SPEED) * getBuffMult('speed');
+      const angleStep = 0.26;
+      const doubleShotActive = (typeof isInfiniteItemEffectActive === 'function') && isInfiniteItemEffectActive('doubleShot') && !isAreaShot;
+      const sideOffsets = doubleShotActive ? [-9, 9] : [0];
+      for (let i = 0; i < shotCount; i++) {
+        const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
+        for (const sideOffset of sideOffsets) {
+          bullets.push({
+            x: player.x + sideOffset,
+            y: player.y - player.size,
+            radius: isAreaShot ? Math.max(BULLET_RADIUS + 2, BULLET_RADIUS * 1.35) : BULLET_RADIUS,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            damage: bulletDamage,
+            homing: isHoming,
+            element: getPlayerElementKey(),
+            isPlayerAreaShot: isAreaShot,
+            areaRadius: areaRadius
+          });
+          try { addQuestStat('bullets', 1); } catch(e) {}
+        }
+      }
+      try { if (SFX && SFX.shoot) SFX.shoot(); } catch(e) {}
+      lastShotTime = currentTime;
+    } catch(e) {
+      lastShotTime = oldLast;
+      return false;
+    }
+  }
+
   if (bullets.length > before) {
     tutorialRunState.autoShotCount += (bullets.length - before);
     return true;
@@ -25890,7 +26040,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 211.7', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 212.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
