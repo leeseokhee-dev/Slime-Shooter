@@ -9375,20 +9375,57 @@ function saveGameDataDebounced() {
 function buildBackupPayload() {
   // 현재 런의 exp/level, 설정값 등을 saveData에 반영 후 저장
   try { saveGameData(); } catch (e) {}
+  try { updateCharacterMetaSnapshot(); } catch (e) {}
 
-let dataObj = {};
+  let dataObj = {};
   try {
     const raw = localStorage.getItem(getCurrentSaveStorageKey());
     if (raw) dataObj = JSON.parse(raw);
   } catch (e) { dataObj = {}; }
 
+  // ✅ [v.214.2] 전체 플레이어 백업
+  // 기존 백업은 현재 선택된 플레이어 1명(data)만 담겼기 때문에,
+  // 캐릭터 목록 + 각 플레이어별 저장 데이터를 함께 담는다.
+  let characterIndex = [];
+  let characters = {};
+  try {
+    characterIndex = getCharacterIndex();
+    if (Array.isArray(characterIndex)) {
+      characterIndex.forEach(meta => {
+        if (!meta || !meta.id) return;
+        const id = String(meta.id);
+        const storageKey = getCharacterStorageKey(id);
+        let charData = null;
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) charData = JSON.parse(raw);
+        } catch (e) { charData = null; }
+        if (charData && typeof charData === 'object') {
+          characters[id] = {
+            storageKey,
+            meta: deepClone(meta),
+            data: charData
+          };
+        }
+      });
+    }
+  } catch (e) {
+    characterIndex = [];
+    characters = {};
+  }
+
   return {
     __slimeShooterBackup: 1,
+    backupVersion: 2,
+    includesAllPlayers: true,
     storageKey: getCurrentSaveStorageKey(),
     characterId: currentCharacterId,
+    currentCharacterId: currentCharacterId,
     nickname: saveData.nickname || 'PLAYER',
     savedAt: Date.now(),
-    data: dataObj
+    characterIndex: Array.isArray(characterIndex) ? characterIndex : [],
+    characters,
+    data: dataObj // ✅ 구버전 복원 호환용: 현재 플레이어 데이터도 유지
   };
 }
 
@@ -9446,7 +9483,55 @@ function applyRestoreObject(obj) {
   // obj는 saveData 전체거나, {data: saveData} 래퍼일 수 있음
   let data = obj;
 
-  if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.data && typeof obj.data === 'object') {
+  // ✅ [v.214.2] 전체 플레이어 백업 복원
+  // backupVersion 2부터는 characterIndex + characters 안에 모든 플레이어 기록이 들어간다.
+  if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.characters && typeof obj.characters === 'object') {
+    const restoredCharacters = obj.characters || {};
+    let restoredIndex = Array.isArray(obj.characterIndex) ? obj.characterIndex.filter(v => v && v.id) : [];
+    if (!restoredIndex.length) {
+      restoredIndex = Object.keys(restoredCharacters).map(id => {
+        const pack = restoredCharacters[id] || {};
+        const d = pack.data || {};
+        return {
+          id,
+          nickname: String(d.nickname || 'PLAYER'),
+          level: Number(d.level || 1) || 1,
+          highScore: Number(d.highScore || 0) || 0,
+          element: sanitizeElementKey(d.playerElement || 'fire'),
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+      });
+    }
+
+    if (!restoredIndex.length) throw new Error('invalid');
+
+    // 현재 기기의 기존 플레이어 저장 키를 정리한 뒤, 백업 안의 모든 플레이어를 저장
+    try {
+      getCharacterIndex().forEach(meta => {
+        if (meta && meta.id) localStorage.removeItem(getCharacterStorageKey(meta.id));
+      });
+    } catch (e) {}
+
+    restoredIndex.forEach(meta => {
+      if (!meta || !meta.id) return;
+      const id = String(meta.id);
+      const pack = restoredCharacters[id];
+      const charData = pack && pack.data && typeof pack.data === 'object' ? pack.data : null;
+      if (!charData) return;
+      if (typeof charData.exp !== 'number' || !isFinite(charData.exp)) charData.exp = 0;
+      if (typeof charData.level !== 'number' || !isFinite(charData.level)) charData.level = 1;
+      localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(charData));
+    });
+
+    setCharacterIndex(restoredIndex);
+    const nextCurrent = (obj.currentCharacterId || obj.characterId || (restoredIndex[0] && restoredIndex[0].id));
+    currentCharacterId = restoredIndex.some(v => v && v.id === nextCurrent) ? nextCurrent : restoredIndex[0].id;
+    localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
+
+    const currentPack = restoredCharacters[currentCharacterId];
+    data = currentPack && currentPack.data ? currentPack.data : (obj.data || {});
+  } else if (obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.data && typeof obj.data === 'object') {
     data = obj.data;
   }
 
@@ -9457,10 +9542,14 @@ function applyRestoreObject(obj) {
   if (typeof data.exp !== 'number' || !isFinite(data.exp)) data.exp = 0;
   if (typeof data.level !== 'number' || !isFinite(data.level)) data.level = 1;
 
-  localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
-  try {
-    if (currentCharacterId) localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
-  } catch (e) {}
+  // 구버전 백업은 현재 플레이어 1명만 덮어쓰기
+  if (!(obj && typeof obj === 'object' && obj.__slimeShooterBackup === 1 && obj.characters && typeof obj.characters === 'object')) {
+    localStorage.setItem(getCurrentSaveStorageKey(), JSON.stringify(data));
+    try {
+      if (currentCharacterId) localStorage.setItem(CHARACTER_CURRENT_KEY, currentCharacterId);
+    } catch (e) {}
+  }
+
   try {
     saveData = { ...saveData, ...data };
     exp = Number(data.exp || 0) || 0;
@@ -19501,7 +19590,7 @@ function handleBossKilledBySkill() {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
       const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
-      // ✅ [v.212.3] 스테이지 보스 EXP는 피격 감소 없이 지급합니다.
+      // ✅ [v.214.2] 스테이지 보스 EXP는 피격 감소 없이 지급합니다.
       // - 기본 보스 EXP에는 레벨 차이 보정/피격 랭크 감소/펫·상점 EXP 버프/피버 배수를 적용하지 않습니다.
       // - 단, 핫타임 시간에는 현재 핫타임 배율(평일 2배, 주말 3배)만 적용합니다.
       const bossExpReward = Math.max(0, Math.floor(Number(originalBossExpReward) || 0));
@@ -25951,7 +26040,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 214.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 212.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
