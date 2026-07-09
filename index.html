@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.211.8 Town NPC Position Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.211.9 Stage Time Spawn Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -7339,6 +7339,36 @@ function getStageKillTarget(stg) {
 }
 
 
+function getStageTargetClearTimeSec(stg) {
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  // ✅ [v.211.9] 배터리 절약형 스테이지 목표 시간표
+  // 목표 처치 수를 지정 시간 안에 맞추도록 초당 스폰 속도를 계산합니다.
+  if (stg <= 5) return 5;
+  if (stg <= 15) return 5;
+  if (stg <= 20) return 10;
+  if (stg <= 40) return 10;
+  if (stg <= 60) return 15;
+  if (stg <= 80) return 20;
+  if (stg <= 100) return 30;
+  if (stg <= 120) return 15;
+  if (stg <= 140) return 20;
+  if (stg <= 160) return 25;
+  if (stg <= 180) return 30;
+  if (stg <= 200) return 40;
+  if (stg <= 220) return 20;
+  if (stg <= 240) return 30;
+  if (stg <= 260) return 40;
+  if (stg <= 280) return 50;
+  return 70;
+}
+
+function getStageTargetSpawnPerSecond(stg) {
+  const target = Math.max(1, Number(getStageKillTarget(stg)) || 1);
+  const sec = Math.max(1, Number(getStageTargetClearTimeSec(stg)) || 1);
+  return target / sec;
+}
+
+
 // ✅ [v.161.2] 스테이지 모드 전용: 목표 처치 수별 초당 생성량
 // - 1~100: 5마리=1.2초당 1 / 10마리=1.2초당 2 / 20마리=1.2초당 4 / 30마리=1.2초당 5 / 60마리=1.2초당 7 / 120마리=1.2초당 10 / 240마리=1.2초당 15
 // - 101~200: 30마리=1.2초당 4 / 60마리=1.2초당 6 / 100마리=1.2초당 10 / 175마리=1.2초당 15 / 350마리=1.2초당 17
@@ -7351,35 +7381,11 @@ function getStageMonsterSpawnIntervalMs(stg) {
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
+  // ✅ [v.211.9] 목표 처치 수 ÷ 목표 시간 = 초당 스폰 수
+  // 실제 v.189 단일 리스폰 패치에서는 이 값을 사용해 1마리씩 나오는 간격을 계산합니다.
   stg = Math.max(1, Math.floor(Number(stg) || 1));
-  const target = getStageKillTarget(stg);
-
-  // ✅ [v.173] 201~300 크리스탈 지역 리스폰 수 고정
-  if (stg >= 201) {
-    if (stg <= 220) return 5;
-    if (stg <= 240) return 8;
-    if (stg <= 260) return 12;
-    if (stg <= 280) return 15;
-    return 20;
-  }
-
-  if (stg <= 100) {
-    if (target <= 5) return 1;
-    if (target <= 10) return 2;
-    if (target <= 20) return 4;
-    if (target <= 30) return 5;
-    if (target <= 60) return 7;
-    if (target <= 120) return 10;
-    return 15;
-  }
-
-  if (target <= 30) return 4;
-  if (target <= 60) return 6;
-  if (target <= 100) return 10;
-  if (target <= 175) return 15;
-  return 17;
+  return getStageTargetSpawnPerSecond(stg);
 }
-
 function checkStageKillClearNow() {
   if (gameMode === 'mission') return checkMissionStageClearNow();
   if (gameMode !== 'stage') return false;
@@ -32619,7 +32625,7 @@ function getSingleRespawnSpeedCountV189(stg){
     }
   } catch(e) {}
   try {
-    return Math.max(1, Math.floor(getStageMonsterSpawnBatchSizeBeforeV189SingleRespawn.call(this, stg) || 1));
+    return Math.max(0.1, Number(getStageMonsterSpawnBatchSizeBeforeV189SingleRespawn.call(this, stg) || 1));
   } catch(e) {
     return 1;
   }
@@ -32629,8 +32635,8 @@ getStageMonsterSpawnIntervalMs = function(stg){
   if (gameMode === 'infinite') {
     return getStageMonsterSpawnIntervalMsBeforeV189SingleRespawn.apply(this, arguments);
   }
-  const speedCount = Math.max(1, Math.min(20, getSingleRespawnSpeedCountV189.call(this, stg)));
-  return Math.max(50, Math.floor(1000 / speedCount));
+  const speedCount = Math.max(0.1, Math.min(20, Number(getSingleRespawnSpeedCountV189.call(this, stg)) || 1));
+  return Math.max(50, Math.round(1000 / speedCount));
 };
 
 getStageMonsterSpawnBatchSize = function(stg){
