@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.214.1 Boss Every 5 Stages)</title>
+<title>Slime Shooter - Ultimate Evolution (v.214.3.1 HUD Full Width)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3242,6 +3242,182 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 #gameContainer.watch-ui #consumableQuickBar,
 #gameContainer.watch-ui #townQuestHud{
   display:none !important;
+}
+</style>
+
+
+<style id="hudUiRedesignV2143">
+/* ===== v.214.3 HUD UI 리디자인 ===== */
+#hud{
+  width:min(960px, calc(100vw - 12px)) !important;
+  padding:7px 9px 8px !important;
+  margin-bottom:6px !important;
+  gap:4px !important;
+  border:1px solid rgba(124,231,255,.28) !important;
+  border-radius:16px !important;
+  background:linear-gradient(180deg, rgba(18,29,49,.94), rgba(5,10,22,.94)) !important;
+  box-shadow:0 12px 34px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter:blur(12px) saturate(135%);
+  -webkit-backdrop-filter:blur(12px) saturate(135%);
+}
+#hudTop{ margin-top:0 !important; align-items:center !important; }
+#scoreText,#stageText{ font-size:12px !important; line-height:1.15 !important; }
+#highScoreText,#hotTimeText,#goldText,#hpText{ font-size:9px !important; line-height:1.15 !important; opacity:.92; }
+#playerHudCompact{
+  min-height:21px !important; max-height:21px !important; margin:0 !important;
+  padding:0 2px !important;
+}
+#playerCompactText{ font-size:16px !important; line-height:21px !important; letter-spacing:-.45px !important; }
+
+/* 바로 쓰는 버튼만 노출 */
+#hudQuickBar{
+  display:flex; align-items:center; gap:5px; width:100%;
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
+  -webkit-overflow-scrolling:touch; touch-action:pan-x;
+  padding:1px 0;
+}
+#hudQuickBar::-webkit-scrollbar,#settingsBar::-webkit-scrollbar{ display:none; }
+#hudQuickBar .ui-btn{
+  flex:1 0 auto; min-width:68px; min-height:27px;
+  padding:5px 9px !important; border-radius:999px !important;
+  font-size:10px !important; font-weight:900;
+  background:linear-gradient(180deg, rgba(48,73,104,.96), rgba(18,30,48,.96)) !important;
+  border:1px solid rgba(156,215,255,.25) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 4px 10px rgba(0,0,0,.18) !important;
+  white-space:nowrap;
+}
+#hudMenuToggle[aria-expanded="true"]{
+  color:#06271d !important;
+  background:linear-gradient(180deg,#8bffd9,#42dca9) !important;
+  border-color:#9dffe0 !important;
+}
+body.playing-ui #hudQuickBar{ display:none !important; }
+
+/* 상세 메뉴: 버튼을 빽빽하게 쌓지 않고 좌우 스와이프 */
+#settingsBar{
+  display:none !important;
+  flex-wrap:nowrap !important; justify-content:flex-start !important;
+  gap:5px !important; width:100% !important;
+  padding:5px !important; margin-top:1px;
+  overflow-x:auto !important; overflow-y:hidden !important;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch; touch-action:pan-x;
+  border-radius:12px;
+  background:rgba(1,7,17,.48);
+  border:1px solid rgba(255,255,255,.07);
+}
+#settingsBar.hud-menu-open{ display:flex !important; }
+#settingsBar .ui-btn,#settingsBar select.ui-btn{
+  flex:0 0 auto !important; width:auto !important; min-width:68px !important; max-width:150px !important;
+  min-height:27px !important; padding:5px 8px !important;
+  font-size:9px !important; line-height:1 !important; border-radius:9px !important;
+  white-space:nowrap !important;
+}
+body.playing-ui #settingsBar{ display:none !important; }
+
+/* EXP / FEVER 라벨과 게이지를 하나의 둥근 캡슐로 연결 */
+#expRow,#feverRow{
+  width:100% !important; display:flex !important; align-items:center !important;
+  gap:0 !important; margin:2px 0 0 !important;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.24));
+}
+#feverRow.hidden{ display:none !important; }
+#expLabel,#feverLabel{
+  align-self:stretch !important; min-width:48px !important; padding:0 8px !important;
+  border-width:1px !important; border-right:0 !important;
+  border-radius:999px 0 0 999px !important;
+  font-size:10px !important; line-height:1 !important; letter-spacing:.15px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28) !important;
+}
+#feverLabel{ min-width:54px !important; }
+#expWrapper,#feverWrapper{
+  flex:1 1 auto !important; min-width:0 !important;
+  height:14px !important; margin:0 !important;
+  border-width:1px !important; border-radius:0 999px 999px 0 !important;
+  overflow:hidden !important;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.58) !important;
+}
+#feverWrapper{ height:12px !important; }
+#expText,#feverText{
+  top:50% !important; left:50% !important; right:auto !important;
+  transform:translate(-50%,-50%) !important;
+  width:100% !important; padding:0 7px !important;
+  font-size:9px !important; line-height:1 !important; letter-spacing:-.15px !important;
+  overflow:hidden !important; text-overflow:clip !important; white-space:nowrap !important;
+  color:#fff !important;
+  text-shadow:0 1px 2px rgba(0,0,0,1),0 0 4px rgba(0,0,0,.9) !important;
+  z-index:10 !important;
+}
+#feverText{ font-size:8px !important; }
+#expBarFill,#feverBarFill{ border-radius:0 999px 999px 0 !important; }
+#expBarFill{
+  background:linear-gradient(90deg,#2ad9ff 0%,#43f2bd 52%,#b6ff71 100%) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 0 10px rgba(67,242,189,.42) !important;
+}
+#feverBarFill{
+  background:linear-gradient(90deg,#ff6a00 0%,#ffc83d 56%,#fff6a0 100%) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 10px rgba(255,183,35,.4) !important;
+}
+#expWrapper::after{ opacity:.26 !important; }
+
+@media (max-width:520px){
+  #hud{ width:calc(100vw - 8px) !important; max-width:calc(100vw - 8px) !important; padding:5px 7px 6px !important; border-radius:13px !important; }
+  #hudQuickBar .ui-btn{ min-width:62px; min-height:25px; padding:4px 8px !important; font-size:9px !important; }
+  #settingsBar{ display:none !important; grid-template-columns:none !important; max-height:none !important; }
+  #settingsBar.hud-menu-open{ display:flex !important; }
+  #settingsBar .ui-btn,#settingsBar select.ui-btn{ width:auto !important; min-width:64px !important; min-height:25px !important; font-size:8px !important; padding:4px 7px !important; }
+  #playerHudCompact{ min-height:19px !important; max-height:19px !important; }
+  #playerCompactText{ font-size:14px !important; line-height:19px !important; }
+  #expLabel,#feverLabel{ min-width:42px !important; padding:0 6px !important; font-size:9px !important; }
+  #feverLabel{ min-width:48px !important; }
+  #expWrapper{ height:13px !important; }
+  #feverWrapper{ height:11px !important; }
+  #expText{ font-size:8px !important; padding:0 5px !important; }
+  #feverText{ font-size:7px !important; }
+}
+@media (max-width:390px){
+  #hudQuickBar .ui-btn{ min-width:58px; font-size:8px !important; }
+  #expText{ font-size:7.5px !important; letter-spacing:-.3px !important; }
+}
+/* 워치 전용 기존 초소형 규칙은 유지 */
+#gameContainer.watch-ui #hudQuickBar{ display:flex !important; min-height:17px !important; }
+#gameContainer.watch-ui #hudQuickBar .ui-btn{ min-width:34px !important; min-height:17px !important; height:17px !important; padding:1px 3px !important; font-size:6px !important; }
+#gameContainer.watch-ui #expWrapper{ height:9px !important; }
+#gameContainer.watch-ui #feverWrapper{ height:8px !important; }
+#gameContainer.watch-ui #expLabel,#gameContainer.watch-ui #feverLabel{ min-width:25px !important; padding:0 3px !important; font-size:6px !important; }
+#gameContainer.watch-ui #expText,#gameContainer.watch-ui #feverText{ font-size:6px !important; }
+</style>
+
+
+<style id="hudFullWidthPatchV21431">
+/* ===== v.214.3.1 노트북 HUD 가로폭 보정 ===== */
+/* HUD가 gameContainer의 전체 너비를 정확히 사용하도록 한다. */
+#hud{
+  width:100% !important;
+  max-width:none !important;
+  align-self:stretch !important;
+}
+#expRow,#feverRow,#hudTop,#playerHudCompact,#hudQuickBar,#settingsBar{
+  width:100% !important;
+  max-width:none !important;
+}
+/* 노트북·태블릿에서는 컨테이너와 캔버스도 같은 기준 폭 사용 */
+@media (min-width:521px){
+  #gameContainer{
+    width:min(960px, 100vw) !important;
+    max-width:960px !important;
+  }
+  #gameCanvas{
+    width:100% !important;
+    max-width:none !important;
+  }
+}
+/* 모바일의 기존 4px 여백 디자인은 유지 */
+@media (max-width:520px){
+  #hud{
+    width:calc(100vw - 8px) !important;
+    max-width:calc(100vw - 8px) !important;
+    align-self:center !important;
+  }
 }
 </style>
 
@@ -33725,6 +33901,52 @@ updateDungeonSpawns = function(dt) {
   }
 };
 
+})();
+</script>
+
+
+<script id="hudUiRedesignScriptV2143">
+(function(){
+  function initHudMenuV2143(){
+    const hud = document.getElementById('hud');
+    const settings = document.getElementById('settingsBar');
+    const hudTop = document.getElementById('hudTop');
+    if(!hud || !settings || !hudTop || document.getElementById('hudQuickBar')) return;
+
+    const quick = document.createElement('div');
+    quick.id = 'hudQuickBar';
+    quick.setAttribute('aria-label','HUD 빠른 메뉴');
+
+    ['shopBtn','inventoryBtn','profileBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) quick.appendChild(el);
+    });
+
+    const toggle = document.createElement('button');
+    toggle.id = 'hudMenuToggle';
+    toggle.className = 'ui-btn';
+    toggle.type = 'button';
+    toggle.textContent = '☰ 메뉴';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.setAttribute('aria-controls','settingsBar');
+    quick.appendChild(toggle);
+    hudTop.insertAdjacentElement('afterend', quick);
+
+    function setOpen(open){
+      settings.classList.toggle('hud-menu-open', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.textContent = open ? '✕ 닫기' : '☰ 메뉴';
+    }
+    toggle.addEventListener('click', () => setOpen(!settings.classList.contains('hud-menu-open')));
+
+    // 플레이 시작 시 상세 메뉴는 자동으로 접어 HUD 공간을 보호한다.
+    const observer = new MutationObserver(() => {
+      if(document.body.classList.contains('playing-ui')) setOpen(false);
+    });
+    observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHudMenuV2143);
+  else initHudMenuV2143();
 })();
 </script>
 
