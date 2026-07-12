@@ -3718,7 +3718,7 @@ body.dungeon-mode .dash-skill{ display:none !important; }
 
 
 <!-- ✅ [v.215] LV.31 돌진 스킬 -->
-<button id="dashSkillBtn" class="ui-btn dash-skill hidden" title="돌진 (Z)">💨</button>
+<button id="dashSkillBtn" type="button" class="ui-btn dash-skill hidden" title="돌진 (Z)" aria-label="돌진 스킬">💨</button>
 <div id="pcSkillHotkeyGuide">PC 스킬키<br>Z 돌진 · X 거품 · C 레이저 · V 눈보라</div>
 
 <!-- 모바일 소모품 퀵바 -->
@@ -34249,7 +34249,7 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 
 
 // =====================================================
-// ✅ [v.215] 신규 스킬: 돌진 (LV.31+) + PC 스킬 단축키
+// ✅ [v.215.1] 신규 스킬: 돌진 (LV.31+) + PC 스킬 단축키
 // - 전방의 가장 가까운 적을 향해 5회 연속 돌진
 // - 각 돌진마다 플레이어 공격력의 300% 피해
 // - 기본 쿨타임 8초 (하이퍼 스킬 쿨타임 보정 적용)
@@ -34324,8 +34324,8 @@ function performDashStrike(step){
 }
 
 function castDashSkill(){
-  if (!canUseDashSkill() || dashSkillSequence || (player.dashCooldown||0)>0) return;
-  player.dashCooldown=applyHyperSkillCooldown(DASH_SKILL_COOLDOWN);
+  if (!canUseDashSkill() || dashSkillSequence || (player.dashSkillCooldownV215||0)>0) return;
+  player.dashSkillCooldownV215=applyHyperSkillCooldown(DASH_SKILL_COOLDOWN);
   playerInvulnTimer=Math.max(playerInvulnTimer||0,800);
   if (typeof addSkillQuestCount==='function') addSkillQuestCount('dash',1);
   dashSkillSequence={timer:null};
@@ -34334,13 +34334,13 @@ function castDashSkill(){
 function tryCastDashSkill(){ castDashSkill(); }
 
 function updateDashSkillV215(dt){
-  if (player && canUseDashSkill()) player.dashCooldown=Math.max(0,(player.dashCooldown||0)-dt);
+  if (player && canUseDashSkill()) player.dashSkillCooldownV215=Math.max(0,(player.dashSkillCooldownV215||0)-dt);
   dashAfterImageFx.forEach(f=>f.life-=dt);
   dashAfterImageFx=dashAfterImageFx.filter(f=>f.life>0);
   if (!dashSkillBtn) return;
   if (!canUseDashSkill()) { dashSkillBtn.classList.add('hidden'); return; }
   dashSkillBtn.classList.remove('hidden');
-  const cd=Math.max(0,player.dashCooldown||0);
+  const cd=Math.max(0,player.dashSkillCooldownV215||0);
   applySkillButtonVisual(dashSkillBtn,cd,DASH_SKILL_COOLDOWN,'💨','Z');
   dashSkillBtn.title=cd>0 ? `돌진 ${(cd/1000).toFixed(1)}초` : '돌진 준비 완료 (Z)';
 }
