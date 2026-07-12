@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215.6 Full Quest List Restore)</title>
+<title>Slime Shooter - Ultimate Evolution (v.215.4 Quest & HUD Scroll Fix)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -13016,7 +13016,7 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
-  dash:      { title:'돌진 마스터', reward: () => 2500, color:'#8fffd1' },
+  dash:      { title:'돌진 마스터', reward: () => 2500, color:'#9fffd7' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -13266,17 +13266,14 @@ function updateQuestUI() {
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
   for (const skillKey of ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma']) {
-    const meta = SKILL_QUEST_META[skillKey];
-    if (!meta) continue;
-
+    const meta = SKILL_QUEST_META[skillKey] || { title:`${skillKey} 스킬`, reward:()=>1000, color:'#bdefff' };
     if (!saveData.quests.skills[skillKey] || typeof saveData.quests.skills[skillKey] !== 'object') {
-      saveData.quests.skills[skillKey] = { count: 0, target: 10, tier: 1 };
+      saveData.quests.skills[skillKey] = { count:0, target:10, tier:1 };
     }
     const q = saveData.quests.skills[skillKey];
     q.count = Math.max(0, Math.floor(Number(q.count) || 0));
     q.target = Math.max(10, Math.floor(Number(q.target) || 10));
     q.tier = Math.max(1, Math.floor(Number(q.tier) || 1));
-
     const reward = getSkillQuestReward(skillKey);
     createQuestItem(
       meta.title,
@@ -34570,6 +34567,45 @@ body.title-mode #titleUI #openQuestBtn{
 }
 </style>
 
+
+<style>
+/* ===== [v.215.6] PC/모바일 전체 퀘스트 목록 표시 안정화 ===== */
+#questModal{
+  width:min(94vw, 520px) !important;
+  max-height:min(88dvh, 760px) !important;
+  overflow:hidden !important;
+}
+#questList{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior:contain !important;
+  -webkit-overflow-scrolling:touch !important;
+  touch-action:pan-y !important;
+  padding-bottom:10px !important;
+}
+@media (max-width:520px){
+  #questModal{
+    width:calc(100vw - 12px) !important;
+    max-height:calc(100dvh - 18px) !important;
+    padding:10px !important;
+  }
+  #questList .quest-item{
+    align-items:stretch !important;
+    gap:8px !important;
+  }
+  #questList .quest-info{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+  }
+  #questList .claim-btn{
+    flex:0 0 auto !important;
+    align-self:center !important;
+  }
+}
+</style>
 </body>
 </html>
 
