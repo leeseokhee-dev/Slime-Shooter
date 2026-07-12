@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215.4 Quest & HUD Scroll Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.215.6 Quest List Restore)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -11062,14 +11062,27 @@ fontSelect && fontSelect.addEventListener('change', () => {
 
 // 퀘스트 UI 처리
 function openQuestModal() {
-updateQuestUI();
-questModal.classList.remove('hidden');
-startQuestCountdown();
-showContextTutorial('quest', [
-  '퀘스트 화면입니다. 기본 퀘스트, 스킬 사용 퀘스트, 일일 퀘스트, 주간 퀘스트를 한곳에서 확인할 수 있습니다.',
-  '일일/주간 퀘스트에는 접속 시간 달성, 골드 획득하기, 스킬 일정 횟수 사용하기 같은 성장 목표가 추가되었습니다.',
-  '조건을 달성하면 [보상 받기] 버튼이 활성화되며, 보상 EXP는 즉시 적용됩니다.'
-]);
+  if (!questModal || !questList) return;
+  // 먼저 창을 표시해 모바일에서도 빈 화면처럼 보이지 않게 한 뒤 목록을 생성
+  questModal.classList.remove('hidden');
+  try {
+    ensureQuestDataCompatibilityV2156();
+    updateQuestUI();
+    startQuestCountdown();
+    requestAnimationFrame(() => { try { questList.scrollTop = 0; } catch(e) {} });
+  } catch (err) {
+    console.error('[v.215.6] 퀘스트 목록 생성 오류:', err);
+    questList.innerHTML = '';
+    const errorBox = document.createElement('div');
+    errorBox.style.cssText = 'padding:14px;line-height:1.6;color:#ffe0e0;background:rgba(255,80,80,.10);border:1px solid rgba(255,120,120,.35);border-radius:10px;';
+    errorBox.textContent = '퀘스트 데이터를 복구하는 중 오류가 발생했습니다. 게임을 한 번 저장한 뒤 퀘스트 창을 다시 열어주세요.';
+    questList.appendChild(errorBox);
+  }
+  showContextTutorial('quest', [
+    '퀘스트 화면입니다. 기본 퀘스트, 스킬 사용 퀘스트, 멀티킬 업적, 일일 퀘스트, 주간 퀘스트를 한곳에서 확인할 수 있습니다.',
+    '일일/주간 퀘스트에는 접속 시간 달성, 골드 획득하기, 스킬 일정 횟수 사용하기 같은 성장 목표가 추가되었습니다.',
+    '조건을 달성하면 [보상 받기] 버튼이 활성화되며, 보상 EXP는 즉시 적용됩니다.'
+  ]);
 }
 
 const NOTICE_VERSION_KEY = 'ss_notice_seen_v157_1';
@@ -11095,7 +11108,10 @@ function maybeShowNoticeOnTitle() {
 if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
 if (openNoticeBtn) openNoticeBtn.addEventListener('click', openNoticeModal);
 if (closeNoticeBtn) closeNoticeBtn.addEventListener('click', closeNoticeModalFn);
-openQuestBtn.addEventListener('click', openQuestModal);
+if (openQuestBtn) {
+  openQuestBtn.addEventListener('click', openQuestModal);
+  openQuestBtn.style.touchAction = 'manipulation';
+}
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
 closeShopBtn.addEventListener('click', () => {
@@ -13016,7 +13032,6 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
-  dash:      { title:'돌진 마스터', reward: () => 2500, color:'#9fffd7' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -13076,7 +13091,69 @@ function createQuestSectionTitle(text, color = '#ffd700') {
 
 
 
+
+
+// ===== [v.215.6] 구버전/모바일 저장 데이터 퀘스트 구조 자동 복구 =====
+function ensureQuestDataCompatibilityV2156() {
+  if (!saveData || typeof saveData !== 'object') return;
+  const defaults = (typeof BASE_SAVE_DATA === 'object' && BASE_SAVE_DATA) ? BASE_SAVE_DATA : {};
+  const dq = defaults.quests || {};
+
+  if (!saveData.quests || typeof saveData.quests !== 'object') saveData.quests = {};
+  const q = saveData.quests;
+
+  function mergeQuestNode(key, fallback) {
+    const cur = q[key];
+    q[key] = { ...(fallback || {}), ...((cur && typeof cur === 'object') ? cur : {}) };
+  }
+  mergeQuestNode('kill', dq.kill || { count:0, target:20, reward:60 });
+  mergeQuestNode('stage', dq.stage || { current:1, target:1, reward:200 });
+  mergeQuestNode('boss', dq.boss || { count:0, target:1, reward:2500 });
+  mergeQuestNode('score', dq.score || { tier:1 });
+  mergeQuestNode('survival', dq.survival || { current:0, target:60, reward:400 });
+  mergeQuestNode('expOrb', dq.expOrb || { count:0, target:30, reward:300 });
+  mergeQuestNode('pet', dq.pet || { claimed:0 });
+
+  const defaultSkills = (dq.skills && typeof dq.skills === 'object') ? dq.skills : {
+    bubble:{count:0,target:10,tier:1}, dash:{count:0,target:10,tier:1}, laser:{count:0,target:10,tier:1},
+    lightning:{count:0,target:10,tier:1}, quake:{count:0,target:10,tier:1}, blizzard:{count:0,target:10,tier:1},
+    meteor:{count:0,target:10,tier:1}, plasma:{count:0,target:10,tier:1}
+  };
+  const oldSkills = (q.skills && typeof q.skills === 'object') ? q.skills : {};
+  q.skills = {};
+  Object.keys(defaultSkills).forEach((key) => {
+    q.skills[key] = { ...defaultSkills[key], ...((oldSkills[key] && typeof oldSkills[key] === 'object') ? oldSkills[key] : {}) };
+  });
+
+  // 숫자형 값이 깨졌거나 문자열로 저장된 경우도 정상화
+  const normalizers = [
+    [q.kill,'count',0],[q.kill,'target',20],[q.kill,'reward',60],
+    [q.stage,'current',1],[q.stage,'target',1],[q.stage,'reward',200],
+    [q.boss,'count',0],[q.boss,'target',1],[q.boss,'reward',2500],
+    [q.score,'tier',1],[q.survival,'current',0],[q.survival,'target',60],[q.survival,'reward',400],
+    [q.expOrb,'count',0],[q.expOrb,'target',30],[q.expOrb,'reward',300],[q.pet,'claimed',0]
+  ];
+  normalizers.forEach(([obj,key,fallback]) => {
+    const n = Number(obj[key]);
+    obj[key] = Number.isFinite(n) ? n : fallback;
+  });
+  Object.values(q.skills).forEach((s) => {
+    s.count = Number.isFinite(Number(s.count)) ? Number(s.count) : 0;
+    s.target = Math.max(1, Number.isFinite(Number(s.target)) ? Number(s.target) : 10);
+    s.tier = Math.max(1, Number.isFinite(Number(s.tier)) ? Number(s.tier) : 1);
+  });
+
+  if (!saveData.dailyQuest || typeof saveData.dailyQuest !== 'object') saveData.dailyQuest = { key:'', quests:[], claimed:{} };
+  if (!Array.isArray(saveData.dailyQuest.quests)) saveData.dailyQuest.quests = [];
+  if (!saveData.dailyQuest.claimed || typeof saveData.dailyQuest.claimed !== 'object') saveData.dailyQuest.claimed = {};
+  if (!saveData.weeklyQuest || typeof saveData.weeklyQuest !== 'object') saveData.weeklyQuest = { key:'', quests:[], claimed:{} };
+  if (!Array.isArray(saveData.weeklyQuest.quests)) saveData.weeklyQuest.quests = [];
+  if (!saveData.weeklyQuest.claimed || typeof saveData.weeklyQuest.claimed !== 'object') saveData.weeklyQuest.claimed = {};
+
+  if (typeof ensureMultiKillPatchState === 'function') ensureMultiKillPatchState();
+}
 function updateQuestUI() {
+  ensureQuestDataCompatibilityV2156();
   questList.innerHTML = '';
 
   // ✅ 날짜/주차 리셋 체크
@@ -13266,14 +13343,8 @@ function updateQuestUI() {
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
   for (const skillKey of ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma']) {
-    const meta = SKILL_QUEST_META[skillKey] || { title:`${skillKey} 스킬`, reward:()=>1000, color:'#bdefff' };
-    if (!saveData.quests.skills[skillKey] || typeof saveData.quests.skills[skillKey] !== 'object') {
-      saveData.quests.skills[skillKey] = { count:0, target:10, tier:1 };
-    }
+    const meta = SKILL_QUEST_META[skillKey];
     const q = saveData.quests.skills[skillKey];
-    q.count = Math.max(0, Math.floor(Number(q.count) || 0));
-    q.target = Math.max(10, Math.floor(Number(q.target) || 10));
-    q.tier = Math.max(1, Math.floor(Number(q.tier) || 1));
     const reward = getSkillQuestReward(skillKey);
     createQuestItem(
       meta.title,
@@ -26496,7 +26567,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.7', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.8', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34565,47 +34636,48 @@ body.title-mode #titleUI #openQuestBtn{
   #expRow{grid-template-columns:35px minmax(0,1fr) !important;}
   #expLabel{min-width:35px !important;width:35px !important;font-size:12px !important;}
 }
-</style>
 
 
-<style>
-/* ===== [v.215.6] PC/모바일 전체 퀘스트 목록 표시 안정화 ===== */
+/* ===== [v.215.6] 퀘스트 목록 PC/모바일 표시 안정화 ===== */
 #questModal{
-  width:min(94vw, 520px) !important;
+  width:min(94vw, 560px) !important;
+  max-width:560px !important;
   max-height:min(88dvh, 760px) !important;
   overflow:hidden !important;
+  z-index:1000 !important;
 }
 #questList{
   flex:1 1 auto !important;
-  min-height:0 !important;
-  max-height:none !important;
+  min-height:120px !important;
+  max-height:calc(min(88dvh, 760px) - 105px) !important;
   overflow-y:auto !important;
   overflow-x:hidden !important;
-  overscroll-behavior:contain !important;
   -webkit-overflow-scrolling:touch !important;
+  overscroll-behavior:contain !important;
   touch-action:pan-y !important;
-  padding-bottom:10px !important;
+  padding-bottom:18px !important;
 }
+#questModal .quest-item{ flex:0 0 auto; }
 @media (max-width:520px){
   #questModal{
-    width:calc(100vw - 12px) !important;
-    max-height:calc(100dvh - 18px) !important;
-    padding:10px !important;
+    width:96vw !important;
+    max-width:96vw !important;
+    padding:12px !important;
+    top:50% !important;
   }
-  #questList .quest-item{
+  #questList{
+    max-height:calc(86dvh - 100px) !important;
+    padding-right:3px !important;
+  }
+  #questModal .quest-item{
     align-items:stretch !important;
     gap:8px !important;
   }
-  #questList .quest-info{
-    min-width:0 !important;
-    flex:1 1 auto !important;
-  }
-  #questList .claim-btn{
-    flex:0 0 auto !important;
-    align-self:center !important;
-  }
+  #questModal .quest-info{ min-width:0; flex:1 1 auto; }
+  #questModal .claim-btn{ flex:0 0 auto; min-width:76px; }
 }
 </style>
+
 </body>
 </html>
 
