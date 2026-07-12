@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215.4 Quest & HUD Scroll Fix)</title>
+<title>Slime Shooter - Ultimate Evolution (v.215.6 Full Quest List Restore)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -13016,6 +13016,7 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
+  dash:      { title:'돌진 마스터', reward: () => 2500, color:'#8fffd1' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -13266,7 +13267,16 @@ function updateQuestUI() {
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
   for (const skillKey of ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma']) {
     const meta = SKILL_QUEST_META[skillKey];
+    if (!meta) continue;
+
+    if (!saveData.quests.skills[skillKey] || typeof saveData.quests.skills[skillKey] !== 'object') {
+      saveData.quests.skills[skillKey] = { count: 0, target: 10, tier: 1 };
+    }
     const q = saveData.quests.skills[skillKey];
+    q.count = Math.max(0, Math.floor(Number(q.count) || 0));
+    q.target = Math.max(10, Math.floor(Number(q.target) || 10));
+    q.tier = Math.max(1, Math.floor(Number(q.tier) || 1));
+
     const reward = getSkillQuestReward(skillKey);
     createQuestItem(
       meta.title,
@@ -26489,7 +26499,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 214.9', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
