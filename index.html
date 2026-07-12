@@ -24338,6 +24338,7 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
 const prog = getLevelProgress(exp, level);
 const nextPercent = Math.min(100, prog.percent);
 
+// [v.214.6] 실제 EXP 비율을 소수점 4자리까지 유지해 미세 증가량도 누락 없이 표시
 // 중앙 표시 텍스트
 const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
 
@@ -24347,12 +24348,12 @@ expEl.textContent =
 // ✅ 레벨업 등으로 %가 떨어질 때(바가 줄어들 때)는 애니메이션 없이 즉시 반영
 if (nextPercent + 0.001 < __lastExpBarPercent) {
   expBarFillEl.style.transition = 'none';
-  expBarFillEl.style.width = nextPercent.toFixed(2) + '%';
+  expBarFillEl.style.width = nextPercent.toFixed(4) + '%';
   expBarFillEl.offsetHeight; // reflow 강제
   expBarFillEl.style.transition = ''; // CSS 기본 transition 복구
 } else {
   // ✅ 올라갈 때는 기존 애니메이션 그대로
-  expBarFillEl.style.width = nextPercent.toFixed(2) + '%';
+  expBarFillEl.style.width = nextPercent.toFixed(4) + '%';
 }
 
 __lastExpBarPercent = nextPercent;
@@ -34020,6 +34021,68 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
   else init();
 })();
 </script>
+
+
+<style>
+/* ===== [v.214.6] EXP 미세 증가 선명화 + 숫자 확대 ===== */
+#expBarFill{
+  border-radius:0 1px 1px 0 !important;
+  min-width:0 !important;
+  will-change:width;
+  /* 0.07%처럼 작은 증가도 끝선에서 또렷하게 보이도록 오른쪽 1px 경계 강조 */
+  box-shadow:
+    inset -1px 0 0 rgba(235,255,250,0.98),
+    inset 0 1px 0 rgba(255,255,255,0.30),
+    0 0 8px rgba(68,255,184,0.34) !important;
+}
+#expBarFill::after{
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,0.24) 0%,rgba(255,255,255,0.02) 56%,rgba(255,255,255,0.10) 100%) !important;
+}
+#expText{
+  font-size:15px !important;
+  font-weight:1000 !important;
+}
+#gameContainer.compact-ui #expText{font-size:13px !important;}
+#gameContainer.ultra-compact-ui #expText{font-size:12px !important;}
+@media (max-width:520px){
+  #expBarFill{border-radius:0 1px 1px 0 !important;}
+  #expText{font-size:12.5px !important;}
+}
+@media (max-width:430px){#expText{font-size:12px !important;}}
+@media (max-width:390px){#expText{font-size:11.5px !important;}}
+@media (orientation:landscape) and (max-height:520px){#expText{font-size:10px !important;}}
+#gameContainer.watch-ui #expText{font-size:8px !important;}
+</style>
+
+
+<style id="expTickDepthV2147">
+/* ===== [v.214.7] EXP 바 10% 입체 눈금 ===== */
+#expWrapper::after{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  pointer-events:none !important;
+  z-index:5 !important;
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.18) 0%,
+      rgba(255,255,255,0.04) 42%,
+      rgba(0,0,0,0.12) 58%,
+      rgba(0,0,0,0.26) 100%
+    ),
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,0.78) 0 1px,
+      rgba(255,255,255,0.82) 1px 2px,
+      rgba(255,255,255,0.20) 2px 3px,
+      transparent 3px 10%
+    ) !important;
+  mix-blend-mode:normal !important;
+  opacity:0.82 !important;
+  filter:drop-shadow(1px 0 0 rgba(0,0,0,0.32)) !important;
+}
+#expText{z-index:6 !important;}
+</style>
 </body>
 </html>
 
