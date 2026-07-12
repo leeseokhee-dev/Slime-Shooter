@@ -8905,10 +8905,10 @@ const SKILL_GUIDE_DATA = [
     level: 11,
     name: '거품', icon: '🫧', color: '#bff8ff',
     lines: [
-      '1.5초 동안 거품을 연속 발사합니다.',
-      '가장 가까운 적을 향해 날아가며 보스를 우선으로 노립니다.',
-      '거품 1발당 공격력 200% 피해를 줍니다.',
-      '쿨타임은 3초입니다.'
+      '레벨에 따라 거품을 1발부터 최대 5발까지 발사합니다.',
+      '각 거품은 0.15초 간격으로 가장 가까운 적을 향해 날아갑니다.',
+      '적에게 닿으면 주변 몬스터도 공격력 200% 범위 피해를 받습니다.',
+      '쿨타임은 4초입니다.'
     ],
     tips: ['초반 보스전과 가까운 적 처리에 좋습니다.']
   },
@@ -19719,14 +19719,15 @@ function drawDashSkillFx(){
 }
 
 // ===============================
-// ✅ [v.88] 거품 스킬 (LV.11+)
-// - 쿨타임 3초 / 1.5초 동안 0.15초 간격 발사
+// ✅ [v.215.2] 거품 스킬 (LV.11+)
+// - 1.5초 동안 0.15초마다 레벨에 맞는 1~5발을 동시에 발사
 // - LV.11=1발, LV.31=2발, LV.61=3발, LV.101=4발, LV.200=5발
-// - 모든 몬스터(보스 포함)에게 공격력 200% 피해
+// - 적에게 닿으면 충돌 지점을 중심으로 공격력 200% 범위 피해
+// - 쿨타임 4초
 // ===============================
 
-let bubbles = [];          // 범위형 거품 영역 [{x,y,radius,damage,life,isArea,_hitEnemies,_hitBoss}]
-let bubbleSpray = null;    // { life, tick }
+let bubbles = [];       // 비행 거품 탄환 [{x,y,radius,areaRadius,damage,vx,vy,life}]
+let bubbleSpray = null; // { life, tick }
 let bubbleAreaSeq = 0;
 
 function canUseBubbleSkill() {
@@ -19748,20 +19749,20 @@ function getBubbleSkillShotCount() {
 }
 
 function castBubbleSkill() {
-  addSkillQuestCount('bubble', 1);
   if (!player || !player.alive || isPlayerDying) return;
   if (!canUseBubbleSkill()) return;
 
-  // 2초 동안 범위형 거품을 전개
-  bubbleSpray = { life: 2000, tick: 0 };
+  addSkillQuestCount('bubble', 1);
 
-  // 쿨타임 4초
+  // 1.5초 동안 0.15초마다 레벨별 발사 수를 한꺼번에 발사
+  bubbleSpray = { life: 1500, tick: 0 };
   player.bubbleCooldown = applyHyperSkillCooldown(4000);
 }
 
 function tryCastBubbleSkill() {
   if (!canUseBubbleSkill()) return;
   if ((player.bubbleCooldown || 0) > 0) return;
+  if (bubbleSpray && bubbleSpray.life > 0) return;
   castBubbleSkill();
 }
 
@@ -19775,31 +19776,48 @@ function updateBubbleSkillUI() {
   applySkillButtonVisual(bubbleSkillBtn, cd, 4000, '🫧', cd > 0 ? '' : '범위');
 }
 
+function getBubbleTargetPoint() {
+  if (boss && !isBossInvincible()) return { x: boss.x, y: boss.y };
+  let nearest = null;
+  let bestDist = Infinity;
+  for (const e of enemies) {
+    if (!e || e.hp <= 0) continue;
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bestDist) { bestDist = d2; nearest = e; }
+  }
+  return nearest ? { x: nearest.x, y: nearest.y } : { x: player.x, y: -40 };
+}
+
 function shootBubbleProjectile() {
   if (!player || !player.alive || isPlayerDying) return;
 
   const atk = getPlayerAttackPower();
   const dmg = Math.max(1, Math.round(atk * 2.0));
   const count = Math.max(1, getBubbleSkillShotCount());
-  const baseRadius = Math.max(78, Math.min(150, (player.size || 24) * 3.8));
-  const gap = Math.max(34, baseRadius * 0.42);
+  const target = getBubbleTargetPoint();
+  const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const speed = 9.5;
+  const spreadStep = 0.12; // 여러 발이 동시에 보이도록 작은 부채꼴 확산
 
-  // 범위형 스킬: 플레이어 주변에 겹치는 거품 영역을 펼쳐 여러 몬스터를 동시에 타격합니다.
+  // 레벨에 맞는 모든 거품을 같은 순간에 생성
   for (let i = 0; i < count; i++) {
-    const offset = (i - (count - 1) / 2) * gap;
+    const angleOffset = (i - (count - 1) / 2) * spreadStep;
+    const angle = baseAngle + angleOffset;
     bubbles.push({
       id: ++bubbleAreaSeq,
-      x: player.x + offset,
-      y: player.y - (player.size || 24) * 0.7,
-      radius: baseRadius,
-      vx: 0,
-      vy: 0,
+      x: player.x,
+      y: player.y - (player.size || 24) * 0.75,
+      radius: Math.max(10, (player.size || 24) * 0.42),
+      areaRadius: Math.max(58, Math.min(110, (player.size || 24) * 2.8)),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
       damage: dmg,
-      life: 520,
-      maxLife: 520,
-      isArea: true,
-      _hitEnemies: new Set(),
-      _hitBoss: false
+      life: 2200,
+      maxLife: 2200,
+      isArea: false,
+      _hit: false
     });
   }
 
@@ -19819,58 +19837,47 @@ function updateBubble(dt) {
   bubbleSpray.life -= dt;
   bubbleSpray.tick -= dt;
 
-  // 0.5초마다 범위 거품 전개
-  if (bubbleSpray.tick <= 0) {
-    bubbleSpray.tick = 500;
+  // 0.15초마다 1~5발을 동시에 발사
+  while (bubbleSpray.life > 0 && bubbleSpray.tick <= 0) {
     shootBubbleProjectile();
+    bubbleSpray.tick += 150;
   }
 
-  if (bubbleSpray.life <= 0) {
-    bubbleSpray = null;
-  }
+  if (bubbleSpray.life <= 0) bubbleSpray = null;
 }
 
 function updateBubbles(dt) {
   const delta = dt / 16.67;
   bubbles.forEach(b => {
-    if (b.isArea) {
-      b.life = Math.max(0, (b.life || 0) - dt);
-      return;
-    }
     b.x += (b.vx || 0) * delta;
     b.y += (b.vy || 0) * delta;
+    b.life = Math.max(0, (b.life || 0) - dt);
   });
-  bubbles = bubbles.filter(b => {
-    if (b.isArea) return (b.life || 0) > 0;
-    return (b.y + b.radius > -20) && (b.y < height + 20) && (b.x > -60) && (b.x < width + 60);
-  });
+  bubbles = bubbles.filter(b => !b._hit && (b.life || 0) > 0 &&
+    (b.y + b.radius > -80) && (b.y < height + 80) && (b.x > -80) && (b.x < width + 80));
 }
 
 function drawBubbles() {
   if (!bubbles.length) return;
   ctx.save();
   for (const b of bubbles) {
-    const lifeRatio = b.isArea ? Math.max(0, Math.min(1, (b.life || 0) / (b.maxLife || 520))) : 1;
-    const pulse = b.isArea ? (1.08 - lifeRatio * 0.08) : 1;
-    const r = (b.radius || 10) * pulse;
-    ctx.globalAlpha = b.isArea ? (0.18 + 0.32 * lifeRatio) : 0.85;
+    const r = b.radius || 10;
+    const pulse = 1 + Math.sin((performance.now() + (b.id || 0) * 37) / 85) * 0.08;
+    ctx.globalAlpha = 0.88;
     ctx.beginPath();
-    ctx.arc(b.x, b.y, r, 0, Math.PI*2);
-    ctx.fillStyle = b.isArea ? 'rgba(150,235,255,0.26)' : 'rgba(180,240,255,0.25)';
+    ctx.arc(b.x, b.y, r * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(160,235,255,0.34)';
     ctx.fill();
-    ctx.lineWidth = b.isArea ? 4 : 2;
-    ctx.strokeStyle = b.isArea ? 'rgba(190,255,255,0.78)' : 'rgba(210,255,255,0.75)';
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(220,255,255,0.92)';
     ctx.stroke();
-    ctx.globalAlpha = b.isArea ? (0.26 + 0.34 * lifeRatio) : 0.85;
     ctx.beginPath();
-    ctx.arc(b.x - r*0.25, b.y - r*0.25, Math.max(2, r*0.12), 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.arc(b.x - r * 0.28, b.y - r * 0.28, Math.max(2, r * 0.18), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
     ctx.fill();
   }
   ctx.restore();
 }
-
-
 
 // ===============================
 // ✅ [추가] 눈보라 / 메테오 (레이저와 같은 "스킬 버튼" 구조)
@@ -24266,52 +24273,62 @@ enemies = enemies.filter(e => e.hp > 0);
 bubbles = bubbles.filter(b => !b._hit);
 
 
-// ===== 거품 탄환 충돌(적) =====
+// ===== 거품 탄환 충돌(적): 충돌 지점 범위 피해 =====
 bubbles.forEach(b => {
-  enemies.forEach(e => {
-    if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
-      if (b.isArea && b._hitEnemies && b._hitEnemies.has(e)) return;
-      const _dmg = calcLevelScaledDamage(b.damage, e);
-      e.hp -= _dmg; e.hitTimer = 100;
-      if (b.isArea) {
-        if (!b._hitEnemies) b._hitEnemies = new Set();
-        b._hitEnemies.add(e);
-      } else {
-        b._hit = true;
-      }
-      // SFX.hit();
-      spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#b3f6ff');
-      const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element)); if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color); spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
+  if (!b || b._hit) return;
+  let impact = null;
+  for (const e of enemies) {
+    if (e && e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
+      impact = e;
+      break;
+    }
+  }
+  if (!impact) return;
 
-      if (e.hp <= 0) {
-        if (gameMode === 'dungeon') {
-          const gained = calcDungeonKillExp(dungeonState.tier, level);
-          addExp(gained);
-          recordDungeonKillQuestProgressV2082();
-        } else {
-          const killScoreInfo = getEnemyKillScore(e);
-  addScore(killScoreInfo.amount, 'monster', { enemy: e, multikillEligible: true, multikillSource: 'bubble' });
-  if (gameMode === 'infinite') {
-    spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
-  }
-  if (killScoreInfo.multiplier > 1) {
-    spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
-  }
-          spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
+  b._hit = true;
+  const cx = impact.x;
+  const cy = impact.y;
+  const areaRadius = Math.max(40, Number(b.areaRadius) || 70);
+  spawnExplosion(cx, cy, '#b3f6ff', Math.min(28, 12 + Math.floor(areaRadius / 7)));
+
+  enemies.forEach(e => {
+    if (!e || e.hp <= 0) return;
+    if (!circleCollision(cx, cy, areaRadius, e.x, e.y, e.size * 0.9)) return;
+
+    const _dmg = calcLevelScaledDamage(b.damage, e);
+    e.hp -= _dmg;
+    e.hitTimer = 100;
+    spawnDamageText(e.x, e.y - e.size * 0.6, _dmg, '#b3f6ff');
+    const __elmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), e.element));
+    if (__elmTxt) spawnDamageText(e.x, e.y - e.size * 1.05, __elmTxt, getElementMeta(e.element).color);
+    spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
+
+    if (e.hp <= 0) {
+      if (gameMode === 'dungeon') {
+        const gained = calcDungeonKillExp(dungeonState.tier, level);
+        addExp(gained);
+        recordDungeonKillQuestProgressV2082();
+      } else {
+        const killScoreInfo = getEnemyKillScore(e);
+        addScore(killScoreInfo.amount, 'monster', { enemy: e, multikillEligible: true, multikillSource: 'bubble' });
         if (gameMode === 'infinite') {
-          trySpawnInfiniteDropItem(e.x, e.y);
+          spawnDamageText(e.x, e.y - e.size * 0.95, `+${formatNumber(getMonsterScorePopupAmount(killScoreInfo.amount))}점`, '#7dff9b');
         }
-          spawnExpItemFromEnemy(e);
+        if (killScoreInfo.multiplier > 1) {
+          spawnDamageText(e.x, e.y - e.size * 1.2, killScoreInfo.label, '#ffe066');
         }
-        spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
-        SFX.enemyDie();
-        registerEnemyKill();
+        spawnGoldDrop(e.x, e.y, calcGoldDropAmountFromScore(e.score));
+        if (gameMode === 'infinite') trySpawnInfiniteDropItem(e.x, e.y);
+        spawnExpItemFromEnemy(e);
       }
+      spawnExplosion(e.x, e.y, SLIME_COLORS[e.type].body, 12);
+      SFX.enemyDie();
+      registerEnemyKill();
     }
   });
 });
 enemies = enemies.filter(e => e.hp > 0);
-bubbles = bubbles.filter(b => b.isArea || !b._hit);
+bubbles = bubbles.filter(b => !b._hit);
 
 // ===== PET 탄환 충돌(적) =====
 petBullets.forEach(b => {
@@ -24457,26 +24474,24 @@ if (boss.hp <= 0) { handleBossKilledBySkill(); }
 }
 bullets = bullets.filter(b => !b._hit);
 
-// ===== 거품 탄환 충돌(보스) =====
+// ===== 거품 탄환 충돌(보스): 충돌 시 범위 폭발 =====
 if (boss && !bossInvincible) {
   const bx = boss.x, by = boss.y, hw = boss.width/2, hh = boss.height/2;
   for (let b of bubbles) {
-    if (!boss) break;
-    const hitBossByBubble = b.isArea
-      ? circleCollision(b.x, b.y, b.radius, boss.x, boss.y, Math.max(hw, hh))
-      : (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh);
-    if (hitBossByBubble) {
-      if (b.isArea && b._hitBoss) continue;
+    if (!boss || !b || b._hit) break;
+    if (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh) {
+      b._hit = true;
       const _bdmg = calcLevelScaledDamage(b.damage, boss);
       boss.hp -= _bdmg;
-      if (b.isArea) b._hitBoss = true;
-      else b._hit = true;
+      spawnExplosion(boss.x, boss.y, '#b3f6ff', 22);
       spawnDamageText(boss.x, boss.y - 10, _bdmg, '#b3f6ff');
-      const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
+      const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element));
+      if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 40, __bossElmTxt, getElementMeta(boss.element).color);
+      spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
       if (boss.hp <= 0) { handleBossKilledBySkill(); }
     }
   }
-  bubbles = bubbles.filter(b => b.isArea || !b._hit);
+  bubbles = bubbles.filter(b => !b._hit);
 }
 
 // ===== PET 탄환 충돌(보스) =====
@@ -26467,7 +26482,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
