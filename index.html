@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215.1 HUD Button Scroll)</title>
+<title>Slime Shooter - Ultimate Evolution (v.215.2 Dash Skill)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2908,8 +2908,8 @@ body.dungeon-mode #plasmaSkillBtn {
 /* ===== [v.215] 스킬 버튼(돌진) ===== */
 .dash-skill{
   position:absolute;
-  right:66px;
-  bottom:calc(55px + env(safe-area-inset-bottom));
+  right:10px;
+  bottom:calc(305px + env(safe-area-inset-bottom));
   width:48px;
   height:48px;
   border-radius:999px;
@@ -8898,14 +8898,17 @@ const SKILL_GUIDE_DATA = [
   },
   {
     level: 31,
-    name: '번개', icon: '⚡', color: '#fff38a',
+    name: '돌진 · 번개', icon: '💨⚡', color: '#8dffe0',
     lines: [
-      '3초 동안 번개 폭풍이 발생합니다.',
-      '0.3초마다 번개가 내려치며 공격력 500% 피해를 줍니다.',
-      '번개 주변 반경 약 70px에도 범위 피해가 들어갑니다.',
-      '쿨타임은 5초입니다.'
+      '돌진: 전방의 몬스터를 향해 총 5회 연속 돌진합니다.',
+      '돌진 1회마다 공격력 300% 피해를 줍니다.',
+      '돌진 중에는 완전 무적이며 이동·터치 조작이 잠깁니다.',
+      '5번째 돌진이 끝나면 무적이 해제되고 즉시 다시 조작할 수 있습니다.',
+      '돌진 쿨타임은 9초입니다.',
+      '번개: 3초 동안 0.3초마다 공격력 500%의 범위 피해를 줍니다.',
+      '번개 쿨타임은 5초입니다.'
     ],
-    tips: ['몬스터가 여러 마리 모였을 때 쓰면 멀티킬을 만들기 쉽습니다.']
+    tips: ['돌진은 공격과 회피를 동시에 수행하며, 번개는 몬스터 무리를 정리할 때 좋습니다.']
   },
   {
     level: 61,
@@ -26341,7 +26344,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34255,13 +34258,34 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 
 
 <script id="dashSkillV215Patch">
-// ===== [v.215] 신규 스킬: 돌진 =====
+// ===== [v.215.2] 신규 스킬: 돌진 =====
 const DASH_SKILL_LEVEL_V215 = 31;
 const DASH_SKILL_COOLDOWN_V215 = 9000;
 const DASH_HIT_MULTIPLIER_V215 = 3.0;
 const DASH_COUNT_V215 = 5;
+const DASH_INTERVAL_V215 = 140;
 let dashSkillStateV215 = null;
+let dashSkillInvincibleV215 = false;
 
+function isDashSkillActiveV215(){
+  return !!dashSkillStateV215 && dashSkillInvincibleV215;
+}
+function lockDashControlsV215(){
+  dragActive = false;
+  pointerActive = false;
+  stickActive = false;
+  stickDx = 0;
+  stickDy = 0;
+  if (player) {
+    dragTargetX = player.x;
+    dragTargetY = player.y;
+  }
+}
+function finishDashSkillV215(){
+  dashSkillStateV215 = null;
+  dashSkillInvincibleV215 = false;
+  lockDashControlsV215();
+}
 function canUseDashSkillV215(){
   return state === 'playing' && gameMode !== 'dungeon' && player && player.alive && !isPlayerDying && Number(level || 0) >= DASH_SKILL_LEVEL_V215;
 }
@@ -34271,74 +34295,98 @@ function getDashTargetV215(){
   if (!candidates.length) candidates = enemies.filter(e => e && e.hp > 0 && Number.isFinite(e.x) && Number.isFinite(e.y));
   let best = null, bestScore = Infinity;
   for (const e of candidates) {
-    const dx=e.x-player.x, dy=e.y-player.y;
-    const score=Math.hypot(dx,dy) + (dy>30 ? 500 : 0);
-    if(score<bestScore){ best=e; bestScore=score; }
+    const dx = e.x - player.x, dy = e.y - player.y;
+    const score = Math.hypot(dx, dy) + (dy > 30 ? 500 : 0);
+    if (score < bestScore) { best = e; bestScore = score; }
   }
   return best;
 }
 function getDashDamageV215(){
-  let base = (typeof getPlayerBaseDamageByLevelV192 === 'function') ? getPlayerBaseDamageByLevelV192(level) : Math.max(1, Number(level||1));
+  let base = (typeof getPlayerBaseDamageByLevelV192 === 'function') ? getPlayerBaseDamageByLevelV192(level) : Math.max(1, Number(level || 1));
   const bulletMult = (typeof getPlayerBulletDamageMultiplier === 'function') ? getPlayerBulletDamageMultiplier() : 1;
   const feverMult = (typeof getFeverPlayerDamageMultiplierV20321 === 'function') ? getFeverPlayerDamageMultiplierV20321() : 1;
   base = Math.max(1, Math.floor(base * getBuffMult('dmg') * getPetAttackMultiplier() * bulletMult * feverMult));
   return Math.max(1, Math.floor(base * DASH_HIT_MULTIPLIER_V215));
 }
 function tryCastDashSkillV215(){
-  if(!canUseDashSkillV215() || dashSkillStateV215 || (player.dashCooldownV215||0)>0) return;
-  if(!getDashTargetV215()) return;
+  if (!canUseDashSkillV215() || dashSkillStateV215 || (player.dashCooldownV215 || 0) > 0) return;
+  if (!getDashTargetV215()) return;
   player.dashCooldownV215 = applyHyperSkillCooldown(DASH_SKILL_COOLDOWN_V215);
-  dashSkillStateV215={ remaining:DASH_COUNT_V215, timer:0 };
-  if(typeof addSkillQuestCount==='function') addSkillQuestCount('dash',1);
-  if(SFX && SFX.skill) SFX.skill();
+  dashSkillStateV215 = { remaining: DASH_COUNT_V215, timer: 0 };
+  dashSkillInvincibleV215 = true;
+  lockDashControlsV215();
+  if (typeof addSkillQuestCount === 'function') addSkillQuestCount('dash', 1);
+  if (SFX && SFX.skill) SFX.skill();
 }
 function performOneDashV215(){
-  const target=getDashTargetV215();
-  if(!target || !player) return false;
-  const dx=target.x-player.x, dy=target.y-player.y;
-  const dist=Math.max(1,Math.hypot(dx,dy));
-  const stop=Math.max(12,(target.size||20)*0.45);
-  const travel=Math.max(0,dist-stop);
-  const oldX=player.x, oldY=player.y;
-  player.x=Math.max(12,Math.min(width-12,player.x+(dx/dist)*travel));
-  player.y=Math.max(12,Math.min(height-12,player.y+(dy/dist)*travel));
-  const dmg=getDashDamageV215();
-  if(typeof damageEnemyByAreaSkill==='function') damageEnemyByAreaSkill(target,dmg,'#8dffe0');
-  else { target.hp-=dmg; if(typeof spawnDamageText==='function') spawnDamageText(target.x,target.y-(target.size||20),dmg,'#8dffe0'); }
-  if(typeof spawnExplosion==='function'){
-    spawnExplosion(oldX,oldY,'#44ffb8',saveData.lowPower?5:10);
-    spawnExplosion(player.x,player.y,'#dffff3',saveData.lowPower?7:14);
+  const target = getDashTargetV215();
+  if (!target || !player) return false;
+  const dx = target.x - player.x, dy = target.y - player.y;
+  const dist = Math.max(1, Math.hypot(dx, dy));
+  const stop = Math.max(12, (target.size || 20) * 0.45);
+  const travel = Math.max(0, dist - stop);
+  const oldX = player.x, oldY = player.y;
+  player.x = Math.max(12, Math.min(width - 12, player.x + (dx / dist) * travel));
+  player.y = Math.max(12, Math.min(height - 12, player.y + (dy / dist) * travel));
+  dragTargetX = player.x;
+  dragTargetY = player.y;
+  const dmg = getDashDamageV215();
+  if (typeof damageEnemyByAreaSkill === 'function') damageEnemyByAreaSkill(target, dmg, '#8dffe0');
+  else {
+    target.hp -= dmg;
+    if (typeof spawnDamageText === 'function') spawnDamageText(target.x, target.y - (target.size || 20), dmg, '#8dffe0');
   }
-  if(typeof particles!=='undefined' && !saveData.lowPower){
-    for(let i=0;i<8;i++) particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,life:260,color:'#8dffe0',size:2+Math.random()*3});
+  if (typeof spawnExplosion === 'function') {
+    spawnExplosion(oldX, oldY, '#44ffb8', saveData.lowPower ? 5 : 10);
+    spawnExplosion(player.x, player.y, '#dffff3', saveData.lowPower ? 7 : 14);
+  }
+  if (typeof particles !== 'undefined' && !saveData.lowPower) {
+    for (let i = 0; i < 8; i++) particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,life:260,color:'#8dffe0',size:2+Math.random()*3});
   }
   return true;
 }
 function updateDashSkillV215(dt){
-  if(player) player.dashCooldownV215=Math.max(0,(player.dashCooldownV215||0)-dt);
-  if(!dashSkillStateV215) return;
-  if(!canUseDashSkillV215()){ dashSkillStateV215=null; return; }
-  dashSkillStateV215.timer-=dt;
-  if(dashSkillStateV215.timer<=0){
-    const did=performOneDashV215();
+  if (player) player.dashCooldownV215 = Math.max(0, (player.dashCooldownV215 || 0) - dt);
+  if (!dashSkillStateV215) return;
+  lockDashControlsV215();
+  if (!canUseDashSkillV215()) { finishDashSkillV215(); return; }
+  dashSkillStateV215.timer -= dt;
+  if (dashSkillStateV215.timer <= 0) {
+    const did = performOneDashV215();
     dashSkillStateV215.remaining--;
-    dashSkillStateV215.timer=140;
-    if(!did || dashSkillStateV215.remaining<=0) dashSkillStateV215=null;
+    dashSkillStateV215.timer = DASH_INTERVAL_V215;
+    if (!did || dashSkillStateV215.remaining <= 0) finishDashSkillV215();
   }
 }
 function updateDashSkillUIV215(){
-  if(!dashSkillBtn) return;
-  const show=canUseDashSkillV215();
-  dashSkillBtn.classList.toggle('hidden',!show);
-  if(show) applySkillButtonVisual(dashSkillBtn,Math.max(0,player.dashCooldownV215||0),applyHyperSkillCooldown(DASH_SKILL_COOLDOWN_V215),'💨','');
+  if (!dashSkillBtn) return;
+  const show = canUseDashSkillV215();
+  dashSkillBtn.classList.toggle('hidden', !show);
+  dashSkillBtn.disabled = !!dashSkillStateV215;
+  if (show) applySkillButtonVisual(dashSkillBtn, Math.max(0, player.dashCooldownV215 || 0), applyHyperSkillCooldown(DASH_SKILL_COOLDOWN_V215), '💨', '');
 }
-const _updateExtraAreaSkillsV215=updateExtraAreaSkills;
-updateExtraAreaSkills=function(dt){ _updateExtraAreaSkillsV215(dt); updateDashSkillV215(dt); };
-const _updateExtraAreaSkillUIV215=updateExtraAreaSkillUI;
-updateExtraAreaSkillUI=function(){ _updateExtraAreaSkillUIV215(); updateDashSkillUIV215(); };
+const _updateExtraAreaSkillsV215 = updateExtraAreaSkills;
+updateExtraAreaSkills = function(dt){ _updateExtraAreaSkillsV215(dt); updateDashSkillV215(dt); };
+const _updateExtraAreaSkillUIV215 = updateExtraAreaSkillUI;
+updateExtraAreaSkillUI = function(){ _updateExtraAreaSkillUIV215(); updateDashSkillUIV215(); };
+
+// 돌진 중에는 키보드·터치·마우스 이동을 모두 차단합니다.
+const _handlePlayerMovementV215 = handlePlayerMovement;
+handlePlayerMovement = function(dt){
+  if (isDashSkillActiveV215()) { lockDashControlsV215(); return; }
+  return _handlePlayerMovementV215(dt);
+};
+
+// 모든 기존 데미지 래퍼보다 마지막에 적용하여 돌진 중 완전 무적을 보장합니다.
+const _damagePlayerDashV215 = damagePlayer;
+damagePlayer = function(amount, px, py, hitInfo = null){
+  if (isDashSkillActiveV215()) return;
+  return _damagePlayerDashV215.apply(this, arguments);
+};
 </script>
 
 
+<!-- ✅ v.215.2 돌진 스킬: 31레벨 / 5회 / 300% / 돌진 중 무적·조작 잠금 -->
 <!-- ✅ v.215.1 HUD 버튼 상하·좌우 스크롤 -->
 <style id="hudButtonScrollV2151">
 /* 세로 스크롤을 기본으로 하고, 공간이 부족하면 좌우 이동도 허용 */
