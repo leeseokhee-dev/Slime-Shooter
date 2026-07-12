@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215 Dash Skill & PC Hotkeys)</title>
+<title>Slime Shooter - Ultimate Evolution (v.215.1 HUD Button Scroll)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2905,6 +2905,45 @@ body.dungeon-mode #plasmaSkillBtn {
   display: none !important;
 }
 
+/* ===== [v.215] 스킬 버튼(돌진) ===== */
+.dash-skill{
+  position:absolute;
+  right:66px;
+  bottom:calc(55px + env(safe-area-inset-bottom));
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  z-index:60;
+  border:2px solid rgba(120,255,205,0.96);
+  color:#dffff3;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), rgba(0,0,0,.52)),
+             linear-gradient(to bottom,#12634f,#06241d);
+  box-shadow:0 0 16px rgba(68,255,184,.45),0 10px 26px rgba(0,0,0,.55);
+  touch-action:manipulation;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  overflow:hidden;
+}
+.dash-skill:active{ transform:translateY(1px) scale(.985); }
+.dash-skill[disabled]{ opacity:.55; filter:grayscale(.25); }
+.dash-skill .skill-icon{ font-size:20px; transform:translateY(-2px); pointer-events:none; }
+.dash-skill .skill-cd{ position:absolute; bottom:8px; font-size:10px; font-weight:900; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.85); }
+.dash-skill .skill-cd.ready{ display:none; }
+.dash-skill.cooling::after{ content:''; position:absolute; inset:3px; border-radius:999px; background:conic-gradient(from -90deg,rgba(255,255,255,.75) calc(var(--cdp,0) * 1turn),rgba(0,0,0,0) 0); opacity:.55; pointer-events:none; }
+body.title-mode .dash-skill,
+body.tutorial-mode .dash-skill,
+body.dead-mode .dash-skill,
+body.logo-mode .dash-skill,
+body.dungeon-mode .dash-skill{ display:none !important; }
+#gameContainer.compact-ui .dash-skill{ width:44px; height:44px; }
+#gameContainer.ultra-compact-ui .dash-skill{ width:40px; height:40px; }
+@media(max-width:520px){ .dash-skill .skill-icon{ font-size:calc(20px * var(--canvas-scale) + 6px); } }
+
 </style>
 
 
@@ -3655,6 +3694,8 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 <button id="laserSkillBtn" class="ui-btn laser-skill hidden">레이저</button>
 <!-- ✅ [v.88] 거품 스킬 버튼 -->
 <button id="bubbleSkillBtn" class="ui-btn bubble-skill hidden">거품</button>
+<!-- ✅ [v.215] LV.31 돌진 스킬 -->
+<button id="dashSkillBtn" class="ui-btn dash-skill hidden">💨</button>
 <!-- ✅ [추가] 눈보라 / 메테오 스킬 버튼 -->
 <button id="blizzardSkillBtn" class="ui-btn blizzard-skill hidden">눈보라</button>
 <button id="meteorSkillBtn" class="ui-btn meteor-skill hidden">메테오</button>
@@ -5276,6 +5317,7 @@ const effectsBtn = document.getElementById('effectsBtn');
 const homingBtn = document.getElementById('homingBtn');
 const laserSkillBtn = document.getElementById('laserSkillBtn');
 const bubbleSkillBtn = document.getElementById('bubbleSkillBtn');
+const dashSkillBtn = document.getElementById('dashSkillBtn');
 const blizzardSkillBtn = document.getElementById('blizzardSkillBtn');
 const meteorSkillBtn = document.getElementById('meteorSkillBtn');
 const lightningSkillBtn = document.getElementById('lightningSkillBtn');
@@ -9494,7 +9536,7 @@ if (typeof saveData.quests.expOrb.target !== 'number') saveData.quests.expOrb.ta
 if (typeof saveData.quests.expOrb.reward !== 'number') saveData.quests.expOrb.reward = 300;
 
 if (!saveData.quests.skills || typeof saveData.quests.skills !== 'object') saveData.quests.skills = {};
-const _skillQuestKeys = ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma'];
+const _skillQuestKeys = ['bubble','laser','lightning','quake','blizzard','meteor','plasma'];
 for (const _k of _skillQuestKeys) {
   if (!saveData.quests.skills[_k] || typeof saveData.quests.skills[_k] !== 'object') saveData.quests.skills[_k] = { count: 0, target: 10, tier: 1 };
   if (typeof saveData.quests.skills[_k].count !== 'number' || !isFinite(saveData.quests.skills[_k].count)) saveData.quests.skills[_k].count = 0;
@@ -10886,6 +10928,23 @@ if (bubbleSkillBtn) {
   bubbleSkillBtn.addEventListener('touchstart', fire, { passive:false });
   bubbleSkillBtn.addEventListener('mousedown', fire);
   bubbleSkillBtn.addEventListener('click', fire);
+}
+
+// ✅ [v.215] 돌진 스킬 버튼
+if (dashSkillBtn) {
+  let lastDashTap = 0;
+  const fire = (e) => {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+    const now = Date.now();
+    if (now - lastDashTap < 120) return;
+    lastDashTap = now;
+    handleInputStart();
+    tryCastDashSkillV215();
+  };
+  dashSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  dashSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  dashSkillBtn.addEventListener('mousedown', fire);
+  dashSkillBtn.addEventListener('click', fire);
 }
 
 // ✅ [추가] 눈보라 스킬 버튼
@@ -26282,7 +26341,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -26970,7 +27029,6 @@ requestAnimationFrame(gameLoop);
     drawBlizzardFx();
     drawMeteors();
     drawExtraAreaSkillFx();
-    if (typeof drawDashSkillFx === 'function') drawDashSkillFx();
     drawEnemies();
     drawExpItems();
     drawFieldItems();
@@ -34001,12 +34059,13 @@ updateDungeonSpawns = function(dt) {
       if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.25) return;
       if(dx>0) setOpen(true); else setOpen(false);
     },{passive:true});
-    // PC에서도 Shift+휠로 메뉴 버튼 줄을 좌우 이동
+    // [v.215.1] 기본 휠은 위아래, Shift+휠은 좌우로 이동
     bar.addEventListener('wheel',(e)=>{
-      if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
+      if(e.shiftKey && Math.abs(e.deltaY)>=Math.abs(e.deltaX)){
         bar.scrollLeft+=e.deltaY;
         e.preventDefault();
       }
+      // Shift가 없으면 브라우저 기본 세로 스크롤을 그대로 사용
     },{passive:false});
     setOpen(false);
   }
@@ -34195,231 +34254,152 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 </script>
 
 
-<style id="v215DashSkillStyle">
-/* ===== [v.215] 돌진 스킬 / PC 단축키 ===== */
-.dash-skill{
-  position:absolute;
-  right:10px;
-  bottom:calc(315px + env(safe-area-inset-bottom));
-  width:48px;
-  height:48px;
-  border-radius:999px;
-  z-index:60;
-  border:2px solid rgba(120,255,190,.96);
-  color:#dcfff0;
-  background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.24),rgba(0,0,0,.55)),linear-gradient(to bottom,#116447,#05271d);
-  box-shadow:0 0 16px rgba(80,255,170,.44),0 10px 26px rgba(0,0,0,.55);
-  touch-action:manipulation;
-  pointer-events:auto;
-  user-select:none;
-  -webkit-user-select:none;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  overflow:hidden;
+<script id="dashSkillV215Patch">
+// ===== [v.215] 신규 스킬: 돌진 =====
+const DASH_SKILL_LEVEL_V215 = 31;
+const DASH_SKILL_COOLDOWN_V215 = 9000;
+const DASH_HIT_MULTIPLIER_V215 = 3.0;
+const DASH_COUNT_V215 = 5;
+let dashSkillStateV215 = null;
+
+function canUseDashSkillV215(){
+  return state === 'playing' && gameMode !== 'dungeon' && player && player.alive && !isPlayerDying && Number(level || 0) >= DASH_SKILL_LEVEL_V215;
 }
-.dash-skill:active{transform:translateY(1px) scale(.985)}
-.dash-skill[disabled]{opacity:.55;filter:grayscale(.25)}
-.dash-skill .skill-icon{font-size:20px;transform:translateY(-2px);pointer-events:none}
-.dash-skill .skill-cd{position:absolute;bottom:8px;font-size:10px;font-weight:900;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.85)}
-.dash-skill .skill-cd.ready{display:none}
-.dash-skill.cooling::after{content:'';position:absolute;inset:3px;border-radius:999px;background:conic-gradient(from -90deg,rgba(255,255,255,.75) calc(var(--cdp,0) * 1turn),rgba(0,0,0,0) 0);opacity:.55;pointer-events:none}
-body.title-mode .dash-skill,body.tutorial-mode .dash-skill,body.dead-mode .dash-skill,body.logo-mode .dash-skill,body.dungeon-mode .dash-skill{display:none!important}
-#gameContainer.compact-ui .dash-skill{width:44px;height:44px}
-#gameContainer.ultra-compact-ui .dash-skill{width:40px;height:40px}
-#gameContainer.watch-ui .dash-skill{right:3px!important;bottom:calc(168px + env(safe-area-inset-bottom))!important;width:30px!important;height:30px!important}
-#gameContainer.watch-ui .bubble-skill{bottom:calc(201px + env(safe-area-inset-bottom))!important}
-@media(max-width:520px){.dash-skill .skill-icon{font-size:calc(20px * var(--canvas-scale) + 6px)}}
-.pc-hotkey-badge{position:absolute;top:2px;right:4px;font:900 9px/1 var(--game-font);color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.28);border-radius:5px;padding:2px 3px;pointer-events:none;z-index:3}
-@media(pointer:coarse){.pc-hotkey-badge{display:none!important}}
-</style>
-<script id="v215DashSkillScript">
-(function(){
-  'use strict';
-  const DASH_LEVEL = 31;
-  const DASH_COOLDOWN = 8000;
-  const DASH_HITS = 5;
-  const DASH_DAMAGE_MULT = 3.0;
-  const DASH_INTERVAL = 115;
-  let dashState = null;
-  let dashTrails = [];
-
-  const btn = document.createElement('button');
-  btn.id = 'dashSkillBtn';
-  btn.type = 'button';
-  btn.className = 'ui-btn dash-skill hidden';
-  btn.setAttribute('aria-label','돌진 스킬');
-  const anchor = document.getElementById('quakeSkillBtn');
-  if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(btn, anchor.nextSibling);
-  else document.body.appendChild(btn);
-
-  function isPlayable(){
-    return typeof state !== 'undefined' && state === 'playing' &&
-      typeof gameMode !== 'undefined' && gameMode !== 'dungeon' &&
-      typeof player !== 'undefined' && player && player.alive &&
-      !(typeof isPlayerDying !== 'undefined' && isPlayerDying) &&
-      typeof level !== 'undefined' && Number(level) >= DASH_LEVEL;
+function getDashTargetV215(){
+  if (!player || !Array.isArray(enemies)) return null;
+  let candidates = enemies.filter(e => e && e.hp > 0 && Number.isFinite(e.x) && Number.isFinite(e.y) && e.y <= player.y + 30);
+  if (!candidates.length) candidates = enemies.filter(e => e && e.hp > 0 && Number.isFinite(e.x) && Number.isFinite(e.y));
+  let best = null, bestScore = Infinity;
+  for (const e of candidates) {
+    const dx=e.x-player.x, dy=e.y-player.y;
+    const score=Math.hypot(dx,dy) + (dy>30 ? 500 : 0);
+    if(score<bestScore){ best=e; bestScore=score; }
   }
-  function getBaseDamage(){
-    try{
-      const base = (typeof getPlayerBaseDamageByLevelV192 === 'function') ? getPlayerBaseDamageByLevelV192(level) : Math.max(1, Number(level)||1);
-      const mul = (typeof getBuffMult === 'function') ? getBuffMult('dmg') : 1;
-      return Math.max(1, Math.round(base * mul * DASH_DAMAGE_MULT));
-    }catch(e){ return Math.max(1, Math.round((Number(level)||1) * 15 * DASH_DAMAGE_MULT)); }
+  return best;
+}
+function getDashDamageV215(){
+  let base = (typeof getPlayerBaseDamageByLevelV192 === 'function') ? getPlayerBaseDamageByLevelV192(level) : Math.max(1, Number(level||1));
+  const bulletMult = (typeof getPlayerBulletDamageMultiplier === 'function') ? getPlayerBulletDamageMultiplier() : 1;
+  const feverMult = (typeof getFeverPlayerDamageMultiplierV20321 === 'function') ? getFeverPlayerDamageMultiplierV20321() : 1;
+  base = Math.max(1, Math.floor(base * getBuffMult('dmg') * getPetAttackMultiplier() * bulletMult * feverMult));
+  return Math.max(1, Math.floor(base * DASH_HIT_MULTIPLIER_V215));
+}
+function tryCastDashSkillV215(){
+  if(!canUseDashSkillV215() || dashSkillStateV215 || (player.dashCooldownV215||0)>0) return;
+  if(!getDashTargetV215()) return;
+  player.dashCooldownV215 = applyHyperSkillCooldown(DASH_SKILL_COOLDOWN_V215);
+  dashSkillStateV215={ remaining:DASH_COUNT_V215, timer:0 };
+  if(typeof addSkillQuestCount==='function') addSkillQuestCount('dash',1);
+  if(SFX && SFX.skill) SFX.skill();
+}
+function performOneDashV215(){
+  const target=getDashTargetV215();
+  if(!target || !player) return false;
+  const dx=target.x-player.x, dy=target.y-player.y;
+  const dist=Math.max(1,Math.hypot(dx,dy));
+  const stop=Math.max(12,(target.size||20)*0.45);
+  const travel=Math.max(0,dist-stop);
+  const oldX=player.x, oldY=player.y;
+  player.x=Math.max(12,Math.min(width-12,player.x+(dx/dist)*travel));
+  player.y=Math.max(12,Math.min(height-12,player.y+(dy/dist)*travel));
+  const dmg=getDashDamageV215();
+  if(typeof damageEnemyByAreaSkill==='function') damageEnemyByAreaSkill(target,dmg,'#8dffe0');
+  else { target.hp-=dmg; if(typeof spawnDamageText==='function') spawnDamageText(target.x,target.y-(target.size||20),dmg,'#8dffe0'); }
+  if(typeof spawnExplosion==='function'){
+    spawnExplosion(oldX,oldY,'#44ffb8',saveData.lowPower?5:10);
+    spawnExplosion(player.x,player.y,'#dffff3',saveData.lowPower?7:14);
   }
-  function findForwardTarget(){
-    if(typeof enemies === 'undefined' || !Array.isArray(enemies) || !player) return null;
-    const live = enemies.filter(e => e && e.hp > 0 && e.y <= player.y + 40);
-    const pool = live.length ? live : enemies.filter(e => e && e.hp > 0);
-    let best=null,bestD=Infinity;
-    for(const e of pool){
-      const dx=e.x-player.x, dy=e.y-player.y, d=dx*dx+dy*dy;
-      if(d<bestD){bestD=d;best=e;}
-    }
-    return best;
+  if(typeof particles!=='undefined' && !saveData.lowPower){
+    for(let i=0;i<8;i++) particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,life:260,color:'#8dffe0',size:2+Math.random()*3});
   }
-  function hitTarget(target){
-    if(!target || target.hp<=0) return;
-    const dmg = getBaseDamage();
-    if(typeof damageEnemyByAreaSkill === 'function') damageEnemyByAreaSkill(target,dmg,'#74ffc0');
-    else{
-      target.hp -= dmg;
-      if(typeof spawnDamageText==='function') spawnDamageText(target.x,target.y-(target.size||20),dmg,'#74ffc0');
-      if(target.hp<=0 && typeof handleEnemyKilledBySkill==='function') handleEnemyKilledBySkill(target);
-    }
-    if(typeof spawnExplosion==='function') spawnExplosion(target.x,target.y,'#74ffc0', (typeof isLowPower==='function'&&isLowPower())?10:22);
+  return true;
+}
+function updateDashSkillV215(dt){
+  if(player) player.dashCooldownV215=Math.max(0,(player.dashCooldownV215||0)-dt);
+  if(!dashSkillStateV215) return;
+  if(!canUseDashSkillV215()){ dashSkillStateV215=null; return; }
+  dashSkillStateV215.timer-=dt;
+  if(dashSkillStateV215.timer<=0){
+    const did=performOneDashV215();
+    dashSkillStateV215.remaining--;
+    dashSkillStateV215.timer=140;
+    if(!did || dashSkillStateV215.remaining<=0) dashSkillStateV215=null;
   }
-  function performDashHit(){
-    if(!player) return;
-    const target=findForwardTarget();
-    const sx=player.x, sy=player.y;
-    if(target){
-      const dx=target.x-player.x, dy=target.y-player.y;
-      const dist=Math.max(1,Math.hypot(dx,dy));
-      const travel=Math.min(150,Math.max(55,dist-((target.size||20)+player.size)));
-      player.x=Math.max(player.size,Math.min(width-player.size,player.x+(dx/dist)*travel));
-      player.y=Math.max(player.size,Math.min(height-player.size,player.y+(dy/dist)*travel));
-      hitTarget(target);
-    }else{
-      player.y=Math.max(player.size,player.y-90);
-    }
-    dashTrails.push({x1:sx,y1:sy,x2:player.x,y2:player.y,life:190,maxLife:190});
-  }
-  function tryCastDashSkill(){
-    if(!isPlayable() || !player || (player.dashCooldown||0)>0 || dashState) return;
-    player.dashCooldown = (typeof applyHyperSkillCooldown==='function') ? applyHyperSkillCooldown(DASH_COOLDOWN) : DASH_COOLDOWN;
-    dashState={remaining:DASH_HITS,timer:0};
-    if(typeof addQuestStat==='function') addQuestStat('skillUses',1);
-    if(typeof addSkillQuestCount==='function') { try{ addSkillQuestCount('dash',1); }catch(e){} }
-    if(typeof SFX!=='undefined' && SFX && SFX.skill) SFX.skill();
-  }
-  window.tryCastDashSkill = tryCastDashSkill;
-
-  function updateDashSkill(dt){
-    if(typeof player!=='undefined' && player){
-      player.dashCooldown=Math.max(0,(player.dashCooldown||0)-dt);
-    }
-    if(dashState && isPlayable()){
-      dashState.timer-=dt;
-      while(dashState && dashState.timer<=0){
-        performDashHit();
-        dashState.remaining--;
-        dashState.timer+=DASH_INTERVAL;
-        if(dashState.remaining<=0) dashState=null;
-      }
-    }else if(dashState && !isPlayable()) dashState=null;
-    for(const t of dashTrails) t.life-=dt;
-    dashTrails=dashTrails.filter(t=>t.life>0);
-    updateDashUI();
-  }
-  function updateDashUI(){
-    if(!btn) return;
-    const show=isPlayable();
-    btn.classList.toggle('hidden',!show);
-    if(!show) return;
-    const cd=Math.max(0,player.dashCooldown||0);
-    if(typeof applySkillButtonVisual==='function') applySkillButtonVisual(btn,cd,DASH_COOLDOWN,'💨','');
-    if(matchMedia('(pointer:fine)').matches){
-      let badge=btn.querySelector('.pc-hotkey-badge');
-      if(!badge){badge=document.createElement('span');badge.className='pc-hotkey-badge';btn.appendChild(badge)}
-      badge.textContent='X';
-    }
-  }
-  window.drawDashSkillFx=function(){
-    if(typeof ctx==='undefined') return;
-    ctx.save();
-    ctx.lineCap='round';
-    for(const t of dashTrails){
-      const a=Math.max(0,t.life/t.maxLife);
-      ctx.globalAlpha=.75*a;
-      ctx.strokeStyle='#74ffc0';
-      ctx.lineWidth=5+8*a;
-      ctx.beginPath();ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);ctx.stroke();
-      ctx.globalAlpha=.35*a;ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();
-    }
-    ctx.restore();
-  };
-
-  let lastTap=0;
-  const fire=e=>{try{e.preventDefault();e.stopPropagation()}catch(_){} const now=Date.now();if(now-lastTap<120)return;lastTap=now;if(typeof handleInputStart==='function')handleInputStart();tryCastDashSkill()};
-  btn.addEventListener('pointerdown',fire,{passive:false});
-  btn.addEventListener('touchstart',fire,{passive:false});
-  btn.addEventListener('mousedown',fire);
-  btn.addEventListener('click',fire);
-
-  const hotkeys={
-    z:()=>typeof tryCastBubbleSkill==='function'&&tryCastBubbleSkill(),
-    x:()=>tryCastDashSkill(),
-    c:()=>typeof tryCastLightningSkill==='function'&&tryCastLightningSkill(),
-    v:()=>typeof tryCastLaserSkill==='function'&&tryCastLaserSkill(),
-    b:()=>typeof tryCastBlizzardSkill==='function'&&tryCastBlizzardSkill(),
-    n:()=>typeof tryCastMeteorSkill==='function'&&tryCastMeteorSkill(),
-    m:()=>typeof tryCastQuakeSkill==='function'&&tryCastQuakeSkill(),
-    p:()=>typeof tryCastPlasmaSkill==='function'&&tryCastPlasmaSkill()
-  };
-  document.addEventListener('keydown',e=>{
-    if(e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    const tag=(e.target&&e.target.tagName||'').toLowerCase();
-    if(tag==='input'||tag==='textarea'||tag==='select'||(e.target&&e.target.isContentEditable)) return;
-    const fn=hotkeys[String(e.key||'').toLowerCase()];
-    if(!fn || !matchMedia('(pointer:fine)').matches || typeof state==='undefined' || state!=='playing') return;
-    e.preventDefault();
-    if(typeof handleInputStart==='function') handleInputStart();
-    fn();
-  },true);
-
-  function addBadge(id,key){
-    const el=document.getElementById(id);if(!el||!matchMedia('(pointer:fine)').matches)return;
-    let b=el.querySelector('.pc-hotkey-badge');if(!b){b=document.createElement('span');b.className='pc-hotkey-badge';el.appendChild(b)}b.textContent=key;
-  }
-  const badgeMap=[['bubbleSkillBtn','Z'],['lightningSkillBtn','C'],['laserSkillBtn','V'],['blizzardSkillBtn','B'],['meteorSkillBtn','N'],['quakeSkillBtn','M'],['plasmaSkillBtn','P']];
-  setInterval(()=>badgeMap.forEach(x=>addBadge(x[0],x[1])),1000);
-
-  try{
-    if(typeof SKILL_GUIDE_DATA!=='undefined' && Array.isArray(SKILL_GUIDE_DATA) && !SKILL_GUIDE_DATA.some(x=>x&&x.name==='돌진')){
-      const lightningIndex=SKILL_GUIDE_DATA.findIndex(x=>x&&x.level===31);
-      SKILL_GUIDE_DATA.splice(Math.max(0,lightningIndex),0,{level:31,name:'돌진',icon:'💨',color:'#74ffc0',lines:['전방의 가장 가까운 몬스터를 향해 5회 연속 돌진합니다.','돌진 1회마다 공격력 300% 피해를 줍니다.','PC에서는 X 키, 모바일에서는 돌진 버튼을 터치해 발동합니다.','쿨타임은 8초입니다.'],tips:['위험한 적에게 빠르게 접근하면서 연속 피해를 줄 수 있습니다.']});
-      if(typeof SKILL_UNLOCK_TUTORIAL!=='undefined'){
-        SKILL_UNLOCK_TUTORIAL[31]=[
-          'LV.31 달성으로 돌진과 번개 스킬이 해금되었습니다!',
-          '돌진: 전방의 몬스터를 향해 5회 돌진하며 1회마다 공격력 300% 피해를 줍니다.',
-          'PC 단축키는 X, 모바일에서는 돌진 버튼을 터치해 사용합니다.',
-          '번개: 3초 동안 번개 폭풍을 일으켜 범위 피해를 줍니다.',
-          '상단의 [스킬 가이드] 버튼에서 자세한 설명을 다시 볼 수 있습니다.'
-        ];
-      }
-    }
-  }catch(e){}
-
-  // 기존 전투 업데이트에 돌진 로직 결합
-  if(typeof update==='function'){
-    const originalUpdate=update;
-    update=function(dt,currentTime){const result=originalUpdate(dt,currentTime);updateDashSkill(dt);return result};
-  }
-})();
+}
+function updateDashSkillUIV215(){
+  if(!dashSkillBtn) return;
+  const show=canUseDashSkillV215();
+  dashSkillBtn.classList.toggle('hidden',!show);
+  if(show) applySkillButtonVisual(dashSkillBtn,Math.max(0,player.dashCooldownV215||0),applyHyperSkillCooldown(DASH_SKILL_COOLDOWN_V215),'💨','');
+}
+const _updateExtraAreaSkillsV215=updateExtraAreaSkills;
+updateExtraAreaSkills=function(dt){ _updateExtraAreaSkillsV215(dt); updateDashSkillV215(dt); };
+const _updateExtraAreaSkillUIV215=updateExtraAreaSkillUI;
+updateExtraAreaSkillUI=function(){ _updateExtraAreaSkillUIV215(); updateDashSkillUIV215(); };
 </script>
 
+
+<!-- ✅ v.215.1 HUD 버튼 상하·좌우 스크롤 -->
+<style id="hudButtonScrollV2151">
+/* 세로 스크롤을 기본으로 하고, 공간이 부족하면 좌우 이동도 허용 */
+#settingsBar{
+  display:grid !important;
+  grid-template-columns:repeat(4, minmax(72px, 1fr)) !important;
+  grid-auto-rows:minmax(22px, auto) !important;
+  align-content:start !important;
+  justify-content:stretch !important;
+  width:100% !important;
+  max-height:54px !important;
+  min-height:0 !important;
+  overflow-y:auto !important;
+  overflow-x:auto !important;
+  overscroll-behavior:contain !important;
+  -webkit-overflow-scrolling:touch !important;
+  touch-action:pan-x pan-y !important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(124,255,181,.55) rgba(255,255,255,.06);
+  padding:2px 3px 3px !important;
+  gap:3px !important;
+}
+#settingsBar::-webkit-scrollbar{width:5px;height:5px;}
+#settingsBar::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:999px;}
+#settingsBar::-webkit-scrollbar-thumb{background:rgba(124,255,181,.48);border-radius:999px;}
+#settingsBar .ui-btn,
+#settingsBar #fontSelect,
+#settingsBar #fpsSelect,
+#settingsBar #expPercentDigitsSelect{
+  width:100% !important;
+  min-width:72px !important;
+  max-width:none !important;
+  margin:0 !important;
+}
+#hud.menu-open #settingsBar{
+  max-height:54px !important;
+  opacity:1 !important;
+}
+@media(max-width:520px){
+  #settingsBar{
+    grid-template-columns:repeat(3, minmax(78px, 1fr)) !important;
+    max-height:50px !important;
+  }
+  #settingsBar .ui-btn,
+  #settingsBar #fontSelect,
+  #settingsBar #fpsSelect,
+  #settingsBar #expPercentDigitsSelect{min-width:78px !important;}
+  #hud.menu-open #settingsBar{max-height:50px !important;}
+}
+@media(max-width:360px){
+  #settingsBar{grid-template-columns:repeat(3, minmax(74px, 1fr)) !important;}
+  #settingsBar .ui-btn,
+  #settingsBar #fontSelect,
+  #settingsBar #fpsSelect,
+  #settingsBar #expPercentDigitsSelect{min-width:74px !important;}
+}
+@media(orientation:landscape) and (max-height:520px){
+  #settingsBar{max-height:42px !important;}
+  #hud.menu-open #settingsBar{max-height:42px !important;}
+}
+</style>
 </body>
 </html>
 
