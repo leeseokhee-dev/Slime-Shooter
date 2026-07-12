@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.214.3 UI Renewal)</title>
+<title>Slime Shooter - Ultimate Evolution (v.214.3 UI Redesign)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3245,191 +3245,200 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 }
 
 
-/* =========================================================
-   [v.214.3] HUD / EXP / FEVER UI 개편
-   - 기본 HUD 버튼 최소화
-   - 추가 메뉴 접기/펼치기
-   - 얇고 긴 라운드 게이지
-   ========================================================= */
+/* ===== [v.214.3] 반응형 HUD / EXP·FEVER / 스와이프 메뉴 리디자인 ===== */
+:root{
+  --hud-edge: clamp(6px, 1.4vw, 12px);
+  --hud-radius: clamp(14px, 2.4vw, 22px);
+  --gauge-height: clamp(18px, 2.7vw, 24px);
+  --gauge-label-width: clamp(54px, 9vw, 78px);
+}
+#gameContainer{
+  width:min(960px, 100vw);
+  padding:clamp(4px, 1vh, 8px) 0;
+}
 #hud{
-  width:min(960px, 96vw) !important;
-  padding:9px 11px 10px !important;
-  margin-bottom:6px !important;
-  gap:5px !important;
-  border-radius:14px !important;
-  background:linear-gradient(180deg, rgba(17,28,48,.94), rgba(5,10,21,.94)) !important;
-  border:1px solid rgba(126,231,255,.34) !important;
-  box-shadow:0 10px 30px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08) !important;
-  backdrop-filter:blur(10px) saturate(125%);
-  -webkit-backdrop-filter:blur(10px) saturate(125%);
+  width:calc(100% - (var(--hud-edge) * 2));
+  max-width:960px;
+  padding:clamp(8px, 1.5vw, 13px);
+  margin:0 auto clamp(5px, 1vh, 9px);
+  gap:clamp(5px, 1vw, 8px);
+  border-radius:var(--hud-radius);
+  border:1px solid rgba(133,226,255,.42);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(75,174,255,.20), transparent 38%),
+    linear-gradient(180deg, rgba(16,30,54,.94), rgba(4,10,22,.94));
+  box-shadow:0 12px 34px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.14);
+  backdrop-filter:blur(14px) saturate(135%);
+  -webkit-backdrop-filter:blur(14px) saturate(135%);
+  overflow:visible;
 }
 #hudTop{
-  margin-top:0 !important;
-  align-items:center !important;
-  min-height:31px;
-  padding-right:48px;
+  margin-top:0;
+  padding-right:52px;
+  align-items:center;
+  gap:10px;
 }
-#hudTop .hud-column{ gap:1px !important; }
-#scoreText,#stageText{ font-size:13px !important; font-weight:900 !important; }
-#highScoreText,#goldText,#hotTimeText{ font-size:10px !important; opacity:.9; }
+#hudTop .hud-column{
+  gap:3px;
+  min-width:0;
+}
+#scoreText,#stageText{
+  font-size:clamp(14px, 2.2vw, 19px);
+  font-weight:1000;
+  letter-spacing:-.35px;
+  text-shadow:0 2px 7px rgba(0,0,0,.72);
+}
+#stageText{max-width:min(62vw,620px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#highScoreText,#hotTimeText,#goldText,#hpText{
+  font-size:clamp(10px, 1.6vw, 13px) !important;
+}
 #playerHudCompact{
-  order:-1;
-  min-height:25px !important;
-  max-height:25px !important;
-  margin:0 46px 1px 0 !important;
+  min-height:clamp(27px, 4vw, 34px);
+  max-height:clamp(27px, 4vw, 34px);
+  margin:0;
 }
 #playerCompactText{
-  font-size:clamp(16px, 2.4vw, 20px) !important;
-  line-height:25px !important;
-  text-shadow:0 2px 7px rgba(0,0,0,.65) !important;
+  font-size:clamp(18px, 3vw, 25px);
+  line-height:1.1;
 }
-#rankIconBtn{ transform:scale(.9); transform-origin:left center; }
-
-/* 기본 메뉴 버튼 */
-#hudMenuToggle{
+#hudMenuBtn{
   position:absolute;
-  top:8px;
-  right:9px;
-  width:38px;
+  top:clamp(8px, 1.5vw, 13px);
+  right:clamp(8px, 1.5vw, 13px);
+  z-index:35;
+  width:42px;
   height:38px;
-  min-width:38px;
   padding:0;
-  z-index:15;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:11px;
-  font-size:18px;
+  border-radius:13px;
+  border:1px solid rgba(139,226,255,.58);
+  color:#effcff;
+  background:linear-gradient(180deg, rgba(45,89,128,.96), rgba(13,31,52,.96));
+  box-shadow:0 7px 18px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.18);
+  font-size:22px;
+  line-height:1;
   font-weight:900;
-  color:#dffaff;
-  border:1px solid rgba(124,231,255,.42);
-  background:linear-gradient(180deg, rgba(42,68,92,.96), rgba(14,25,40,.96));
-  box-shadow:0 6px 15px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12);
+  cursor:pointer;
+  touch-action:manipulation;
 }
-#hudMenuToggle[aria-expanded="true"]{
-  color:#062d25;
-  background:linear-gradient(180deg,#8bffdc,#38c89e);
-  border-color:#8bffdc;
+#hudMenuBtn:active{transform:scale(.95)}
+#hudMenuBtn[aria-expanded="true"]{
+  color:#07231a;
+  background:linear-gradient(180deg,#8affd7,#35c994);
+  border-color:#aaffdf;
 }
 #settingsBar{
-  order:10;
-  width:100% !important;
-  display:flex !important;
-  flex-wrap:nowrap !important;
-  justify-content:flex-start !important;
-  gap:6px !important;
+  width:100%;
+  display:flex;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  gap:7px;
+  max-height:0;
+  padding:0;
+  margin:0;
+  opacity:0;
   overflow-x:auto;
   overflow-y:hidden;
-  padding:2px 1px 4px !important;
+  transform:translateY(-7px);
+  pointer-events:none;
+  transition:max-height .24s ease, opacity .18s ease, transform .24s ease, padding .24s ease;
   scroll-snap-type:x proximity;
+  overscroll-behavior-x:contain;
   scrollbar-width:none;
+  touch-action:pan-x;
   -webkit-overflow-scrolling:touch;
 }
-#settingsBar::-webkit-scrollbar{ display:none; }
+#settingsBar::-webkit-scrollbar{display:none}
+#hud.menu-open #settingsBar{
+  max-height:58px;
+  padding:6px 2px 2px;
+  opacity:1;
+  transform:none;
+  pointer-events:auto;
+}
 #settingsBar .ui-btn,
-#settingsBar select{
-  flex:0 0 auto !important;
-  min-height:31px;
-  padding:6px 10px !important;
-  border-radius:9px !important;
-  font-size:11px !important;
-  scroll-snap-align:start;
+#settingsBar select.ui-btn{
+  flex:0 0 auto;
+  min-height:35px;
+  padding:7px 10px;
+  border-radius:11px;
+  font-size:clamp(10px,1.45vw,12px);
+  font-weight:900;
   white-space:nowrap;
+  scroll-snap-align:start;
+  border:1px solid rgba(151,218,255,.30);
+  background:linear-gradient(180deg,rgba(48,72,105,.96),rgba(15,27,46,.96));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 4px 10px rgba(0,0,0,.25);
 }
-#settingsBar.hud-menu-collapsed > :not(.hud-essential){ display:none !important; }
-#settingsBar.hud-menu-collapsed{
-  max-height:37px;
-}
-body.playing-ui #settingsBar{ display:none !important; }
-
-/* EXP / FEVER: 라벨과 바가 붙는 얇은 캡슐형 */
+#settingsBar #fontSelect,#settingsBar #fpsSelect,#settingsBar #expPercentDigitsSelect{max-width:none}
 #expRow,#feverRow{
-  width:100% !important;
-  align-items:center !important;
-  gap:0 !important;
-  margin:2px 0 0 !important;
-  min-height:18px;
+  width:100%;
+  display:grid;
+  grid-template-columns:var(--gauge-label-width) minmax(0,1fr);
+  align-items:stretch;
+  gap:0;
+  margin:0;
 }
 #expLabel,#feverLabel{
-  align-self:stretch;
-  min-width:54px !important;
-  padding:0 9px !important;
-  border-radius:8px 0 0 8px !important;
-  border-width:1px !important;
-  border-right:0 !important;
-  font-size:11px !important;
-  font-weight:1000 !important;
-  letter-spacing:.2px !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25) !important;
+  min-width:0;
+  width:100%;
+  padding:0 clamp(7px,1.2vw,11px);
+  border-radius:12px 0 0 12px;
+  border-width:1px;
+  border-right:0;
+  font-size:clamp(13px,2vw,17px);
+  letter-spacing:.1px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 4px 12px rgba(0,0,0,.23);
 }
 #expWrapper,#feverWrapper{
-  flex:1 1 auto !important;
-  width:auto !important;
-  min-width:0 !important;
-  height:18px !important;
-  border-radius:0 8px 8px 0 !important;
-  border-width:1px !important;
-  overflow:hidden !important;
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.68), 0 3px 10px rgba(0,0,0,.18) !important;
-}
-#expLabel{
-  background:linear-gradient(180deg,#4d8cff,#2857c5) !important;
-  border-color:rgba(164,207,255,.78) !important;
+  width:100%;
+  min-width:0;
+  height:var(--gauge-height);
+  border-radius:0 12px 12px 0;
+  border-width:1px;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.44),0 4px 12px rgba(0,0,0,.23);
 }
 #expWrapper{
-  background:linear-gradient(180deg,rgba(8,22,43,.98),rgba(3,10,23,.98)) !important;
-  border-color:rgba(164,207,255,.78) !important;
-}
-#expBarFill{
-  background:linear-gradient(90deg,#32baff 0%,#38e8c4 55%,#a4ff83 100%) !important;
-  box-shadow:0 0 10px rgba(68,255,184,.35), inset 0 1px 0 rgba(255,255,255,.24) !important;
-}
-#expText{
-  font-size:11px !important;
-  line-height:18px !important;
-  padding:0 7px !important;
-  letter-spacing:-.25px !important;
-}
-#feverLabel{
-  min-width:54px !important;
-  background:linear-gradient(180deg,#ffbd46,#d86a16) !important;
-  border-color:rgba(255,221,139,.8) !important;
+  background:linear-gradient(180deg,rgba(8,23,43,.99),rgba(3,10,21,.99));
 }
 #feverWrapper{
-  background:linear-gradient(180deg,rgba(57,25,5,.98),rgba(22,8,1,.98)) !important;
-  border-color:rgba(255,221,139,.8) !important;
+  height:clamp(17px,2.45vw,22px);
+  background:linear-gradient(180deg,rgba(54,28,4,.99),rgba(21,9,1,.99));
 }
-#feverBarFill{
-  background:linear-gradient(90deg,#ff6b18 0%,#ffc348 58%,#fff08b 100%) !important;
+#expBarFill,#feverBarFill{height:100%; border-radius:0 10px 10px 0;}
+#expText{
+  font-size:clamp(13px,2vw,17px);
+  font-weight:1000;
+  letter-spacing:-.15px;
 }
 #feverText{
-  font-size:10px !important;
-  line-height:18px !important;
-  padding:0 7px !important;
+  font-size:clamp(11px,1.7vw,14px);
+  font-weight:1000;
 }
-#feverRow.fever-active #feverLabel{ border-radius:8px 0 0 8px !important; }
-
-/* 플레이 중에는 HUD 자체도 더 짧게 */
-body.playing-ui #hud{
-  padding:7px 10px 8px !important;
-  gap:3px !important;
+#gameCanvas{
+  width:calc(100% - (var(--hud-edge) * 2));
+  max-width:960px;
+  border-radius:clamp(12px,2vw,19px);
 }
-body.playing-ui #playerHudCompact{ min-height:22px !important; max-height:22px !important; }
-body.playing-ui #playerCompactText{ line-height:22px !important; font-size:16px !important; }
-
-@media (max-width:520px){
-  #hud{ width:96vw !important; max-width:96vw !important; padding:7px 8px 8px !important; border-radius:12px !important; }
-  #hudTop{ padding-right:43px; min-height:28px; }
-  #hudMenuToggle{ top:7px; right:7px; width:34px; height:34px; min-width:34px; border-radius:10px; font-size:16px; }
-  #scoreText,#stageText{ font-size:11px !important; }
-  #highScoreText,#goldText,#hotTimeText{ font-size:9px !important; }
-  #settingsBar .ui-btn,#settingsBar select{ min-height:29px; padding:5px 8px !important; font-size:10px !important; }
-  #expLabel,#feverLabel{ min-width:48px !important; padding:0 6px !important; font-size:10px !important; }
-  #expWrapper,#feverWrapper{ height:17px !important; }
-  #expText{ font-size:10px !important; line-height:17px !important; }
-  #feverText{ font-size:9px !important; line-height:17px !important; }
+@media(max-width:520px){
+  :root{--hud-edge:5px;--gauge-label-width:52px;--gauge-height:19px}
+  #hud{width:calc(100% - 10px);padding:8px;border-radius:15px}
+  #gameCanvas{width:calc(100% - 10px);height:auto}
+  #hudTop{padding-right:46px}
+  #hudMenuBtn{top:8px;right:8px;width:39px;height:35px;border-radius:11px;font-size:20px}
+  #hud.menu-open #settingsBar{max-height:52px;padding-top:5px}
+  #settingsBar .ui-btn,#settingsBar select.ui-btn{min-height:32px;padding:6px 9px;font-size:10px}
+  #expLabel,#feverLabel{font-size:13px;padding:0 5px;border-radius:10px 0 0 10px}
+  #expWrapper,#feverWrapper{border-radius:0 10px 10px 0}
+  #expText{font-size:13px;padding:0 5px}
+  #feverText{font-size:10px}
+  #stageText{max-width:63vw}
 }
-
+@media(max-width:360px){
+  #highScoreText,#hotTimeText,#goldText{font-size:9px!important}
+  #scoreText,#stageText{font-size:13px}
+  #playerCompactText{font-size:16px}
+  :root{--gauge-label-width:48px}
+}
 </style>
 
 </head>
@@ -3437,7 +3446,7 @@ body.playing-ui #playerCompactText{ line-height:22px !important; font-size:16px 
 <div id="gameContainer">
 <!-- HUD -->
 <div id="hud">
-<button id="hudMenuToggle" type="button" aria-label="HUD 메뉴 펼치기" aria-expanded="false" title="HUD 메뉴">☰</button>
+<button id="hudMenuBtn" type="button" aria-label="HUD 메뉴 열기" aria-expanded="false" title="HUD 메뉴">☰</button>
 
 <div id="hudTop">
         <div class="hud-column">
@@ -3454,9 +3463,9 @@ body.playing-ui #playerCompactText{ line-height:22px !important; font-size:16px 
     </div>
     
 
-    <div id="settingsBar" class="hud-menu-collapsed">
-        <button id="bgmBtn" class="ui-btn hud-essential">BGM 켜짐</button>
-        <button id="sfxBtn" class="ui-btn hud-essential">SFX 켜짐</button>
+    <div id="settingsBar">
+        <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
+        <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
         <button id="effectsBtn" class="ui-btn">이펙트 ON</button>
         <select id="fpsSelect" class="ui-btn" title="FPS 선택">
@@ -3486,10 +3495,10 @@ body.playing-ui #playerCompactText{ line-height:22px !important; font-size:16px 
         <button id="nickBtn" class="ui-btn">캐릭터</button>
         <button id="backupBtn" class="ui-btn">백업</button>
         <button id="restoreBtn" class="ui-btn">복원</button>
-        <button id="shopBtn" class="ui-btn hud-essential">상점</button>
+        <button id="shopBtn" class="ui-btn">상점</button>
         <button id="skillGuideBtn" class="ui-btn">스킬 가이드</button>
-        <button id="inventoryBtn" class="ui-btn hud-essential">인벤토리</button>
-        <button id="profileBtn" class="ui-btn hud-essential">프로필</button>
+        <button id="inventoryBtn" class="ui-btn">인벤토리</button>
+        <button id="profileBtn" class="ui-btn">프로필</button>
         <button id="petDexBtn" class="ui-btn">펫 도감</button>
     </div>
 
@@ -33916,29 +33925,101 @@ updateDungeonSpawns = function(dt) {
 })();
 </script>
 
+
 <script>
-/* [v.214.3] HUD 접이식 메뉴 */
+/* ===== [v.214.3] HUD 메뉴: 삼선 버튼 + 좌우 스와이프 ===== */
 (function(){
-  const bar = document.getElementById('settingsBar');
-  const toggle = document.getElementById('hudMenuToggle');
-  if (!bar || !toggle) return;
-  const setOpen = (open) => {
-    bar.classList.toggle('hud-menu-collapsed', !open);
-    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    toggle.setAttribute('aria-label', open ? 'HUD 메뉴 접기' : 'HUD 메뉴 펼치기');
-    toggle.title = open ? '메뉴 접기' : '메뉴 펼치기';
-    toggle.textContent = open ? '×' : '☰';
-    if (!open) bar.scrollLeft = 0;
-  };
-  toggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(toggle.getAttribute('aria-expanded') !== 'true');
-  });
-  setOpen(false);
+  function initHudSwipeMenu(){
+    const hud=document.getElementById('hud');
+    const btn=document.getElementById('hudMenuBtn');
+    const bar=document.getElementById('settingsBar');
+    if(!hud||!btn||!bar||hud.dataset.swipeMenuReady==='1') return;
+    hud.dataset.swipeMenuReady='1';
+    const setOpen=(open)=>{
+      hud.classList.toggle('menu-open',!!open);
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      btn.setAttribute('aria-label',open?'HUD 메뉴 닫기':'HUD 메뉴 열기');
+      btn.textContent=open?'×':'☰';
+    };
+    btn.addEventListener('click',()=>setOpen(!hud.classList.contains('menu-open')));
+    let sx=0,sy=0,active=false;
+    hud.addEventListener('touchstart',(e)=>{
+      if(!e.touches||e.touches.length!==1) return;
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY; active=true;
+    },{passive:true});
+    hud.addEventListener('touchend',(e)=>{
+      if(!active||!e.changedTouches||!e.changedTouches.length) return;
+      active=false;
+      const dx=e.changedTouches[0].clientX-sx;
+      const dy=e.changedTouches[0].clientY-sy;
+      if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.25) return;
+      if(dx>0) setOpen(true); else setOpen(false);
+    },{passive:true});
+    // PC에서도 Shift+휠로 메뉴 버튼 줄을 좌우 이동
+    bar.addEventListener('wheel',(e)=>{
+      if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
+        bar.scrollLeft+=e.deltaY;
+        e.preventDefault();
+      }
+    },{passive:false});
+    setOpen(false);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initHudSwipeMenu,{once:true});
+  else initHudSwipeMenu();
 })();
 </script>
 
+
+<style>
+/* ===== [v.214.4] EXP/FEVER 게이지 각진 디자인 + 게임 중 HUD 메뉴 숨김 ===== */
+#expLabel, #feverLabel{
+  border-radius:6px 0 0 6px !important;
+}
+#expWrapper, #feverWrapper{
+  border-radius:0 6px 6px 0 !important;
+}
+#expBarFill, #feverBarFill{
+  border-radius:0 4px 4px 0 !important;
+}
+@media (max-width:520px){
+  #expLabel, #feverLabel{border-radius:5px 0 0 5px !important;}
+  #expWrapper, #feverWrapper{border-radius:0 5px 5px 0 !important;}
+  #expBarFill, #feverBarFill{border-radius:0 3px 3px 0 !important;}
+}
+/* 타이틀 화면에서만 삼선 메뉴 표시 */
+body:not(.title-mode) #hudMenuBtn{
+  display:none !important;
+}
+body:not(.title-mode) #hud.menu-open #settingsBar{
+  max-height:0 !important;
+  padding:0 !important;
+  opacity:0 !important;
+  transform:translateY(-7px) !important;
+  pointer-events:none !important;
+}
+</style>
+<script>
+/* 게임 입장 시 열려 있던 HUD 메뉴를 자동으로 닫음 */
+(function(){
+  function syncHudMenuVisibility(){
+    const hud=document.getElementById('hud');
+    const btn=document.getElementById('hudMenuBtn');
+    if(!hud||!btn) return;
+    if(!document.body.classList.contains('title-mode')){
+      hud.classList.remove('menu-open');
+      btn.setAttribute('aria-expanded','false');
+      btn.setAttribute('aria-label','HUD 메뉴 열기');
+      btn.textContent='☰';
+    }
+  }
+  function init(){
+    syncHudMenuVisibility();
+    new MutationObserver(syncHudMenuVisibility).observe(document.body,{attributes:true,attributeFilter:['class']});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
 </body>
 </html>
 
