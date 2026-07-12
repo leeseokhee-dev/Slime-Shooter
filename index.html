@@ -11072,10 +11072,11 @@ function openQuestModal() {
     requestAnimationFrame(() => { try { questList.scrollTop = 0; } catch(e) {} });
   } catch (err) {
     console.error('[v.215.6] 퀘스트 목록 생성 오류:', err);
-    questList.innerHTML = '';
+    const partialCount = questList.children.length;
+    if (!partialCount) questList.innerHTML = '';
     const errorBox = document.createElement('div');
     errorBox.style.cssText = 'padding:14px;line-height:1.6;color:#ffe0e0;background:rgba(255,80,80,.10);border:1px solid rgba(255,120,120,.35);border-radius:10px;';
-    errorBox.textContent = '퀘스트 데이터를 복구하는 중 오류가 발생했습니다. 게임을 한 번 저장한 뒤 퀘스트 창을 다시 열어주세요.';
+    errorBox.textContent = '퀘스트 목록 일부를 불러오지 못했습니다. 오류: ' + ((err && err.message) ? err.message : '알 수 없는 오류');
     questList.appendChild(errorBox);
   }
   showContextTutorial('quest', [
@@ -13032,6 +13033,7 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
+  dash:      { title:'돌진 스킬 연습', reward: () => 1500, color:'#9fffd8' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -13343,8 +13345,18 @@ function updateQuestUI() {
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
   for (const skillKey of ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma']) {
-    const meta = SKILL_QUEST_META[skillKey];
+    const meta = SKILL_QUEST_META[skillKey] || {
+      title: `${skillKey} 스킬 연습`,
+      reward: () => 1000,
+      color: '#bdefff'
+    };
+    if (!saveData.quests.skills[skillKey] || typeof saveData.quests.skills[skillKey] !== 'object') {
+      saveData.quests.skills[skillKey] = { count:0, target:10, tier:1 };
+    }
     const q = saveData.quests.skills[skillKey];
+    q.count = Math.max(0, Number(q.count) || 0);
+    q.target = Math.max(1, Number(q.target) || 10);
+    q.tier = Math.max(1, Number(q.tier) || 1);
     const reward = getSkillQuestReward(skillKey);
     createQuestItem(
       meta.title,
@@ -34677,6 +34689,34 @@ body.title-mode #titleUI #openQuestBtn{
   #questModal .claim-btn{ flex:0 0 auto; min-width:76px; }
 }
 </style>
+
+
+<script>
+/* ===== [v.215.7] 퀘스트 목록 빈 화면 방지 ===== */
+(function(){
+  function ensureQuestVisible(){
+    const modal=document.getElementById('questModal');
+    const list=document.getElementById('questList');
+    if(!modal||!list||modal.classList.contains('hidden')) return;
+    if(list.children.length===0 && typeof updateQuestUI==='function'){
+      try{ updateQuestUI(); }
+      catch(err){
+        console.error('[v.215.7] quest render retry failed',err);
+        const box=document.createElement('div');
+        box.style.cssText='padding:14px;color:#ffe8e8;background:rgba(255,80,80,.12);border:1px solid rgba(255,130,130,.4);border-radius:10px;line-height:1.55;';
+        box.textContent='퀘스트 표시 오류: '+((err&&err.message)?err.message:'알 수 없는 오류');
+        list.appendChild(box);
+      }
+    }
+  }
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.id==='openQuestBtn') setTimeout(ensureQuestVisible,0);
+  },true);
+  document.addEventListener('touchend',function(e){
+    if(e.target&&e.target.id==='openQuestBtn') setTimeout(ensureQuestVisible,0);
+  },{passive:true,capture:true});
+})();
+</script>
 
 </body>
 </html>
