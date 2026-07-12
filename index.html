@@ -3541,56 +3541,6 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 }
 </style>
 
-
-<style id="v2154QuestHudFix">
-/* ===== [v.215.4] 퀘스트 버튼 복구 + HUD 메뉴 세로 스크롤 ===== */
-#openQuestBtn{
-  position:relative !important;
-  z-index:80 !important;
-  pointer-events:auto !important;
-  touch-action:manipulation !important;
-}
-
-/* HUD 메뉴는 좌우가 아니라 위아래로 쓸어서 이동 */
-#settingsBar{
-  flex-direction:column !important;
-  flex-wrap:nowrap !important;
-  align-items:stretch !important;
-  justify-content:flex-start !important;
-  overflow-x:hidden !important;
-  overflow-y:auto !important;
-  scroll-snap-type:y proximity !important;
-  overscroll-behavior-y:contain !important;
-  overscroll-behavior-x:none !important;
-  touch-action:pan-y !important;
-  -webkit-overflow-scrolling:touch !important;
-  scrollbar-width:thin !important;
-  scrollbar-color:rgba(124,231,255,.55) transparent !important;
-}
-#settingsBar::-webkit-scrollbar{
-  display:block !important;
-  width:5px !important;
-}
-#settingsBar::-webkit-scrollbar-thumb{
-  background:rgba(124,231,255,.55) !important;
-  border-radius:999px !important;
-}
-#hud.menu-open #settingsBar{
-  max-height:min(168px, 28dvh) !important;
-  padding:6px 4px 4px 2px !important;
-}
-#settingsBar .ui-btn,
-#settingsBar select.ui-btn{
-  width:100% !important;
-  max-width:none !important;
-  flex:0 0 auto !important;
-  scroll-snap-align:start !important;
-  text-align:center !important;
-}
-@media (max-width:520px){
-  #hud.menu-open #settingsBar{max-height:min(150px, 27dvh) !important;}
-}
-</style>
 </head>
 <body>
 <div id="gameContainer">
@@ -13066,6 +13016,7 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
+  dash:      { title:'돌진 마스터', reward: () => 2500, color:'#8fffe0' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
   quake:     { title:'지진 마스터', reward: () => 10000, color:'#ffd0d0' },
@@ -13315,7 +13266,10 @@ function updateQuestUI() {
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 사용 퀘스트', '#7ce7ff');
   for (const skillKey of ['bubble','dash','laser','lightning','quake','blizzard','meteor','plasma']) {
-    const meta = SKILL_QUEST_META[skillKey];
+    const meta = SKILL_QUEST_META[skillKey] || { title:`${skillKey} 스킬 퀘스트`, reward:() => 1000, color:'#cfefff' };
+    if (!saveData.quests.skills[skillKey] || typeof saveData.quests.skills[skillKey] !== 'object') {
+      saveData.quests.skills[skillKey] = { count:0, target:10, tier:1 };
+    }
     const q = saveData.quests.skills[skillKey];
     const reward = getSkillQuestReward(skillKey);
     createQuestItem(
@@ -26539,7 +26493,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.5', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34460,62 +34414,133 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 </script>
 
 
-<script id="v2154QuestHudFixScript">
-(() => {
-  function installV2154Fix(){
-    const questBtn = document.getElementById('openQuestBtn');
-    const modal = document.getElementById('questModal');
-    const hud = document.getElementById('hud');
-    const bar = document.getElementById('settingsBar');
-    if(!questBtn || !modal) return;
 
-    let lastOpenAt = 0;
-    const openExistingQuest = (ev) => {
-      const now = Date.now();
-      if(now - lastOpenAt < 250) return;
-      lastOpenAt = now;
-      if(ev){
-        try{ ev.preventDefault(); ev.stopPropagation(); }catch(_){ }
+<!-- ===== [v.215.4] 퀘스트 버튼 복구 + HUD 메뉴 상하 스크롤 ===== -->
+<style>
+/* HUD 메뉴를 가로 한 줄이 아닌 세로 스크롤형 버튼 목록으로 표시 */
+#settingsBar{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+  align-content:start !important;
+  justify-content:stretch !important;
+  flex-wrap:unset !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior-y:contain !important;
+  scroll-snap-type:y proximity !important;
+  touch-action:pan-y !important;
+  -webkit-overflow-scrolling:touch !important;
+  scrollbar-width:thin !important;
+  scrollbar-color:rgba(124,231,255,.55) rgba(0,0,0,.18) !important;
+}
+#settingsBar::-webkit-scrollbar{display:block !important;width:5px !important}
+#settingsBar::-webkit-scrollbar-track{background:rgba(0,0,0,.18);border-radius:999px}
+#settingsBar::-webkit-scrollbar-thumb{background:rgba(124,231,255,.55);border-radius:999px}
+#hud.menu-open #settingsBar{
+  max-height:112px !important;
+  padding:6px 7px 4px 2px !important;
+}
+#settingsBar .ui-btn,
+#settingsBar select.ui-btn{
+  width:100% !important;
+  min-width:0 !important;
+  scroll-snap-align:start !important;
+}
+@media (max-width:520px){
+  #settingsBar{grid-template-columns:repeat(2, minmax(0,1fr)) !important}
+  #hud.menu-open #settingsBar{max-height:104px !important}
+}
+/* 타이틀 퀘스트 버튼 및 퀘스트 창의 터치/클릭을 확실히 허용 */
+#openQuestBtn{
+  position:relative !important;
+  z-index:45 !important;
+  pointer-events:auto !important;
+  touch-action:manipulation !important;
+}
+#questModal{
+  z-index:100500 !important;
+  pointer-events:auto !important;
+}
+#questModal .modal-body,
+#questModal button{
+  pointer-events:auto !important;
+}
+</style>
+<script>
+/* 기존 리스너 상태와 무관하게 퀘스트 버튼을 확실히 연결한다. */
+(function(){
+  function bindQuestButtonV2154(){
+    const btn=document.getElementById('openQuestBtn');
+    const modal=document.getElementById('questModal');
+    if(!btn||!modal||btn.dataset.questFixV2154==='1') return;
+    btn.dataset.questFixV2154='1';
+
+    let lastRun=0;
+    const openQuest=(e)=>{
+      if(e){
+        try{ e.preventDefault(); e.stopPropagation(); }catch(_){ }
       }
+      const now=Date.now();
+      if(now-lastRun<180) return;
+      lastRun=now;
       try{
-        if(typeof updateQuestUI === 'function') updateQuestUI();
-        modal.classList.remove('hidden');
-        if(typeof startQuestCountdown === 'function') startQuestCountdown();
-      }catch(err){
-        console.error('[v.215.4] 퀘스트 창 열기 오류:', err);
-        modal.classList.remove('hidden');
-      }
+        if(typeof openQuestModal==='function'){
+          openQuestModal();
+          return;
+        }
+      }catch(err){ console.warn('openQuestModal fallback:',err); }
+      try{ if(typeof updateQuestUI==='function') updateQuestUI(); }catch(_){ }
+      modal.classList.remove('hidden');
+      try{ if(typeof startQuestCountdown==='function') startQuestCountdown(); }catch(_){ }
     };
-
-    /* 모바일/PC 모두 안정적으로 반응 */
-    questBtn.addEventListener('pointerup', openExistingQuest, {passive:false});
-    questBtn.addEventListener('click', openExistingQuest, {passive:false});
-    questBtn.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter' || e.key === ' '){ openExistingQuest(e); }
-    });
-
-    /* 마우스 휠도 HUD 메뉴의 세로 스크롤에 연결 */
-    if(bar){
-      bar.addEventListener('wheel', (e) => {
-        if(Math.abs(e.deltaY) >= Math.abs(e.deltaX)) return;
-        e.preventDefault();
-        bar.scrollTop += e.deltaX;
-      }, {passive:false});
-    }
-
-    /* 퀘스트 창을 열 때 HUD 메뉴가 버튼을 가리지 않도록 접기 */
-    questBtn.addEventListener('pointerdown', () => {
-      if(hud && hud.classList.contains('menu-open')){
-        hud.classList.remove('menu-open');
-        const menuBtn = document.getElementById('hudMenuBtn');
-        if(menuBtn) menuBtn.setAttribute('aria-expanded','false');
-      }
-    }, {passive:true});
+    btn.addEventListener('pointerup',openQuest,{passive:false});
+    btn.addEventListener('touchend',openQuest,{passive:false});
+    btn.addEventListener('click',openQuest,{passive:false});
   }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installV2154Fix, {once:true});
-  else installV2154Fix();
+
+  function bindHudVerticalScrollV2154(){
+    const bar=document.getElementById('settingsBar');
+    if(!bar||bar.dataset.verticalScrollV2154==='1') return;
+    bar.dataset.verticalScrollV2154='1';
+
+    /* 마우스 휠은 메뉴 자체의 위/아래 이동으로 사용 */
+    bar.addEventListener('wheel',(e)=>{
+      if(Math.abs(e.deltaY)>=Math.abs(e.deltaX)){
+        bar.scrollTop+=e.deltaY;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },{passive:false,capture:true});
+
+    /* 데스크톱 마우스 드래그도 손가락 스와이프처럼 동작 */
+    let dragging=false,startY=0,startTop=0,moved=false;
+    bar.addEventListener('pointerdown',(e)=>{
+      if(e.pointerType==='touch') return; // 터치는 브라우저의 pan-y 사용
+      dragging=true; moved=false; startY=e.clientY; startTop=bar.scrollTop;
+      try{ bar.setPointerCapture(e.pointerId); }catch(_){ }
+    });
+    bar.addEventListener('pointermove',(e)=>{
+      if(!dragging) return;
+      const dy=e.clientY-startY;
+      if(Math.abs(dy)>4) moved=true;
+      bar.scrollTop=startTop-dy;
+      if(moved) e.preventDefault();
+    },{passive:false});
+    const endDrag=(e)=>{
+      if(!dragging) return;
+      dragging=false;
+      try{ bar.releasePointerCapture(e.pointerId); }catch(_){ }
+    };
+    bar.addEventListener('pointerup',endDrag);
+    bar.addEventListener('pointercancel',endDrag);
+  }
+
+  function init(){ bindQuestButtonV2154(); bindHudVerticalScrollV2154(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
 })();
 </script>
+
 </body>
 </html>
 
