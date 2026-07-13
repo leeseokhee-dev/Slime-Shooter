@@ -5362,11 +5362,11 @@ const closeSkillGuideBtn = document.getElementById('closeSkillGuideBtn');
 
 function escapeHtml(s){
   return String(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'","&#39;");
+    .split('&').join('&amp;')
+    .split('<').join('&lt;')
+    .split('>').join('&gt;')
+    .split('"').join('&quot;')
+    .split("'").join("&#39;");
 }
 
 function renderSkillGuide() {
@@ -9881,11 +9881,11 @@ let __restorePreviewOnConfirm = null;
 
 function escapeHtml(str) {
   return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+    .split('&').join('&amp;')
+    .split('<').join('&lt;')
+    .split('>').join('&gt;')
+    .split('"').join('&quot;')
+    .split("'").join('&#39;');
 }
 
 function formatNum(n) {
@@ -26493,7 +26493,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 215.7', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 215.8', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34541,6 +34541,93 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 })();
 </script>
 
+
+<!-- ===== [v.215.6] iPhone Safari quest modal compatibility ===== -->
+<style>
+@media (max-width: 600px){
+  #questModal{
+    position:fixed !important;
+    top:calc(env(safe-area-inset-top) + 12px) !important;
+    left:50% !important;
+    bottom:calc(env(safe-area-inset-bottom) + 12px) !important;
+    transform:translateX(-50%) !important;
+    width:94vw !important;
+    max-width:440px !important;
+    max-height:none !important;
+    height:auto !important;
+    overflow:hidden !important;
+    display:flex;
+    z-index:2147483000 !important;
+    -webkit-transform:translateX(-50%) !important;
+  }
+  #questModal.hidden{display:none !important;}
+  #questModal #questList{
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    touch-action:pan-y !important;
+  }
+  #questModal .close-btn{flex:0 0 auto !important;}
+}
+</style>
+<script id="iphoneQuestFixV2156">
+(function(){
+  'use strict';
+  function showQuestError(err){
+    var list=document.getElementById('questList');
+    if(!list) return;
+    list.innerHTML='';
+    var box=document.createElement('div');
+    box.style.cssText='padding:14px;line-height:1.6;color:#ffe8a8;background:rgba(255,190,60,.08);border:1px solid rgba(255,210,100,.3);border-radius:10px;';
+    box.textContent='퀘스트 정보를 불러오는 중 문제가 발생했습니다. 게임 데이터를 유지한 상태로 창을 다시 열어주세요.';
+    list.appendChild(box);
+    try{ console.error('iPhone quest render error',err); }catch(_){ }
+  }
+  function openQuestIOS(e){
+    if(e){ try{e.preventDefault();e.stopPropagation();}catch(_){ } }
+    var modal=document.getElementById('questModal');
+    var list=document.getElementById('questList');
+    if(!modal) return;
+    modal.classList.remove('hidden');
+    modal.style.display='flex';
+    if(list && !list.children.length){
+      list.innerHTML='<div style="padding:14px;text-align:center;color:#cfefff;">퀘스트 정보를 불러오는 중...</div>';
+    }
+    var render=function(){
+      try{
+        if(typeof updateQuestUI==='function') updateQuestUI();
+        if(typeof startQuestCountdown==='function') startQuestCountdown();
+      }catch(err){ showQuestError(err); }
+      try{ modal.offsetHeight; }catch(_){ }
+    };
+    if(window.requestAnimationFrame){ requestAnimationFrame(function(){setTimeout(render,0);}); }
+    else setTimeout(render,0);
+  }
+  function init(){
+    var old=document.getElementById('openQuestBtn');
+    if(!old || old.dataset.iosQuestV2156==='1') return;
+    old.dataset.iosQuestV2156='1';
+    old.addEventListener('touchstart',function(e){
+      old.dataset.questTouching='1';
+      try{e.stopPropagation();}catch(_){ }
+    },{passive:true,capture:true});
+    old.addEventListener('touchend',openQuestIOS,{passive:false,capture:true});
+    old.addEventListener('click',function(e){
+      if(old.dataset.questTouching==='1'){
+        old.dataset.questTouching='0';
+        try{e.preventDefault();e.stopPropagation();}catch(_){ }
+        return;
+      }
+      openQuestIOS(e);
+    },{passive:false,capture:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
 </body>
 </html>
 
