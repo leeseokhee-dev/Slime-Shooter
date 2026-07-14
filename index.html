@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.215.4 Circular Skills & Smooth Return)</title>
+<title>Slime Shooter - Ultimate Evolution (v.216.2 EXP RPG Gauge & Dungeon Balance)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3570,6 +3570,75 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 }
 </style>
 
+
+<!-- ✅ v.216.2 EXP RPG 게이지 UI + 라벨 폭 최적화 -->
+<style id="expRpgGaugeV2162">
+:root{
+  --gauge-label-width:clamp(46px,7.2vw,58px) !important;
+}
+#expRow{
+  grid-template-columns:var(--gauge-label-width) minmax(0,1fr) !important;
+}
+#feverRow{
+  grid-template-columns:clamp(58px,9vw,72px) minmax(0,1fr) !important;
+}
+#expLabel,#feverLabel{
+  min-width:0 !important;
+  max-width:none !important;
+  width:100% !important;
+  padding:0 clamp(4px,.8vw,7px) !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  line-height:1 !important;
+  letter-spacing:-.25px !important;
+}
+#expLabel{
+  font-size:clamp(12px,1.75vw,15px) !important;
+  background:linear-gradient(180deg,#385fbd 0%,#24448e 52%,#13295f 100%) !important;
+  border-color:rgba(174,210,255,.95) !important;
+}
+#feverLabel{
+  font-size:clamp(11px,1.65vw,14px) !important;
+}
+#expWrapper{
+  background:linear-gradient(180deg,#122719 0%,#07120b 54%,#030805 100%) !important;
+  border-color:rgba(124,255,145,.78) !important;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.72),inset 0 0 0 1px rgba(189,255,198,.10),0 4px 13px rgba(0,0,0,.34) !important;
+}
+#expBarFill{
+  background:linear-gradient(180deg,#b8ff63 0%,#39f34f 27%,#00c936 64%,#008824 100%) !important;
+  box-shadow:inset 0 2px 0 rgba(238,255,209,.76),inset 0 -2px 0 rgba(0,74,20,.58),0 0 13px rgba(24,255,74,.58) !important;
+}
+#expBarFill::before{
+  content:"";
+  position:absolute;
+  inset:2px 3px auto 3px;
+  height:35%;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,255,255,.56),rgba(255,255,255,.10));
+  pointer-events:none;
+}
+#expBarFill::after{
+  background:linear-gradient(180deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.04) 47%,rgba(0,57,16,.25) 100%) !important;
+}
+@media(max-width:520px){
+  :root{--gauge-label-width:43px !important;}
+  #feverRow{grid-template-columns:54px minmax(0,1fr) !important;}
+  #expLabel{font-size:12px !important;padding:0 3px !important;}
+  #feverLabel{font-size:10.5px !important;padding:0 3px !important;}
+}
+@media(max-width:360px){
+  :root{--gauge-label-width:40px !important;}
+  #feverRow{grid-template-columns:50px minmax(0,1fr) !important;}
+  #expLabel{font-size:11px !important;}
+  #feverLabel{font-size:9.5px !important;letter-spacing:-.45px !important;}
+}
+#gameContainer.watch-ui #expLabel,#gameContainer.watch-ui #feverLabel{
+  overflow:visible !important;
+  white-space:nowrap !important;
+}
+</style>
 </head>
 <body>
 <div id="gameContainer">
@@ -7208,10 +7277,10 @@ function getMiniGameComboMultiplier(combo) {
 let lastSelectedDungeonTier = 1;
 const DUNGEON_MAX_DAILY_RUNS = 10;
 const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 레거시 저장값 호환용(현재 던전 클리어 조건에는 사용하지 않음)
-const DUNGEON_KILL_TARGET_BASE = 400; // 단계별 목표: 1단계 400마리, 2단계 800마리...
+const DUNGEON_KILL_TARGET_BASE = 200; // 단계별 목표: 1단계 200마리, 2단계 400마리... 최대 2,000마리
 const DUNGEON_KILL_TARGET = DUNGEON_KILL_TARGET_BASE; // 레거시 표시/저장 호환용
-const DUNGEON_SPAWN_INTERVAL_MS = 3000;
-const DUNGEON_SPAWN_BATCH_BASE = 4;
+const DUNGEON_SPAWN_INTERVAL_MS = 1000;
+const DUNGEON_SPAWN_BATCH_BASE = 2;
 const DUNGEON_MAX_ENEMIES_ON_SCREEN = 50;
 const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500, 1900, 2400, 3000, 3800, 4800];
 const DUNGEON_MAX_TIER = 10;
@@ -24892,16 +24961,9 @@ const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number
 expEl.textContent =
   `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
 
-// ✅ 레벨업 등으로 %가 떨어질 때(바가 줄어들 때)는 애니메이션 없이 즉시 반영
-if (nextPercent + 0.001 < __lastExpBarPercent) {
-  expBarFillEl.style.transition = 'none';
-  expBarFillEl.style.width = nextPercent.toFixed(4) + '%';
-  expBarFillEl.offsetHeight; // reflow 강제
-  expBarFillEl.style.transition = ''; // CSS 기본 transition 복구
-} else {
-  // ✅ 올라갈 때는 기존 애니메이션 그대로
-  expBarFillEl.style.width = nextPercent.toFixed(4) + '%';
-}
+// ✅ [v.216.3] EXP 증감 모두 부드럽게 반영
+// 레벨업 시 100%에서 다음 레벨의 현재 비율까지 급격히 끊기지 않고 자연스럽게 감소한다.
+expBarFillEl.style.width = nextPercent.toFixed(4) + '%';
 
 __lastExpBarPercent = nextPercent;
 
@@ -26785,7 +26847,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 216.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 216.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34444,7 +34506,7 @@ function getDungeonDurationMsV2117(tier) {
 
 function getDungeonSpawnBatchPerSecondV2117(tier) {
   tier = Math.max(1, Math.min(DUNGEON_MAX_TIER, Math.floor(Number(tier) || 1)));
-  return Math.min(50, 4 + tier * 4);
+  return Math.min(20, tier * 2);
 }
 
 // 던전 전용 스폰도 1초 단위 시간 제한형으로 변경
