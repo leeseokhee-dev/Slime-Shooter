@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.216.2 Stage Countdown Clear)</title>
+<title>Slime Shooter - Ultimate Evolution (v.217.2 EXP Bar UI)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3585,7 +3585,7 @@ body.watch-ui:not(.playing-ui) #settingsBar,
             <span id="goldText" style="color:#ffd700; font-size:11px;">골드: 0</span>
         </div>
         <div class="hud-column text-right">
-            <span id="stageText">클리어까지 남은 시간: 0/0초</span>
+            <span id="stageText">스테이지: 1</span>
             <span id="hpText" style="display:none; color:#ff6666; font-size:12px;">HP: 100 / 100 [██████████] 100%</span>
             <span id="levelText">LV. 1</span>
         </div>
@@ -7380,10 +7380,6 @@ let stageCleared = false;
 let stageTransitionTimer = 0;
 let infiniteWaveSpawnAcc = 0; // 무한 모드 전용: 1.5초마다 새 줄 강제 생성
 let stageWaveSpawnAcc = 0; // ✅ [v.154.3] 스테이지 모드: 목표 마릿수별 생성 간격 누적
-// ✅ [v.216.2] 스테이지 모드 시간제 클리어
-let stageClearTimeTotalMs = 0;
-let stageClearTimeLeftMs = 0;
-let stageClearTimeExpired = false;
 
 // ✅ [v.79] 스테이지 클리어 연출: 3초(보너스 EXP + 랭크) → 결과 모달
 let stageClearSeq = { active: false, timer: 0, bonusExp: 0, rank: 'D', formulaText: '', formulaText2: '', hasBonusStage: false, resultExp: 0 };
@@ -7674,25 +7670,26 @@ function getStageKillTarget(stg) {
 
 
 function getStageTargetClearTimeSec(stg) {
-  stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
-  // ✅ [v.216.2] 스테이지 모드 클리어/보스 등장 제한 시간표
+  stg = Math.max(1, Math.floor(Number(stg) || 1));
+  // ✅ [v.211.9] 배터리 절약형 스테이지 목표 시간표
+  // 목표 처치 수를 지정 시간 안에 맞추도록 초당 스폰 속도를 계산합니다.
   if (stg <= 5) return 5;
-  if (stg <= 15) return 10;
-  if (stg <= 20) return 12;
-  if (stg <= 40) return 15;
-  if (stg <= 60) return 20;
-  if (stg <= 80) return 30;
-  if (stg <= 100) return 45;
+  if (stg <= 15) return 5;
+  if (stg <= 20) return 10;
+  if (stg <= 40) return 10;
+  if (stg <= 60) return 15;
+  if (stg <= 80) return 20;
+  if (stg <= 100) return 30;
   if (stg <= 120) return 15;
   if (stg <= 140) return 20;
   if (stg <= 160) return 25;
   if (stg <= 180) return 30;
-  if (stg <= 200) return 50;
+  if (stg <= 200) return 40;
   if (stg <= 220) return 20;
   if (stg <= 240) return 30;
   if (stg <= 260) return 40;
   if (stg <= 280) return 50;
-  return 60;
+  return 70;
 }
 
 function getStageTargetSpawnPerSecond(stg) {
@@ -7724,12 +7721,14 @@ function checkStageKillClearNow() {
   if (gameMode !== 'stage') return false;
   if (stageCleared) return false;
 
-  // ✅ [v.216.2] 몬스터 처치 수가 아니라 제한 시간 만료로 진행합니다.
-  // 보스 스테이지는 시간이 끝나면 보스가 등장하고, 보스 처치 후 클리어합니다.
-  if (!stageClearTimeExpired) return false;
+  const target = getStageKillTarget(stage);
+  if ((stageRunKillCount || 0) < target) return false;
 
-  // ✅ 5스테이지마다: 제한 시간 만료 → 보스 출현 → 보스 처치 후 클리어
-  if (isBossStage(stage)) {
+  const prevClearRank = (saveData.stageRanks && (saveData.stageRanks[stage] || saveData.stageRanks[String(stage)]));
+  const skipBossForReplay = !!prevClearRank;
+
+  // ✅ 5스테이지마다: 목표 처치 달성 → 보스 출현 → 보스 처치 후 클리어
+  if (isBossStage(stage) && !skipBossForReplay) {
     // 이미 보스까지 잡았으면 여기서 클리어 처리
     if ((stageBossKillCount || 0) >= 1) {
       stageCleared = true;
@@ -21502,15 +21501,6 @@ waveIndex = 0; bossSpawned = false; stageCleared = false;
 stageTransitionTimer = 0; lastBossBonus = 0;
 infiniteWaveSpawnAcc = 0;
 stageWaveSpawnAcc = 0;
-if (gameMode === 'stage') {
-  stageClearTimeTotalMs = getStageTargetClearTimeSec(stage) * 1000;
-  stageClearTimeLeftMs = stageClearTimeTotalMs;
-  stageClearTimeExpired = false;
-} else {
-  stageClearTimeTotalMs = 0;
-  stageClearTimeLeftMs = 0;
-  stageClearTimeExpired = false;
-}
 enemies.length = 0; enemyBullets.length = 0; boss = null;
 lasers = [];
 
@@ -21649,8 +21639,8 @@ if (gameMode === 'stage') {
     // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
     if (gameMode === 'mission') enemyCount = 1;
 
-    // ✅ [v.216.3] 스테이지 모드: 스테이지와 관계없이 호출 1회당 정확히 4마리 생성
-    if (gameMode === 'stage') enemyCount = 4;
+    // ✅ [v.161.2] 스테이지 모드: 목표 처치 수에 맞춘 초당 생성량을 한 번에 부채꼴로 생성
+    if (gameMode === 'stage') enemyCount = getStageMonsterSpawnBatchSize(stage);
 
     // ✅ [v.194.2] 무한/던전을 제외한 모드: 5마리 고정 묶음형 리스폰
     // 기존 시간 리스폰(0.5초/1초 등)은 사용하지 않고, 화면의 5마리가 전부 처치되거나
@@ -21659,9 +21649,9 @@ if (gameMode === 'stage') {
       enemyCount = 5;
     }
 
-    // ✅ [v.216.3] 스테이지 모드는 피버 여부와 관계없이 항상 4마리 유지
-    // 다른 전투 모드의 피버 생성량 보너스는 기존대로 적용합니다.
-    if (isFeverActive() && gameMode !== 'stage') {
+    // ✅ [v.203.21] 피버 중에는 모든 전투 모드에서 몬스터 생성량 +40%
+    // 묶음형 5마리 리스폰도 7마리로 증가하도록, 고정값 적용 이후에 계산합니다.
+    if (isFeverActive()) {
       enemyCount = Math.ceil(enemyCount * getFeverSpawnMultiplier());
     }
 
@@ -22505,9 +22495,6 @@ if (gameMode === 'stage') {
   wasHyperFlightActive = false;
   stageRunStartTime = performance.now();
   stageRunStartExp = exp;
-  stageClearTimeTotalMs = getStageTargetClearTimeSec(stage) * 1000;
-  stageClearTimeLeftMs = stageClearTimeTotalMs;
-  stageClearTimeExpired = false;
 } else {
   syncPlayerHealthToLevel({ refill: true });
   stageRunHits = 0;
@@ -23519,16 +23506,6 @@ function update(dt, currentTime) {
     }
   if (state !== 'playing') return;
 
-  // ✅ [v.216.2] 스테이지 모드 실제 시간 카운트다운
-  if (gameMode === 'stage' && !stageCleared && !stageClearTimeExpired && !(stageBonusState && stageBonusState.active)) {
-    stageClearTimeLeftMs = Math.max(0, stageClearTimeLeftMs - dt);
-    if (stageClearTimeLeftMs <= 0) {
-      stageClearTimeLeftMs = 0;
-      stageClearTimeExpired = true;
-      checkStageKillClearNow();
-    }
-  }
-
   // ✅ 던전 모드: 보스/웨이브/EXP구슬/점수/적탄 없음
   if (gameMode === 'dungeon') {
     updateDungeon(dt, currentTime);
@@ -23754,13 +23731,9 @@ if (bossIntro && bossIntro.active && bossIntro.phase !== 'active') {
       }
     } else {
       if (!bossSpawned && !stageCleared) {
-        // ✅ [v.216.3] 스테이지 모드: 모든 스테이지에서 1초마다 4마리 생성
-        // 그 외 모드는 기존 생성 간격을 유지합니다.
-        const stageSpawnInterval = (gameMode === 'stage')
-          ? 1000
-          : Math.max(80, getStageMonsterSpawnIntervalMs(stage) * (isFeverActive() ? 0.65 : 1));
+        const stageSpawnInterval = Math.max(80, getStageMonsterSpawnIntervalMs(stage) * (isFeverActive() ? 0.65 : 1));
         stageWaveSpawnAcc += dt;
-        const feverScreenCap = (gameMode === 'stage') ? 30 : (isFeverActive() ? 42 : 30);
+        const feverScreenCap = isFeverActive() ? 42 : 30;
         while (stageWaveSpawnAcc >= stageSpawnInterval && enemies.length < feverScreenCap) {
           stageWaveSpawnAcc -= stageSpawnInterval;
           spawnNextWave();
@@ -24964,15 +24937,12 @@ if (gameMode === 'dungeon') {
   stageEl.textContent = `연습 모드 · 허수아비 HP ${hpText} · ${Math.floor(practiceState.elapsedSec || 0)}초 측정`;
 } else {
   if (gameMode === 'stage') {
-    const totalSec = Math.max(0, Math.ceil((stageClearTimeTotalMs || 0) / 1000));
-    const leftSec = Math.max(0, Math.ceil((stageClearTimeLeftMs || 0) / 1000));
-    if (isBossStage(stage)) {
-      stageEl.textContent = stageClearTimeExpired
-        ? `스테이지: ${stage} · 보스 전투 중`
-        : `스테이지: ${stage} · 보스 등장까지 남은 시간: ${leftSec}/${totalSec}초`;
-    } else {
-      stageEl.textContent = `스테이지: ${stage} · 클리어까지 남은 시간: ${leftSec}/${totalSec}초`;
-    }
+    const t = getStageKillTarget(stage);
+    const k = Math.max(0, Math.floor(stageRunKillCount || 0));
+    const b = (isBossStage(stage) ? Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0))) : 0);
+    stageEl.textContent = isBossStage(stage)
+      ? `스테이지: ${stage} · 몬스터 처치 ${k}/${t}, 보스 처치 ${b}/1`
+      : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`;
   } else if (gameMode === 'mission') {
     const obj = getMissionObjective(stage);
     stageEl.textContent = isMissionBonusStage(stage)
@@ -26815,7 +26785,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 217', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 217.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34790,127 +34760,458 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
   #settingsBar{max-height:42px !important;}
   #hud.menu-open #settingsBar{max-height:42px !important;}
 }
+</style>
 
 
-/* ===== [v.216.5] HUD EXP 바 최종 조정 ===== */
-#expRow{
-  width:100%;
-  display:flex;
-  align-items:stretch;
-  gap:0;
+<!-- ✅ v.217 스테이지 빠른 클리어 업데이트 -->
+<script id="stageFastClearV217">
+/*
+  v.217
+  - 스테이지 모드 출현 주기: 0.5초 고정
+  - 1~15: 1마리 / 16~100: 2마리 / 101~200: 4마리 / 201~300: 6마리
+  - 제한 시간 클리어 제거
+  - 목표 몬스터 처치 수 도달 즉시 스테이지 클리어
+*/
+(function(){
+  'use strict';
+
+  function getStageSpawnCountV217(stg){
+    stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
+    if (stg <= 15) return 1;
+    if (stg <= 100) return 2;
+    if (stg <= 200) return 4;
+    return 6;
+  }
+
+  // 메인 루프에서 피버 보정(간격 ×0.65, 생성량 ×1.4)이 적용되므로
+  // 스테이지 모드에서는 역보정하여 실제 출현값을 항상 요청 수치로 고정합니다.
+  const intervalBeforeV217 = getStageMonsterSpawnIntervalMs;
+  getStageMonsterSpawnIntervalMs = function(stg){
+    if (gameMode !== 'stage') return intervalBeforeV217.apply(this, arguments);
+    return (typeof isFeverActive === 'function' && isFeverActive()) ? (500 / 0.65) : 500;
+  };
+
+  const batchBeforeV217 = getStageMonsterSpawnBatchSize;
+  getStageMonsterSpawnBatchSize = function(stg){
+    if (gameMode !== 'stage') return batchBeforeV217.apply(this, arguments);
+    const count = getStageSpawnCountV217(stg);
+    return (typeof isFeverActive === 'function' && isFeverActive()) ? (count / 1.4) : count;
+  };
+
+  // v.211.7의 시간제 스테이지 종료를 완전히 비활성화합니다.
+  if (typeof getStageTimeLeftMsV2117 === 'function') {
+    getStageTimeLeftMsV2117 = function(){ return Number.POSITIVE_INFINITY; };
+  }
+  if (typeof finishStageByTimeV2117 === 'function') {
+    finishStageByTimeV2117 = function(){ return false; };
+  }
+
+  function clearStageByKillsV217(){
+    if (gameMode !== 'stage' || stageCleared) return false;
+    const target = Math.max(1, Math.floor(Number(getStageKillTarget(stage)) || 1));
+    if (Math.max(0, Math.floor(Number(stageRunKillCount) || 0)) < target) return false;
+
+    stageCleared = true;
+    stageTransitionTimer = 0;
+    try { clearStageCombatObjects({ clearDrops:false }); } catch(e) {
+      enemies.length = 0;
+      enemyBullets.length = 0;
+      lasers = [];
+      boss = null;
+    }
+    bossSpawned = false;
+    try { spawnExplosion(width/2, height/3, 'rgba(255, 240, 150, 1)', 25); } catch(e) {}
+    try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+    try { addQuestStat('stageClears', 1); } catch(e) {}
+
+    try {
+      if (stage + 1 > saveData.quests.stage.current) saveData.quests.stage.current = stage + 1;
+      if (stage + 1 > saveData.maxUnlockedStage) {
+        saveData.maxUnlockedStage = Math.min(MAX_STAGE_CAP, stage + 1);
+      }
+      saveGameDataDebounced();
+    } catch(e) {}
+    return true;
+  }
+
+  checkStageKillClearNow = function(){
+    if (gameMode === 'mission') return checkMissionStageClearNow();
+    return clearStageByKillsV217();
+  };
+
+  // 다른 후속 패치가 처치 직후 함수를 호출하지 않는 경우도 매 프레임 보완합니다.
+  const updateBeforeV217 = update;
+  update = function(dt, timestamp){
+    const ret = updateBeforeV217.apply(this, arguments);
+    try {
+      if (state === 'playing' && gameMode === 'stage' && !stageCleared) {
+        clearStageByKillsV217();
+      }
+    } catch(e) {}
+    return ret;
+  };
+
+  const updateHUDBeforeV217 = updateHUD;
+  updateHUD = function(){
+    const ret = updateHUDBeforeV217.apply(this, arguments);
+    try {
+      if (state === 'playing' && gameMode === 'stage' && stageEl) {
+        const target = Math.max(1, Math.floor(Number(getStageKillTarget(stage)) || 1));
+        const kills = Math.max(0, Math.floor(Number(stageRunKillCount) || 0));
+        const count = getStageSpawnCountV217(stage);
+        const modeTxt = (typeof adventureModeActive !== 'undefined' && adventureModeActive) ? '모험 모드' : '스테이지';
+        stageEl.textContent = `${modeTxt} ${stage} · 처치 ${formatNumber(kills)}/${formatNumber(target)} · 출현 0.5초당 ${count}마리`;
+      }
+    } catch(e) {}
+    return ret;
+  };
+
+  try {
+    const noticeBody = document.getElementById('noticeBody');
+    if (noticeBody && !noticeBody.textContent.includes('v.217 스테이지 빠른 클리어')) {
+      const box = document.createElement('div');
+      box.style.cssText = 'margin:10px 0;padding:10px;border:1px solid rgba(124,255,181,.4);border-radius:10px;background:rgba(124,255,181,.08);line-height:1.6;';
+      box.innerHTML = '<b style="color:#7cffb5;">[v.217 스테이지 빠른 클리어]</b><br>스테이지 몬스터가 0.5초마다 구간별 1·2·4·6마리 출현합니다. 제한 시간 방식은 제거되며 목표 처치 수에 도달하면 즉시 클리어됩니다.';
+      noticeBody.prepend(box);
+    }
+  } catch(e) {}
+})();
+</script>
+
+
+
+<!-- ✅ v.217.1 EXP 바 가로 확장 · 라벨 축소 · 사각형 디자인 -->
+<style id="expBarUiV2171">
+:root{
+  /* EXP 글자가 온전히 보이는 범위에서 라벨 폭을 줄여 바 영역 확장 */
+  --gauge-label-width:clamp(43px, 6.6vw, 55px) !important;
 }
-#expLabel,
-#gameContainer.compact-ui #expLabel,
-#gameContainer.ultra-compact-ui #expLabel{
-  flex:0 0 38px !important;
-  width:38px !important;
-  min-width:38px !important;
-  max-width:38px !important;
-  padding:0 3px !important;
-  border-radius:2px 0 0 2px !important;
-  font-size:14px !important;
-  overflow:hidden;
+#expRow{
+  grid-template-columns:var(--gauge-label-width) minmax(0,1fr) !important;
+  column-gap:0 !important;
+}
+#expLabel{
+  min-width:0 !important;
+  width:100% !important;
+  padding:0 4px !important;
+  border-radius:3px 0 0 3px !important;
+  font-size:clamp(12px,1.75vw,15px) !important;
+  letter-spacing:-.35px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
 }
 #expWrapper{
-  flex:1 1 0 !important;
+  width:100% !important;
+  min-width:0 !important;
+  margin-left:0 !important;
+  border-radius:0 3px 3px 0 !important;
+}
+#expBarFill{
+  border-radius:0 2px 2px 0 !important;
+}
+/* EXP 행만 확장하고 FEVER 라벨 폭은 기존 비율 유지 */
+#feverRow{
+  grid-template-columns:clamp(54px,9vw,78px) minmax(0,1fr) !important;
+}
+@media(max-width:520px){
+  :root{--gauge-label-width:42px !important;}
+  #expLabel{padding:0 3px !important;font-size:12px !important;border-radius:2px 0 0 2px !important;}
+  #expWrapper{border-radius:0 2px 2px 0 !important;}
+  #expBarFill{border-radius:0 1px 1px 0 !important;}
+  #feverRow{grid-template-columns:52px minmax(0,1fr) !important;}
+}
+@media(max-width:360px){
+  :root{--gauge-label-width:40px !important;}
+  #expLabel{font-size:11px !important;padding:0 2px !important;}
+  #feverRow{grid-template-columns:48px minmax(0,1fr) !important;}
+}
+</style>
+<script id="expBarUiNoticeV2171">
+(function(){
+  try{
+    const noticeBody=document.getElementById('noticeBody');
+    if(noticeBody && !noticeBody.textContent.includes('v.217.1 EXP 바 UI')){
+      const box=document.createElement('div');
+      box.style.cssText='margin:10px 0;padding:10px;border:1px solid rgba(102,210,255,.42);border-radius:8px;background:rgba(102,210,255,.08);line-height:1.6;';
+      box.innerHTML='<b style="color:#72d9ff;">[v.217.1 EXP 바 UI]</b><br>EXP 라벨 폭을 글자가 보이는 범위까지 줄이고 경험치바를 더 길게 확장했습니다. 바와 라벨의 모서리는 더욱 네모난 형태로 조정했습니다.';
+      noticeBody.prepend(box);
+    }
+  }catch(e){}
+})();
+</script>
+
+<!-- ✅ v.217.1 hotfix: EXP 라벨과 게이지 완전 밀착 + 직사각형화 -->
+<style id="expBarStickyHotfixV2171">
+#expRow{
+  display:flex !important;
+  align-items:stretch !important;
+  gap:0 !important;
+  column-gap:0 !important;
+  width:100% !important;
+}
+#expLabel{
+  flex:0 0 clamp(40px,6vw,48px) !important;
+  width:clamp(40px,6vw,48px) !important;
+  min-width:40px !important;
+  max-width:48px !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+  padding:0 3px !important;
+  border-radius:2px 0 0 2px !important;
+  border-right:1px solid rgba(110,230,255,.72) !important;
+  font-size:clamp(12px,1.7vw,15px) !important;
+  line-height:var(--gauge-height) !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+}
+#expWrapper{
+  flex:1 1 auto !important;
   width:auto !important;
   min-width:0 !important;
-  margin:0 !important;
+  box-sizing:border-box !important;
+  margin:0 0 0 -1px !important;
   border-radius:0 2px 2px 0 !important;
   overflow:hidden !important;
 }
 #expBarFill{
-  height:100% !important;
-  min-width:0;
   border-radius:0 !important;
-  background:linear-gradient(180deg, #79ff52 0%, #29e33f 45%, #08b82f 100%) !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,80,18,.42), 0 0 10px rgba(38,255,83,.42) !important;
 }
-#expBarFill::after{
-  border-radius:0 !important;
-  background:linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.06) 48%, rgba(0,90,18,.16) 100%) !important;
-}
-@media (max-width:520px){
-  #expLabel,
-  #gameContainer.compact-ui #expLabel,
-  #gameContainer.ultra-compact-ui #expLabel{
-    flex-basis:34px !important;
-    width:34px !important;
-    min-width:34px !important;
-    max-width:34px !important;
+@media(max-width:520px){
+  #expLabel{
+    flex-basis:40px !important;
+    width:40px !important;
+    min-width:40px !important;
+    max-width:40px !important;
     padding:0 2px !important;
+    border-radius:1px 0 0 1px !important;
     font-size:12px !important;
   }
+  #expWrapper{border-radius:0 1px 1px 0 !important;}
 }
 </style>
 
-<script>
-/* ===== [v.217.1] 모드별 클리어 결과창 분리 =====
-   디멘션 인베이드의 이전 결과 스냅샷이 던전/몬스터 파크 결과창을
-   덮어쓰지 않도록, 현재 플레이 중인 모드를 최우선으로 판별합니다. */
+
+
+<!-- ✅ v.217.1 final fix: EXP 라벨·게이지 껌딱지 밀착 + 완전 사각형화 -->
+<style id="expBarGumStickyFinalV2171">
+/* 이전 EXP 배치 규칙을 최종적으로 덮어써 연결부에 빈틈이 생기지 않도록 함 */
+#expRow{
+  display:flex !important;
+  grid-template-columns:none !important;
+  align-items:stretch !important;
+  justify-content:flex-start !important;
+  gap:0 !important;
+  column-gap:0 !important;
+  row-gap:0 !important;
+  width:100% !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+#expLabel{
+  position:relative !important;
+  z-index:3 !important;
+  flex:0 0 42px !important;
+  width:42px !important;
+  min-width:42px !important;
+  max-width:42px !important;
+  height:var(--gauge-height) !important;
+  box-sizing:border-box !important;
+  margin:0 -2px 0 0 !important;
+  padding:0 3px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:1px 0 0 1px !important;
+  border-right:0 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.12) !important;
+  font-size:13px !important;
+  letter-spacing:-.45px !important;
+  line-height:1 !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+}
+#expWrapper{
+  position:relative !important;
+  z-index:2 !important;
+  flex:1 1 0 !important;
+  width:0 !important;
+  min-width:0 !important;
+  height:var(--gauge-height) !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-left:0 !important;
+  border-radius:0 1px 1px 0 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.05) !important;
+  overflow:hidden !important;
+}
+#expBarFill{
+  left:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-radius:0 !important;
+}
+/* 연결부를 가리는 가상 요소나 그림자 방지 */
+#expLabel::after{
+  content:"" !important;
+  position:absolute !important;
+  top:0 !important;
+  right:-2px !important;
+  bottom:0 !important;
+  width:3px !important;
+  background:inherit !important;
+  pointer-events:none !important;
+}
+@media(max-width:520px){
+  #expLabel{
+    flex-basis:40px !important;
+    width:40px !important;
+    min-width:40px !important;
+    max-width:40px !important;
+    font-size:12px !important;
+    border-radius:0 !important;
+  }
+  #expWrapper{border-radius:0 !important;}
+}
+</style>
+
+
+<!-- ✅ v.217.2: EXP 라벨·경험치 게이지 높이 완전 통일 -->
+<style id="expBarUnifiedHeightV2172">
+:root{
+  --exp-unified-height:var(--gauge-height);
+}
+#expRow{
+  display:flex !important;
+  align-items:stretch !important;
+  height:var(--exp-unified-height) !important;
+  min-height:var(--exp-unified-height) !important;
+  max-height:var(--exp-unified-height) !important;
+  gap:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  line-height:1 !important;
+}
+#expLabel,
+#expWrapper{
+  align-self:stretch !important;
+  height:var(--exp-unified-height) !important;
+  min-height:var(--exp-unified-height) !important;
+  max-height:var(--exp-unified-height) !important;
+  box-sizing:border-box !important;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  top:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  border-top-width:1px !important;
+  border-bottom-width:1px !important;
+  border-top-style:solid !important;
+  border-bottom-style:solid !important;
+}
+#expLabel{
+  margin-right:-2px !important;
+  border-radius:1px 0 0 1px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+}
+#expWrapper{
+  border-left-width:0 !important;
+  border-radius:0 1px 1px 0 !important;
+  overflow:hidden !important;
+}
+#expLabel::after{
+  top:1px !important;
+  bottom:1px !important;
+}
+#expBarFill,
+#expBarText,
+#expTicks{
+  height:100% !important;
+  min-height:100% !important;
+  max-height:100% !important;
+  box-sizing:border-box !important;
+  border-radius:0 !important;
+}
+@media(max-width:520px){
+  #expLabel,#expWrapper{border-radius:0 !important;}
+}
+</style>
+<script id="versionStampV2172">
 (function(){
-  function clearStaleDimensionResultV2171(){
-    try { dimensionInvasionLastResultV175 = null; } catch(e) {}
-    try { dimensionInvasionActiveV175 = false; } catch(e) {}
-    try { dimensionInvasionCompletingV175 = false; } catch(e) {}
-    try { dimensionInvasionCountdownUntilV175 = 0; } catch(e) {}
-    try { dimensionInvasionClearPopupUntilV176 = 0; } catch(e) {}
-    try { dimensionInvasionClearPopupTextV176 = ''; } catch(e) {}
-    try { dimensionInvasionBossPhaseV176 = false; } catch(e) {}
-  }
+  try{
+    document.title=document.title.replace(/v\.217(?:\.1)?/i,'v.217.2');
+    const noticeBody=document.getElementById('noticeBody');
+    if(noticeBody && !noticeBody.textContent.includes('v.217.2 EXP 높이 통일')){
+      const box=document.createElement('div');
+      box.style.cssText='margin:10px 0;padding:10px;border:1px solid rgba(102,210,255,.42);border-radius:6px;background:rgba(102,210,255,.08);line-height:1.6;';
+      box.innerHTML='<b style="color:#72d9ff;">[v.217.2 EXP 높이 통일]</b><br>EXP 라벨과 경험치 게이지의 바깥 높이·안쪽 높이·상하 테두리를 동일하게 맞췄습니다.';
+      noticeBody.prepend(box);
+    }
+  }catch(e){}
+})();
+</script>
 
-  function isMonsterParkModeV2171(){
-    try { return !!monsterParkActive; } catch(e) { return false; }
+<!-- ✅ v.217.3: EXP 라벨·게이지 슬림 높이 -->
+<style id="expBarSlimHeightV2173">
+:root{
+  --exp-unified-height:16px !important;
+}
+#expRow,
+#expLabel,
+#expWrapper{
+  height:16px !important;
+  min-height:16px !important;
+  max-height:16px !important;
+}
+#expLabel{
+  font-size:11px !important;
+  line-height:14px !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+}
+#expBarText{
+  font-size:10px !important;
+  line-height:14px !important;
+}
+#expBarFill,
+#expTicks{
+  height:100% !important;
+  min-height:100% !important;
+  max-height:100% !important;
+}
+#expLabel::after{
+  top:1px !important;
+  bottom:1px !important;
+}
+@media(max-width:520px){
+  :root{--exp-unified-height:16px !important;}
+  #expRow,#expLabel,#expWrapper{
+    height:16px !important;
+    min-height:16px !important;
+    max-height:16px !important;
   }
-
-  function isDungeonModeV2171(){
-    try { return gameMode === 'dungeon' || !!(dungeonState && dungeonState.active); }
-    catch(e) { return false; }
-  }
-
-  // 던전 입장 시 이전 특수 모드 결과를 완전히 정리합니다.
-  if (typeof startDungeonMode === 'function') {
-    const startDungeonModeBeforeV2171 = startDungeonMode;
-    startDungeonMode = function(tier){
-      clearStaleDimensionResultV2171();
-      try { if (typeof setMonsterParkMode === 'function') setMonsterParkMode(false); } catch(e) {}
-      return startDungeonModeBeforeV2171.apply(this, arguments);
-    };
-  }
-
-  // 몬스터 파크 입장 시 던전/디멘션의 런타임 결과를 정리합니다.
-  if (typeof startMonsterParkMode === 'function') {
-    const startMonsterParkModeBeforeV2171 = startMonsterParkMode;
-    startMonsterParkMode = function(){
-      clearStaleDimensionResultV2171();
-      try { if (dungeonState) dungeonState.active = false; } catch(e) {}
-      try { document.body.classList.remove('dungeon-mode'); } catch(e) {}
-      return startMonsterParkModeBeforeV2171.apply(this, arguments);
-    };
-  }
-
-  // 결과창을 그리기 직전, 현재 모드가 던전/몬스터 파크라면
-  // 남아 있는 디멘션 스냅샷이 이전 래퍼에서 사용되지 못하게 차단합니다.
-  if (typeof updateGameOverModal === 'function') {
-    const updateGameOverModalBeforeV2171 = updateGameOverModal;
-    updateGameOverModal = function(){
-      if (isDungeonModeV2171() || isMonsterParkModeV2171()) {
-        clearStaleDimensionResultV2171();
-      }
-      return updateGameOverModalBeforeV2171.apply(this, arguments);
-    };
-  }
-
-  // 타이틀 복귀 시에도 디멘션 결과 잔여값을 제거해 다음 판에 영향을 주지 않습니다.
-  if (typeof goToTitle === 'function') {
-    const goToTitleBeforeV2171 = goToTitle;
-    goToTitle = function(){
-      clearStaleDimensionResultV2171();
-      try { if (dungeonState) dungeonState.active = false; } catch(e) {}
-      try { document.body.classList.remove('dungeon-mode'); } catch(e) {}
-      return goToTitleBeforeV2171.apply(this, arguments);
-    };
-  }
+  #expLabel{font-size:11px !important;}
+  #expBarText{font-size:9px !important;}
+}
+</style>
+<script id="versionStampV2173">
+(function(){
+  try{
+    document.title=document.title.replace(/v\.217(?:\.1|\.2)?/i,'v.217.3');
+    const noticeBody=document.getElementById('noticeBody');
+    if(noticeBody && !noticeBody.textContent.includes('v.217.3 EXP 슬림 높이')){
+      const box=document.createElement('div');
+      box.style.cssText='margin:10px 0;padding:10px;border:1px solid rgba(102,210,255,.42);border-radius:6px;background:rgba(102,210,255,.08);line-height:1.6;';
+      box.innerHTML='<b style="color:#72d9ff;">[v.217.3 EXP 슬림 높이]</b><br>EXP 라벨과 경험치 게이지의 높이를 함께 낮춰 더 얇고 깔끔하게 조정했습니다.';
+      noticeBody.prepend(box);
+    }
+  }catch(e){}
 })();
 </script>
 </body>
