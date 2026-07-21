@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.219 Battery Optimization)</title>
+<title>Slime Shooter - Ultimate Evolution (v.219.2 Battery Optimization)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -324,7 +324,7 @@ body.fever-mode #gameCanvas {
 
     /* ===== 캔버스 ===== */
     #gameCanvas {
-        border-radius: 10px;
+        border-radius: 50%;
         border: 2px solid rgba(255, 255, 255, 0.3);
         background: radial-gradient(circle at top, #101530 0%, #050510 60%, #000000 100%);
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
@@ -723,8 +723,10 @@ body.dead-mode #consumableQuickBar{
 }
 #pauseBtn{
     position:absolute;
-    top: 0;
-    right: 8px;
+    top: 4px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     z-index: 120;
     width: 42px;
     height: 42px;
@@ -736,14 +738,14 @@ body.dead-mode #consumableQuickBar{
     font-size: 20px;
     font-weight: 900;
     line-height: 1;
-    border-radius: 10px;
+    border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.35);
     background: linear-gradient(to bottom, rgba(40,50,70,0.95), rgba(18,24,36,0.95));
     color:#ffffff;
     box-shadow: 0 8px 20px rgba(0,0,0,0.45);
 }
 #pauseBtn:active{
-    transform: scale(0.95);
+    transform: translateX(-50%) scale(0.95);
 }
 #pauseBtn.paused{
     border-color:#ffd36a;
@@ -1562,6 +1564,7 @@ function shouldShowTutorial(id){
 
 /* ===== [v.203.17] 게임 중 마을 NPC 퀘스트 상시 현황 ===== */
 #townQuestTracker{
+  display:none !important; /* ✅ [v.219.1] Canvas 접이식 패널로 대체 */
   position:absolute;
   left:12px;
   top:180px;
@@ -1900,6 +1903,9 @@ body.watch-ui{
   border-radius:6px !important;
 }
 #gameContainer.watch-ui #pauseBtn{
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
   width:28px !important;
   height:28px !important;
   min-width:28px !important;
@@ -3337,9 +3343,15 @@ body.watch-ui:not(.playing-ui) #settingsBar,
   height:22px !important;
   min-width:22px !important;
   top:2px !important;
-  right:2px !important;
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  border-radius:50% !important;
   font-size:11px !important;
   border-width:1px !important;
+}
+#gameContainer.watch-ui #pauseBtn:active{
+  transform:translateX(-50%) scale(0.95) !important;
 }
 /* 초소형 화면에서는 퀵 아이템/퀘스트 패널을 접어 플레이 공간 보호 */
 #gameContainer.watch-ui #consumableQuickBar,
@@ -14758,39 +14770,13 @@ function renderTownQuestTrackerRow(q){
   return `<div class="town-quest-tracker-row${done ? ' town-quest-tracker-complete' : ''}"><span class="town-quest-tracker-name">${prefix}${label}</span><span class="town-quest-tracker-count">${formatNumber(progress)}/${formatNumber(target)}</span></div>`;
 }
 function updateTownQuestTracker(){
-  if (!townQuestTrackerEl) return;
-  try {
-    updateTownQuestTrackerPosition();
-    const list = getAllActiveTownQuestTargets();
-    if (!isGameplayStateForTownQuestTracker() || !list.length) {
-      townQuestTrackerEl.classList.add('hidden');
-      townQuestTrackerEl.innerHTML = '';
-      return;
-    }
-    const completeCount = list.filter(q => (q.progress || 0) >= (q.target || 1)).length;
-    const trackerSig = list.map(q => {
-      const st = (typeof getTownQuestTrackerProgressV2081 === 'function') ? getTownQuestTrackerProgressV2081(q) : null;
-      return [q.npcName || '', q.type || '', st ? st.progress : Math.floor(Number(q.progress || 0)), st ? st.target : Math.floor(Number(q.target || 1)), st && st.failed ? 'fail' : ''].join(':');
-    }).join('|') + `|done:${completeCount}|total:${list.length}`;
-    if (townQuestTrackerEl.__trackerSig === trackerSig) {
-      townQuestTrackerEl.classList.remove('hidden');
-      return;
-    }
-    townQuestTrackerEl.__trackerSig = trackerSig;
-    const listHtml = list.map(renderTownQuestTrackerRow).join('');
-    const swipeHint = list.length > 2 ? `<div id="townQuestTrackerHint">↕ 스와이프로 ${formatNumber(list.length)}개 확인</div>` : '';
-    const oldScrollTop = townQuestTrackerEl.__questScrollTop || 0;
-    townQuestTrackerEl.innerHTML = `<div id="townQuestTrackerTitle"><span>🏡 NPC 퀘스트</span><span>${completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`}</span></div><div id="townQuestTrackerList">${listHtml}</div>${swipeHint}`;
-    const listEl = document.getElementById('townQuestTrackerList');
-    if (listEl) {
-      listEl.scrollTop = Math.min(oldScrollTop, Math.max(0, listEl.scrollHeight - listEl.clientHeight));
-      listEl.onscroll = () => { townQuestTrackerEl.__questScrollTop = listEl.scrollTop; };
-    }
-    townQuestTrackerEl.classList.remove('hidden');
-  } catch(e) {
-    try { townQuestTrackerEl.classList.add('hidden'); } catch(_e) {}
+  // ✅ [v.219.1] 진행판은 Canvas에서 실시간 렌더링합니다.
+  if (townQuestTrackerEl) {
+    townQuestTrackerEl.classList.add('hidden');
+    townQuestTrackerEl.innerHTML = '';
   }
 }
+
 function showTownQuestCompletionNotice(q){
   try {
     if (!q || q.__completionNoticeShown) return;
@@ -26805,7 +26791,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 219', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 219.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -27408,6 +27394,143 @@ function drawBossWarningOverlay() {
 }
 
 
+// ===== [v.219.1] Canvas 접이식 마을 퀘스트 진행판 =====
+// 게임 열람 시 항상 접힌 상태로 시작하며, 제목 막대를 터치하면 부드럽게 펴거나 접습니다.
+const canvasTownQuestTracker = {
+  expanded: false,
+  progress: 0,
+  target: 0,
+  animStart: 0,
+  animDuration: 260,
+  hitBox: null
+};
+
+function setCanvasTownQuestTrackerExpanded(nextExpanded){
+  const now = performance.now();
+  const current = Math.max(0, Math.min(1, Number(canvasTownQuestTracker.progress) || 0));
+  canvasTownQuestTracker.expanded = !!nextExpanded;
+  canvasTownQuestTracker.target = canvasTownQuestTracker.expanded ? 1 : 0;
+  canvasTownQuestTracker.animStart = now - (canvasTownQuestTracker.expanded ? current : (1-current)) * canvasTownQuestTracker.animDuration;
+}
+
+function updateCanvasTownQuestTrackerAnimation(timestamp){
+  const target = canvasTownQuestTracker.target;
+  const startValue = target ? 0 : 1;
+  const elapsed = Math.max(0, timestamp - canvasTownQuestTracker.animStart);
+  const t = Math.min(1, elapsed / canvasTownQuestTracker.animDuration);
+  const eased = 1 - Math.pow(1 - t, 3);
+  canvasTownQuestTracker.progress = startValue + (target - startValue) * eased;
+  if (t >= 1) canvasTownQuestTracker.progress = target;
+}
+
+function getCanvasTownQuestTrackerLayout(){
+  const panelX = 8;
+  // 골드/핫타임 현황판 아래에 배치해 서로 겹치지 않도록 합니다.
+  const panelY = 106;
+  const panelW = Math.min(286, Math.max(190, width * 0.44));
+  const headerH = 30;
+  const rowH = 22;
+  const list = (typeof getAllActiveTownQuestTargets === 'function') ? getAllActiveTownQuestTargets() : [];
+  const visibleRows = Math.min(4, list.length);
+  const expandedH = visibleRows * rowH + (list.length > visibleRows ? 18 : 8);
+  return { panelX, panelY, panelW, headerH, rowH, list, visibleRows, expandedH };
+}
+
+function drawCanvasTownQuestTracker(timestamp){
+  if (!ctx || !width || !height || titleLogoActive || !isGameplayStateForTownQuestTracker()) {
+    canvasTownQuestTracker.hitBox = null;
+    return;
+  }
+  const layout = getCanvasTownQuestTrackerLayout();
+  const {panelX:x, panelY:y, panelW:w, headerH, rowH, list, visibleRows, expandedH} = layout;
+  if (!list.length) { canvasTownQuestTracker.hitBox = null; return; }
+
+  updateCanvasTownQuestTrackerAnimation(timestamp || performance.now());
+  const open = Math.max(0, Math.min(1, canvasTownQuestTracker.progress));
+  const bodyH = expandedH * open;
+  const totalH = headerH + bodyH;
+  const completeCount = list.filter(q => {
+    const st = (typeof getTownQuestTrackerProgressV2081 === 'function') ? getTownQuestTrackerProgressV2081(q) : null;
+    return st ? st.done : Number(q.progress || 0) >= Number(q.target || 1);
+  }).length;
+
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.lineJoin='round';
+  ctx.beginPath(); ctx.roundRect(x, y, w, totalH, 10);
+  ctx.fillStyle='rgba(5,13,22,0.90)'; ctx.fill();
+  ctx.strokeStyle='rgba(124,255,181,0.58)'; ctx.lineWidth=1.2; ctx.stroke();
+
+  ctx.beginPath(); ctx.roundRect(x, y, w, headerH, 10);
+  ctx.fillStyle='rgba(18,54,43,0.94)'; ctx.fill();
+  ctx.textBaseline='middle';
+  ctx.font=`900 12px ${getUIFontFamily()}`;
+  ctx.fillStyle='#b8ffd8'; ctx.textAlign='left';
+  ctx.fillText('🏡 마을 퀘스트 진행', x+10, y+headerH/2);
+  ctx.textAlign='right';
+  ctx.fillStyle=completeCount ? '#fff1a8' : '#dffff0';
+  ctx.fillText(completeCount ? `완료 ${formatNumber(completeCount)}` : `${formatNumber(list.length)}개`, x+w-28, y+headerH/2);
+
+  ctx.save();
+  ctx.translate(x+w-14, y+headerH/2);
+  ctx.rotate(open * Math.PI);
+  ctx.strokeStyle='#b8ffd8'; ctx.lineWidth=2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-4,-2); ctx.lineTo(0,2); ctx.lineTo(4,-2); ctx.stroke();
+  ctx.restore();
+
+  if (bodyH > 1) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y+headerH, w, bodyH); ctx.clip();
+    ctx.globalAlpha=Math.min(1, open*1.6);
+    for (let i=0;i<visibleRows;i++){
+      const q=list[i];
+      const st=(typeof getTownQuestTrackerProgressV2081==='function') ? getTownQuestTrackerProgressV2081(q) : null;
+      const progress=st ? st.progress : Math.max(0,Math.floor(Number(q.progress||0)));
+      const target=st ? st.target : Math.max(1,Math.floor(Number(q.target||1)));
+      const done=st ? st.done : progress>=target;
+      const failed=!!(st && st.failed);
+      const cy=y+headerH+5+i*rowH+rowH/2;
+      if(i>0){ ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+8,cy-rowH/2); ctx.lineTo(x+w-8,cy-rowH/2); ctx.stroke(); }
+      let label=`${q.npcName||'마을 NPC'} · ${getTownQuestTypeLabel(q.type)}`;
+      ctx.font=`800 10px ${getUIFontFamily()}`;
+      const countText=`${formatNumber(progress)}/${formatNumber(target)}`;
+      const maxLabelW=w-ctx.measureText(countText).width-32;
+      while(ctx.measureText(label).width>maxLabelW && label.length>5) label=label.slice(0,-2)+'…';
+      ctx.textAlign='left'; ctx.fillStyle=done?'#fff1a8':(failed?'#ffb0b0':'#eefcff');
+      ctx.fillText((done?'✓ ':'')+label,x+10,cy);
+      ctx.textAlign='right'; ctx.fillStyle=done?'#fff1a8':'#ffe98a';
+      ctx.fillText(countText,x+w-10,cy);
+    }
+    if(list.length>visibleRows){
+      ctx.font=`800 9px ${getUIFontFamily()}`; ctx.textAlign='right'; ctx.fillStyle='#b8ffd8';
+      ctx.fillText(`외 ${formatNumber(list.length-visibleRows)}개`,x+w-10,y+headerH+expandedH-8);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+  canvasTownQuestTracker.hitBox={x,y,w,h:headerH};
+}
+
+function handleCanvasTownQuestTrackerPointer(clientX, clientY){
+  const box=canvasTownQuestTracker.hitBox;
+  if(!box || !canvas || !isGameplayStateForTownQuestTracker()) return false;
+  const rect=canvas.getBoundingClientRect();
+  const x=(clientX-rect.left)*(canvas.width/rect.width);
+  const y=(clientY-rect.top)*(canvas.height/rect.height);
+  if(x>=box.x && x<=box.x+box.w && y>=box.y && y<=box.y+box.h){
+    setCanvasTownQuestTrackerExpanded(!canvasTownQuestTracker.expanded);
+    return true;
+  }
+  return false;
+}
+
+// Pointer Events를 지원하는 iPhone/브라우저에서 드래그 입력보다 먼저 패널 터치를 처리합니다.
+canvas.addEventListener('pointerdown', (e)=>{
+  if(handleCanvasTownQuestTrackerPointer(e.clientX,e.clientY)){
+    e.preventDefault(); e.stopImmediatePropagation();
+  }
+}, {passive:false, capture:true});
+
 // ===== [v.219] Canvas 통합 현황판 =====
 // 자주 변하는 점수/스테이지/핫타임/골드를 DOM 대신 한 번의 Canvas 패스로 표시합니다.
 function drawCanvasStatusHUD() {
@@ -27430,8 +27553,9 @@ function drawCanvasStatusHUD() {
   ctx.fillStyle = 'rgba(8,12,22,0.92)';
   ctx.strokeStyle = 'rgba(255,215,0,0.82)';
   ctx.lineWidth = 1.5;
-  ctx.fillRect(pad, pad, goldW, 28);
-  ctx.strokeRect(pad, pad, goldW, 28);
+  ctx.beginPath();
+  ctx.roundRect(pad, pad, goldW, 28, 8);
+  ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#ffe06a';
   ctx.fillText(goldText, pad + 12, pad + 14);
 
@@ -27453,7 +27577,7 @@ function drawCanvasStatusHUD() {
     ctx.fillStyle = 'rgba(8,12,22,0.78)';
     ctx.strokeStyle = 'rgba(124,231,255,0.38)';
     ctx.lineWidth = 1;
-    ctx.fillRect(pad, leftY, leftW, leftH); ctx.strokeRect(pad, leftY, leftW, leftH);
+    ctx.beginPath(); ctx.roundRect(pad, leftY, leftW, leftH, 7); ctx.fill(); ctx.stroke();
     leftLines.forEach((text, i) => {
       ctx.fillStyle = i === 0 ? '#ffb36a' : '#f4f7ff';
       ctx.fillText(text, pad + 10, leftY + 8 + lineH * i + lineH / 2);
@@ -27467,7 +27591,7 @@ function drawCanvasStatusHUD() {
     const stageX = width - pad - stageW;
     ctx.fillStyle = 'rgba(8,12,22,0.82)';
     ctx.strokeStyle = 'rgba(124,255,184,0.38)';
-    ctx.fillRect(stageX, pad, stageW, 28); ctx.strokeRect(stageX, pad, stageW, 28);
+    ctx.beginPath(); ctx.roundRect(stageX, pad, stageW, 28, 7); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#8dffb1';
     ctx.textAlign = 'right';
     ctx.fillText(renderedStage, width - pad - 10, pad + 14);
@@ -27643,6 +27767,9 @@ requestAnimationFrame(gameLoop);
     }
 if (state === 'gameover') drawGameOverScreen();
   }
+
+  // ✅ [v.219.1] 마을 퀘스트 진행판은 Canvas에서 접이식으로 표시
+  drawCanvasTownQuestTracker(timestamp);
 
   // ✅ [v.219] 다른 Canvas 현황판보다 나중에 그려 골드가 항상 보이도록 유지
   drawCanvasStatusHUD();
