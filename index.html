@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.218 Stage & Dungeon 0.75s Spawn)</title>
+<title>Slime Shooter - Ultimate Evolution (v.219 Battery Optimization)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3579,6 +3579,14 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 #expText{font-size:9px!important;line-height:14px!important;padding:0 2px!important;}
 @media(max-width:520px){#expLabel,#gameContainer.compact-ui #expLabel,#gameContainer.ultra-compact-ui #expLabel{flex-basis:28px!important;width:28px!important;min-width:28px!important;max-width:28px!important;font-size:8px!important;}#expWrapper{height:14px!important;min-height:14px!important;max-height:14px!important;}}
 </style>
+
+<style id="v219CanvasHudCss">
+/* ===== [v.219] 배터리 최적화: 변동 현황은 Canvas로 통합 ===== */
+#hudTop{display:none !important;}
+#hud{gap:3px !important;}
+body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !important;}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -5250,9 +5258,14 @@ function updateRankIcon(){
 // 15fps/저사양 모드에서도 계급 회전·오라·파티클은 계속 유지됩니다.
 if(!window.__rankIconAnimationRAF){
   window.__rankIconAnimationRAF = true;
-  const __rankIconLoop = ()=>{
-    if(rankIconBtn && rankIconBtn.offsetParent){
-      updateRankIcon();
+  let __rankIconLastPaint = 0;
+  const __rankIconLoop = (ts)=>{
+    // ✅ [v.219] 배터리 절약: 계급 아이콘은 최대 4FPS로만 갱신
+    if((ts - __rankIconLastPaint) >= 250){
+      __rankIconLastPaint = ts;
+      if(rankIconBtn && rankIconBtn.offsetParent && !document.hidden){
+        updateRankIcon();
+      }
     }
     requestAnimationFrame(__rankIconLoop);
   };
@@ -21327,7 +21340,7 @@ let finalScore = cfg.score + stageBonus;
         type, x, y, vx, vy, size, hp, maxHp: hp, score: finalScore, element,
         level: stage, stage,
         pattern, hitTimer: 0,
-        shootTimer: randRange(1000, 3000),
+        shootTimer: 2000,
         ...extra
     };
 }
@@ -24012,16 +24025,13 @@ function updateEnemies(dt) {
             e.x += (e.vx || 0) * delta * hyperDriftScale;
             e.y += e.vy * delta * 1.15 * hyperFallScale;
         }
-if (gameMode !== 'dungeon' && stage >= 5 && player && player.alive && !isPlayerDying && e.y > 0 && e.y < height - 100) {
+if (gameMode === 'stage' && stage > 5 && player && player.alive && !isPlayerDying && e.y > 0 && e.y < height - 100) {
             e.shootTimer -= dt;
             if (e.shootTimer <= 0) {
                 const style = e.attackStyle || 'single';
 
-                // ✅ 쿨다운: 스테이지가 오를수록 짧아짐(단, 너무 빠르지 않게 하한 적용)
-                let baseCooldown = Math.max(900, 4800 - (stage * 70));
-                if (style === 'shotgun' || style === 'radial') baseCooldown *= 1.10;
-                if (style === 'burst') baseCooldown *= 0.92;
-                e.shootTimer = baseCooldown + randRange(0, 850);
+                // ✅ [v.219] 스테이지 6~300 몬스터 탄환 발사 간격을 정확히 2초로 통일
+                e.shootTimer = 2000;
 
                 const dx = player.x - e.x;
                 const dy = player.y - e.y;
@@ -26795,7 +26805,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 218.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 219', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -27397,6 +27407,75 @@ function drawBossWarningOverlay() {
   ctx.restore();
 }
 
+
+// ===== [v.219] Canvas 통합 현황판 =====
+// 자주 변하는 점수/스테이지/핫타임/골드를 DOM 대신 한 번의 Canvas 패스로 표시합니다.
+function drawCanvasStatusHUD() {
+  if (!ctx || !width || !height || titleLogoActive) return;
+
+  const pad = 8;
+  const lineH = 18;
+  const fontFamily = getUIFontFamily();
+  const goldText = `골드 ${formatNumber(Math.max(0, Math.floor(Number(gold) || 0)))} G`;
+  const isTitleLike = state === 'title' || state === 'town';
+
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+
+  // 골드는 항상 동일한 왼쪽 상단 좌표에 마지막으로 그려 다른 Canvas 현황판에 가려지지 않게 합니다.
+  ctx.font = `900 14px ${fontFamily}`;
+  const goldW = Math.min(width - 16, Math.max(112, ctx.measureText(goldText).width + 24));
+  ctx.fillStyle = 'rgba(8,12,22,0.92)';
+  ctx.strokeStyle = 'rgba(255,215,0,0.82)';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(pad, pad, goldW, 28);
+  ctx.strokeRect(pad, pad, goldW, 28);
+  ctx.fillStyle = '#ffe06a';
+  ctx.fillText(goldText, pad + 12, pad + 14);
+
+  if (!isTitleLike) {
+    const hotText = (hotTimeEl && hotTimeEl.textContent) ? hotTimeEl.textContent : '일반 EXP';
+    const stageText = (stageEl && stageEl.textContent) ? stageEl.textContent : `스테이지: ${stage}`;
+    const scoreVisible = scoreEl && scoreEl.style.display !== 'none';
+    const scoreText = scoreVisible ? scoreEl.textContent : '';
+    const highText = scoreVisible && highScoreEl ? highScoreEl.textContent : '';
+
+    ctx.font = `800 12px ${fontFamily}`;
+    const leftLines = [hotText];
+    if (scoreText) leftLines.push(scoreText);
+    if (highText) leftLines.push(highText);
+    const maxLeftText = leftLines.reduce((a,b)=>ctx.measureText(a).width > ctx.measureText(b).width ? a : b, '');
+    const leftW = Math.min(width * 0.58, Math.max(150, ctx.measureText(maxLeftText).width + 20));
+    const leftH = leftLines.length * lineH + 10;
+    const leftY = pad + 34;
+    ctx.fillStyle = 'rgba(8,12,22,0.78)';
+    ctx.strokeStyle = 'rgba(124,231,255,0.38)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(pad, leftY, leftW, leftH); ctx.strokeRect(pad, leftY, leftW, leftH);
+    leftLines.forEach((text, i) => {
+      ctx.fillStyle = i === 0 ? '#ffb36a' : '#f4f7ff';
+      ctx.fillText(text, pad + 10, leftY + 8 + lineH * i + lineH / 2);
+    });
+
+    ctx.font = `900 12px ${fontFamily}`;
+    const maxStageW = Math.max(170, width - leftW - 32);
+    let renderedStage = stageText;
+    while (ctx.measureText(renderedStage).width > maxStageW - 20 && renderedStage.length > 8) renderedStage = renderedStage.slice(0, -2) + '…';
+    const stageW = Math.min(maxStageW, Math.max(170, ctx.measureText(renderedStage).width + 20));
+    const stageX = width - pad - stageW;
+    ctx.fillStyle = 'rgba(8,12,22,0.82)';
+    ctx.strokeStyle = 'rgba(124,255,184,0.38)';
+    ctx.fillRect(stageX, pad, stageW, 28); ctx.strokeRect(stageX, pad, stageW, 28);
+    ctx.fillStyle = '#8dffb1';
+    ctx.textAlign = 'right';
+    ctx.fillText(renderedStage, width - pad - 10, pad + 14);
+  }
+
+  ctx.restore();
+}
+
 function gameLoop(timestamp) {
   const targetFps = FPS_OPTIONS.includes(Number(saveData.targetFps)) ? Number(saveData.targetFps) : DEFAULT_TARGET_FPS;
   const frameInterval = 1000 / targetFps;
@@ -27565,6 +27644,8 @@ requestAnimationFrame(gameLoop);
 if (state === 'gameover') drawGameOverScreen();
   }
 
+  // ✅ [v.219] 다른 Canvas 현황판보다 나중에 그려 골드가 항상 보이도록 유지
+  drawCanvasStatusHUD();
   requestAnimationFrame(gameLoop);
 }
 
@@ -34768,6 +34849,20 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
 
 
 
+
+
+<script id="v219BatteryPatch">
+/* ===== v.219 배터리 최적화 =====
+ * - HUD 변동 현황/핫타임/골드: Canvas 단일 패스로 통합
+ * - EXP/FEVER/닉네임/레벨/계급: 기존 HUD 유지
+ * - 스테이지 1~5: 몬스터 탄환 없음
+ * - 스테이지 6~300: 몬스터 탄환 2초마다 발사
+ */
+document.addEventListener('visibilitychange',()=>{
+  // 백그라운드 복귀 시 누적 delta로 인한 순간 연산 폭증 방지
+  if(!document.hidden){ lastTime=performance.now(); lastRenderTs=0; }
+},{passive:true});
+</script>
 
 </body>
 </html>
