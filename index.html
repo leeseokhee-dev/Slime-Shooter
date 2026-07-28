@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.220)</title>
+<title>Slime Shooter - Ultimate Evolution (v.220.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4040,7 +4040,7 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
                 <option value="2">2발 · 4배 데미지</option>
                 <option value="1">1발 · 5배 데미지 · LV.11+ 범위형</option>
             </select>
-            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1 1발 · LV.11 2발 · LV.20 3발 · LV.30 4발 · LV.40 5발 / LV.40부터 직접 변경</div>
+            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1 1발 · LV.11 2발 · LV.20 3발 · LV.30 4발 · LV.40 5발 / 해금된 범위에서 직접 변경</div>
         </div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
@@ -10285,6 +10285,9 @@ function toggleHomingSetting() {
   updateSettingsUI();
 }
 
+// ✅ [v.220.3] 새로고침 없이 즉시 반영되는 실시간 발사 수
+let livePlayerBulletCount = null;
+
 // ✅ [v.207.3] 플레이어 총알 수 직접 조정 + 단발 범위형
 function getPlayerBulletUnlockLevel(count) {
   const c = Math.max(1, Math.min(5, Math.floor(Number(count) || 1)));
@@ -10312,13 +10315,17 @@ function ensurePlayerBulletCountUnlocked() {
   return fixed;
 }
 function getPreferredPlayerBulletCount() {
-  return ensurePlayerBulletCountUnlocked();
+  const unlocked = getUnlockedPlayerBulletCount();
+  if (livePlayerBulletCount !== null) {
+    livePlayerBulletCount = Math.max(1, Math.min(unlocked, Math.floor(Number(livePlayerBulletCount) || 1)));
+    return livePlayerBulletCount;
+  }
+  livePlayerBulletCount = ensurePlayerBulletCountUnlocked();
+  return livePlayerBulletCount;
 }
 function getEffectivePlayerBulletCount() {
-  // ✅ [v.220] LV.40 미만은 레벨에 따라 총알 수가 자동 증가합니다.
-  // LV.40 이상부터 게임 시작 전 설정값(1~5발)을 적용합니다.
-  const lv = Math.max(1, Math.floor(Number(level || 1)));
-  if (lv < 40) return getUnlockedPlayerBulletCount();
+  // ✅ [v.220.2 FIX] 현재 레벨에서 해금된 범위 안에서는 선택한 총알 수를 항상 적용합니다.
+  // 예: LV.23은 최대 3발까지 해금되어 있으며 1발, 2발, 3발 중 선택할 수 있습니다.
   return getPreferredPlayerBulletCount();
 }
 function getPlayerFireIntervalByBulletCount() {
@@ -10370,17 +10377,23 @@ function syncPlayerBulletCountOptions() {
 function setPlayerBulletCountSetting(count) {
   const requested = normalizePlayerBulletCountValue(count, false);
   const unlocked = getUnlockedPlayerBulletCount();
-  if (requested > unlocked) {
-    saveData.playerBulletCount = unlocked;
-    saveGameData();
-    updateSettingsUI();
-    try { showToast(`${requested}발은 LV.${getPlayerBulletUnlockLevel(requested)}부터 해금됩니다.`, '#ffcc88', 1600); } catch(e) {}
-    return;
-  }
-  saveData.playerBulletCount = requested;
+  const applied = Math.min(requested, unlocked);
+
+  // ✅ [v.220.3 FIX] 저장 데이터뿐 아니라 현재 실행 중인 발사 로직에도 즉시 반영
+  livePlayerBulletCount = applied;
+  saveData.playerBulletCount = applied;
+
+  // 발사 간격이 바뀌어도 다음 발사부터 바로 새 설정을 사용하도록 타이머 초기화
+  try { lastShotTime = 0; } catch(e) {}
+
   saveGameData();
   updateSettingsUI();
-  try { showToast(`플레이어 총알 수: ${saveData.playerBulletCount}발`, '#aee6ff', 1400); } catch(e) {}
+
+  if (requested > unlocked) {
+    try { showToast(`${requested}발은 LV.${getPlayerBulletUnlockLevel(requested)}부터 해금됩니다. 현재 ${applied}발로 적용됩니다.`, '#ffcc88', 1600); } catch(e) {}
+    return;
+  }
+  try { showToast(`플레이어 총알 수: ${applied}발 · 즉시 적용`, '#aee6ff', 1400); } catch(e) {}
 }
 function cyclePlayerBulletCountSetting() {
   const unlocked = getUnlockedPlayerBulletCount();
