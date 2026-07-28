@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.219.2 Battery Optimization)</title>
+<title>Slime Shooter - Ultimate Evolution (v.220)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4040,7 +4040,7 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
                 <option value="2">2발 · 4배 데미지</option>
                 <option value="1">1발 · 5배 데미지 · LV.11+ 범위형</option>
             </select>
-            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">2발 LV.10 · 3발 LV.20 · 4발 LV.30 · 5발 LV.40 해금 / 1발 범위형은 LV.11부터</div>
+            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1 1발 · LV.11 2발 · LV.20 3발 · LV.30 4발 · LV.40 5발 / LV.40부터 직접 변경</div>
         </div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
@@ -4122,7 +4122,7 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
         </div>
         <div style="font-size:12px; color:#aab; opacity:0.95; line-height:1.5; margin-top:10px;">
             • 처치 목표형 진행: 단계마다 150마리씩 목표가 증가합니다<br>
-            • 0.75초당 출현: 1단계 1마리 · 2단계 2마리 · 3단계 3마리 · 4단계 4마리 · 5~10단계 5마리<br>
+            • 0.7초당 출현: 1단계 1마리 · 2단계 2마리 · 3단계 3마리 · 4단계 4마리 · 5~10단계 5마리<br>
             • 목표 처치 수 달성 시 해당 단계 던전 상자 획득<br>
             • 점수/EXP 구슬 없음 · 레이저 발사 불가 · 적 탄환 없음
         </div>
@@ -7244,7 +7244,7 @@ const DUNGEON_MAX_DAILY_RUNS = 10;
 const DUNGEON_DURATION_MS = 3 * 60 * 1000; // 레거시 저장값 호환용(현재 던전 클리어 조건에는 사용하지 않음)
 const DUNGEON_KILL_TARGET_BASE = 150; // 단계별 목표: 1단계 150마리, 2단계 300마리...
 const DUNGEON_KILL_TARGET = DUNGEON_KILL_TARGET_BASE; // 레거시 표시/저장 호환용
-const DUNGEON_SPAWN_INTERVAL_MS = 750;
+const DUNGEON_SPAWN_INTERVAL_MS = 700; // ✅ [v.220] 던전 몬스터 출현 간격 0.7초
 const DUNGEON_SPAWN_BATCH_BASE = 1;
 const DUNGEON_MAX_ENEMIES_ON_SCREEN = 50;
 const DUNGEON_TIER_BASE_EXP = [300, 600, 900, 1200, 1500, 1900, 2400, 3000, 3800, 4800];
@@ -7747,9 +7747,9 @@ function getStageMonsterSpawnBatchSize(stg) {
   // ✅ [v.218] 0.75초마다 스테이지 구간별 고정 마릿수 출현
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
   if (stg <= 15) return 1;
-  if (stg <= 100) return 2;
-  if (stg <= 200) return 4;
-  return 6;
+  if (stg <= 100) return 3;
+  if (stg <= 200) return 5;
+  return 7;
 }
 function checkStageKillClearNow() {
   if (gameMode === 'mission') return checkMissionStageClearNow();
@@ -10288,15 +10288,15 @@ function toggleHomingSetting() {
 // ✅ [v.207.3] 플레이어 총알 수 직접 조정 + 단발 범위형
 function getPlayerBulletUnlockLevel(count) {
   const c = Math.max(1, Math.min(5, Math.floor(Number(count) || 1)));
-  return ({ 1:1, 2:10, 3:20, 4:30, 5:40 }[c] || 1);
+  return ({ 1:1, 2:11, 3:20, 4:30, 5:40 }[c] || 1);
 }
 function getUnlockedPlayerBulletCount() {
-  // ✅ [v.207.5] 총알 수 레벨 해금: 2발 LV.10, 3발 LV.20, 4발 LV.30, 5발 LV.40
+  // ✅ [v.220] 총알 수 자동 성장: 1발 LV.1, 2발 LV.11, 3발 LV.20, 4발 LV.30, 5발 LV.40
   const lv = Math.max(1, Math.floor(Number(level || 1)));
   if (lv >= 40) return 5;
   if (lv >= 30) return 4;
   if (lv >= 20) return 3;
-  if (lv >= 10) return 2;
+  if (lv >= 11) return 2;
   return 1;
 }
 function normalizePlayerBulletCountValue(count, clampToUnlock = true) {
@@ -10315,6 +10315,10 @@ function getPreferredPlayerBulletCount() {
   return ensurePlayerBulletCountUnlocked();
 }
 function getEffectivePlayerBulletCount() {
+  // ✅ [v.220] LV.40 미만은 레벨에 따라 총알 수가 자동 증가합니다.
+  // LV.40 이상부터 게임 시작 전 설정값(1~5발)을 적용합니다.
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
+  if (lv < 40) return getUnlockedPlayerBulletCount();
   return getPreferredPlayerBulletCount();
 }
 function getPlayerFireIntervalByBulletCount() {
@@ -26791,7 +26795,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 219.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 220.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -28913,8 +28917,8 @@ const MONSTER_PARK_LEVEL_REQ = 60;
 const ADVENTURE_FINAL_EXP = 5000000;
 const ADVENTURE_FINAL_GOLD = 30000;
 const ADVENTURE_BOSS_EXP_TABLE = {
-  10: 438, 20: 899, 30: 1512, 40: 2716, 50: 4752,
-  60: 8316, 70: 14553, 80: 25468, 90: 44569, 100: 77996
+  10: 438, 20: 899, 30: 2312, 40: 5616, 50: 14252,
+  60: 28316, 70: 57553, 80: 115468, 90: 234569, 100: 471996
 };
 
 // ===============================
@@ -31436,8 +31440,8 @@ try {
 // - 전용 BGM: bg_dimension.mp3
 // ===============================
 const DIMENSION_INVASION_LEVEL_REQ_V175 = 50;
-const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 1000; // ✅ [v.192.1] 디멘션 인베이드: 1초당 웨이브별 N마리
-const DIMENSION_INVASION_SPAWN_BATCHES_V177 = [5, 5, 5, 5, 5]; // 1초당 5마리
+const DIMENSION_INVASION_SPAWN_INTERVAL_MS_V175 = 500; // ✅ [v.220.1] 디멘션 인베이드: 0.5초마다 5마리
+const DIMENSION_INVASION_SPAWN_BATCHES_V177 = [5, 5, 5, 5, 5]; // 0.5초마다 5마리
 const DIMENSION_INVASION_SPAWN_BATCH_V175 = 9; // v.192.1: 기본값, 실제 생성 수는 웨이브별 배열 사용
 const DIMENSION_INVASION_FALL_SPEED_MULTIPLIER_V178 = 2;
 const DIMENSION_INVASION_MAX_ENEMIES_V175 = 20;
@@ -34642,7 +34646,7 @@ updateHUD = function() {
     if (state === 'playing' && gameMode === 'dungeon' && stageEl && dungeonState && dungeonState.active) {
       const leftSec = Math.ceil(Math.max(0, Number(dungeonState.timeLeft || 0)) / 1000);
       const perSec = getDungeonSpawnBatchPerSecondV2117(dungeonState.tier);
-      stageEl.textContent = `던전 ${dungeonState.tier}단계 · 처치 ${formatNumber(stageRunKillCount || 0)}/${formatNumber(getCurrentDungeonKillTarget())} · 0.5초당 ${perSec}마리 · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
+      stageEl.textContent = `던전 ${dungeonState.tier}단계 · 처치 ${formatNumber(stageRunKillCount || 0)}/${formatNumber(getCurrentDungeonKillTarget())} · 0.7초당 ${perSec}마리 · 화면 ${Math.min(DUNGEON_MAX_ENEMIES_ON_SCREEN, Array.isArray(enemies) ? enemies.length : 0)}/${DUNGEON_MAX_ENEMIES_ON_SCREEN}`;
     }
   } catch(e) {}
   return ret;
@@ -34658,7 +34662,7 @@ function getDungeonSpawnBatchPerSecondV2117(tier) {
   return Math.min(5, tier);
 }
 
-// ===== [v.218] 던전: 처치 목표형 + 0.5초 단위 스폰 =====
+// ===== [v.220.1] 던전: 처치 목표형 + 0.7초 단위 스폰 =====
 updateDungeonSpawns = function(dt) {
   dungeonState.elapsed = Math.max(0, (Number(dungeonState.elapsed) || 0) + dt);
   dungeonState.timeLeft = 0;
@@ -34671,8 +34675,8 @@ updateDungeonSpawns = function(dt) {
   }
 
   dungeonState.spawnAcc += dt;
-  while (dungeonState.spawnAcc >= 500 && state === 'playing') {
-    dungeonState.spawnAcc -= 500;
+  while (dungeonState.spawnAcc >= DUNGEON_SPAWN_INTERVAL_MS && state === 'playing') {
+    dungeonState.spawnAcc -= DUNGEON_SPAWN_INTERVAL_MS;
     const room = Math.max(0, DUNGEON_MAX_ENEMIES_ON_SCREEN - (Array.isArray(enemies) ? enemies.length : 0));
     const spawnCount = Math.min(getDungeonSpawnBatchPerSecondV2117(dungeonState.tier), room);
     for (let i = 0; i < spawnCount; i++) {
@@ -34991,6 +34995,97 @@ document.addEventListener('visibilitychange',()=>{
 },{passive:true});
 </script>
 
+
+<script>
+/* ===== [v.220] 디멘션/총알/던전 안정화 패치 ===== */
+(function(){
+  function resetDimensionInvasionForNormalStageV220(){
+    try { dimensionInvasionActiveV175 = false; } catch(e) {}
+    try { dimensionInvasionCompletingV175 = false; } catch(e) {}
+    try { dimensionInvasionWaveClearPendingV179 = false; } catch(e) {}
+    try { dimensionInvasionBossPhaseV176 = false; } catch(e) {}
+    try { dimensionInvasionCountdownUntilV175 = 0; } catch(e) {}
+    try { dimensionInvasionClearPopupUntilV176 = 0; } catch(e) {}
+    try { dimensionInvasionCountdownTokenV175++; } catch(e) {}
+    try { dimensionInvasionLastResultV175 = null; } catch(e) {}
+  }
+
+  // 디멘션에서 나온 뒤 스테이지 모드를 누르면 디멘션 HUD/타이머가 남지 않도록 먼저 초기화
+  const stageModeBtn = document.getElementById('modeStageBtn');
+  if (stageModeBtn) {
+    stageModeBtn.addEventListener('click', resetDimensionInvasionForNormalStageV220, true);
+  }
+
+  // 디멘션 인베이드: 0.5초마다 5마리
+  if (typeof getStageMonsterSpawnIntervalMs === 'function') {
+    const prevGetStageMonsterSpawnIntervalMsV220 = getStageMonsterSpawnIntervalMs;
+    getStageMonsterSpawnIntervalMs = function(stg){
+      try { if (dimensionInvasionActiveV175) return 500; } catch(e) {}
+      return prevGetStageMonsterSpawnIntervalMsV220.apply(this, arguments);
+    };
+  }
+  if (typeof getStageMonsterSpawnBatchSize === 'function') {
+    const prevGetStageMonsterSpawnBatchSizeV220 = getStageMonsterSpawnBatchSize;
+    getStageMonsterSpawnBatchSize = function(stg){
+      try { if (dimensionInvasionActiveV175) return 5; } catch(e) {}
+      return prevGetStageMonsterSpawnBatchSizeV220.apply(this, arguments);
+    };
+  }
+
+  // 던전: 최종 덮어쓰기 로직도 0.7초 간격으로 고정
+  if (typeof updateDungeonSpawns === 'function') {
+    updateDungeonSpawns = function(dt) {
+      dungeonState.elapsed = Math.max(0, (Number(dungeonState.elapsed) || 0) + dt);
+      dungeonState.timeLeft = 0;
+      const killed = Math.max(0, Math.floor(stageRunKillCount || 0));
+      const target = getCurrentDungeonKillTarget();
+      if (killed >= target) { endDungeonRun(true); return; }
+      dungeonState.spawnAcc += dt;
+      while (dungeonState.spawnAcc >= DUNGEON_SPAWN_INTERVAL_MS && state === 'playing') {
+        dungeonState.spawnAcc -= DUNGEON_SPAWN_INTERVAL_MS;
+        const room = Math.max(0, DUNGEON_MAX_ENEMIES_ON_SCREEN - (Array.isArray(enemies) ? enemies.length : 0));
+        const spawnCount = Math.min(getDungeonSpawnBatchPerSecondV2117(dungeonState.tier), room);
+        for (let i = 0; i < spawnCount; i++) {
+          spawnDungeonEnemy();
+          dungeonState.spawned++;
+        }
+      }
+    };
+  }
+
+  function refreshBulletModeControlV220(){
+    const sel = document.getElementById('modeBulletCountSelect');
+    const hint = document.getElementById('modeBulletCountHint');
+    if (!sel) return;
+    const lv = Math.max(1, Math.floor(Number(level || 1)));
+    if (lv < 40) {
+      sel.disabled = true;
+      sel.value = String(getUnlockedPlayerBulletCount());
+      if (hint) hint.textContent = `현재 LV.${lv}: ${getUnlockedPlayerBulletCount()}발 자동 적용 · LV.40부터 1~5발 직접 변경 가능`;
+    } else {
+      sel.disabled = false;
+      if (hint) hint.textContent = 'LV.40 달성: 게임 시작 전 1~5발을 직접 선택할 수 있습니다.';
+    }
+  }
+
+  if (typeof syncPlayerBulletCountOptions === 'function') {
+    const prevSyncPlayerBulletCountOptionsV220 = syncPlayerBulletCountOptions;
+    syncPlayerBulletCountOptions = function(){
+      prevSyncPlayerBulletCountOptionsV220.apply(this, arguments);
+      refreshBulletModeControlV220();
+    };
+  }
+  if (typeof openModeSelect === 'function') {
+    const prevOpenModeSelectV220 = openModeSelect;
+    openModeSelect = function(){
+      const ret = prevOpenModeSelectV220.apply(this, arguments);
+      refreshBulletModeControlV220();
+      return ret;
+    };
+  }
+  refreshBulletModeControlV220();
+})();
+</script>
 </body>
 </html>
 
