@@ -26814,7 +26814,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 220.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 220.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -35130,6 +35130,102 @@ document.addEventListener('visibilitychange',()=>{
   filter:drop-shadow(0 1px 0 rgba(255,255,255,.12)) !important;
 }
 </style>
+
+<!-- ✅ v.220.3 플레이어 발사 수 고정 + EXP 바 네모형 패치 -->
+<style id="expSquareBarFixV2203">
+  #expRow{
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.30));
+  }
+  #expLabel{
+    border-radius: 1px 0 0 1px !important;
+  }
+  #expWrapper{
+    border-radius: 0 1px 1px 0 !important;
+  }
+  #expBarFill,
+  #expBarFill::after,
+  #expWrapper::before,
+  #expWrapper::after{
+    border-radius: 0 !important;
+  }
+</style>
+
+<script id="playerBulletCountExactFixV2203">
+(() => {
+  // 선택한 탄 수를 실제 발사 수의 단일 기준으로 사용합니다.
+  // LV.40 미만은 기존 자동 해금 규칙을 유지합니다.
+  getEffectivePlayerBulletCount = function(){
+    const lv = Math.max(1, Math.floor(Number(level || 1)));
+    if (lv < 40) return getUnlockedPlayerBulletCount();
+
+    const saved = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 1)));
+    return saved;
+  };
+
+  // 선택 변경 시 저장값을 즉시 확정합니다.
+  const bulletSelect = document.getElementById('modeBulletCountSelect');
+  if (bulletSelect) {
+    bulletSelect.addEventListener('change', () => {
+      const n = Math.max(1, Math.min(5, Math.floor(Number(bulletSelect.value) || 1)));
+      saveData.playerBulletCount = n;
+      try { saveGameData(); } catch(e) {}
+    }, true);
+  }
+
+  // 최종 발사 로직:
+  // 선택 1발이면 정확히 1발, 2발이면 2발 ... 5발이면 5발만 생성합니다.
+  // 더블샷 아이템/기타 보정도 물리 탄환 수 자체는 늘리지 않도록 고정합니다.
+  shootBullet = function(currentTime){
+    if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
+    if (!player || !player.alive || isPlayerDying) return;
+
+    const baseInterval = (typeof getPlayerFireIntervalByBulletCount === 'function')
+      ? getPlayerFireIntervalByBulletCount()
+      : FIRE_INTERVAL;
+    const interval = (typeof getFeverPlayerAttackIntervalV20321 === 'function')
+      ? getFeverPlayerAttackIntervalV20321(baseInterval)
+      : baseInterval;
+
+    if (currentTime - lastShotTime < interval) return;
+    lastShotTime = currentTime;
+
+    const shotCount = Math.max(1, Math.min(5, Math.floor(Number(getEffectivePlayerBulletCount()) || 1)));
+    const isAreaShot = (typeof isPlayerSingleAreaShotActive === 'function') ? isPlayerSingleAreaShotActive() : false;
+    const areaRadius = (typeof getPlayerAreaBulletRadius === 'function') ? getPlayerAreaBulletRadius() : 0;
+
+    let bulletDamage = getPlayerBaseDamageByLevelV192(level);
+    const bulletMult = (typeof getPlayerBulletDamageMultiplier === 'function') ? getPlayerBulletDamageMultiplier() : 1;
+    const feverDmg = (typeof getFeverPlayerDamageMultiplierV20321 === 'function') ? getFeverPlayerDamageMultiplierV20321() : 1;
+    bulletDamage = Math.max(1, Math.floor(
+      bulletDamage * getBuffMult('dmg') * getPetAttackMultiplier() * bulletMult * feverDmg
+    ));
+
+    try { SFX.shoot(); } catch(e) {}
+
+    const isHoming = (level >= 61) && (saveData.homingEnabled !== false) && !isAreaShot;
+    const speed = Math.abs(BULLET_SPEED) * getBuffMult('speed');
+    const angleStep = 0.26;
+
+    for (let i = 0; i < shotCount; i++) {
+      const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
+      bullets.push({
+        x: player.x,
+        y: player.y - player.size,
+        radius: isAreaShot ? Math.max(BULLET_RADIUS + 2, BULLET_RADIUS * 1.35) : BULLET_RADIUS,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        damage: bulletDamage,
+        homing: isHoming,
+        element: getPlayerElementKey(),
+        isPlayerAreaShot: isAreaShot,
+        areaRadius: areaRadius
+      });
+      addQuestStat('bullets', 1);
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
 
