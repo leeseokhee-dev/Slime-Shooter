@@ -3105,6 +3105,8 @@ body.dungeon-mode .dash-skill{ display:none !important; }
   height:40px !important; min-height:40px !important; max-height:40px !important;
 }
 
+
+
 </style>
 
 
@@ -3705,6 +3707,38 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !important;}
 </style>
 
+
+<style>
+/* ===============================
+   ✅ [v.220.6] EXP 바 높이 소폭 확대 - 최종 우선 적용
+   =============================== */
+#expWrapper{
+  height: 17px !important;
+  min-height: 17px !important;
+  max-height: 17px !important;
+}
+#gameContainer.compact-ui #expWrapper{
+  height: 17px !important; min-height:17px !important; max-height:17px !important;
+}
+#gameContainer.ultra-compact-ui #expWrapper{
+  height: 16px !important; min-height:16px !important; max-height:16px !important;
+}
+@media (max-width:520px){
+  #expWrapper{ height:16px !important; min-height:16px !important; max-height:16px !important; }
+}
+@media (max-width:430px){
+  #expWrapper{ height:16px !important; min-height:16px !important; max-height:16px !important; }
+}
+@media (max-width:390px){
+  #expWrapper{ height:15px !important; min-height:15px !important; max-height:15px !important; }
+}
+@media (orientation:landscape) and (max-height:520px){
+  #expWrapper{ height:15px !important; min-height:15px !important; max-height:15px !important; }
+}
+#gameContainer.watch-ui #expWrapper{
+  height:14px !important; min-height:14px !important; max-height:14px !important;
+}
+</style>
 </head>
 <body>
 <div id="gameContainer">
