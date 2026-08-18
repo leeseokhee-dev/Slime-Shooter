@@ -12823,9 +12823,9 @@ function resetDailyQuestsIfNeeded() {
   if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
 
-  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v210.12' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
+  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v221.0' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
     saveData.dailyQuest.key = key;
-    saveData.dailyQuest.rewardVersion = 'v210.12';
+    saveData.dailyQuest.rewardVersion = 'v221.0';
     saveData.dailyQuest.claimed = {};
     saveData.dailyStats = getDefaultQuestStatsObj();
     saveData.dailyQuest.quests = generateDailyQuests(level);
@@ -12839,9 +12839,9 @@ function resetWeeklyQuestsIfNeeded() {
   if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
-  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v210.12' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
+  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v221.0' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
     saveData.weeklyQuest.key = key;
-    saveData.weeklyQuest.rewardVersion = 'v210.12';
+    saveData.weeklyQuest.rewardVersion = 'v221.0';
     saveData.weeklyQuest.claimed = {};
     saveData.weeklyStats = getDefaultQuestStatsObj();
     saveData.weeklyQuest.quests = generateWeeklyQuests(level);
@@ -12861,34 +12861,57 @@ function randInt(min, max) {
 
 
 // ===============================
-// ✅ [v.208.4] 일일/주간 퀘스트 EXP 보상 퍼센트 산식
-// - 일일: LV.60 기준 쉬움 15% / 어려움 35%, 레벨당 0.2~0.3% 감소
-// - 주간: LV.100 기준 쉬움 23% / 어려움 51%, 레벨당 0.3~0.7% 감소
-// - 200레벨 이후 최저 보상률은 10레벨마다 절반으로 감소
+// ✅ [v.221.0] 일일/주간 퀘스트 EXP 10레벨 반감 규칙
+// - 보상은 '현재 레벨업에 필요한 EXP'의 일정 비율로 계산합니다.
+// - 일일: LV.100에서는 약 15~20%, 이후 고레벨로 갈수록 급격히 감소합니다.
+// - 주간: 같은 레벨의 일일 퀘스트보다 높은 EXP 비율을 지급합니다.
+// - LV.299에서는 난이도와 관계없이 일일 1건 = 0.0002%, 주간 1건 = 0.0016%입니다.
+// - MAX_LEVEL(300) 직전 구간은 엔드게임으로 취급하여 레벨업 기여도를 매우 낮게 유지합니다.
 // ===============================
-function getQuestExpMinPercentAfter200(mode, lv) {
-  const baseMin = (mode === 'weekly') ? 0.07 : 0.01;
-  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
-  if (safeLv < 200) return baseMin;
-  const halves = Math.max(0, Math.floor((safeLv - 200) / 10));
-  return baseMin / Math.pow(2, halves);
+function interpolateQuestRewardPercent(lv, anchors) {
+    if (lv >= 200) {
+      const questTypeForScale = 'daily';
+      return getHighLevelQuestPercent(lv, questTypeForScale);
+    }
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(lv) || 1)));
+  if (!Array.isArray(anchors) || anchors.length === 0) return 0;
+  if (safeLv <= anchors[0][0]) return anchors[0][1];
+
+  for (let i = 1; i < anchors.length; i++) {
+    const [lv1, pct1] = anchors[i - 1];
+    const [lv2, pct2] = anchors[i];
+    if (safeLv <= lv2) {
+      const t = clamp((safeLv - lv1) / Math.max(1, lv2 - lv1), 0, 1);
+      return pct1 + (pct2 - pct1) * t;
+    }
+  }
+  return anchors[anchors.length - 1][1];
 }
 
 function getQuestExpPercentByDifficulty(mode, lv, difficulty = 0) {
-  const safeLv = Math.max(1, Math.floor(Number(lv) || 1));
+  const safeLv = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(lv) || 1)));
   const d = clamp(Number(difficulty) || 0, 0, 1); // 0=쉬움, 1=어려움
-  const cfg = (mode === 'weekly')
-    ? { baseLv: 100, easyPct: 23, hardPct: 51, easyDrop: 0.3, hardDrop: 0.7 }
-    : { baseLv: 60, easyPct: 15, hardPct: 35, easyDrop: 0.2, hardDrop: 0.3 };
 
-  const basePct = cfg.easyPct + (cfg.hardPct - cfg.easyPct) * d;
-  const drop = cfg.easyDrop + (cfg.hardDrop - cfg.easyDrop) * d;
-  const minPct = getQuestExpMinPercentAfter200(mode, safeLv);
+  // [레벨, 해당 레벨 필요 EXP 대비 보상 비율(%)]
+  // ✅ LV.200 이상 퀘스트 EXP 규칙
+  // 200~209: 일일 0.127%, 주간 0.893%
+  // 이후 10레벨 구간이 올라갈 때마다 보상 비율을 1/2로 감소
+  function getHighLevelQuestPercent(level, type){
+    const lv = Math.max(200, Math.min(299, Math.floor(level)));
+    const tenLevelSteps = Math.floor((lv - 200) / 10);
+    const basePercent = (type === 'weekly') ? 0.893 : 0.127;
+    return basePercent / Math.pow(2, tenLevelSteps);
+  }
 
-  // 기준 레벨 이하에서는 기준 보상률 유지, 이후부터 감소
-  let pct = basePct;
-  if (safeLv > cfg.baseLv) pct = basePct - (safeLv - cfg.baseLv) * drop;
-  return Math.max(minPct, pct);
+  // LV.200 미만은 기존 저/중레벨 밸런스를 유지
+  const dailyEasy = [[60,100],[100,15],[150,8],[199,2]];
+  const dailyHard = [[60,120],[100,20],[150,11],[199,3]];
+  const weeklyEasy = [[100,35],[150,20],[199,6]];
+  const weeklyHard = [[100,50],[150,28],[199,9]];
+
+  const easyPct = interpolateQuestRewardPercent(safeLv, mode === 'weekly' ? weeklyEasy : dailyEasy);
+  const hardPct = interpolateQuestRewardPercent(safeLv, mode === 'weekly' ? weeklyHard : dailyHard);
+  return easyPct + (hardPct - easyPct) * d;
 }
 
 function getQuestRewardExpByDifficulty(mode, lv, difficulty = 0) {
@@ -12896,8 +12919,7 @@ function getQuestRewardExpByDifficulty(mode, lv, difficulty = 0) {
   if (!EXP_TABLE || !EXP_TABLE[safeLv]) return 0;
   const needed = Math.max(1, Math.floor(Number(EXP_TABLE[safeLv].needed) || 1));
   const pct = getQuestExpPercentByDifficulty(mode, safeLv, difficulty);
-  const modeBonus = (mode === 'weekly') ? 6 : 1;
-  return Math.max(1, Math.floor(needed * (pct / 100) * modeBonus));
+  return Math.max(1, Math.floor(needed * (pct / 100)));
 }
 
 function attachQuestRewardPercentMeta(q, mode, lv, difficulty) {
