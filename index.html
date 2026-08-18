@@ -5528,6 +5528,14 @@ const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
 const fpsSelect = document.getElementById('fpsSelect');
 const expPercentDigitsSelect = document.getElementById('expPercentDigitsSelect');
+
+// ✅ [v.220.6] EXP 퍼센트 소수 자릿수 자동 결정
+// LV.1~199: 소수점 2자리 / LV.200 이상: 소수점 3자리
+function getExpPercentDigitsByLevel(lv = level){
+  const currentLevel = Math.max(1, Math.floor(Number(lv) || 1));
+  return currentLevel >= 200 ? 3 : 2;
+}
+
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
 const restoreBtn = document.getElementById('restoreBtn');
@@ -9752,7 +9760,7 @@ if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFA
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 saveData.playerBulletCount = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 5)));
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
-saveData.expPercentDigits = 2; // ✅ 게임 실행 시 기본 EXP 퍼센트 표시는 항상 소수점 2자리
+saveData.expPercentDigits = getExpPercentDigitsByLevel(saveData.level || level); // ✅ 레벨 기준 자동: 200 미만 2자리, 200 이상 3자리
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
@@ -10364,8 +10372,11 @@ function updateSettingsUI() {
     fpsSelect.style.color = '#fff';
   }
   if (expPercentDigitsSelect) {
-    const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
+    const digits = getExpPercentDigitsByLevel(level);
+    saveData.expPercentDigits = digits;
     expPercentDigitsSelect.value = String(digits);
+    expPercentDigitsSelect.disabled = true;
+    expPercentDigitsSelect.title = `EXP 퍼센트 자릿수 자동 설정 · LV.200부터 3자리`;
     expPercentDigitsSelect.style.color = digits === 3 ? '#44ffb8' : '#fff';
   }
   syncTopSettingsVisibility();
@@ -11136,8 +11147,8 @@ saveGameData();
 });
 
 (expPercentDigitsSelect && expPercentDigitsSelect.addEventListener) && expPercentDigitsSelect.addEventListener('change', () => {
-  const digits = Number(expPercentDigitsSelect.value);
-  saveData.expPercentDigits = [2,3].includes(digits) ? digits : 2;
+  // ✅ [v.220.6] 수동 변경 대신 현재 레벨 기준으로 자동 고정
+  saveData.expPercentDigits = getExpPercentDigitsByLevel(level);
   updateSettingsUI();
   updateHUD();
   saveGameData();
@@ -14108,7 +14119,7 @@ function getTownQuestExpReward(q, lv = level){
 function getTownQuestPercentText(q, lv = level){
   if (q && q.beginnerLevelUp) return `고정 ${formatNumber(getTownQuestExpReward(q, lv))} EXP`;
   const pct = getTownQuestScaledPercentByLevel(q, lv);
-  const digits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
+  const digits = getExpPercentDigitsByLevel(lv);
   return `${pct.toFixed(digits)}%`;
 }
 function getTownDailyQuestKey(){
@@ -25118,7 +25129,12 @@ const nextPercent = Math.min(100, prog.percent);
 
 // [v.214.6] 실제 EXP 비율을 소수점 4자리까지 유지해 미세 증가량도 누락 없이 표시
 // 중앙 표시 텍스트
-const percentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
+const percentDigits = getExpPercentDigitsByLevel(level);
+saveData.expPercentDigits = percentDigits;
+if (expPercentDigitsSelect) {
+  expPercentDigitsSelect.value = String(percentDigits);
+  expPercentDigitsSelect.style.color = percentDigits === 3 ? '#44ffb8' : '#fff';
+}
 
 expEl.textContent =
   `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
