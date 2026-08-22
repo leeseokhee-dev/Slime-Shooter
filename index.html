@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.220)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -7869,12 +7869,12 @@ function getStageMonsterSpawnIntervalMs(stg) {
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
-  // ✅ [v.218] 0.75초마다 스테이지 구간별 고정 마릿수 출현
+  // ✅ [v.221.2] 201~300도 101~200과 동일한 생성량 적용
+  // 전 구간 공통 생성 간격은 0.75초이며, 101~300은 1회당 5마리
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
   if (stg <= 15) return 1;
   if (stg <= 100) return 3;
-  if (stg <= 200) return 5;
-  return 7;
+  return 5;
 }
 function checkStageKillClearNow() {
   if (gameMode === 'mission') return checkMissionStageClearNow();
@@ -12823,9 +12823,9 @@ function resetDailyQuestsIfNeeded() {
   if (!saveData.dailyQuest) saveData.dailyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.dailyStats) saveData.dailyStats = getDefaultQuestStatsObj();
 
-  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v221.0' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
+  if (saveData.dailyQuest.key !== key || saveData.dailyQuest.rewardVersion !== 'v221.2' || !Array.isArray(saveData.dailyQuest.quests) || saveData.dailyQuest.quests.length !== 8) {
     saveData.dailyQuest.key = key;
-    saveData.dailyQuest.rewardVersion = 'v221.0';
+    saveData.dailyQuest.rewardVersion = 'v221.2';
     saveData.dailyQuest.claimed = {};
     saveData.dailyStats = getDefaultQuestStatsObj();
     saveData.dailyQuest.quests = generateDailyQuests(level);
@@ -12839,9 +12839,9 @@ function resetWeeklyQuestsIfNeeded() {
   if (!saveData.weeklyQuest) saveData.weeklyQuest = { key: '', quests: [], claimed: {} };
   if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 
-  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v221.0' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
+  if (saveData.weeklyQuest.key !== key || saveData.weeklyQuest.rewardVersion !== 'v221.2' || !Array.isArray(saveData.weeklyQuest.quests) || saveData.weeklyQuest.quests.length !== 10) {
     saveData.weeklyQuest.key = key;
-    saveData.weeklyQuest.rewardVersion = 'v221.0';
+    saveData.weeklyQuest.rewardVersion = 'v221.2';
     saveData.weeklyQuest.claimed = {};
     saveData.weeklyStats = getDefaultQuestStatsObj();
     saveData.weeklyQuest.quests = generateWeeklyQuests(level);
@@ -12892,15 +12892,16 @@ function getQuestExpPercentByDifficulty(mode, lv, difficulty = 0) {
   const safeLv = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(lv) || 1)));
   const d = clamp(Number(difficulty) || 0, 0, 1); // 0=쉬움, 1=어려움
 
-  // [레벨, 해당 레벨 필요 EXP 대비 보상 비율(%)]
-  // ✅ LV.200 이상 퀘스트 EXP 규칙
-  // 200~209: 일일 0.127%, 주간 0.893%
-  // 이후 10레벨 구간이 올라갈 때마다 보상 비율을 1/2로 감소
-  function getHighLevelQuestPercent(level, type){
-    const lv = Math.max(200, Math.min(299, Math.floor(level)));
-    const tenLevelSteps = Math.floor((lv - 200) / 10);
-    const basePercent = (type === 'weekly') ? 0.893 : 0.127;
-    return basePercent / Math.pow(2, tenLevelSteps);
+  // ✅ [v.221.2] LV.200 이상 일일/주간 퀘스트 EXP 비율
+  // 200~209: 일일 0.5~0.7%, 주간 3.5~4.9%
+  // 이후 10레벨 구간이 올라갈 때마다 보상 비율을 정확히 1/2로 감소
+  // 예) 210~219: 일일 0.25~0.35%, 주간 1.75~2.45%
+  if (safeLv >= 200) {
+    const tenLevelSteps = Math.floor((safeLv - 200) / 10);
+    const divisor = Math.pow(2, tenLevelSteps);
+    const easyPct = (mode === 'weekly' ? 3.5 : 0.5) / divisor;
+    const hardPct = (mode === 'weekly' ? 4.9 : 0.7) / divisor;
+    return easyPct + (hardPct - easyPct) * d;
   }
 
   // LV.200 미만은 기존 저/중레벨 밸런스를 유지
@@ -21852,10 +21853,12 @@ if (stage <= 100) {
   const t = clamp((stage - 101) / 99, 0, 1);
   speedBase = slowBase + t * 0.8;
 } else {
-  const speedAt200 = 1.0 + 100 * 0.07;
-  const slowBase = speedAt200 * 0.27;
+  // ✅ [v.221.2] 201~300은 101~200과 동일한 속도 곡선을 사용
+  // 201 = 101의 속도, 300 = 200의 속도
+  const speedAt100 = 1.0 + 100 * 0.07;
+  const slowBase = speedAt100 * 0.25;
   const t = clamp((stage - 201) / 99, 0, 1);
-  speedBase = slowBase + t * 0.95;
+  speedBase = slowBase + t * 0.8;
 }
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
@@ -27054,7 +27057,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 220.5', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
