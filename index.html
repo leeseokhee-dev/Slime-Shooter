@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.7)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.9)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3996,6 +3996,12 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(196,160,255,0.12); border:1px solid rgba(196,160,255,0.34); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#e1c9ff; margin-bottom:6px;">[v.221.9 신규 스킬 / 퀘스트]</div>
+            <div>LV.11 신규 스킬 「회전」이 추가되었습니다.</div>
+            <div>5초 동안 플레이어 슬라임이 회전하며 0.1초마다 가장 가까운 적에게 공격력 200%의 피해를 줍니다. 쿨타임은 12초입니다.</div>
+            <div>퀘스트 메뉴의 스킬 퀘스트에 「회전 스킬 연습」이 추가되었습니다. 회전 스킬을 실제로 발동할 때마다 사용 횟수가 1회씩 누적됩니다.</div>
+        </div>
         <div style="background:rgba(255,216,107,0.12); border:1px solid rgba(255,216,107,0.34); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#ffd86b; margin-bottom:6px;">[v.170 신규 모드]</div>
             <div>신규 보너스 모드 「보물 슬라임 러시」가 추가되었습니다.</div>
@@ -7545,6 +7551,7 @@ expOrb: { count: 0, target: 30, reward: 300 }, // ✅ 경험치 구슬(아이템
 pet: { claimed: 0 },
 skills: {
   bubble: { count: 0, target: 10, tier: 1 },
+  spin: { count: 0, target: 10, tier: 1 },
   rush: { count: 0, target: 10, tier: 1 },
   laser: { count: 0, target: 10, tier: 1 },
   lightning: { count: 0, target: 10, tier: 1 },
@@ -9852,7 +9859,7 @@ if (typeof saveData.quests.expOrb.target !== 'number') saveData.quests.expOrb.ta
 if (typeof saveData.quests.expOrb.reward !== 'number') saveData.quests.expOrb.reward = 300;
 
 if (!saveData.quests.skills || typeof saveData.quests.skills !== 'object') saveData.quests.skills = {};
-const _skillQuestKeys = ['bubble','rush','laser','lightning','quake','blizzard','meteor','plasma'];
+const _skillQuestKeys = ['bubble','spin','rush','laser','lightning','quake','blizzard','meteor','plasma'];
 for (const _k of _skillQuestKeys) {
   if (!saveData.quests.skills[_k] || typeof saveData.quests.skills[_k] !== 'object') saveData.quests.skills[_k] = { count: 0, target: 10, tier: 1 };
   if (typeof saveData.quests.skills[_k].count !== 'number' || !isFinite(saveData.quests.skills[_k].count)) saveData.quests.skills[_k].count = 0;
@@ -13376,6 +13383,7 @@ function drawMultiKillFx() {
 
 const SKILL_QUEST_META = {
   bubble:    { title:'거품 스킬 연습', reward: () => 1000, color:'#bdefff' },
+  spin:      { title:'회전 스킬 연습', reward: () => 3000, color:'#d9b8ff' },
   rush:      { title:'돌진 마스터', reward: () => 4000, color:'#8dffe0' },
   laser:     { title:'레이저 마스터', reward: () => 2000, color:'#ffe27a' },
   lightning: { title:'번개 마스터', reward: () => 2000, color:'#fff0a8' },
@@ -13625,7 +13633,7 @@ function updateQuestUI() {
 
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 퀘스트', '#7ce7ff');
-  for (const skillKey of ['bubble','rush','laser','lightning','quake','blizzard','meteor','plasma']) {
+  for (const skillKey of ['bubble','spin','rush','laser','lightning','quake','blizzard','meteor','plasma']) {
     const meta = SKILL_QUEST_META[skillKey];
     const q = saveData.quests.skills[skillKey];
     const reward = getSkillQuestReward(skillKey);
@@ -20047,6 +20055,8 @@ function castSpinSkill(){
   spinSkillFx.length = 0;
   spinSkillState={life:SPIN_DURATION_MS, tick:0};
   player.spinCooldown=applyHyperSkillCooldown(SPIN_COOLDOWN_MS);
+  // 회전 스킬 사용 퀘스트: 실제 발동에 성공했을 때만 1회 증가
+  addSkillQuestCount('spin', 1);
   try { spawnExplosion(player.x,player.y,'#c99cff',saveData.lowPower?8:18); } catch(e) {}
 }
 function tryCastSpinSkill(){ castSpinSkill(); }
@@ -27312,7 +27322,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.8', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.10', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -35735,7 +35745,24 @@ function captureStageActiveSkillsV2216(){
     lightningFx: cloneSkillArrayV2216(typeof lightningFx !== 'undefined' ? lightningFx : []),
     lightningStorm: cloneSkillObjectV2216(typeof lightningStorm !== 'undefined' ? lightningStorm : null),
     quake: cloneSkillObjectV2216(typeof quake !== 'undefined' ? quake : null),
-    plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : [])
+    plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : []),
+    // ✅ [v.221.10] 신규 회전/돌진을 포함한 지속형 스킬 상태도 다음 스테이지로 그대로 전달
+    spinSkillState: cloneSkillObjectV2216(typeof spinSkillState !== 'undefined' ? spinSkillState : null),
+    spinSkillFx: cloneSkillArrayV2216(typeof spinSkillFx !== 'undefined' ? spinSkillFx : []),
+    rushSkillState: cloneSkillObjectV2216(typeof rushSkillState !== 'undefined' ? rushSkillState : null),
+    // startStage()는 player를 새로 만들지 않지만, 향후 초기화 코드가 바뀌어도 쿨타임이 보존되도록 명시적으로 저장
+    playerCooldowns: player ? {
+      laserCooldown: Math.max(0, Number(player.laserCooldown || 0)),
+      bubbleCooldown: Math.max(0, Number(player.bubbleCooldown || 0)),
+      spinCooldown: Math.max(0, Number(player.spinCooldown || 0)),
+      rushCooldown: Math.max(0, Number(player.rushCooldown || 0)),
+      blizzardCooldown: Math.max(0, Number(player.blizzardCooldown || 0)),
+      meteorCooldown: Math.max(0, Number(player.meteorCooldown || 0)),
+      lightningCooldown: Math.max(0, Number(player.lightningCooldown || 0)),
+      quakeCooldown: Math.max(0, Number(player.quakeCooldown || 0)),
+      plasmaCooldown: Math.max(0, Number(player.plasmaCooldown || 0)),
+      laserPatternStep: Math.max(0, Number(player.laserPatternStep || 0))
+    } : null
   };
 }
 function restoreStageActiveSkillsV2216(){
@@ -35756,6 +35783,21 @@ function restoreStageActiveSkillsV2216(){
   if (typeof lightningStorm !== 'undefined') lightningStorm = cloneSkillObjectV2216(snap.lightningStorm);
   if (typeof quake !== 'undefined') quake = cloneSkillObjectV2216(snap.quake);
   if (typeof plasmaBursts !== 'undefined') plasmaBursts = cloneSkillArrayV2216(snap.plasmaBursts);
+  if (typeof spinSkillState !== 'undefined') spinSkillState = cloneSkillObjectV2216(snap.spinSkillState);
+  if (typeof spinSkillFx !== 'undefined') spinSkillFx = cloneSkillArrayV2216(snap.spinSkillFx);
+  if (typeof rushSkillState !== 'undefined') rushSkillState = cloneSkillObjectV2216(snap.rushSkillState);
+  if (player && snap.playerCooldowns) {
+    player.laserCooldown = Math.max(0, Number(snap.playerCooldowns.laserCooldown || 0));
+    player.bubbleCooldown = Math.max(0, Number(snap.playerCooldowns.bubbleCooldown || 0));
+    player.spinCooldown = Math.max(0, Number(snap.playerCooldowns.spinCooldown || 0));
+    player.rushCooldown = Math.max(0, Number(snap.playerCooldowns.rushCooldown || 0));
+    player.blizzardCooldown = Math.max(0, Number(snap.playerCooldowns.blizzardCooldown || 0));
+    player.meteorCooldown = Math.max(0, Number(snap.playerCooldowns.meteorCooldown || 0));
+    player.lightningCooldown = Math.max(0, Number(snap.playerCooldowns.lightningCooldown || 0));
+    player.quakeCooldown = Math.max(0, Number(snap.playerCooldowns.quakeCooldown || 0));
+    player.plasmaCooldown = Math.max(0, Number(snap.playerCooldowns.plasmaCooldown || 0));
+    player.laserPatternStep = Math.max(0, Number(snap.playerCooldowns.laserPatternStep || 0));
+  }
   stageActiveSkillSnapshotV2216 = null;
 }
 
