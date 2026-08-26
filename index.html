@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.6)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.7)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -543,6 +543,45 @@ body.fever-mode #gameCanvas {
 .quake-skill:active{ transform: translateY(1px) scale(0.985); }
 .quake-skill[disabled]{ opacity: 0.55; filter: grayscale(0.25); }
 
+
+/* ===== [v.221.7] 스킬 버튼(빙글빙글) ===== */
+.spin-skill{
+  position:absolute;
+  right:10px;
+  bottom:calc(415px + env(safe-area-inset-bottom)); /* 거품 스킬 바로 위 */
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  z-index:60;
+  border:2px solid rgba(196,160,255,0.96);
+  color:#f1e5ff;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(0,0,0,0.55)),
+             linear-gradient(to bottom,#51317a,#21102f);
+  box-shadow:0 0 15px rgba(178,120,255,0.42),0 10px 26px rgba(0,0,0,0.55);
+  touch-action:manipulation;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  overflow:hidden;
+}
+.spin-skill:active{ transform:translateY(1px) scale(.985); }
+.spin-skill[disabled]{ opacity:.55; filter:grayscale(.25); }
+.spin-skill .skill-icon{ font-size:20px; transform:translateY(-2px); pointer-events:none; }
+.spin-skill .skill-cd{ position:absolute; bottom:8px; font-size:10px; font-weight:900; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.85); }
+.spin-skill .skill-cd.ready{ display:none; }
+.spin-skill.cooling::after{ content:''; position:absolute; inset:3px; border-radius:999px; background:conic-gradient(from -90deg,rgba(255,255,255,.75) calc(var(--cdp,0) * 1turn),rgba(0,0,0,0) 0); opacity:.55; pointer-events:none; }
+body.title-mode .spin-skill,
+body.tutorial-mode .spin-skill,
+body.dead-mode .spin-skill,
+body.logo-mode .spin-skill,
+body.dungeon-mode .spin-skill{ display:none !important; }
+#gameContainer.compact-ui .spin-skill{ width:44px; height:44px; }
+#gameContainer.ultra-compact-ui .spin-skill{ width:40px; height:40px; }
+@media(max-width:520px){ .spin-skill .skill-icon{ font-size:calc(20px * var(--canvas-scale) + 6px); } }
 
 /* ===== 스킬 버튼(거품) ===== */
 .bubble-skill{
@@ -3059,6 +3098,7 @@ body.dungeon-mode .dash-skill{ display:none !important; }
 /* ===== [v.215.4] 모든 스킬 버튼 완전 원형 통일 ===== */
 #laserSkillBtn,
 #bubbleSkillBtn,
+#spinSkillBtn,
 #dashSkillBtn,
 #blizzardSkillBtn,
 #meteorSkillBtn,
@@ -3080,6 +3120,7 @@ body.dungeon-mode .dash-skill{ display:none !important; }
 }
 #gameContainer.compact-ui #laserSkillBtn,
 #gameContainer.compact-ui #bubbleSkillBtn,
+#gameContainer.compact-ui #spinSkillBtn,
 #gameContainer.compact-ui #dashSkillBtn,
 #gameContainer.compact-ui #blizzardSkillBtn,
 #gameContainer.compact-ui #meteorSkillBtn,
@@ -3093,6 +3134,7 @@ body.dungeon-mode .dash-skill{ display:none !important; }
 }
 #gameContainer.ultra-compact-ui #laserSkillBtn,
 #gameContainer.ultra-compact-ui #bubbleSkillBtn,
+#gameContainer.ultra-compact-ui #spinSkillBtn,
 #gameContainer.ultra-compact-ui #dashSkillBtn,
 #gameContainer.ultra-compact-ui #blizzardSkillBtn,
 #gameContainer.ultra-compact-ui #meteorSkillBtn,
@@ -3887,6 +3929,8 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
 
 <!-- ✅ [v.57] 레이저 스킬 버튼(수동 발사) -->
 <button id="laserSkillBtn" class="ui-btn laser-skill hidden">레이저</button>
+<!-- ✅ [v.221.7] LV.11 빙글빙글 스킬 (거품 바로 위) -->
+<button id="spinSkillBtn" class="ui-btn spin-skill hidden" type="button" title="빙글빙글">빙글</button>
 <!-- ✅ [v.88] 거품 스킬 버튼 -->
 <button id="bubbleSkillBtn" class="ui-btn bubble-skill hidden">거품</button>
 <!-- ✅ [v.215] LV.31 돌진 스킬 -->
@@ -5517,6 +5561,7 @@ const effectsBtn = document.getElementById('effectsBtn');
 const homingBtn = document.getElementById('homingBtn');
 const laserSkillBtn = document.getElementById('laserSkillBtn');
 const bubbleSkillBtn = document.getElementById('bubbleSkillBtn');
+const spinSkillBtn = document.getElementById('spinSkillBtn');
 const dashSkillBtn = document.getElementById('dashSkillBtn');
 const blizzardSkillBtn = document.getElementById('blizzardSkillBtn');
 const meteorSkillBtn = document.getElementById('meteorSkillBtn');
@@ -11203,6 +11248,23 @@ if (laserSkillBtn) {
   laserSkillBtn.addEventListener('click', fire);
 }
 
+
+// ✅ [v.221.7] 빙글빙글 스킬 버튼
+if (spinSkillBtn) {
+  let lastSpinTap = 0;
+  const fire = (e) => {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+    const now = Date.now();
+    if (now - lastSpinTap < 120) return;
+    lastSpinTap = now;
+    handleInputStart();
+    tryCastSpinSkill();
+  };
+  spinSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  spinSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  spinSkillBtn.addEventListener('mousedown', fire);
+  spinSkillBtn.addEventListener('click', fire);
+}
 
 // ✅ [v.88] 거품 스킬 버튼
 if (bubbleSkillBtn) {
@@ -19918,6 +19980,158 @@ function tryCastLaserSkill() {
 // - LV.11=1발, LV.31=2발, LV.61=3발, LV.101=4발, LV.200=5발
 // - 모든 몬스터(보스 포함)에게 공격력 200% 피해
 // ===============================
+// ✅ [v.221.7] 빙글빙글 스킬
+// - LV.11 해금
+// - 5초 지속 / 12초 쿨타임
+// - 0.1초마다 가장 가까운 적 1명에게 공격력 200% 피해
+// - 지속 중 플레이어 슬라임 몸체 회전
+// ===============================
+const SPIN_UNLOCK_LEVEL = 11;
+const SPIN_DURATION_MS = 5000;
+const SPIN_COOLDOWN_MS = 12000;
+const SPIN_TICK_MS = 100;
+const SPIN_DAMAGE_MULTIPLIER = 2.0;
+let spinSkillState = null;
+let spinSkillFx = []; // [{x,y,tx,ty,start,duration,maxRadius}] 빙글빙글 파동 이펙트
+
+function canUseSpinSkill(){
+  return state === 'playing' && gameMode !== 'dungeon' && player && player.alive && !isPlayerDying && Number(level || 0) >= SPIN_UNLOCK_LEVEL;
+}
+function isSpinSkillActive(){ return !!(spinSkillState && spinSkillState.life > 0); }
+function getNearestSpinTarget(){
+  if (!player) return null;
+  let best = null, bestD2 = Infinity;
+  for (const e of enemies) {
+    if (!e || e.dead || Number(e.hp || 0) <= 0) continue;
+    const dx=e.x-player.x, dy=e.y-player.y, d2=dx*dx+dy*dy;
+    if (d2 < bestD2) { bestD2=d2; best={kind:'enemy', ref:e}; }
+  }
+  if (boss && !boss._deadHandled && Number(boss.hp || 0) > 0 && !(typeof isBossInvincible==='function' && isBossInvincible())) {
+    const dx=boss.x-player.x, dy=boss.y-player.y, d2=dx*dx+dy*dy;
+    if (d2 < bestD2) best={kind:'boss', ref:boss};
+  }
+  return best;
+}
+function hitNearestEnemyBySpin(){
+  const target=getNearestSpinTarget();
+  if (!target) return;
+  const baseDamage=Math.max(1,Math.round(getPlayerAttackPower()*SPIN_DAMAGE_MULTIPLIER));
+  const ref=target.ref;
+  const damage=(typeof calcLevelScaledDamage==='function') ? calcLevelScaledDamage(baseDamage,ref) : baseDamage;
+
+  // ✅ [v.221.8] 0.1초 공격 틱마다 플레이어에서 적에게 전달되는 파동 시각화
+  const dxFx = ref.x - player.x, dyFx = ref.y - player.y;
+  const distFx = Math.hypot(dxFx, dyFx);
+  spinSkillFx.push({
+    x: player.x, y: player.y, tx: ref.x, ty: ref.y,
+    start: performance.now(), duration: saveData.lowPower ? 260 : 360,
+    maxRadius: Math.max(72, Math.min(190, distFx * 0.55 + 64))
+  });
+  if (spinSkillFx.length > (saveData.lowPower ? 5 : 9)) spinSkillFx.splice(0, spinSkillFx.length - (saveData.lowPower ? 5 : 9));
+
+  ref.hp-=damage;
+  spawnDamageText(ref.x, ref.y-(ref.size || ref.height || 24)*0.55, damage, '#d9b8ff');
+  try { spawnElementalHitEffect(ref.x, ref.y, ref.element, 1.1); } catch(e) {}
+  if (ref.hp<=0) {
+    ref.hp=0;
+    if (target.kind==='enemy') {
+      if (typeof handleEnemyKilledBySkill==='function') handleEnemyKilledBySkill(ref);
+      enemies=enemies.filter(e=>e && e.hp>0);
+    } else if (typeof handleBossKilledBySkill==='function') {
+      handleBossKilledBySkill();
+    }
+  }
+}
+function castSpinSkill(){
+  if (!canUseSpinSkill() || (player.spinCooldown || 0)>0 || isSpinSkillActive()) return;
+  spinSkillFx.length = 0;
+  spinSkillState={life:SPIN_DURATION_MS, tick:0};
+  player.spinCooldown=applyHyperSkillCooldown(SPIN_COOLDOWN_MS);
+  try { spawnExplosion(player.x,player.y,'#c99cff',saveData.lowPower?8:18); } catch(e) {}
+}
+function tryCastSpinSkill(){ castSpinSkill(); }
+function updateSpinSkill(dt){
+  if (!player) return;
+  if (canUseSpinSkill()) player.spinCooldown=Math.max(0,(player.spinCooldown||0)-dt);
+  if (!spinSkillState) return;
+  spinSkillState.life-=dt;
+  spinSkillState.tick-=dt;
+  while (spinSkillState.tick<=0 && spinSkillState.life>0) {
+    spinSkillState.tick+=SPIN_TICK_MS;
+    hitNearestEnemyBySpin();
+  }
+  if (spinSkillState.life<=0) spinSkillState=null;
+}
+function updateSpinSkillUI(){
+  if (!spinSkillBtn) return;
+  if (!canUseSpinSkill()) { spinSkillBtn.classList.add('hidden'); return; }
+  spinSkillBtn.classList.remove('hidden');
+  const cd=Math.max(0,(player.spinCooldown||0));
+  applySkillButtonVisual(spinSkillBtn,cd,SPIN_COOLDOWN_MS,'🌀',cd>0?'':'회전');
+}
+
+// ✅ [v.221.8] 빙글빙글 파동/전달 이펙트
+function drawSpinSkillFx(){
+  if (!spinSkillFx.length) return;
+  const now = performance.now();
+  spinSkillFx = spinSkillFx.filter(fx => now - fx.start < fx.duration);
+
+  for (const fx of spinSkillFx) {
+    const p = Math.max(0, Math.min(1, (now - fx.start) / fx.duration));
+    const ease = 1 - Math.pow(1 - p, 2.2);
+    const alpha = Math.pow(1 - p, 1.25);
+    const r = 18 + fx.maxRadius * ease;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    // 중심에서 퍼지는 메인 충격파
+    ctx.globalAlpha = 0.72 * alpha;
+    ctx.strokeStyle = '#d8b7ff';
+    ctx.lineWidth = Math.max(1.5, 5.0 * (1 - p));
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 한 겹 늦게 따라오는 보조 파동
+    const p2 = Math.max(0, p - 0.16) / 0.84;
+    if (p2 > 0) {
+      const r2 = 12 + fx.maxRadius * (1 - Math.pow(1 - Math.min(1,p2), 2));
+      ctx.globalAlpha = 0.34 * alpha;
+      ctx.strokeStyle = '#8eeeff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, r2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 실제 타격 대상 쪽으로 파동이 전달되는 짧은 에너지 흔적
+    const travel = Math.min(1, p * 2.8);
+    const headX = fx.x + (fx.tx - fx.x) * travel;
+    const headY = fx.y + (fx.ty - fx.y) * travel;
+    ctx.globalAlpha = 0.42 * alpha;
+    ctx.strokeStyle = '#c99cff';
+    ctx.lineWidth = saveData.lowPower ? 2 : 3;
+    ctx.beginPath();
+    ctx.moveTo(fx.x, fx.y);
+    ctx.lineTo(headX, headY);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.72 * alpha;
+    const glowR = saveData.lowPower ? 3.5 : 5.5;
+    const g = ctx.createRadialGradient(headX, headY, 0, headX, headY, glowR * 2.2);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.35, 'rgba(216,183,255,0.90)');
+    g.addColorStop(1, 'rgba(201,156,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(headX, headY, glowR * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ===============================
 
 let bubbles = [];          // 발사형 거품 투사체 [{x,y,radius,vx,vy,damage,areaRadius,_hit}]
 let bubbleSpray = null;    // { life, tick }
@@ -19960,6 +20174,7 @@ function tryCastBubbleSkill() {
 }
 
 function updateBubbleSkillUI() {
+  updateSpinSkillUI();
   if (!bubbleSkillBtn) return;
   const show = canUseBubbleSkill();
   if (!show) { bubbleSkillBtn.classList.add('hidden'); return; }
@@ -20004,6 +20219,7 @@ function shootBubbleProjectile() {
 }
 
 function updateBubble(dt) {
+  updateSpinSkill(dt);
   if (!player || !player.alive || isPlayerDying) return;
   if (gameMode === 'dungeon') return;
 
@@ -25887,6 +26103,11 @@ const magnetActive = isInfiniteItemEffectActive('magnet');
 
 ctx.save();
 ctx.translate(x, y);
+// 빙글빙글 지속 중에는 슬라임 몸체 자체를 빠르게 회전
+if (isSpinSkillActive()) {
+  const elapsed = SPIN_DURATION_MS - Math.max(0, spinSkillState.life || 0);
+  ctx.rotate((elapsed / 360) * Math.PI * 2);
+}
 // ✅ 무적 시간(스테이지) + 하이퍼 플라이트 종료 직후 보호 시간 동안 플레이어 깜빡임
 if ((gameMode === 'stage' && playerInvulnTimer > 0) || hyperFlightGuardActive) {
   const blink = (Math.floor(Date.now() / 70) % 2) === 0;
@@ -27091,7 +27312,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.8', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -27999,6 +28220,7 @@ requestAnimationFrame(gameLoop);
     drawPetBullets();
     drawPet2Bullets();
     drawPetSkillEffects();
+    drawSpinSkillFx();
     drawEnemyBullets();
     drawPet();
     drawPet2();
