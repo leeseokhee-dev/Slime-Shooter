@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+f<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.11)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.12)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4059,18 +4059,22 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
     </div>
 </div>
 
-<!-- [v.221.11] 첫 시작 튜토리얼 선택 모달 -->
-<div id="initialTutorialChoiceModal" class="modal hidden" style="z-index:206; border-color:#b8ffd8; max-width:420px;">
-    <div class="modal-header" style="color:#b8ffd8;">게임 시작 방법 선택</div>
-    <div class="modal-body" style="text-align:center; gap:12px;">
-        <div style="font-size:13px; color:#e8fff1; line-height:1.7;">
-            게임 방법을 처음부터 배워볼까요?<br>
-            튜토리얼에서는 직접 플레이하며 기본기를 익히고 EXP를 얻어 어느 정도 성장한 뒤 게임을 시작할 수 있습니다.<br><br>
-            이미 게임 방법을 알고 있다면 튜토리얼을 건너뛸 수 있습니다. 이 경우 <b style="color:#ffe28a;">LV.1부터 바로 시작</b>합니다.
-        </div>
-        <button id="initialTutorialStartBtn" class="ui-btn big-btn" style="width:100%; border-color:#b8ffd8; color:#edfff4; background:linear-gradient(to bottom,#1b6b46,#082417);">🧭 튜토리얼 시작</button>
-        <button id="initialTutorialSkipBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffd36a; color:#fff1b8; background:linear-gradient(to bottom,#5a4510,#241a06);">⏭️ 튜토리얼 건너뛰기 · LV.1 시작</button>
+
+<!-- [v.221.12] 닉네임 생성 후 선택형 튜토리얼 문답 -->
+<div id="tutorialChoiceModal" class="modal hidden" style="z-index:120000; border-color:#b8ffd8; max-width:460px;">
+  <div class="modal-header" style="color:#b8ffd8;">처음 플레이하시나요?</div>
+  <div class="modal-body" style="text-align:center; gap:14px;">
+    <div style="font-size:14px; color:#eef8ff; line-height:1.65;">
+      게임 방법을 처음부터 배워볼까요?<br>
+      튜토리얼을 완료하면 전투를 익히면서 <b style="color:#b8ffd8;">EXP와 골드 보상</b>을 받을 수 있습니다.<br>
+      이미 게임 방법을 알고 있다면 건너뛸 수 있지만, <b style="color:#ffd7a8;">아무 보상 없이 LV.1부터 시작</b>합니다.
     </div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="tutorialChoiceEnterBtn" class="ui-btn big-btn" style="flex:1; min-width:0; padding:12px 8px; border-color:#b8ffd8; color:#edfff4; background:linear-gradient(to bottom,#1b6b46,#082417);">튜토리얼 모드에 입장</button>
+      <button id="tutorialChoiceSkipBtn" class="ui-btn big-btn" style="flex:1; min-width:0; padding:12px 8px; border-color:#ffb36b; color:#fff0dc; background:linear-gradient(to bottom,#5a3410,#231206);">튜토리얼 건너뛰기</button>
+    </div>
+    <div style="font-size:11px; color:#9fb5ff; line-height:1.5;">왼쪽: 튜토리얼 입장 · 오른쪽: 튜토리얼 건너뛰기</div>
+  </div>
 </div>
 
 <!-- 게임 오버 모달 -->
@@ -5763,9 +5767,9 @@ const closeCharacterBtn = document.getElementById('closeCharacterBtn');
 const initialNicknameModal = document.getElementById('initialNicknameModal');
 const initialNicknameInput = document.getElementById('initialNicknameInput');
 const initialNicknameConfirmBtn = document.getElementById('initialNicknameConfirmBtn');
-const initialTutorialChoiceModal = document.getElementById('initialTutorialChoiceModal');
-const initialTutorialStartBtn = document.getElementById('initialTutorialStartBtn');
-const initialTutorialSkipBtn = document.getElementById('initialTutorialSkipBtn');
+const tutorialChoiceModal = document.getElementById('tutorialChoiceModal');
+const tutorialChoiceEnterBtn = document.getElementById('tutorialChoiceEnterBtn');
+const tutorialChoiceSkipBtn = document.getElementById('tutorialChoiceSkipBtn');
 const shopListEl = document.getElementById('shopList');
 const shopGoldTextEl = document.getElementById('shopGoldText');
 const closeShopBtn = document.getElementById('closeShopBtn');
@@ -6247,8 +6251,51 @@ const LOCAL_STORAGE_KEY = 'slimeShooterEvolution_KR_V4';
 const CHARACTER_INDEX_KEY = 'slimeShooterEvolution_KR_V4__chars';
 const CHARACTER_CURRENT_KEY = 'slimeShooterEvolution_KR_V4__currentChar';
 const INITIAL_NICKNAME_DONE_KEY = 'slimeShooterEvolution_KR_V4__initialNicknameDone';
-const INITIAL_TUTORIAL_CHOICE_KEY = 'slimeShooterEvolution_KR_V4__initialTutorialChoice';
+const TUTORIAL_CHOICE_KEY = 'slimeShooterTutorialChoiceV22112';
 let currentCharacterId = null;
+let tutorialChoicePending = false;
+
+function getTutorialChoiceKey(id = currentCharacterId){
+  return `${TUTORIAL_CHOICE_KEY}__${id || 'global'}`;
+}
+function getTutorialChoice(id = currentCharacterId){
+  try { return String(localStorage.getItem(getTutorialChoiceKey(id)) || ''); } catch(e) { return ''; }
+}
+function rememberTutorialChoice(choice){
+  try { localStorage.setItem(getTutorialChoiceKey(), String(choice || '')); } catch(e) {}
+}
+function isFreshTutorialChoiceProfile(){
+  return Number(saveData?.level || 1) <= 1
+    && Number(saveData?.exp || 0) <= 0
+    && Number(saveData?.highScore || 0) <= 0
+    && Number(saveData?.totalMonsterKills || 0) <= 0
+    && Number(saveData?.totalBossKills || 0) <= 0;
+}
+function shouldOfferTutorialChoice(){
+  if (!currentCharacterId) return false;
+  const nick = String(saveData?.nickname || '').trim();
+  let nickDone = false;
+  try { nickDone = !!localStorage.getItem(`${INITIAL_NICKNAME_DONE_KEY}__${currentCharacterId}`); } catch(e) {}
+  return !!(nick && nickDone && isFreshTutorialChoiceProfile() && !getTutorialChoice());
+}
+function openTutorialChoiceModal(){
+  if (!tutorialChoiceModal) return;
+  tutorialChoicePending = true;
+  try { stopIntroTutorial(); } catch(e) {}
+  try {
+    tutorialActive = false;
+    tutorialNonBlocking = false;
+    tutorialFlow = 'none';
+    document.body.classList.remove('tutorial-mode');
+    const ov = document.getElementById('tutorialOverlay');
+    if (ov) ov.classList.add('hidden');
+  } catch(e) {}
+  tutorialChoiceModal.classList.remove('hidden');
+}
+function closeTutorialChoiceModal(){
+  tutorialChoicePending = false;
+  if (tutorialChoiceModal) tutorialChoiceModal.classList.add('hidden');
+}
 
 function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
@@ -9211,6 +9258,7 @@ function nextTutorialMessage() {
 
 
 function maybeShowFirstTutorial() {
+  if (tutorialChoicePending || shouldOfferTutorialChoice()) return;
   if (tutorialShown) return;
   if (Number(level) !== 1) return;
   if (!String(saveData.nickname || '').trim()) return;
@@ -11116,47 +11164,12 @@ function confirmInitialNickname() {
   saveGameData();
   updateHUD();
   closeInitialNicknameModal();
-  // [v.221.11] 닉네임 확정 직후 튜토리얼 진행 여부를 사용자가 직접 선택합니다.
+  // [v.221.12] 닉네임 생성 직후에는 기존 길잡이 튜토리얼보다 선택 문답을 먼저 표시합니다.
+  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = true; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
   resetCurrentCharacterTutorialFlags();
-  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = false; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
-  setTimeout(() => {
-    if (initialTutorialChoiceModal) initialTutorialChoiceModal.classList.remove('hidden');
-  }, 80);
+  openTutorialChoiceModal();
   return true;
 }
-
-function getInitialTutorialChoiceKey(id = currentCharacterId) {
-  return `${INITIAL_TUTORIAL_CHOICE_KEY}__${id || 'global'}`;
-}
-function setInitialTutorialChoice(choice) {
-  try { localStorage.setItem(getInitialTutorialChoiceKey(), String(choice || '')); } catch(e) {}
-}
-function closeInitialTutorialChoiceModal() {
-  if (initialTutorialChoiceModal) initialTutorialChoiceModal.classList.add('hidden');
-}
-function chooseInitialTutorialStart() {
-  closeInitialTutorialChoiceModal();
-  setInitialTutorialChoice('tutorial');
-  // 튜토리얼을 선택한 경우에만 기존 길잡이/튜토리얼 플래그를 초기화하고 전용 모드로 바로 진입합니다.
-  resetCurrentCharacterTutorialFlags();
-  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = true; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
-  initAudio();
-  setTimeout(() => { try { startTutorialMode(); } catch(e) {} }, 80);
-}
-function chooseInitialTutorialSkip() {
-  closeInitialTutorialChoiceModal();
-  setInitialTutorialChoice('skip');
-  // 스킵 시 보상/레벨 보정 없이 현재 LV.1 상태 그대로 일반 모드 선택으로 이동합니다.
-  stopIntroTutorial();
-  hideFocusMask();
-  try { hotTimeTitlePopupPendingAfterTutorial = false; } catch(e) {}
-  saveGameData();
-  updateHUD();
-  initAudio();
-  openModeSelect();
-}
-initialTutorialStartBtn && initialTutorialStartBtn.addEventListener('click', chooseInitialTutorialStart);
-initialTutorialSkipBtn && initialTutorialSkipBtn.addEventListener('click', chooseInitialTutorialSkip);
 
 function openNicknamePrompt() {
   const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24시간
@@ -11202,6 +11215,52 @@ initialNicknameInput && initialNicknameInput.addEventListener('keydown', (e) => 
     e.preventDefault();
     confirmInitialNickname();
   }
+});
+tutorialChoiceEnterBtn && tutorialChoiceEnterBtn.addEventListener('click', () => {
+  rememberTutorialChoice('tutorial');
+  closeTutorialChoiceModal();
+  try { stopIntroTutorial(); hideFocusMask(); } catch(e) {}
+  try { startTutorialMode(); } catch(e) {}
+});
+tutorialChoiceSkipBtn && tutorialChoiceSkipBtn.addEventListener('click', () => {
+  const town = (typeof ensureTownQuestState === 'function') ? ensureTownQuestState() : null;
+  const total = Array.isArray(BEGINNER_TUTORIAL_QUEST_POOL) ? BEGINNER_TUTORIAL_QUEST_POOL.length : 11;
+  if (town) { town.guideStep = total; town.active = null; }
+
+  // [v.221.13] 선택형 튜토리얼을 건너뛰면 길잡이 슬라임의 최초 안내도 전부 종료 처리합니다.
+  // 스킵 직후 maybeShowFirstTutorial()이 다시 길잡이 대사를 띄우지 못하도록 최초 안내 플래그를 함께 기록합니다.
+  try {
+    markTutorialAsSeen('intro_title');
+    markTutorialAsSeen('intro_ingame');
+    markTutorialAsSeen('stage1_post_clear');
+    localStorage.setItem(`ss_tutorial_shown__${currentCharacterId || 'global'}`, '1');
+  } catch(e) {}
+
+  tutorialShown = true;
+  tutorialModeActive = false;
+  tutorialChoicePending = false;
+  tutorialActive = false;
+  tutorialNonBlocking = false;
+  tutorialFlow = 'none';
+  tutorialIndex = 0;
+  tutorialMessages = [];
+
+  try { stopIntroTutorial(); } catch(e) {}
+  try { hideFocusMask(); } catch(e) {}
+  try {
+    document.body.classList.remove('tutorial-mode');
+    if (tutorialOverlayDom) tutorialOverlayDom.classList.add('hidden');
+    const ov = document.getElementById('tutorialOverlay');
+    if (ov) ov.classList.add('hidden');
+  } catch(e) {}
+
+  rememberTutorialChoice('skip');
+  closeTutorialChoiceModal();
+  try { saveGameData(); } catch(e) {}
+  try { refreshTutorialModeButtonVisibility(); } catch(e) {}
+  try { updateHUD(); } catch(e) {}
+  try { showToast('튜토리얼을 건너뛰었습니다. 보상 없이 LV.1부터 시작합니다.', '#ffd7a8', 2200); } catch(e) {}
+  try { hotTimeTitlePopupPendingAfterTutorial = false; } catch(e) {}
 });
 renameCurrentCharacterBtn && renameCurrentCharacterBtn.addEventListener('click', () => { openNicknamePrompt(); renderCharacterList(); });
 closeCharacterBtn && closeCharacterBtn.addEventListener('click', closeCharacterModal);
@@ -15887,9 +15946,6 @@ function isTutorialModeAvailable(){
   try {
     // 11단계를 모두 끝낸 캐릭터는 레벨과 관계없이 튜토리얼 모드를 다시 표시/실행하지 않습니다.
     if (isTutorialModeCompleted()) return false;
-    let initialChoice = '';
-    try { initialChoice = localStorage.getItem(getInitialTutorialChoiceKey()) || ''; } catch(e) {}
-    if (initialChoice === 'skip') return false;
     return Number(level || saveData?.level || 1) < 11;
   } catch(e) { return false; }
 }
@@ -27376,7 +27432,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.11', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.13', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34281,6 +34337,7 @@ try { clearGuideQuestIfNoLongerNeeded(); } catch(e) {}
 try { syncGoldAccountingV1882(); saveGameData(); } catch (e) {}
 updateHUD();
 if (isInitialNicknameRequired()) openInitialNicknameModal();
+else if (shouldOfferTutorialChoice()) openTutorialChoiceModal();
 fitCanvasToViewport();
 
 // [추가] 게임 로드 즉시 타이틀 음악 재생 시도
@@ -35867,6 +35924,8 @@ if (retryStageBtn) {
 if (clearToTitleBtn) {
   clearToTitleBtn.addEventListener('click', () => { stageActiveSkillSnapshotV2216 = null; });
 }
+
+
 
 </script>
 
