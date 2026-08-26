@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.6)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.8)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3105,6 +3105,33 @@ body.dungeon-mode .dash-skill{ display:none !important; }
   height:40px !important; min-height:40px !important; max-height:40px !important;
 }
 
+/* ===== [v.221.8] LV.11 빙글빙글 스킬 ===== */
+.spin-skill{
+  position:absolute;
+  right:66px;
+  bottom:calc(360px + env(safe-area-inset-bottom));
+  width:48px; height:48px;
+  border-radius:999px;
+  z-index:60;
+  border:2px solid rgba(255,190,105,.96);
+  color:#fff0c7;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.27), rgba(0,0,0,.52)), linear-gradient(to bottom,#865319,#321b08);
+  box-shadow:0 0 16px rgba(255,183,92,.38),0 10px 26px rgba(0,0,0,.55);
+  touch-action:manipulation; pointer-events:auto; user-select:none; -webkit-user-select:none;
+  display:flex; align-items:center; justify-content:center; padding:0; overflow:hidden;
+}
+.spin-skill:active{ transform:translateY(1px) scale(.985); }
+.spin-skill[disabled]{ opacity:.55; filter:grayscale(.25); }
+.spin-skill .skill-icon{ font-size:20px; transform:translateY(-2px); pointer-events:none; }
+.spin-skill .skill-cd{ position:absolute; bottom:8px; font-size:10px; font-weight:900; pointer-events:none; text-shadow:0 2px 6px rgba(0,0,0,.85); }
+.spin-skill .skill-cd.ready{ display:none; }
+.spin-skill.cooling::after{ content:''; position:absolute; inset:3px; border-radius:999px; background:conic-gradient(from -90deg,rgba(255,255,255,.75) calc(var(--cdp,0) * 1turn),rgba(0,0,0,0) 0); opacity:.55; pointer-events:none; }
+body.title-mode .spin-skill, body.tutorial-mode .spin-skill, body.dead-mode .spin-skill, body.logo-mode .spin-skill, body.dungeon-mode .spin-skill{ display:none !important; }
+#spinSkillBtn{ width:48px !important; min-width:48px !important; max-width:48px !important; height:48px !important; min-height:48px !important; max-height:48px !important; padding:0 !important; border-radius:50% !important; aspect-ratio:1/1; overflow:hidden; }
+#gameContainer.compact-ui #spinSkillBtn{ width:44px !important; min-width:44px !important; max-width:44px !important; height:44px !important; min-height:44px !important; max-height:44px !important; }
+#gameContainer.ultra-compact-ui #spinSkillBtn{ width:40px !important; min-width:40px !important; max-width:40px !important; height:40px !important; min-height:40px !important; max-height:40px !important; }
+@media(max-width:520px){ .spin-skill .skill-icon{ font-size:calc(20px * var(--canvas-scale) + 6px); } }
+
 </style>
 
 
@@ -3889,6 +3916,8 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
 <button id="laserSkillBtn" class="ui-btn laser-skill hidden">레이저</button>
 <!-- ✅ [v.88] 거품 스킬 버튼 -->
 <button id="bubbleSkillBtn" class="ui-btn bubble-skill hidden">거품</button>
+<!-- ✅ [v.221.8] LV.11 빙글빙글 스킬 -->
+<button id="spinSkillBtn" class="ui-btn spin-skill hidden" type="button" title="빙글빙글">🌀</button>
 <!-- ✅ [v.215] LV.31 돌진 스킬 -->
 <button id="dashSkillBtn" class="ui-btn dash-skill hidden" type="button" title="Rush · 돌진">돌진</button>
 <!-- ✅ [추가] 눈보라 / 메테오 스킬 버튼 -->
@@ -5517,6 +5546,7 @@ const effectsBtn = document.getElementById('effectsBtn');
 const homingBtn = document.getElementById('homingBtn');
 const laserSkillBtn = document.getElementById('laserSkillBtn');
 const bubbleSkillBtn = document.getElementById('bubbleSkillBtn');
+const spinSkillBtn = document.getElementById('spinSkillBtn');
 const dashSkillBtn = document.getElementById('dashSkillBtn');
 const blizzardSkillBtn = document.getElementById('blizzardSkillBtn');
 const meteorSkillBtn = document.getElementById('meteorSkillBtn');
@@ -9168,6 +9198,17 @@ const SKILL_GUIDE_DATA = [
     tips: ['초반 보스전과 가까운 적 처리에 좋습니다.']
   },
   {
+    level: 11,
+    name: '빙글빙글', icon: '🌀', color: '#ffd08a',
+    lines: [
+      '플레이어 슬라임 몸체가 5초 동안 빠르게 회전합니다.',
+      '회전 중 0.1초마다 가장 가까운 적 1명을 자동으로 타격합니다.',
+      '타격 1회당 공격력 200% 피해를 줍니다.',
+      '쿨타임은 12초입니다.'
+    ],
+    tips: ['가까운 적이 계속 바뀌어도 매 타격마다 가장 가까운 대상을 다시 추적합니다.']
+  },
+  {
     level: 31,
     name: '번개', icon: '⚡', color: '#fff38a',
     lines: [
@@ -9807,7 +9848,7 @@ if (typeof saveData.quests.expOrb.target !== 'number') saveData.quests.expOrb.ta
 if (typeof saveData.quests.expOrb.reward !== 'number') saveData.quests.expOrb.reward = 300;
 
 if (!saveData.quests.skills || typeof saveData.quests.skills !== 'object') saveData.quests.skills = {};
-const _skillQuestKeys = ['bubble','rush','laser','lightning','quake','blizzard','meteor','plasma'];
+const _skillQuestKeys = ['bubble','spin','rush','laser','lightning','quake','blizzard','meteor','plasma'];
 for (const _k of _skillQuestKeys) {
   if (!saveData.quests.skills[_k] || typeof saveData.quests.skills[_k] !== 'object') saveData.quests.skills[_k] = { count: 0, target: 10, tier: 1 };
   if (typeof saveData.quests.skills[_k].count !== 'number' || !isFinite(saveData.quests.skills[_k].count)) saveData.quests.skills[_k].count = 0;
@@ -11219,6 +11260,23 @@ if (bubbleSkillBtn) {
   bubbleSkillBtn.addEventListener('touchstart', fire, { passive:false });
   bubbleSkillBtn.addEventListener('mousedown', fire);
   bubbleSkillBtn.addEventListener('click', fire);
+}
+
+// ✅ [v.221.8] 빙글빙글 스킬 버튼
+if (spinSkillBtn) {
+  let lastSpinTap = 0;
+  const fire = (e) => {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+    const now = Date.now();
+    if (now - lastSpinTap < 120) return;
+    lastSpinTap = now;
+    handleInputStart();
+    tryCastSpinSkillV2217();
+  };
+  spinSkillBtn.addEventListener('pointerdown', fire, { passive:false });
+  spinSkillBtn.addEventListener('touchstart', fire, { passive:false });
+  spinSkillBtn.addEventListener('mousedown', fire);
+  spinSkillBtn.addEventListener('click', fire);
 }
 
 // ✅ [v.215] 돌진 스킬 버튼
@@ -13563,7 +13621,7 @@ function updateQuestUI() {
 
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 퀘스트', '#7ce7ff');
-  for (const skillKey of ['bubble','rush','laser','lightning','quake','blizzard','meteor','plasma']) {
+  for (const skillKey of ['bubble','spin','rush','laser','lightning','quake','blizzard','meteor','plasma']) {
     const meta = SKILL_QUEST_META[skillKey];
     const q = saveData.quests.skills[skillKey];
     const reward = getSkillQuestReward(skillKey);
@@ -22939,6 +22997,8 @@ stopBGM();
 // ✅ [v.41] 스테이지 모드 체력(5칸) + 피격 처리
 function applyPlayerHit(px, py, hitInfo = null) {
   if (isRushSkillActive()) return;
+  // ✅ [v.221.8] 빙글빙글 시전 5초 동안 완전 무적
+  if (typeof spinSkillStateV2217 !== 'undefined' && spinSkillStateV2217 && spinSkillStateV2217.active) return;
   if (isPlayerDying || !player || !player.alive) return;
 
   if (isHyperFlightGuardActive()) return;
@@ -25887,6 +25947,10 @@ const magnetActive = isInfiniteItemEffectActive('magnet');
 
 ctx.save();
 ctx.translate(x, y);
+// ✅ [v.221.8] 빙글빙글 스킬: 플레이어 슬라임 몸체 자체를 회전
+if (typeof spinSkillStateV2217 !== 'undefined' && spinSkillStateV2217 && spinSkillStateV2217.active) {
+  ctx.rotate(Number(spinSkillStateV2217.rotation) || 0);
+}
 // ✅ 무적 시간(스테이지) + 하이퍼 플라이트 종료 직후 보호 시간 동안 플레이어 깜빡임
 if ((gameMode === 'stage' && playerInvulnTimer > 0) || hyperFlightGuardActive) {
   const blink = (Math.floor(Date.now() / 70) % 2) === 0;
@@ -27091,7 +27155,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.8', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -35486,6 +35550,128 @@ document.addEventListener('visibilitychange',()=>{
 
 
 /* ===============================
+   ✅ [v.221.8] LV.11 신규 스킬: 빙글빙글
+   - 지속 5초 / 0.1초마다 가장 가까운 적 1명 타격
+   - 공격력 200% 피해 / 쿨타임 12초
+   =============================== */
+const SPIN_SKILL_DURATION_V2217 = 5000;
+const SPIN_SKILL_TICK_V2217 = 100;
+const SPIN_SKILL_COOLDOWN_V2217 = 12000;
+let spinSkillStateV2217 = { active:false, life:0, tick:0, rotation:0, startX:null, startY:null };
+
+function canUseSpinSkillV2217(){
+  return state === 'playing' && gameMode !== 'dungeon' && player && player.alive && !isPlayerDying && Number(level || 1) >= 11;
+}
+function resetSpinSkillV2217(){
+  spinSkillStateV2217 = { active:false, life:0, tick:0, rotation:0, startX:null, startY:null };
+}
+function castSpinSkillV2217(){
+  if (!canUseSpinSkillV2217() || !player || (player.spinCooldown || 0) > 0) return false;
+  spinSkillStateV2217.active = true;
+  spinSkillStateV2217.life = SPIN_SKILL_DURATION_V2217;
+  spinSkillStateV2217.tick = 0;
+  spinSkillStateV2217.rotation = 0;
+  spinSkillStateV2217.startX = player.x;
+  spinSkillStateV2217.startY = player.y;
+  player.spinCooldown = applyHyperSkillCooldown(SPIN_SKILL_COOLDOWN_V2217);
+  try { addSkillQuestCount('spin', 1); } catch(e) {}
+  try { spawnExplosion(player.x, player.y, 'rgba(255,205,125,0.95)', 16); } catch(e) {}
+  try { spawnDamageText(player.x, player.y - (player.size || 24) - 18, '빙글빙글!', '#ffd08a', true); } catch(e) {}
+  return true;
+}
+function tryCastSpinSkillV2217(){
+  if (!canUseSpinSkillV2217()) return false;
+  if ((player.spinCooldown || 0) > 0) return false;
+  return castSpinSkillV2217();
+}
+function getNearestSpinTargetV2217(){
+  if (!player) return null;
+  let best = null;
+  let bestD2 = Infinity;
+  for (const e of enemies || []) {
+    if (!e || Number(e.hp || 0) <= 0) continue;
+    const dx = Number(e.x || 0) - player.x;
+    const dy = Number(e.y || 0) - player.y;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < bestD2) { bestD2 = d2; best = { kind:'enemy', target:e }; }
+  }
+  if (boss && Number(boss.hp || 0) > 0 && !isBossInvincible()) {
+    const dx = Number(boss.x || 0) - player.x;
+    const dy = Number(boss.y || 0) - player.y;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < bestD2) best = { kind:'boss', target:boss };
+  }
+  return best;
+}
+function hitNearestWithSpinV2217(){
+  if (!player || !player.alive || isPlayerDying) return;
+  const found = getNearestSpinTargetV2217();
+  if (!found || !found.target) return;
+  const rawDamage = Math.max(1, Math.round(getPlayerAttackPower() * 2.0));
+  const t = found.target;
+  if (found.kind === 'boss') {
+    if (!boss || t !== boss || isBossInvincible()) return;
+    const dmg = calcLevelScaledDamage(rawDamage, boss);
+    boss.hp -= dmg;
+    spawnDamageText(boss.x, boss.y + 16, dmg, '#ffd08a', false, 'skill');
+    try { spawnElementalHitEffect(boss.x, boss.y, getPlayerElementKey(), 0.85); } catch(e) {}
+    if (boss.hp <= 0) handleBossKilledBySkill();
+    return;
+  }
+  if (Number(t.hp || 0) <= 0) return;
+  const dmg = calcLevelScaledDamage(rawDamage, t);
+  t.hp -= dmg;
+  spawnDamageText(t.x, t.y, dmg, '#ffd08a', false, 'skill');
+  try { spawnElementalHitEffect(t.x, t.y, getPlayerElementKey(), 0.8); } catch(e) {}
+  if (t.hp <= 0) {
+    handleEnemyKilledBySkill(t);
+    t.hp = 0;
+  }
+}
+function updateSpinSkillV2217(dt){
+  if (!player) { resetSpinSkillV2217(); updateSpinSkillUIV2217(); return; }
+  if (canUseSpinSkillV2217()) player.spinCooldown = Math.max(0, Number(player.spinCooldown || 0) - dt);
+
+  // 클리어 결과창/스테이지 전환 대기 중에는 지속시간을 소모하지 않고 다음 스테이지까지 이어갑니다.
+  const transitionPaused = gameMode === 'stage' && (stageCleared || (stageClearModal && !stageClearModal.classList.contains('hidden')) || (stageClearSeq && stageClearSeq.active));
+  if (spinSkillStateV2217.active && !transitionPaused && player.alive && !isPlayerDying) {
+    spinSkillStateV2217.life = Math.max(0, spinSkillStateV2217.life - dt);
+    spinSkillStateV2217.tick -= dt;
+    spinSkillStateV2217.rotation = (Number(spinSkillStateV2217.rotation) || 0) + dt * 0.018;
+    while (spinSkillStateV2217.tick <= 0 && spinSkillStateV2217.life > 0) {
+      spinSkillStateV2217.tick += SPIN_SKILL_TICK_V2217;
+      hitNearestWithSpinV2217();
+    }
+    if (spinSkillStateV2217.life <= 0) {
+      // ✅ [v.221.8] 시전 종료 시 시전 시작 위치로 복귀
+      if (Number.isFinite(spinSkillStateV2217.startX) && Number.isFinite(spinSkillStateV2217.startY)) {
+        player.x = clamp(spinSkillStateV2217.startX, 20, width - 20);
+        player.y = clamp(spinSkillStateV2217.startY, 40, height - 40);
+        dragTargetX = player.x;
+        dragTargetY = player.y;
+      }
+      spinSkillStateV2217.active = false;
+      spinSkillStateV2217.life = 0;
+      spinSkillStateV2217.tick = 0;
+      spinSkillStateV2217.rotation = 0;
+      spinSkillStateV2217.startX = null;
+      spinSkillStateV2217.startY = null;
+    }
+  }
+  updateSpinSkillUIV2217();
+}
+function updateSpinSkillUIV2217(){
+  if (!spinSkillBtn) return;
+  const show = canUseSpinSkillV2217();
+  if (!show) { spinSkillBtn.classList.add('hidden'); return; }
+  spinSkillBtn.classList.remove('hidden');
+  const cd = Math.max(0, Number(player?.spinCooldown || 0));
+  applySkillButtonVisual(spinSkillBtn, cd, SPIN_SKILL_COOLDOWN_V2217, '🌀', '회전');
+  if (spinSkillStateV2217.active) spinSkillBtn.title = `빙글빙글 · 남은 ${(spinSkillStateV2217.life/1000).toFixed(1)}초`;
+  else spinSkillBtn.title = cd > 0 ? `빙글빙글 · 쿨타임 ${(cd/1000).toFixed(1)}초` : '빙글빙글 · 5초 지속 · 0.1초마다 200% 피해';
+}
+
+/* ===============================
    ✅ [v.221.6] 스테이지 재도전/전환 및 EXP 버프 중첩 보완
    - 이미 클리어한 5단위 스테이지는 HUD의 "보스 처치 0/1" 숨김
    - 다음 스테이지 진입 시 클리어 직전에 시전 중이던 스킬의 남은 상태 복원
@@ -35513,7 +35699,8 @@ function captureStageActiveSkillsV2216(){
     lightningFx: cloneSkillArrayV2216(typeof lightningFx !== 'undefined' ? lightningFx : []),
     lightningStorm: cloneSkillObjectV2216(typeof lightningStorm !== 'undefined' ? lightningStorm : null),
     quake: cloneSkillObjectV2216(typeof quake !== 'undefined' ? quake : null),
-    plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : [])
+    plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : []),
+    spinSkillStateV2217: cloneSkillObjectV2216(typeof spinSkillStateV2217 !== 'undefined' ? spinSkillStateV2217 : null)
   };
 }
 function restoreStageActiveSkillsV2216(){
@@ -35534,6 +35721,7 @@ function restoreStageActiveSkillsV2216(){
   if (typeof lightningStorm !== 'undefined') lightningStorm = cloneSkillObjectV2216(snap.lightningStorm);
   if (typeof quake !== 'undefined') quake = cloneSkillObjectV2216(snap.quake);
   if (typeof plasmaBursts !== 'undefined') plasmaBursts = cloneSkillArrayV2216(snap.plasmaBursts);
+  if (typeof spinSkillStateV2217 !== 'undefined' && snap.spinSkillStateV2217) spinSkillStateV2217 = cloneSkillObjectV2216(snap.spinSkillStateV2217);
   stageActiveSkillSnapshotV2216 = null;
 }
 
@@ -35549,6 +35737,27 @@ if (retryStageBtn) {
 if (clearToTitleBtn) {
   clearToTitleBtn.addEventListener('click', () => { stageActiveSkillSnapshotV2216 = null; });
 }
+
+// ✅ [v.221.8] 기존 전투 루프 뒤에서 빙글빙글 상태/쿨타임을 갱신
+const updateBeforeSpinV2217 = update;
+update = function(dt, currentTime){
+  const result = updateBeforeSpinV2217.call(this, dt, currentTime);
+  if (!isPaused) updateSpinSkillV2217(dt);
+  return result;
+};
+
+// 새 게임/재도전/타이틀 복귀에서는 빙글빙글 상태를 초기화합니다.
+const startGameBeforeSpinV2217 = startGame;
+startGame = function(){
+  resetSpinSkillV2217();
+  return startGameBeforeSpinV2217.apply(this, arguments);
+};
+const goToTitleBeforeSpinV2217 = goToTitle;
+goToTitle = function(){
+  resetSpinSkillV2217();
+  if (spinSkillBtn) spinSkillBtn.classList.add('hidden');
+  return goToTitleBeforeSpinV2217.apply(this, arguments);
+};
 
 </script>
 
