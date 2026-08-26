@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.3)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.6)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -6526,6 +6526,31 @@ function ensureBuffContainer() {
 }
 function getBuffMult(typeKey) {
   ensureBuffContainer();
+
+  // ✅ [v.221.6] EXP는 상점 버프와 디멘션 경험치 쿠폰을 서로 분리해 가산 중첩합니다.
+  // 예: 상점 +25% + 쿠폰 +50% = 총 +75% (1.75배)
+  if (typeKey === 'exp') {
+    const now = Date.now();
+    let changed = false;
+    const shopBuff = saveData.buffs.exp;
+    const couponBuff = saveData.buffs.expCoupon;
+
+    let shopRate = 0;
+    let couponRate = 0;
+
+    if (shopBuff && shopBuff.until && shopBuff.mult) {
+      if (now >= shopBuff.until) { delete saveData.buffs.exp; changed = true; }
+      else shopRate = Math.max(0, (Number(shopBuff.mult) || 1) - 1);
+    }
+    if (couponBuff && couponBuff.until && couponBuff.mult) {
+      if (now >= couponBuff.until) { delete saveData.buffs.expCoupon; changed = true; }
+      else couponRate = Math.max(0, (Number(couponBuff.mult) || 1) - 1);
+    }
+
+    if (changed) saveGameDataDebounced();
+    return 1 + shopRate + couponRate;
+  }
+
   const b = saveData.buffs[typeKey];
   if (!b || !b.until || !b.mult) return 1;
   if (Date.now() >= b.until) {
@@ -7915,6 +7940,7 @@ function checkStageKillClearNow() {
   // ===== 클리어 공통 처리 =====
   // ✅ 클리어 즉시 결과/보너스 판정으로 넘어가며, 화면에 남은 전투 오브젝트는 모두 제거
   stageTransitionTimer = 0;
+  try { captureStageActiveSkillsV2216(); } catch(e) {}
   clearStageCombatObjects({ clearDrops: false });
 
   spawnExplosion(width/2, height/3, 'rgba(255, 240, 150, 1)', 25);
@@ -12317,7 +12343,8 @@ function formatRemain(ms) {
 
 function getBuffDisplayMeta(typeKey) {
   const map = {
-    exp:   { icon:'📈', label:'EXP',  color:'#63f5b4' },
+    exp:   { icon:'📈', label:'EXP 버프',  color:'#63f5b4' },
+    expCoupon: { icon:'🎟️', label:'EXP 쿠폰', color:'#7ce7ff' },
     speed: { icon:'🚀', label:'탄속', color:'#7ce7ff' },
     dmg:   { icon:'💥', label:'공격', color:'#ff8a80' },
     pet:   { icon:'🐾', label:'펫',   color:'#d8a8ff' },
@@ -25217,7 +25244,9 @@ if (gameMode === 'dungeon') {
     const t = getStageKillTarget(stage);
     const k = Math.max(0, Math.floor(stageRunKillCount || 0));
     const b = (isBossStage(stage) ? Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0))) : 0);
-    stageEl.textContent = isBossStage(stage)
+    const bossStageAlreadyCleared = !!(saveData.stageRanks && (saveData.stageRanks[stage] || saveData.stageRanks[String(stage)]));
+    const showBossObjective = isBossStage(stage) && !bossStageAlreadyCleared;
+    stageEl.textContent = showBossObjective
       ? `스테이지: ${stage} · 몬스터 처치 ${k}/${t}, 보스 처치 ${b}/1`
       : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`;
   } else if (gameMode === 'mission') {
@@ -27062,7 +27091,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.6', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -32855,9 +32884,9 @@ const DIMENSION_ITEM_DEFS_V182 = {
     use(){
       ensureBuffContainer();
       const now = Date.now();
-      const cur = saveData.buffs.exp;
+      const cur = saveData.buffs.expCoupon;
       const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
-      saveData.buffs.exp = { mult:1.5, until: baseUntil + 10 * 60 * 1000 };
+      saveData.buffs.expCoupon = { mult:1.5, until: baseUntil + 10 * 60 * 1000 };
       try { showToast('🎟️ 경험치 1.5배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
       return { ok:true, msg:'경험치 1.5배 쿠폰 10분 적용!' };
     }
@@ -32867,9 +32896,9 @@ const DIMENSION_ITEM_DEFS_V182 = {
     use(){
       ensureBuffContainer();
       const now = Date.now();
-      const cur = saveData.buffs.exp;
+      const cur = saveData.buffs.expCoupon;
       const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
-      saveData.buffs.exp = { mult:2, until: baseUntil + 10 * 60 * 1000 };
+      saveData.buffs.expCoupon = { mult:2, until: baseUntil + 10 * 60 * 1000 };
       try { showToast('🎟️ 경험치 2배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
       return { ok:true, msg:'경험치 2배 쿠폰 10분 적용!' };
     }
@@ -32879,9 +32908,9 @@ const DIMENSION_ITEM_DEFS_V182 = {
     use(){
       ensureBuffContainer();
       const now = Date.now();
-      const cur = saveData.buffs.exp;
+      const cur = saveData.buffs.expCoupon;
       const baseUntil = (cur && cur.until && cur.until > now) ? cur.until : now;
-      saveData.buffs.exp = { mult:3, until: baseUntil + 10 * 60 * 1000 };
+      saveData.buffs.expCoupon = { mult:3, until: baseUntil + 10 * 60 * 1000 };
       try { showToast('🎟️ 경험치 3배 쿠폰 10분 적용!', '#7ce7ff', 1600); } catch(e) {}
       return { ok:true, msg:'경험치 3배 쿠폰 10분 적용!' };
     }
@@ -34841,6 +34870,7 @@ function finishStageByTimeV2117() {
   }
 
   stageTransitionTimer = (typeof adventureModeActive !== 'undefined' && adventureModeActive) ? 0 : 800;
+  try { captureStageActiveSkillsV2216(); } catch(e) {}
   try { clearStageCombatObjects({ clearDrops: false }); } catch(e) {
     enemies.length = 0;
     enemyBullets.length = 0;
@@ -35453,6 +35483,73 @@ document.addEventListener('visibilitychange',()=>{
     }
   };
 })();
+
+
+/* ===============================
+   ✅ [v.221.6] 스테이지 재도전/전환 및 EXP 버프 중첩 보완
+   - 이미 클리어한 5단위 스테이지는 HUD의 "보스 처치 0/1" 숨김
+   - 다음 스테이지 진입 시 클리어 직전에 시전 중이던 스킬의 남은 상태 복원
+   - 디멘션 EXP 쿠폰과 상점 EXP 버프는 별도 표시 + 보너스율 가산 중첩
+   =============================== */
+let stageActiveSkillSnapshotV2216 = null;
+
+function cloneSkillArrayV2216(arr){
+  if (!Array.isArray(arr)) return [];
+  return arr.map(v => (v && typeof v === 'object') ? { ...v } : v);
+}
+function cloneSkillObjectV2216(obj){
+  return (obj && typeof obj === 'object') ? { ...obj } : obj;
+}
+function captureStageActiveSkillsV2216(){
+  if (gameMode !== 'stage') return;
+  stageActiveSkillSnapshotV2216 = {
+    stage: Math.max(1, Math.floor(Number(stage) || 1)),
+    lasers: cloneSkillArrayV2216(lasers),
+    bubbles: cloneSkillArrayV2216(typeof bubbles !== 'undefined' ? bubbles : []),
+    bubbleSpray: cloneSkillObjectV2216(typeof bubbleSpray !== 'undefined' ? bubbleSpray : null),
+    blizzard: cloneSkillObjectV2216(typeof blizzard !== 'undefined' ? blizzard : null),
+    blizzardFlakes: cloneSkillArrayV2216(typeof blizzardFlakes !== 'undefined' ? blizzardFlakes : []),
+    meteors: cloneSkillArrayV2216(typeof meteors !== 'undefined' ? meteors : []),
+    lightningFx: cloneSkillArrayV2216(typeof lightningFx !== 'undefined' ? lightningFx : []),
+    lightningStorm: cloneSkillObjectV2216(typeof lightningStorm !== 'undefined' ? lightningStorm : null),
+    quake: cloneSkillObjectV2216(typeof quake !== 'undefined' ? quake : null),
+    plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : [])
+  };
+}
+function restoreStageActiveSkillsV2216(){
+  const snap = stageActiveSkillSnapshotV2216;
+  if (!snap || gameMode !== 'stage') return;
+  // 반드시 바로 다음 스테이지에서만 이어집니다.
+  if (Math.floor(Number(stage) || 0) !== Math.floor(Number(snap.stage) || 0) + 1) {
+    stageActiveSkillSnapshotV2216 = null;
+    return;
+  }
+  lasers = cloneSkillArrayV2216(snap.lasers);
+  if (typeof bubbles !== 'undefined') bubbles = cloneSkillArrayV2216(snap.bubbles);
+  if (typeof bubbleSpray !== 'undefined') bubbleSpray = cloneSkillObjectV2216(snap.bubbleSpray);
+  if (typeof blizzard !== 'undefined') blizzard = cloneSkillObjectV2216(snap.blizzard);
+  if (typeof blizzardFlakes !== 'undefined') blizzardFlakes = cloneSkillArrayV2216(snap.blizzardFlakes);
+  if (typeof meteors !== 'undefined') meteors = cloneSkillArrayV2216(snap.meteors);
+  if (typeof lightningFx !== 'undefined') lightningFx = cloneSkillArrayV2216(snap.lightningFx);
+  if (typeof lightningStorm !== 'undefined') lightningStorm = cloneSkillObjectV2216(snap.lightningStorm);
+  if (typeof quake !== 'undefined') quake = cloneSkillObjectV2216(snap.quake);
+  if (typeof plasmaBursts !== 'undefined') plasmaBursts = cloneSkillArrayV2216(snap.plasmaBursts);
+  stageActiveSkillSnapshotV2216 = null;
+}
+
+// 기존 nextStageBtn 핸들러가 startStage()를 실행한 뒤 복원합니다.
+if (nextStageBtn) {
+  nextStageBtn.addEventListener('click', () => {
+    try { restoreStageActiveSkillsV2216(); } catch(e) {}
+  });
+}
+if (retryStageBtn) {
+  retryStageBtn.addEventListener('click', () => { stageActiveSkillSnapshotV2216 = null; });
+}
+if (clearToTitleBtn) {
+  clearToTitleBtn.addEventListener('click', () => { stageActiveSkillSnapshotV2216 = null; });
+}
+
 </script>
 
 </body>
