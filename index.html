@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.9)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.11)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4059,6 +4059,20 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
     </div>
 </div>
 
+<!-- [v.221.11] 첫 시작 튜토리얼 선택 모달 -->
+<div id="initialTutorialChoiceModal" class="modal hidden" style="z-index:206; border-color:#b8ffd8; max-width:420px;">
+    <div class="modal-header" style="color:#b8ffd8;">게임 시작 방법 선택</div>
+    <div class="modal-body" style="text-align:center; gap:12px;">
+        <div style="font-size:13px; color:#e8fff1; line-height:1.7;">
+            게임 방법을 처음부터 배워볼까요?<br>
+            튜토리얼에서는 직접 플레이하며 기본기를 익히고 EXP를 얻어 어느 정도 성장한 뒤 게임을 시작할 수 있습니다.<br><br>
+            이미 게임 방법을 알고 있다면 튜토리얼을 건너뛸 수 있습니다. 이 경우 <b style="color:#ffe28a;">LV.1부터 바로 시작</b>합니다.
+        </div>
+        <button id="initialTutorialStartBtn" class="ui-btn big-btn" style="width:100%; border-color:#b8ffd8; color:#edfff4; background:linear-gradient(to bottom,#1b6b46,#082417);">🧭 튜토리얼 시작</button>
+        <button id="initialTutorialSkipBtn" class="ui-btn big-btn" style="width:100%; border-color:#ffd36a; color:#fff1b8; background:linear-gradient(to bottom,#5a4510,#241a06);">⏭️ 튜토리얼 건너뛰기 · LV.1 시작</button>
+    </div>
+</div>
+
 <!-- 게임 오버 모달 -->
 <div id="gameOverUI" class="modal hidden" style="z-index: 155; border-color:#ff6b6b; max-width: 420px;">
     <div id="gameOverTitle" class="modal-header" style="color:#ff9b9b; text-shadow: 0 0 10px rgba(255,90,90,0.35);">GAME OVER</div>
@@ -5749,6 +5763,9 @@ const closeCharacterBtn = document.getElementById('closeCharacterBtn');
 const initialNicknameModal = document.getElementById('initialNicknameModal');
 const initialNicknameInput = document.getElementById('initialNicknameInput');
 const initialNicknameConfirmBtn = document.getElementById('initialNicknameConfirmBtn');
+const initialTutorialChoiceModal = document.getElementById('initialTutorialChoiceModal');
+const initialTutorialStartBtn = document.getElementById('initialTutorialStartBtn');
+const initialTutorialSkipBtn = document.getElementById('initialTutorialSkipBtn');
 const shopListEl = document.getElementById('shopList');
 const shopGoldTextEl = document.getElementById('shopGoldText');
 const closeShopBtn = document.getElementById('closeShopBtn');
@@ -6230,6 +6247,7 @@ const LOCAL_STORAGE_KEY = 'slimeShooterEvolution_KR_V4';
 const CHARACTER_INDEX_KEY = 'slimeShooterEvolution_KR_V4__chars';
 const CHARACTER_CURRENT_KEY = 'slimeShooterEvolution_KR_V4__currentChar';
 const INITIAL_NICKNAME_DONE_KEY = 'slimeShooterEvolution_KR_V4__initialNicknameDone';
+const INITIAL_TUTORIAL_CHOICE_KEY = 'slimeShooterEvolution_KR_V4__initialTutorialChoice';
 let currentCharacterId = null;
 
 function deepClone(obj) {
@@ -11098,14 +11116,47 @@ function confirmInitialNickname() {
   saveGameData();
   updateHUD();
   closeInitialNicknameModal();
-  // ✅ 첫 생성 직후 길잡이 슬라임 안내가 우선. 핫타임은 튜토리얼 종료 후 표시.
-  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = true; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
+  // [v.221.11] 닉네임 확정 직후 튜토리얼 진행 여부를 사용자가 직접 선택합니다.
   resetCurrentCharacterTutorialFlags();
+  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = false; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
   setTimeout(() => {
-    try { startIntroTutorial(); } catch(e) {}
+    if (initialTutorialChoiceModal) initialTutorialChoiceModal.classList.remove('hidden');
   }, 80);
   return true;
 }
+
+function getInitialTutorialChoiceKey(id = currentCharacterId) {
+  return `${INITIAL_TUTORIAL_CHOICE_KEY}__${id || 'global'}`;
+}
+function setInitialTutorialChoice(choice) {
+  try { localStorage.setItem(getInitialTutorialChoiceKey(), String(choice || '')); } catch(e) {}
+}
+function closeInitialTutorialChoiceModal() {
+  if (initialTutorialChoiceModal) initialTutorialChoiceModal.classList.add('hidden');
+}
+function chooseInitialTutorialStart() {
+  closeInitialTutorialChoiceModal();
+  setInitialTutorialChoice('tutorial');
+  // 튜토리얼을 선택한 경우에만 기존 길잡이/튜토리얼 플래그를 초기화하고 전용 모드로 바로 진입합니다.
+  resetCurrentCharacterTutorialFlags();
+  try { hotTimeTitlePopupVisible = false; hotTimeTitlePopupPendingAfterTutorial = true; document.body.classList.remove('hot-time-popup-mode'); } catch(e) {}
+  initAudio();
+  setTimeout(() => { try { startTutorialMode(); } catch(e) {} }, 80);
+}
+function chooseInitialTutorialSkip() {
+  closeInitialTutorialChoiceModal();
+  setInitialTutorialChoice('skip');
+  // 스킵 시 보상/레벨 보정 없이 현재 LV.1 상태 그대로 일반 모드 선택으로 이동합니다.
+  stopIntroTutorial();
+  hideFocusMask();
+  try { hotTimeTitlePopupPendingAfterTutorial = false; } catch(e) {}
+  saveGameData();
+  updateHUD();
+  initAudio();
+  openModeSelect();
+}
+initialTutorialStartBtn && initialTutorialStartBtn.addEventListener('click', chooseInitialTutorialStart);
+initialTutorialSkipBtn && initialTutorialSkipBtn.addEventListener('click', chooseInitialTutorialSkip);
 
 function openNicknamePrompt() {
   const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24시간
@@ -15836,6 +15887,9 @@ function isTutorialModeAvailable(){
   try {
     // 11단계를 모두 끝낸 캐릭터는 레벨과 관계없이 튜토리얼 모드를 다시 표시/실행하지 않습니다.
     if (isTutorialModeCompleted()) return false;
+    let initialChoice = '';
+    try { initialChoice = localStorage.getItem(getInitialTutorialChoiceKey()) || ''; } catch(e) {}
+    if (initialChoice === 'skip') return false;
     return Number(level || saveData?.level || 1) < 11;
   } catch(e) { return false; }
 }
@@ -27322,7 +27376,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.10', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.11', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
