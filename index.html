@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+f<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.12)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.14)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -19318,6 +19318,14 @@ levelUpTimer = 1500;
   return amount;
 }
 
+// ✅ [v.221.14] 회전 스킬 중 현재 플레이어 몸체의 실제 회전각
+// drawPlayer()에서 사용하는 회전 공식과 반드시 동일하게 유지합니다.
+function getPlayerSpinRotationAngle(){
+  if (!isSpinSkillActive() || !spinSkillState) return 0;
+  const elapsed = SPIN_DURATION_MS - Math.max(0, spinSkillState.life || 0);
+  return (elapsed / 360) * Math.PI * 2;
+}
+
 function shootBullet(currentTime) {
   if (gameMode === 'infinite' && isInfiniteItemEffectActive('dash')) return;
   if (!player || !player.alive || isPlayerDying) return;
@@ -19338,12 +19346,26 @@ function shootBullet(currentTime) {
   const angleStep = 0.26;
   const doubleShotActive = isInfiniteItemEffectActive('doubleShot') && !isAreaShot;
   const sideOffsets = doubleShotActive ? [-9, 9] : [0];
+
+  // ✅ [v.221.14] 회전 스킬 사용 중에는 몸체 각도를 총알 방향과 총구 위치에도 적용
+  const bodyRotation = getPlayerSpinRotationAngle();
+  const cosBody = Math.cos(bodyRotation);
+  const sinBody = Math.sin(bodyRotation);
+
   for (let i = 0; i < shotCount; i++) {
-    const angle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
+    const localAngle = -Math.PI / 2 + (i - (shotCount - 1) / 2) * angleStep;
+    const angle = localAngle + bodyRotation;
+
     for (const sideOffset of sideOffsets) {
+      // 기존 총구 좌표 (sideOffset, -player.size)를 플레이어 중심 기준으로 함께 회전
+      const localMuzzleX = sideOffset;
+      const localMuzzleY = -player.size;
+      const muzzleX = player.x + localMuzzleX * cosBody - localMuzzleY * sinBody;
+      const muzzleY = player.y + localMuzzleX * sinBody + localMuzzleY * cosBody;
+
       bullets.push({
-        x: player.x + sideOffset,
-        y: player.y - player.size,
+        x: muzzleX,
+        y: muzzleY,
         radius: isAreaShot ? Math.max(BULLET_RADIUS + 2, BULLET_RADIUS * 1.35) : BULLET_RADIUS,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
@@ -26225,8 +26247,7 @@ ctx.save();
 ctx.translate(x, y);
 // 빙글빙글 지속 중에는 슬라임 몸체 자체를 빠르게 회전
 if (isSpinSkillActive()) {
-  const elapsed = SPIN_DURATION_MS - Math.max(0, spinSkillState.life || 0);
-  ctx.rotate((elapsed / 360) * Math.PI * 2);
+  ctx.rotate(getPlayerSpinRotationAngle());
 }
 // ✅ 무적 시간(스테이지) + 하이퍼 플라이트 종료 직후 보호 시간 동안 플레이어 깜빡임
 if ((gameMode === 'stage' && playerInvulnTimer > 0) || hyperFlightGuardActive) {
