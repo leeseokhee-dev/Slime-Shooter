@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.14)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.15)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4225,7 +4225,7 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
                 <option value="2">2발 · 4배 데미지</option>
                 <option value="1">1발 · 5배 데미지 · LV.11+ 범위형</option>
             </select>
-            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1 1발 · LV.11 2발 · LV.20 3발 · LV.30 4발 · LV.40 5발 / LV.40부터 직접 변경</div>
+            <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1~9 1발 · LV.10~19 2발 · LV.20~29 3발 · LV.30~39 4발 · LV.40 5발 / LV.41부터 직접 변경</div>
         </div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             ♾️ 무한 모드
@@ -6517,6 +6517,8 @@ function addExpDirect(amount) {
   const newLevel = getLevelFromExp(exp);
   if (newLevel > oldLevel) {
     level = Math.min(newLevel, MAX_LEVEL);
+    // ✅ [v.221.15] LV.10/20/30/40 도달 즉시 발사체 수 및 시작 메뉴 선택값 동기화
+    try { ensurePlayerBulletCountUnlocked(); syncPlayerBulletCountOptions(); } catch(e) {}
     syncPlayerHealthToLevel();
     maybeShowSkillUnlockNotice(oldLevel, level);
     startEvolutionAnimation(oldLevel, newLevel);
@@ -10595,15 +10597,15 @@ function toggleHomingSetting() {
 // ✅ [v.207.3] 플레이어 총알 수 직접 조정 + 단발 범위형
 function getPlayerBulletUnlockLevel(count) {
   const c = Math.max(1, Math.min(5, Math.floor(Number(count) || 1)));
-  return ({ 1:1, 2:11, 3:20, 4:30, 5:40 }[c] || 1);
+  return ({ 1:1, 2:10, 3:20, 4:30, 5:40 }[c] || 1);
 }
 function getUnlockedPlayerBulletCount() {
-  // ✅ [v.220] 총알 수 자동 성장: 1발 LV.1, 2발 LV.11, 3발 LV.20, 4발 LV.30, 5발 LV.40
+  // ✅ [v.221.15] 자동 성장: LV.1~9=1발, LV.10~19=2발, LV.20~29=3발, LV.30~39=4발, LV.40=5발
   const lv = Math.max(1, Math.floor(Number(level || 1)));
   if (lv >= 40) return 5;
   if (lv >= 30) return 4;
   if (lv >= 20) return 3;
-  if (lv >= 11) return 2;
+  if (lv >= 10) return 2;
   return 1;
 }
 function normalizePlayerBulletCountValue(count, clampToUnlock = true) {
@@ -10611,7 +10613,21 @@ function normalizePlayerBulletCountValue(count, clampToUnlock = true) {
   return clampToUnlock ? Math.min(raw, getUnlockedPlayerBulletCount()) : raw;
 }
 function ensurePlayerBulletCountUnlocked() {
-  const fixed = normalizePlayerBulletCountValue(saveData.playerBulletCount, true);
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
+
+  // ✅ LV.40까지는 선택값이 아니라 레벨 규칙이 절대 우선입니다.
+  // 레벨업 직후 저장값까지 즉시 바꾸므로 게임 시작 메뉴에서도 해당 발사체 수가 활성화됩니다.
+  if (lv <= 40) {
+    const forced = getUnlockedPlayerBulletCount();
+    if (Number(saveData.playerBulletCount) !== forced) {
+      saveData.playerBulletCount = forced;
+      try { saveGameDataDebounced(); } catch(e) { try { saveGameData(); } catch(_) {} }
+    }
+    return forced;
+  }
+
+  // ✅ LV.41부터 1~5발 자유 선택
+  const fixed = normalizePlayerBulletCountValue(saveData.playerBulletCount, false);
   if (Number(saveData.playerBulletCount) !== fixed) {
     saveData.playerBulletCount = fixed;
     try { saveGameDataDebounced(); } catch(e) { try { saveGameData(); } catch(_) {} }
@@ -10622,16 +10638,15 @@ function getPreferredPlayerBulletCount() {
   return ensurePlayerBulletCountUnlocked();
 }
 function getEffectivePlayerBulletCount() {
-  // ✅ [v.220.2] LV.40 미만은 레벨에 따라 총알 수 자동 증가.
-  // LV.40 이상은 모드 선택창에서 고른 1~5발 값을 실제 발사에 최우선 적용합니다.
   const lv = Math.max(1, Math.floor(Number(level || 1)));
-  if (lv < 40) return getUnlockedPlayerBulletCount();
+
+  // ✅ LV.40까지 자동 고정, LV.41부터 메뉴 선택값 사용
+  if (lv <= 40) return ensurePlayerBulletCountUnlocked();
 
   const sel = document.getElementById('modeBulletCountSelect');
   if (sel) {
     const selected = Math.max(1, Math.min(5, Math.floor(Number(sel.value) || 0)));
     if (selected >= 1 && selected <= 5) {
-      // UI 선택값과 저장값도 함께 맞춰, 모드 시작 후 값이 5발로 되돌아가는 현상을 방지합니다.
       if (Number(saveData.playerBulletCount) !== selected) {
         saveData.playerBulletCount = selected;
         try { saveGameDataDebounced(); } catch(e) {}
@@ -10660,18 +10675,27 @@ function getPlayerAreaBulletRadius() {
   return Math.max(34, Math.min(118, Math.round(34 + Math.max(0, Number(level || 1) - 11) * 0.28)));
 }
 function getPlayerBulletSettingHint() {
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
   const count = getPreferredPlayerBulletCount();
-  const unlocked = getUnlockedPlayerBulletCount();
   const mult = getPlayerBulletDamageMultiplier();
   const range = getPlayerAreaBulletRadius();
-  let text = `선택 ${count}발 · 데미지 ${mult}배 · 현재 최대 ${unlocked}발 해금`;
-  if (count === 1) text += Number(level || 1) >= 11 ? ` · 범위 ${range}` : ' · 범위형은 LV.11부터';
-  if (unlocked < 5) text += ` · 다음 해금 LV.${getPlayerBulletUnlockLevel(unlocked + 1)}`;
+
+  if (lv <= 40) {
+    let text = `LV.${lv} 자동 ${count}발 · 데미지 ${mult}배`;
+    if (count === 1) text += lv >= 11 ? ` · 범위 ${range}` : ' · 범위형은 LV.11부터';
+    if (lv < 40) text += ` · 다음 증가 LV.${getPlayerBulletUnlockLevel(count + 1)}`;
+    else text += ' · LV.41부터 1~5발 자유 선택';
+    return text;
+  }
+
+  let text = `선택 ${count}발 · 데미지 ${mult}배 · 1~5발 자유 선택`;
+  if (count === 1) text += ` · 범위 ${range}`;
   return text;
 }
 function syncPlayerBulletCountOptions() {
   if (!modeBulletCountSelect) return;
-  const unlocked = getUnlockedPlayerBulletCount();
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
+  const autoCount = getUnlockedPlayerBulletCount();
   const labels = {
     5:'5발 · 기본 데미지',
     4:'4발 · 2배 데미지',
@@ -10679,24 +10703,39 @@ function syncPlayerBulletCountOptions() {
     2:'2발 · 4배 데미지',
     1:'1발 · 5배 데미지 · LV.11+ 범위형'
   };
+
   Array.from(modeBulletCountSelect.options || []).forEach(opt => {
     const n = Math.max(1, Math.min(5, Math.floor(Number(opt.value) || 1)));
-    const locked = n > unlocked;
-    opt.disabled = locked;
-    opt.textContent = locked ? `${labels[n]} · LV.${getPlayerBulletUnlockLevel(n)} 해금` : labels[n];
+    if (lv <= 40) {
+      // 자동 성장 구간에서는 현재 레벨 발사체 수만 활성 상태로 표시
+      opt.disabled = (n !== autoCount);
+      opt.textContent = (n === autoCount)
+        ? `${labels[n]} · 현재 자동 활성`
+        : `${labels[n]} · LV.41부터 선택 가능`;
+    } else {
+      opt.disabled = false;
+      opt.textContent = labels[n];
+    }
   });
+
+  modeBulletCountSelect.disabled = (lv <= 40);
   modeBulletCountSelect.value = String(getPreferredPlayerBulletCount());
+  modeBulletCountSelect.title = (lv <= 40)
+    ? `LV.${lv}: ${autoCount}발 자동 활성 · LV.41부터 직접 선택`
+    : 'LV.41+: 원하는 발사체 수를 선택할 수 있습니다.';
 }
 function setPlayerBulletCountSetting(count) {
-  const requested = normalizePlayerBulletCountValue(count, false);
-  const unlocked = getUnlockedPlayerBulletCount();
-  if (requested > unlocked) {
-    saveData.playerBulletCount = unlocked;
+  const lv = Math.max(1, Math.floor(Number(level || 1)));
+  if (lv <= 40) {
+    const forced = getUnlockedPlayerBulletCount();
+    saveData.playerBulletCount = forced;
     saveGameData();
     updateSettingsUI();
-    try { showToast(`${requested}발은 LV.${getPlayerBulletUnlockLevel(requested)}부터 해금됩니다.`, '#ffcc88', 1600); } catch(e) {}
+    try { showToast(`LV.${lv}은 ${forced}발 자동 활성 · LV.41부터 직접 선택`, '#ffcc88', 1700); } catch(e) {}
     return;
   }
+
+  const requested = normalizePlayerBulletCountValue(count, false);
   saveData.playerBulletCount = requested;
   saveGameData();
   updateSettingsUI();
@@ -19298,6 +19337,8 @@ function addExp(amount, opts = {}) {
   const newLevel = getLevelFromExp(exp);
   if (newLevel > oldLevel) {
     level = Math.min(newLevel, MAX_LEVEL);
+    // ✅ [v.221.15] LV.10/20/30/40 도달 즉시 발사체 수 및 시작 메뉴 선택값 동기화
+    try { ensurePlayerBulletCountUnlocked(); syncPlayerBulletCountOptions(); } catch(e) {}
     syncPlayerHealthToLevel();
     startEvolutionAnimation(oldLevel, newLevel);
     SFX.levelUp();
@@ -35789,6 +35830,14 @@ document.addEventListener('visibilitychange',()=>{
   const bulletSelect = document.getElementById('modeBulletCountSelect');
   if (bulletSelect) {
     bulletSelect.addEventListener('change', () => {
+      const lv = Math.max(1, Math.floor(Number(level || 1)));
+      if (lv <= 40) {
+        const forced = getUnlockedPlayerBulletCount();
+        bulletSelect.value = String(forced);
+        saveData.playerBulletCount = forced;
+        try { saveGameData(); } catch(e) {}
+        return;
+      }
       const n = Math.max(1, Math.min(5, Math.floor(Number(bulletSelect.value) || 1)));
       saveData.playerBulletCount = n;
       try { saveGameData(); } catch(e) {}
@@ -35933,7 +35982,16 @@ function restoreStageActiveSkillsV2216(){
   stageActiveSkillSnapshotV2216 = null;
 }
 
-// 기존 nextStageBtn 핸들러가 startStage()를 실행한 뒤 복원합니다.
+// ✅ [v.221.15] 모든 '다음 스테이지' 진입 경로에서 스킬 연속 유지
+// 버튼 클릭 이벤트에만 의존하지 않고 startStage() 완료 직후 자동 복원합니다.
+const startStageBeforeV22115 = startStage;
+startStage = function(){
+  const ret = startStageBeforeV22115.apply(this, arguments);
+  try { restoreStageActiveSkillsV2216(); } catch(e) {}
+  return ret;
+};
+
+// 기존 보조 리스너도 안전장치로 유지합니다.
 if (nextStageBtn) {
   nextStageBtn.addEventListener('click', () => {
     try { restoreStageActiveSkillsV2216(); } catch(e) {}
