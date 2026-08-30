@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.18)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.22)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -3747,6 +3747,78 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !important;}
 </style>
 
+
+<style id="v22121LogoSkipCss">
+/* ===== [v.221.21] 시작 로고 건너뛰기 버튼 ===== */
+#logoSkipBtn{position:absolute;left:50%;bottom:clamp(24px,7vh,58px);transform:translateX(-50%);z-index:1000001;min-width:132px;padding:10px 18px;border:1px solid rgba(255,255,255,.42);border-radius:999px;background:rgba(6,12,22,.72);color:#eef8ff;font-size:13px;font-weight:900;letter-spacing:-.2px;box-shadow:0 8px 24px rgba(0,0,0,.38);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);cursor:pointer;pointer-events:auto;touch-action:manipulation;}
+#logoSkipBtn:hover{background:rgba(22,38,58,.86);}
+#logoSkipBtn:active{transform:translateX(-50%) scale(.97);}
+body:not(.logo-mode) #logoSkipBtn{display:none !important;}
+@media(max-width:520px){#logoSkipBtn{min-width:116px;padding:9px 15px;font-size:12px;bottom:20px;}}
+</style>
+
+<style id="v22122PcPortraitPatch">
+/* ===== v.221.22 PC 세로형 전장 + 전체폭 HUD ===== */
+.skill-drawn-icon{
+  width:32px !important;
+  height:32px !important;
+  display:block;
+  pointer-events:none;
+  image-rendering:auto;
+}
+#gameContainer.compact-ui .skill-drawn-icon{width:29px !important;height:29px !important;}
+#gameContainer.ultra-compact-ui .skill-drawn-icon{width:27px !important;height:27px !important;}
+
+@media (min-width:900px) and (orientation:landscape){
+  :root{
+    --pc-field-w: min(640px, 100vw, calc((100dvh - 104px) * 2 / 3));
+  }
+  body{
+    justify-content:flex-start !important;
+    overflow:hidden !important;
+  }
+  #gameContainer{
+    width:100vw !important;
+    max-width:100vw !important;
+    height:100dvh !important;
+    max-height:100dvh !important;
+    padding:0 !important;
+    align-items:center !important;
+  }
+  #hud{
+    width:100vw !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    margin:0 !important;
+    border-radius:0 !important;
+    align-self:stretch !important;
+  }
+  #expRow, #feverRow, #expWrapper, #feverWrapper{
+    max-width:none !important;
+  }
+  #gameCanvas{
+    width:var(--pc-field-w) !important;
+    max-width:var(--pc-field-w) !important;
+    height:calc(var(--pc-field-w) * 1.5) !important;
+    max-height:calc(100dvh - 104px) !important;
+    aspect-ratio:2 / 3 !important;
+    flex:0 0 auto !important;
+    border-radius:0 !important;
+    margin:0 auto !important;
+  }
+  /* 전장 위에 놓이는 버튼은 세로형 캔버스의 양끝을 따라 배치 */
+  #consumableQuickBar{
+    left:calc((100vw - var(--pc-field-w)) / 2 + 10px) !important;
+  }
+  .laser-skill,.bubble-skill,.spin-skill,.dash-skill,.blizzard-skill,.meteor-skill,.lightning-skill,.quake-skill,.plasma-skill,.toxic-skill,.blackhole-skill{
+    right:calc((100vw - var(--pc-field-w)) / 2 + 10px) !important;
+  }
+  #pauseBtn{
+    top:calc(var(--hud-pc-height, 96px) + 6px) !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -3856,6 +3928,7 @@ body:not(.title-mode) #hud{padding-top:5px !important;padding-bottom:5px !import
 </div>
 
 <canvas id="gameCanvas" width="960" height="640"></canvas>
+<button id="logoSkipBtn" type="button" aria-label="시작 로고 건너뛰기" title="로고 건너뛰기">건너뛰기 ▶</button>
 <div id="townQuestTracker" class="hidden" aria-live="polite"></div>
 
 <button id="pauseBtn" class="ui-btn hidden" type="button" aria-label="일시정지" title="일시정지">⏸</button>
@@ -4412,8 +4485,8 @@ const MOBILE_CANVAS_W = 480;
 const MOBILE_CANVAS_H = 640;
 const PHONE_LANDSCAPE_CANVAS_W = 640;
 const PHONE_LANDSCAPE_CANVAS_H = 360;
-const DESKTOP_CANVAS_W = 960;
-const DESKTOP_CANVAS_H = 640;
+const DESKTOP_CANVAS_W = 640;
+const DESKTOP_CANVAS_H = 960; // ✅ [v.221.22] PC도 모바일처럼 세로형 2:3 전장
 const DESKTOP_BREAKPOINT = 900;
 
 function getViewportSize() {
@@ -4459,7 +4532,9 @@ function applyCanvasPreset() {
 }
 
 function isDesktopCanvasMode() {
-  return width >= DESKTOP_CANVAS_W;
+  // ✅ [v.221.22] PC 세로형 전장(640×960)도 데스크톱 모드로 판정
+  const vp = getViewportSize();
+  return vp.width >= DESKTOP_BREAKPOINT;
 }
 
 function getPcMonsterScale() {
@@ -5724,6 +5799,7 @@ const titleExitBtn = document.getElementById('titleExitBtn');
 const restartBtn = document.getElementById('restartBtn');
 const toTitleBtn = document.getElementById('toTitleBtn');
 const pauseBtn = document.getElementById('pauseBtn');
+const logoSkipBtn = document.getElementById('logoSkipBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseToTitleBtn = document.getElementById('pauseToTitleBtn');
@@ -15925,6 +16001,7 @@ if (introTutorialActive && introStep === 1) {
   advanceIntroTo(2);
 }
 });
+if (logoSkipBtn) logoSkipBtn.addEventListener('click', skipTitleLogoSplash);
 if (titleExitBtn) titleExitBtn.addEventListener('click', exitGameFromTitle);
 pauseBtn && pauseBtn.addEventListener('click', togglePause);
 window.addEventListener('resize', syncPauseButtonPosition);
@@ -21851,6 +21928,77 @@ function drawExtraAreaSkillFx(){
 // ✅ [v.78] 스킬 버튼(아이콘 + 쿨타임 링)
 // - btn.style.setProperty('--cdp', 0~1) 로 진행도 표시
 // ===============================
+// ✅ [v.221.22] 스킬 아이콘을 이모지/OS 폰트에 의존하지 않고 Canvas로 직접 그립니다.
+function drawSkillButtonCanvasIcon(iconCanvas, buttonId) {
+  if (!iconCanvas) return;
+  const c = iconCanvas;
+  const g = c.getContext('2d');
+  const W = c.width = 32, H = c.height = 32;
+  g.clearRect(0, 0, W, H);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  const id = String(buttonId || '');
+
+  const glowCircle = (x,y,r,fill,stroke='#ffffff') => {
+    g.save(); g.shadowColor = fill; g.shadowBlur = 7;
+    g.fillStyle = fill; g.strokeStyle = stroke; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); g.stroke(); g.restore();
+  };
+
+  if (id === 'bubbleSkillBtn') {
+    // 거품: 큰 비눗방울 + 작은 방울
+    const grad=g.createRadialGradient(11,9,2,16,17,12);
+    grad.addColorStop(0,'rgba(255,255,255,.95)'); grad.addColorStop(.28,'rgba(155,245,255,.72)'); grad.addColorStop(1,'rgba(60,180,230,.20)');
+    g.fillStyle=grad; g.strokeStyle='#bff7ff'; g.lineWidth=2;
+    g.beginPath(); g.arc(16,18,9,0,Math.PI*2); g.fill(); g.stroke();
+    g.fillStyle='rgba(255,255,255,.9)'; g.beginPath(); g.arc(12.5,14,2.1,0,Math.PI*2); g.fill();
+    glowCircle(25,9,3.2,'rgba(115,225,255,.55)','#e8ffff');
+    glowCircle(7,7,2.2,'rgba(115,225,255,.45)','#e8ffff');
+  } else if (id === 'spinSkillBtn') {
+    g.strokeStyle='#d9b8ff'; g.lineWidth=3;
+    g.beginPath(); g.arc(16,16,10,-.45,Math.PI*1.45); g.stroke();
+    g.fillStyle='#f3e4ff'; g.beginPath(); g.moveTo(7,8); g.lineTo(13,8); g.lineTo(10,13); g.closePath(); g.fill();
+    g.strokeStyle='#9c67ff'; g.lineWidth=2; g.beginPath(); g.arc(16,16,5,.4,Math.PI*1.8); g.stroke();
+  } else if (id === 'dashSkillBtn') {
+    g.strokeStyle='#ffd0a9'; g.lineWidth=2.5;
+    for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(3,10+i*6); g.lineTo(14,10+i*6); g.stroke(); }
+    const gr=g.createLinearGradient(13,7,28,24); gr.addColorStop(0,'#fff3cf'); gr.addColorStop(.4,'#ffb36b'); gr.addColorStop(1,'#ff6b45');
+    g.fillStyle=gr; g.beginPath(); g.moveTo(12,7); g.lineTo(29,16); g.lineTo(12,25); g.lineTo(17,16); g.closePath(); g.fill();
+  } else if (id === 'laserSkillBtn') {
+    g.fillStyle='#b8fff1'; g.fillRect(4,13,9,6); g.strokeStyle='#ffffff'; g.lineWidth=1.5; g.strokeRect(4,13,9,6);
+    const gr=g.createLinearGradient(13,16,30,16); gr.addColorStop(0,'#ffffff'); gr.addColorStop(.35,'#55ffd7'); gr.addColorStop(1,'rgba(0,255,200,.05)');
+    g.strokeStyle=gr; g.lineWidth=4; g.beginPath(); g.moveTo(13,16); g.lineTo(30,16); g.stroke();
+  } else if (id === 'blizzardSkillBtn') {
+    g.strokeStyle='#d9f8ff'; g.lineWidth=2.2;
+    for(let a=0;a<3;a++){ g.save(); g.translate(16,16); g.rotate(a*Math.PI/3); g.beginPath(); g.moveTo(-11,0); g.lineTo(11,0); g.stroke(); g.restore(); }
+    glowCircle(16,16,2.6,'#8fe9ff','#ffffff');
+  } else if (id === 'meteorSkillBtn') {
+    const gr=g.createLinearGradient(5,5,27,27); gr.addColorStop(0,'#fff5a4'); gr.addColorStop(.45,'#ff9f43'); gr.addColorStop(1,'#d83819');
+    g.strokeStyle=gr; g.lineWidth=5; g.beginPath(); g.moveTo(5,5); g.lineTo(17,17); g.stroke();
+    glowCircle(21,21,7,'#ff7043','#ffe0a8');
+  } else if (id === 'lightningSkillBtn') {
+    g.fillStyle='#fff59b'; g.strokeStyle='#ffffff'; g.lineWidth=1.2;
+    g.beginPath(); g.moveTo(18,3); g.lineTo(8,17); g.lineTo(15,17); g.lineTo(12,29); g.lineTo(25,13); g.lineTo(18,13); g.closePath(); g.fill(); g.stroke();
+  } else if (id === 'quakeSkillBtn') {
+    glowCircle(16,16,11,'#7dcf72','#d8ffd2');
+    g.strokeStyle='#5e3d21'; g.lineWidth=2.2; g.beginPath(); g.moveTo(15,6); g.lineTo(12,13); g.lineTo(17,16); g.lineTo(13,22); g.lineTo(16,27); g.stroke();
+    g.fillStyle='#8bdcff'; g.beginPath(); g.arc(12,12,3.6,0,Math.PI*2); g.fill();
+  } else if (id === 'toxicSkillBtn') {
+    glowCircle(16,16,10,'#8bd448','#e8ffba');
+    g.fillStyle='#203412'; for(let a=0;a<3;a++){ const ang=a*Math.PI*2/3-Math.PI/2; g.beginPath(); g.arc(16+Math.cos(ang)*6,16+Math.sin(ang)*6,3.2,0,Math.PI*2); g.fill(); }
+    glowCircle(16,16,2.6,'#d7ff76','#ffffff');
+  } else if (id === 'blackholeSkillBtn') {
+    const gr=g.createRadialGradient(16,16,2,16,16,12); gr.addColorStop(0,'#000'); gr.addColorStop(.35,'#241146'); gr.addColorStop(.7,'#914dff'); gr.addColorStop(1,'rgba(190,140,255,0)');
+    g.fillStyle=gr; g.beginPath(); g.arc(16,16,12,0,Math.PI*2); g.fill();
+    g.strokeStyle='#e0b6ff'; g.lineWidth=2; g.beginPath(); g.ellipse(16,16,13,5,-.35,0,Math.PI*2); g.stroke();
+  } else if (id === 'plasmaSkillBtn') {
+    const gr=g.createRadialGradient(16,16,1,16,16,12); gr.addColorStop(0,'#fff'); gr.addColorStop(.25,'#8ffcff'); gr.addColorStop(.55,'#6f8cff'); gr.addColorStop(1,'rgba(177,80,255,.1)');
+    g.fillStyle=gr; g.beginPath(); g.arc(16,16,10,0,Math.PI*2); g.fill();
+    g.strokeStyle='#e8ffff'; g.lineWidth=1.4; for(let a=0;a<6;a++){ const ang=a*Math.PI/3; g.beginPath(); g.moveTo(16+Math.cos(ang)*8,16+Math.sin(ang)*8); g.lineTo(16+Math.cos(ang)*14,16+Math.sin(ang)*14); g.stroke(); }
+  } else {
+    glowCircle(16,16,9,'#7ce7ff','#ffffff');
+  }
+}
+
 function applySkillButtonVisual(btn, cdMs, maxCdMs, icon, readyHint) {
   if (!btn) return;
   const cd = Math.max(0, Number(cdMs || 0));
@@ -21861,8 +22009,9 @@ function applySkillButtonVisual(btn, cdMs, maxCdMs, icon, readyHint) {
   btn.classList.toggle('cooling', cd > 0);
 
   const timeTxt = (cd > 0) ? `${(cd/1000).toFixed(1)}s` : '';
-  // 아이콘은 항상, 시간은 쿨일 때만
-  btn.innerHTML = `<span class="skill-icon">${icon || ''}</span>${(cd>0) ? `<span class="skill-cd">${timeTxt}</span>` : `<span class="skill-cd ready">${readyHint || ''}</span>`}`;
+  // ✅ [v.221.22] OS 이모지 대신 직접 그린 Canvas 아이콘 사용
+  btn.innerHTML = `<canvas class="skill-drawn-icon" width="32" height="32" aria-hidden="true"></canvas>${(cd>0) ? `<span class="skill-cd">${timeTxt}</span>` : `<span class="skill-cd ready">${readyHint || ''}</span>`}`;
+  drawSkillButtonCanvasIcon(btn.querySelector('.skill-drawn-icon'), btn.id);
   btn.disabled = (cd > 0);
 }
 function updateLaserSkillUI() {
@@ -23361,6 +23510,10 @@ function applyPlayerHit(px, py, hitInfo = null) {
   if (isHyperFlightGuardActive()) return;
   if (playerInvulnTimer > 0) return;
 
+  if (hitInfo && hitInfo.tutorialBossBullet) {
+    damagePlayer(1, px, py, hitInfo);
+    return;
+  }
   damagePlayer(getPlayerHitDamage(hitInfo), px, py, hitInfo);
 }
 
@@ -23927,8 +24080,11 @@ function spawnTutorialEnemy(count = 1){
       boss.targetY = 86;
       boss.width = 104;
       boss.height = 94;
-      boss.hp = 60;
-      boss.maxHp = 60;
+      // ✅ [v.221.19] 튜토리얼 보스는 일반 공격 10발을 맞아야 처치
+      // 실제 공격력 수치와 관계없이 플레이어 탄환 1회 적중 = HP 1 감소
+      boss.hp = 10;
+      boss.maxHp = 10;
+      boss._tutorialBulletHits = 0;
       boss.level = Math.max(1, Math.floor(Number(stage) || 1));
       boss.evoStage = Math.max(1, Math.min(7, Number(boss.evoStage) || getBossEvoStageByLevel(boss.level) || 1));
       boss.isTutorialBoss = true;
@@ -24921,7 +25077,8 @@ function updateBoss(dt) {
 boss.bounceTimer += dt;
     boss.attackTimer += dt;
 
-    if (boss.attackTimer >= 850) {
+    const tutorialBossAttackInterval = (gameMode === 'tutorial' && boss.isTutorialBoss) ? 1300 : 850;
+    if (boss.attackTimer >= tutorialBossAttackInterval) {
         boss.attackTimer = 0;
         boss.attackMode = (boss.attackMode + 1) % 2;
 
@@ -24958,6 +25115,12 @@ boss.bounceTimer += dt;
             speed = 3.1 + t * 3.0; // 201: 3.10 → 300: 6.10
         }
 
+        // ✅ [v.221.20] 튜토리얼 보스는 초보자가 피하기 쉽도록 느리고 약한 탄환 사용
+        if (gameMode === 'tutorial' && boss.isTutorialBoss) {
+            speed = 1.7;
+            shotCount = 1;
+        }
+
         if (boss.attackMode === 0) {
             // 조준 사격
             for(let k=0; k<shotCount; k++) {
@@ -24969,7 +25132,8 @@ boss.bounceTimer += dt;
                     radius: 5 + evo,
                     color: evo >= 4 ? '#ffaaaa' : '#ffffff',
                     element: sanitizeElementKey(boss.element || getStageElementKey(stage, 1)),
-                    fromBoss: true
+                    fromBoss: true,
+                    tutorialBossBullet: (gameMode === 'tutorial' && boss.isTutorialBoss)
                 });
             }
         } else {
@@ -24983,7 +25147,8 @@ boss.bounceTimer += dt;
                     radius: 4 + evo,
                     color: '#ffffaa',
                     element: sanitizeElementKey(boss.element || getStageElementKey(stage, 1)),
-                    fromBoss: true
+                    fromBoss: true,
+                    tutorialBossBullet: (gameMode === 'tutorial' && boss.isTutorialBoss)
                 });
             }
         }
@@ -25482,8 +25647,17 @@ if (!boss) break;
 const areaHit = b.isPlayerAreaShot && Number(level || 1) >= 11 && circleCollision(b.x, b.y, Math.max(Number(b.areaRadius)||0, b.radius||BULLET_RADIUS), boss.x, boss.y, Math.max(hw, hh));
 const directHit = (b.x > bx - hw && b.x < bx + hw && b.y > by - hh && b.y < by + hh);
 if (areaHit || directHit) {
-const _bdmg = calcLevelScaledDamage(b.damage, boss);
-boss.hp -= _bdmg; if (b.piercing) b._hitBoss = true; else b._hit = true;
+let _bdmg = calcLevelScaledDamage(b.damage, boss);
+// ✅ [v.221.19] 튜토리얼 보스는 플레이어 탄환을 정확히 10회 맞아야 처치됩니다.
+// 레벨/버프/피버/속성 배율로 공격력이 커져도 한 발당 1 HP만 감소합니다.
+if (gameMode === 'tutorial' && boss.isTutorialBoss) {
+  boss._tutorialBulletHits = Math.min(10, Math.max(0, Math.floor(Number(boss._tutorialBulletHits) || 0)) + 1);
+  _bdmg = 1;
+  boss.hp = Math.max(0, 10 - boss._tutorialBulletHits);
+} else {
+  boss.hp -= _bdmg;
+}
+if (b.piercing) b._hitBoss = true; else b._hit = true;
 SFX.hit();
 spawnDamageText(boss.x, boss.y, _bdmg, b.isPlayerAreaShot ? '#d7fff2' : '#ffb3ff', false, 'player');
 const __bossElmTxt = getElementMultiplierText(getElementMultiplier(getPlayerElementKey(), boss.element)); if (__bossElmTxt) spawnDamageText(boss.x, boss.y - 36, __bossElmTxt, getElementMeta(boss.element).color); spawnElementalHitEffect(boss.x, boss.y, boss.element, 1.25);
@@ -27439,6 +27613,17 @@ function drawSplashSlime(cx, cy, size, t){
   ctx.restore();
 }
 
+function finishTitleLogoSplash(){
+  if (!titleLogoActive) return;
+  titleLogoActive = false;
+  try { document.body.classList.remove('logo-mode'); } catch(e) {}
+  try { if (logoSkipBtn) logoSkipBtn.style.display = 'none'; } catch(e) {}
+  try { if (bgmEnabled) playBgmTrack('title'); } catch(e) {}
+  try { maybeOpenHotTimeTitlePopup(); } catch(e) {}
+}
+
+function skipTitleLogoSplash(){ finishTitleLogoSplash(); }
+
 function drawLogoSplashScreen(timestamp){
   if (!titleLogoStartTime) titleLogoStartTime = timestamp || performance.now();
   const now = timestamp || performance.now();
@@ -27512,7 +27697,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.18', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.22', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -27525,12 +27710,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.restore();
 
   if (elapsed >= TITLE_LOGO_DURATION_MS) {
-    titleLogoActive = false;
-    try { document.body.classList.remove('logo-mode'); } catch(e) {}
-    try {
-      if (bgmEnabled) playBgmTrack('title');
-    } catch(e) {}
-    try { maybeOpenHotTimeTitlePopup(); } catch(e) {}
+    finishTitleLogoSplash();
   }
 }
 
