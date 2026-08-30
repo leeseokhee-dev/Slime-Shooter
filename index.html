@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.23)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.24)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -8270,6 +8270,8 @@ let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 10줄)
 // - 클리어 후 플레이어만 움직이고 총알/적탄이 남는 어색함 방지
 function clearStageCombatObjects(options = {}) {
   const clearDrops = !!options.clearDrops;
+  // ✅ [v.221.24] 보너스 스테이지에서는 발동 중 스킬을 지우지 않고 계속 유지
+  const preserveSkills = !!options.preserveSkills;
 
   if (Array.isArray(enemies)) enemies.length = 0;
   if (Array.isArray(enemyBullets)) enemyBullets.length = 0;
@@ -8279,15 +8281,24 @@ function clearStageCombatObjects(options = {}) {
   if (Array.isArray(petSkillProjectiles)) petSkillProjectiles.length = 0;
   if (Array.isArray(petSkillStreams)) petSkillStreams.length = 0;
   if (Array.isArray(petSkillBursts)) petSkillBursts.length = 0;
-  if (Array.isArray(lasers)) lasers.length = 0;
-  if (Array.isArray(bubbles)) bubbles.length = 0;
-  if (Array.isArray(meteors)) meteors.length = 0;
-  if (Array.isArray(lightningFx)) lightningFx.length = 0;
+  if (!preserveSkills) {
+    if (Array.isArray(lasers)) lasers.length = 0;
+    if (Array.isArray(bubbles)) bubbles.length = 0;
+    if (Array.isArray(meteors)) meteors.length = 0;
+    if (Array.isArray(lightningFx)) lightningFx.length = 0;
 
-  lightningStorm = null;
-  quake = null;
-  try { blizzard = null; } catch(e) {}
-  try { bubble = null; } catch(e) {}
+    lightningStorm = null;
+    quake = null;
+    try { blizzard = null; } catch(e) {}
+    try { bubble = null; } catch(e) {}
+    try { bubbleSpray = null; } catch(e) {}
+    try { spinSkillState = null; } catch(e) {}
+    try { spinSkillFx = []; } catch(e) {}
+    try { rushSkillState = null; } catch(e) {}
+    try { toxicClouds = []; } catch(e) {}
+    try { blackholes = []; } catch(e) {}
+    try { plasmaBursts = []; } catch(e) {}
+  }
   boss = null;
   bossSpawned = false;
 
@@ -20925,7 +20936,7 @@ function updateBlizzard(dt) {
 
   // ✅ [v.197.1 FIX] 스킬 처치로 스테이지 클리어가 발생하면
   // clearStageCombatObjects()가 blizzard를 null로 바꿀 수 있으므로 즉시 종료
-  if (!blizzard || stageCleared || (stageBonusState && stageBonusState.active)) {
+  if (!blizzard || (stageCleared && !(stageBonusState && stageBonusState.active))) {
     blizzardFlakes = [];
     return;
   }
@@ -21106,7 +21117,7 @@ function updateLightning(dt) {
 
   // ✅ [v.197.1 FIX] 스킬 처치로 클리어되면 clearStageCombatObjects()가
   // lightningStorm을 null로 만들 수 있으므로 아래 접근 전에 안전 확인
-  if (!lightningStorm || stageCleared || (stageBonusState && stageBonusState.active)) {
+  if (!lightningStorm || (stageCleared && !(stageBonusState && stageBonusState.active))) {
     enemies = enemies.filter(e => e && e.hp > 0);
     return;
   }
@@ -21203,7 +21214,7 @@ function updateQuake(dt) {
 
   // ✅ [v.197.1 FIX] 지진 처치로 클리어되면 clearStageCombatObjects()가
   // quake를 null로 바꾸므로 life 접근 전에 안전 확인
-  if (!quake || stageCleared || (stageBonusState && stageBonusState.active)) return;
+  if (!quake || (stageCleared && !(stageBonusState && stageBonusState.active))) return;
 
   if (quake.life <= 0) quake = null;
 }
@@ -27787,7 +27798,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.23', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.24', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -28143,7 +28154,9 @@ function startStageBonusStageAfterClear(res) {
   stageBonusState.resultExp = Math.max(0, Math.floor(res?.expGained || 0));
   stageBonusState.baseMonsterExp = getStageBonusBaseMonsterExp();
 
-  clearStageCombatObjects({ clearDrops: true });
+  // 몬스터/적탄/드랍은 정리하되, 클리어 직전 스킬은 보너스에서도 계속 유지합니다.
+  clearStageCombatObjects({ clearDrops: true, preserveSkills: true });
+  try { restoreStageActiveSkillsForBonusV22124(); } catch(e) {}
 
   try { initAudio(); playBgmTrack('bonus'); } catch(e) {}
   return true;
@@ -28155,6 +28168,9 @@ function finishStageBonusStage() {
   stageBonusState.countdownMs = 0;
   stageBonusState.timeLeft = 0;
   stageBonusState.spawnAcc = 0;
+
+  // ✅ [v.221.24] 보너스에서 실제로 흘러간 남은 지속시간/쿨타임을 다음 스테이지용으로 다시 저장
+  try { captureStageActiveSkillsV2216(); } catch(e) {}
   clearStageCombatObjects({ clearDrops: true });
 
   try { playBgmTrack(getModeBgmName()); } catch(e) {}
@@ -28168,12 +28184,21 @@ function finishStageBonusStage() {
 function updateStageBonusStage(dt) {
   if (!stageBonusState || !stageBonusState.active) return false;
 
-  // 보너스 스테이지 중에는 전투 발사체가 남거나 새로 움직이지 않도록 계속 정리
-  clearStageCombatObjects({ clearDrops: false });
+  // 보너스 스테이지 중 몬스터/적탄은 계속 정리하되 활성 스킬은 유지합니다.
+  clearStageCombatObjects({ clearDrops: false, preserveSkills: true });
 
   updateParticles(dt);
   updateDamageTexts(dt);
   handlePlayerMovement(dt);
+
+  // ✅ [v.221.24] 스킬의 남은 지속시간과 이펙트를 보너스 스테이지에서도 실제로 진행
+  try { updateLasers(dt); updateLaserSkillUI(); } catch(e) {}
+  try { updateBubble(dt); updateBubbleSkillUI(); updateBubbles(dt); } catch(e) {}
+  try { updateLightning(dt); updateLightningSkillUI(); } catch(e) {}
+  try { updateBlizzard(dt); updateBlizzardSkillUI(); } catch(e) {}
+  try { updateMeteors(dt); updateMeteorSkillUI(); } catch(e) {}
+  try { updateQuake(dt); updateQuakeSkillUI(); } catch(e) {}
+  try { updateExtraAreaSkills(dt); updateExtraAreaSkillUI(); } catch(e) {}
 
   if (stageBonusState.countdownMs > 0) {
     stageBonusState.countdownMs = Math.max(0, stageBonusState.countdownMs - dt);
@@ -36215,6 +36240,8 @@ function captureStageActiveSkillsV2216(){
     lightningStorm: cloneSkillObjectV2216(typeof lightningStorm !== 'undefined' ? lightningStorm : null),
     quake: cloneSkillObjectV2216(typeof quake !== 'undefined' ? quake : null),
     plasmaBursts: cloneSkillArrayV2216(typeof plasmaBursts !== 'undefined' ? plasmaBursts : []),
+    toxicClouds: cloneSkillArrayV2216(typeof toxicClouds !== 'undefined' ? toxicClouds : []),
+    blackholes: cloneSkillArrayV2216(typeof blackholes !== 'undefined' ? blackholes : []),
     // ✅ [v.221.10] 신규 회전/돌진을 포함한 지속형 스킬 상태도 다음 스테이지로 그대로 전달
     spinSkillState: cloneSkillObjectV2216(typeof spinSkillState !== 'undefined' ? spinSkillState : null),
     spinSkillFx: cloneSkillArrayV2216(typeof spinSkillFx !== 'undefined' ? spinSkillFx : []),
@@ -36234,6 +36261,45 @@ function captureStageActiveSkillsV2216(){
     } : null
   };
 }
+
+// ✅ [v.221.24] 클리어 직전 스킬을 보너스 스테이지에서도 그대로 이어서 사용
+// 다음 스테이지 복원용 스냅샷은 소비하지 않고 복사만 합니다.
+function restoreStageActiveSkillsForBonusV22124(){
+  const snap = stageActiveSkillSnapshotV2216;
+  if (!snap || gameMode !== 'stage') return false;
+  if (Math.floor(Number(stage) || 0) !== Math.floor(Number(snap.stage) || 0)) return false;
+
+  lasers = cloneSkillArrayV2216(snap.lasers);
+  if (typeof bubbles !== 'undefined') bubbles = cloneSkillArrayV2216(snap.bubbles);
+  if (typeof bubbleSpray !== 'undefined') bubbleSpray = cloneSkillObjectV2216(snap.bubbleSpray);
+  if (typeof blizzard !== 'undefined') blizzard = cloneSkillObjectV2216(snap.blizzard);
+  if (typeof blizzardFlakes !== 'undefined') blizzardFlakes = cloneSkillArrayV2216(snap.blizzardFlakes);
+  if (typeof meteors !== 'undefined') meteors = cloneSkillArrayV2216(snap.meteors);
+  if (typeof lightningFx !== 'undefined') lightningFx = cloneSkillArrayV2216(snap.lightningFx);
+  if (typeof lightningStorm !== 'undefined') lightningStorm = cloneSkillObjectV2216(snap.lightningStorm);
+  if (typeof quake !== 'undefined') quake = cloneSkillObjectV2216(snap.quake);
+  if (typeof plasmaBursts !== 'undefined') plasmaBursts = cloneSkillArrayV2216(snap.plasmaBursts);
+  if (typeof toxicClouds !== 'undefined') toxicClouds = cloneSkillArrayV2216(snap.toxicClouds);
+  if (typeof blackholes !== 'undefined') blackholes = cloneSkillArrayV2216(snap.blackholes);
+  if (typeof spinSkillState !== 'undefined') spinSkillState = cloneSkillObjectV2216(snap.spinSkillState);
+  if (typeof spinSkillFx !== 'undefined') spinSkillFx = cloneSkillArrayV2216(snap.spinSkillFx);
+  if (typeof rushSkillState !== 'undefined') rushSkillState = cloneSkillObjectV2216(snap.rushSkillState);
+
+  if (player && snap.playerCooldowns) {
+    player.laserCooldown = Math.max(0, Number(snap.playerCooldowns.laserCooldown || 0));
+    player.bubbleCooldown = Math.max(0, Number(snap.playerCooldowns.bubbleCooldown || 0));
+    player.spinCooldown = Math.max(0, Number(snap.playerCooldowns.spinCooldown || 0));
+    player.rushCooldown = Math.max(0, Number(snap.playerCooldowns.rushCooldown || 0));
+    player.blizzardCooldown = Math.max(0, Number(snap.playerCooldowns.blizzardCooldown || 0));
+    player.meteorCooldown = Math.max(0, Number(snap.playerCooldowns.meteorCooldown || 0));
+    player.lightningCooldown = Math.max(0, Number(snap.playerCooldowns.lightningCooldown || 0));
+    player.quakeCooldown = Math.max(0, Number(snap.playerCooldowns.quakeCooldown || 0));
+    player.plasmaCooldown = Math.max(0, Number(snap.playerCooldowns.plasmaCooldown || 0));
+    player.laserPatternStep = Math.max(0, Number(snap.playerCooldowns.laserPatternStep || 0));
+  }
+  return true;
+}
+
 function restoreStageActiveSkillsV2216(){
   const snap = stageActiveSkillSnapshotV2216;
   if (!snap || gameMode !== 'stage') return;
@@ -36252,6 +36318,8 @@ function restoreStageActiveSkillsV2216(){
   if (typeof lightningStorm !== 'undefined') lightningStorm = cloneSkillObjectV2216(snap.lightningStorm);
   if (typeof quake !== 'undefined') quake = cloneSkillObjectV2216(snap.quake);
   if (typeof plasmaBursts !== 'undefined') plasmaBursts = cloneSkillArrayV2216(snap.plasmaBursts);
+  if (typeof toxicClouds !== 'undefined') toxicClouds = cloneSkillArrayV2216(snap.toxicClouds);
+  if (typeof blackholes !== 'undefined') blackholes = cloneSkillArrayV2216(snap.blackholes);
   if (typeof spinSkillState !== 'undefined') spinSkillState = cloneSkillObjectV2216(snap.spinSkillState);
   if (typeof spinSkillFx !== 'undefined') spinSkillFx = cloneSkillArrayV2216(snap.spinSkillFx);
   if (typeof rushSkillState !== 'undefined') rushSkillState = cloneSkillObjectV2216(snap.rushSkillState);
