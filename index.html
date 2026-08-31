@@ -4780,14 +4780,8 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
     
 
     <div id="settingsBar">
-        <label class="volume-control ui-btn" title="BGM 볼륨 조절">
-          <span id="bgmVolumeText">BGM 50</span>
-          <input id="bgmVolumeSlider" type="range" min="0" max="100" step="1" value="50" aria-label="BGM 볼륨">
-        </label>
-        <label class="volume-control ui-btn" title="SFX 볼륨 조절">
-          <span id="sfxVolumeText">SFX 100</span>
-          <input id="sfxVolumeSlider" type="range" min="0" max="100" step="1" value="100" aria-label="SFX 볼륨">
-        </label>
+        <button id="bgmBtn" class="ui-btn">BGM 켜짐</button>
+        <button id="sfxBtn" class="ui-btn">SFX 켜짐</button>
         <button id="lowPowerBtn" class="ui-btn">저사양 OFF</button>
         <button id="effectsBtn" class="ui-btn">이펙트 ON</button>
         <select id="fpsSelect" class="ui-btn" title="FPS 선택">
@@ -6526,8 +6520,8 @@ if(rankTableCloseBtn) rankTableCloseBtn.addEventListener('click', closeRankTable
 if(rankTableModal) rankTableModal.addEventListener('click', e=>{ if(e.target===rankTableModal) closeRankTableModal(); });
 function syncTopSettingsVisibility(){ document.body.classList.toggle('playing-ui', state === 'playing'); }
 function syncPauseSettingButtons(){
-  if(pauseBgmBtn){ pauseBgmBtn.textContent = `BGM ${Math.round(bgmVolume)}`; pauseBgmBtn.style.color = bgmVolume > 0 ? '#fff' : '#888'; }
-  if(pauseSfxBtn){ pauseSfxBtn.textContent = `SFX ${Math.round(sfxVolume)}`; pauseSfxBtn.style.color = sfxVolume > 0 ? '#fff' : '#888'; }
+  if(pauseBgmBtn){ pauseBgmBtn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF'; pauseBgmBtn.style.color = bgmEnabled ? '#fff' : '#888'; }
+  if(pauseSfxBtn){ pauseSfxBtn.textContent = sfxEnabled ? 'SFX ON' : 'SFX OFF'; pauseSfxBtn.style.color = sfxEnabled ? '#fff' : '#888'; }
   if(pauseLowPowerBtn){ pauseLowPowerBtn.textContent = saveData.lowPower ? '저사양 ON' : '저사양 OFF'; pauseLowPowerBtn.style.color = saveData.lowPower ? '#ffd700' : '#fff'; }
 }
 if(pauseBgmBtn) pauseBgmBtn.addEventListener('click', ()=>{ toggleBgmFromCanvas(); syncPauseSettingButtons(); });
@@ -6624,10 +6618,6 @@ document.addEventListener('visibilitychange', () => {
 
 const bgmBtn = document.getElementById('bgmBtn');
 const sfxBtn = document.getElementById('sfxBtn');
-const bgmVolumeSlider = document.getElementById('bgmVolumeSlider');
-const sfxVolumeSlider = document.getElementById('sfxVolumeSlider');
-const bgmVolumeText = document.getElementById('bgmVolumeText');
-const sfxVolumeText = document.getElementById('sfxVolumeText');
 const lowPowerBtn = document.getElementById('lowPowerBtn');
 const effectsBtn = document.getElementById('effectsBtn');
 const homingBtn = document.getElementById('homingBtn');
@@ -6955,10 +6945,6 @@ clearToTitleBtn.addEventListener('click', () => {
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
-// ===== [v.222.4] v.221.16 방식의 단순 오디오 출력 =====
-// BGM은 HTMLAudioElement.volume, SFX는 각 효과음 Gain에 볼륨 비율만 적용합니다.
-// MediaElementSource/GainNode 재라우팅은 사용하지 않아 재생 중 끊김을 최소화합니다.
-
 // ★ MP3 파일 등록
 const bgmTracks = {
   title:    new Audio('bg_title.mp3'),
@@ -6985,19 +6971,11 @@ const bgmTracks = {
   chuseok:   new Audio('bg_chuseok.mp3')
 };
 
-// 음악 반복 재생 및 볼륨 설정
-let bgmVolume = 50;
-let sfxVolume = 100;
-
-function applyBgmVolume() {
-    const v = Math.max(0, Math.min(100, Number(bgmVolume) || 0)) / 100;
-    Object.values(bgmTracks).forEach(track => {
-        track.loop = true;
-        try { track.volume = v; } catch (e) {}
-    });
-}
-Object.values(bgmTracks).forEach(track => { track.loop = true; });
-applyBgmVolume();
+// 음악 반복 재생 및 볼륨 설정 (기존 ON/OFF 방식)
+Object.values(bgmTracks).forEach(track => {
+    track.loop = true;
+    track.volume = 0.5;
+});
 
 let currentBgm = null;
 let bgmEnabled = true;
@@ -7040,9 +7018,9 @@ function fontStr(px, weight = 'normal') {
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new AudioContext();
-        audioCtx.resume().catch(()=>{});
+        audioCtx.resume();
     } else if (audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(()=>{});
+        audioCtx.resume();
     }
 }
 
@@ -7131,10 +7109,8 @@ function playTone(freq, type, duration, volume = 0.1) {
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        const sfxScale = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
-        const startGain = Math.max(0.0001, volume * sfxScale);
-        gain.gain.setValueAtTime(startGain, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
@@ -7154,10 +7130,8 @@ function playNoise(duration, volume = 0.1) {
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
         const gain = audioCtx.createGain();
-        const sfxScale = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
-        const startGain = Math.max(0.0001, volume * sfxScale);
-        gain.gain.setValueAtTime(startGain, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         noise.connect(gain);
         gain.connect(audioCtx.destination);
         noise.start();
@@ -8638,8 +8612,6 @@ bestInfiniteDistance: 0, // ✅ 무한 모드 최고 거리
 titleSystem: { equipped: 'title_slime' }, // ✅ 칭호 시스템
 bgmEnabled: true,
 sfxEnabled: true,
-bgmVolume: 50,
-sfxVolume: 100,
 lowPower: false,
 effectsEnabled: true, // ✅ [v.174] 이펙트 효과 켬/끔(배터리 절약)
 targetFps: DEFAULT_TARGET_FPS,
@@ -11021,10 +10993,9 @@ ensurePetSystemState();
 ensurePetDexState();
 if (typeof saveData.lowPower !== 'boolean') saveData.lowPower = false;
 if (typeof saveData.effectsEnabled !== 'boolean') saveData.effectsEnabled = true;
-if (!Number.isFinite(Number(saveData.bgmVolume))) saveData.bgmVolume = saveData.bgmEnabled === false ? 0 : 50;
-if (!Number.isFinite(Number(saveData.sfxVolume))) saveData.sfxVolume = saveData.sfxEnabled === false ? 0 : 100;
-saveData.bgmVolume = Math.max(0, Math.min(100, Math.round(Number(saveData.bgmVolume))));
-saveData.sfxVolume = Math.max(0, Math.min(100, Math.round(Number(saveData.sfxVolume))));
+// v.222.1 게이지 저장값 호환: ON/OFF 값이 없을 때만 기존 볼륨에서 상태를 가져옵니다.
+if (typeof saveData.bgmEnabled !== 'boolean') saveData.bgmEnabled = Number(saveData.bgmVolume) > 0;
+if (typeof saveData.sfxEnabled !== 'boolean') saveData.sfxEnabled = Number(saveData.sfxVolume) > 0;
 if (!FPS_OPTIONS.includes(Number(saveData.targetFps))) saveData.targetFps = DEFAULT_TARGET_FPS;
 
 if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
@@ -11138,11 +11109,8 @@ level = getLevelFromExp(exp);
 gold = saveData.gold || 0;
 try { syncGoldAccountingV1882(); } catch (e) {}
 ensurePetSystemState();
-bgmVolume = Math.max(0, Math.min(100, Number(saveData.bgmVolume) || 0));
-sfxVolume = Math.max(0, Math.min(100, Number(saveData.sfxVolume) || 0));
-bgmEnabled = bgmVolume > 0;
-sfxEnabled = sfxVolume > 0;
-applyBgmVolume();
+bgmEnabled = saveData.bgmEnabled !== false;
+sfxEnabled = saveData.sfxEnabled !== false;
 }
 } catch (e) { console.error(e); }
 applyFont(saveData.fontKey);
@@ -11152,10 +11120,8 @@ updateSettingsUI();
 function saveGameData() {
 saveData.exp = exp;
 saveData.level = level;
-saveData.bgmEnabled = bgmVolume > 0;
-saveData.sfxEnabled = sfxVolume > 0;
-saveData.bgmVolume = Math.max(0, Math.min(100, Math.round(Number(bgmVolume) || 0)));
-saveData.sfxVolume = Math.max(0, Math.min(100, Math.round(Number(sfxVolume) || 0)));
+saveData.bgmEnabled = bgmEnabled;
+saveData.sfxEnabled = sfxEnabled;
 saveData.gold = gold;
 try { syncGoldAccountingV1882(); } catch (e) {}
 saveData.petCollector = !!saveData.petCollector;
@@ -11623,10 +11589,6 @@ function getScoreQuestRewardByTier(tier) {
 
 // ===== UI/설정 이벤트 처리 =====
 function updateSettingsUI() {
-  if (bgmVolumeSlider) bgmVolumeSlider.value = String(Math.round(bgmVolume));
-  if (sfxVolumeSlider) sfxVolumeSlider.value = String(Math.round(sfxVolume));
-  if (bgmVolumeText) bgmVolumeText.textContent = `BGM ${Math.round(bgmVolume)}`;
-  if (sfxVolumeText) sfxVolumeText.textContent = `SFX ${Math.round(sfxVolume)}`;
   if (bgmBtn) {
     bgmBtn.textContent = bgmEnabled ? "BGM 켜짐" : "BGM 꺼짐";
     bgmBtn.style.color = bgmEnabled ? "#fff" : "#888";
@@ -12462,50 +12424,7 @@ characterListEl && characterListEl.addEventListener('click', (e) => {
 });
 
 
-// ===== [v.221.23] 실시간 BGM / SFX 볼륨 슬라이더 =====
-function setBgmVolume(value, persist = true) {
-  const previousVolume = bgmVolume;
-  bgmVolume = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  bgmEnabled = bgmVolume > 0;
-  applyBgmVolume();
-
-  // 1~100 구간은 재생 상태를 건드리지 않고 volume 값만 변경합니다.
-  if (bgmVolume === 0) {
-    if (currentBgm && !currentBgm.paused) currentBgm.pause();
-    if (currentBgm) {
-      try { currentBgm.currentTime = 0; } catch(e) {}
-    }
-  } else if (previousVolume === 0) {
-    // 0에서 다시 켜질 때만 처음부터 재생합니다.
-    if (currentBgm) {
-      try { currentBgm.currentTime = 0; } catch(e) {}
-      currentBgm.play().catch(()=>{});
-    } else if (state === 'title') {
-      playBgmTrack('title');
-    } else if (state === 'playing') {
-      if (boss && gameMode !== 'mission') playBgmTrack('boss');
-      else playBgmTrack(getModeBgmName());
-    }
-  }
-
-  updateSettingsUI();
-  if (persist) saveGameData();
-}
-function setSfxVolume(value, persist = true) {
-  sfxVolume = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  sfxEnabled = sfxVolume > 0;
-  updateSettingsUI();
-  if (persist) saveGameData();
-}
-if (bgmVolumeSlider) {
-  bgmVolumeSlider.addEventListener('input', e => setBgmVolume(e.target.value, false));
-  bgmVolumeSlider.addEventListener('change', e => setBgmVolume(e.target.value, true));
-}
-if (sfxVolumeSlider) {
-  sfxVolumeSlider.addEventListener('input', e => setSfxVolume(e.target.value, false));
-  sfxVolumeSlider.addEventListener('change', e => setSfxVolume(e.target.value, true));
-}
-
+// ===== BGM / SFX 기존 ON/OFF 방식 =====
 (bgmBtn && bgmBtn.addEventListener) && bgmBtn.addEventListener('click', () => {
     bgmEnabled = !bgmEnabled;
     updateSettingsUI();
@@ -30052,7 +29971,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
