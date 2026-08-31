@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.26)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.27)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -2203,8 +2203,8 @@ body.watch-ui{
   display:flex;
   align-items:center;
   justify-content:center;
-  pointer-events:none;
-  background:rgba(0,0,0,0.22);
+  pointer-events:auto;
+  background:rgba(0,0,0,0.44);
   opacity:0;
   transition:opacity .18s ease;
 }
@@ -2256,6 +2256,23 @@ body.watch-ui{
   font-weight:1000;
   color:#fff;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+#tutorialRewardPopupConfirm{
+  margin-top:16px;
+  min-width:150px;
+  padding:10px 22px;
+  border:2px solid #ffe16b;
+  border-radius:10px;
+  background:linear-gradient(to bottom,#6b5517,#2d2107);
+  color:#fff4b8;
+  font-size:15px;
+  font-weight:1000;
+  cursor:pointer;
+  pointer-events:auto;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+#tutorialRewardPopupConfirm:active{
+  transform:translateY(1px) scale(.985);
 }
 @media (max-width:520px){
   #tutorialRewardPopup .tutorial-reward-card{ width:88%; padding:17px 14px 15px; }
@@ -4022,6 +4039,7 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
     <div id="tutorialRewardPopupQuest"></div>
     <div id="tutorialRewardPopupLabel">획득 보상</div>
     <div id="tutorialRewardPopupRewards"></div>
+    <button id="tutorialRewardPopupConfirm" type="button">확인</button>
   </div>
 </div>
 
@@ -15349,13 +15367,47 @@ function prependTutorialClearPraiseV20312(q){
 }
 
 let tutorialRewardPopupTimer = null;
-function showTutorialQuestRewardPopup(q, expReward, goldReward, itemName){
+let tutorialRewardPopupContinue = null;
+
+function closeTutorialQuestRewardPopup(runContinue = false){
+  const popup = document.getElementById('tutorialRewardPopup');
+  if (!popup) return;
+
+  if (tutorialRewardPopupTimer) {
+    clearTimeout(tutorialRewardPopupTimer);
+    tutorialRewardPopupTimer = null;
+  }
+
+  const next = tutorialRewardPopupContinue;
+  tutorialRewardPopupContinue = null;
+
+  popup.classList.remove('show');
+  setTimeout(() => popup.classList.add('hidden'), 220);
+
+  if (runContinue && typeof next === 'function') {
+    // 팝업이 사라지는 연출 뒤 길잡이 대사가 자연스럽게 이어지도록 아주 짧게 지연
+    setTimeout(() => {
+      try { next(); } catch(e) { console.error(e); }
+    }, 230);
+  }
+}
+
+function showTutorialQuestRewardPopup(q, expReward, goldReward, itemName, onConfirm){
   // 튜토리얼 모드의 초보 안내 퀘스트에서만 표시합니다.
-  if (gameMode !== 'tutorial' || !tutorialModeActive || !isBeginnerGuideQuest(q)) return;
+  if (gameMode !== 'tutorial' || !tutorialModeActive || !isBeginnerGuideQuest(q)) {
+    if (typeof onConfirm === 'function') onConfirm();
+    return;
+  }
+
   const popup = document.getElementById('tutorialRewardPopup');
   const questEl = document.getElementById('tutorialRewardPopupQuest');
   const rewardsEl = document.getElementById('tutorialRewardPopupRewards');
-  if (!popup || !questEl || !rewardsEl) return;
+  const confirmBtn = document.getElementById('tutorialRewardPopupConfirm');
+
+  if (!popup || !questEl || !rewardsEl || !confirmBtn) {
+    if (typeof onConfirm === 'function') onConfirm();
+    return;
+  }
 
   questEl.textContent = String(q?.title || '튜토리얼 퀘스트');
   const rewards = [];
@@ -15364,37 +15416,50 @@ function showTutorialQuestRewardPopup(q, expReward, goldReward, itemName){
   if (itemName) rewards.push(`🎁 ${itemName} x1`);
   rewardsEl.innerHTML = rewards.map(v => `<span class="tutorial-reward-chip">${v}</span>`).join('');
 
-  if (tutorialRewardPopupTimer) clearTimeout(tutorialRewardPopupTimer);
+  tutorialRewardPopupContinue = (typeof onConfirm === 'function') ? onConfirm : null;
+
+  // 보상창이 떠 있는 동안 기존 길잡이 오버레이는 숨겨서 대사가 뒤에서 먼저 보이지 않게 합니다.
+  const tutorialOverlay = document.getElementById('tutorialOverlay');
+  if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
+
+  confirmBtn.onclick = () => closeTutorialQuestRewardPopup(true);
+
   popup.classList.remove('hidden');
   requestAnimationFrame(() => popup.classList.add('show'));
-  tutorialRewardPopupTimer = setTimeout(() => {
-    popup.classList.remove('show');
-    setTimeout(() => popup.classList.add('hidden'), 220);
-  }, 2000);
 }
 
 function completeBeginnerGuideQuestInGame(q){
   const town = ensureTownQuestState();
   if (!isBeginnerGuideQuest(q)) return false;
+
   const expReward = getTownQuestExpReward(q);
   if (expReward > 0) addExpDirect(expReward);
+
   const goldReward = Math.max(0, Math.floor(q.gold || 0));
   if (goldReward > 0) {
     gold += goldReward;
     saveData.goldEarned = (saveData.goldEarned || 0) + goldReward;
     addGoldEarnedStat(goldReward);
   }
+
   const itemName = grantTownItem(q.item, 1);
-  showTutorialQuestRewardPopup(q, expReward, goldReward, itemName);
+
   town.completed += 1;
-  town.guideStep = Math.min(BEGINNER_TUTORIAL_QUEST_POOL.length, Math.max(0, Math.floor(Number(town.guideStep) || 0)) + 1);
-  town.recentBaseIds = [q.baseId].concat(Array.isArray(town.recentBaseIds) ? town.recentBaseIds.filter(id => id !== q.baseId) : []).slice(0, 6);
+  town.guideStep = Math.min(
+    BEGINNER_TUTORIAL_QUEST_POOL.length,
+    Math.max(0, Math.floor(Number(town.guideStep) || 0)) + 1
+  );
+  town.recentBaseIds = [q.baseId]
+    .concat(Array.isArray(town.recentBaseIds) ? town.recentBaseIds.filter(id => id !== q.baseId) : [])
+    .slice(0, 6);
   town.active = null;
+
   const rewardText = `🧭 안내 퀘스트 완료! +${formatNumber(expReward)} EXP / +${formatNumber(goldReward)} 골드${itemName ? ` / ${itemName} x1` : ''}`;
   showToast(rewardText, '#b8ffd8', 2200);
   try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
   updateHUD();
 
+  // 다음 단계 정보는 먼저 저장하되, 길잡이 슬라임 대사는 보상창의 [확인]을 누른 뒤에만 시작합니다.
   if (town.guideStep < BEGINNER_TUTORIAL_QUEST_POOL.length) {
     const npc = getTownNpcById('guide');
     const nextTemplate = pickBeginnerTutorialQuest();
@@ -15402,37 +15467,48 @@ function completeBeginnerGuideQuestInGame(q){
     town.active = nextQuest;
     saveGameData();
 
-    // ✅ [v.212.2] 퀘스트 달성 즉시 전투를 멈추고 완료 대사 + 다음 퀘스트 안내를 표시합니다.
-    // 사용자가 대사를 모두 넘긴 뒤에만 다음 퀘스트 진행/자동 발사가 재개됩니다.
-    tutorialFlow = 'beginnerGuide';
-    tutorialNonBlocking = false;
-    tutorialActive = true;
-    tutorialIndex = 0;
-    tutorialMessages = [getTutorialClearPraiseMessageV20312(q)].concat(getBeginnerQuestGuideMessages(nextQuest));
-    try { if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay(); } catch(e) {}
-    showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
+    showTutorialQuestRewardPopup(q, expReward, goldReward, itemName, () => {
+      tutorialFlow = 'beginnerGuide';
+      tutorialNonBlocking = false;
+      tutorialActive = true;
+      tutorialIndex = 0;
+      tutorialMessages = [getTutorialClearPraiseMessageV20312(q)]
+        .concat(getBeginnerQuestGuideMessages(nextQuest));
+
+      try {
+        if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+      } catch(e) {}
+
+      showToast(`다음 안내 퀘스트: ${nextQuest.desc}`, '#dffff0', 1800);
+    });
+
   } else {
-    // 튜토리얼 종료 시 레벨/EXP를 강제로 변경하지 않습니다.
-    // 전투 및 각 단계 보상으로 실제 획득한 성장 상태를 그대로 유지합니다.
-    tutorialModeActive = false;
+    // 마지막 단계도 보상창 확인 후 최종 길잡이 대사를 표시합니다.
     saveGameData();
 
-    // ✅ [v.212.2] 마지막 퀘스트도 완료 즉시 멈추고 최종 안내를 표시합니다.
-    tutorialFlow = 'beginnerGuideDone';
-    tutorialNonBlocking = false;
-    tutorialActive = true;
-    tutorialIndex = 0;
-    tutorialMessages = [
-      getTutorialClearPraiseMessageV20312(q),
-      '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
-      '11단계 보상 적용이 끝났습니다. 현재 레벨과 EXP는 튜토리얼에서 실제로 플레이하며 획득한 수치 그대로 유지됩니다.',
-      '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
-    ];
-    try { if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay(); } catch(e) {}
+    showTutorialQuestRewardPopup(q, expReward, goldReward, itemName, () => {
+      tutorialModeActive = false;
+      saveGameData();
+
+      tutorialFlow = 'beginnerGuideDone';
+      tutorialNonBlocking = false;
+      tutorialActive = true;
+      tutorialIndex = 0;
+      tutorialMessages = [
+        getTutorialClearPraiseMessageV20312(q),
+        '모든 튜토리얼 훈련을 완료했습니다. 기본 전투 라이선스가 발급되었습니다!',
+        '11단계 보상 적용이 끝났습니다. 현재 레벨과 EXP는 튜토리얼에서 실제로 플레이하며 획득한 수치 그대로 유지됩니다.',
+        '잠시 후 타이틀 화면으로 이동합니다. 다음 접속부터는 스테이지, 무한 모드, 마을 퀘스트를 자유롭게 진행하세요.'
+      ];
+
+      try {
+        if (typeof drawTutorialOverlay === 'function') drawTutorialOverlay();
+      } catch(e) {}
+    });
   }
+
   return true;
 }
-
 
 function getAllActiveTownQuestTargets(){
   const town = ensureTownQuestState();
@@ -27852,7 +27928,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.26', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.27', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
