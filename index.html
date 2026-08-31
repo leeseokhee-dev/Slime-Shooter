@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.30)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.40)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -690,6 +690,77 @@ body.dead-mode #consumableQuickBar{
         border-radius: 8px;
     }
     .big-btn:active { background: #331100; }
+
+
+
+/* ===== [v.221.40] 정식 상점 테마 / 2단계 상점 슬라임 ===== */
+#shopModal{
+  overflow:hidden;
+  border:2px solid #e7bb67 !important;
+  background:
+    linear-gradient(180deg, rgba(65,38,20,.98) 0 17%, rgba(34,23,20,.98) 17% 100%) !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,235,181,.12) !important;
+}
+#shopModal::before{
+  content:''; position:absolute; left:0; right:0; top:0; height:92px; pointer-events:none; z-index:-1;
+  background:
+    repeating-linear-gradient(90deg,#b94335 0 38px,#f2d38a 38px 76px),
+    linear-gradient(180deg,#d49755,#8d552e);
+  clip-path:polygon(0 0,100% 0,100% 72%,94% 88%,88% 72%,82% 88%,76% 72%,70% 88%,64% 72%,58% 88%,52% 72%,46% 88%,40% 72%,34% 88%,28% 72%,22% 88%,16% 72%,10% 88%,4% 72%,0 88%);
+  opacity:.92;
+}
+#shopModal::after{
+  content:''; position:absolute; inset:78px 0 0; pointer-events:none; z-index:-2;
+  background:
+    linear-gradient(90deg,transparent 0 6%,rgba(255,216,147,.12) 6% 7%,transparent 7% 93%,rgba(255,216,147,.12) 93% 94%,transparent 94%),
+    repeating-linear-gradient(0deg,rgba(115,73,38,.32) 0 3px,rgba(49,30,21,.16) 3px 34px),
+    radial-gradient(circle at 18% 22%,rgba(255,193,94,.18),transparent 24%),
+    radial-gradient(circle at 82% 28%,rgba(255,193,94,.14),transparent 26%),
+    linear-gradient(180deg,#4b3024,#211918 72%,#171313);
+}
+#shopModal .modal-header{
+  color:#fff2c0 !important; text-shadow:0 2px 0 #6d351d,0 0 12px rgba(255,196,92,.35);
+}
+#shopModal .modal-body{ position:relative; }
+#shopModal .modal-body::before, #shopModal .modal-body::after{
+  content:''; position:absolute; top:116px; width:54px; height:110px; opacity:.24; pointer-events:none;
+  border:5px solid #bf8647; border-left-width:7px; border-right-width:7px;
+  background:repeating-linear-gradient(0deg,rgba(247,199,116,.32) 0 5px,transparent 5px 34px);
+}
+#shopModal .modal-body::before{ left:-4px; }
+#shopModal .modal-body::after{ right:-4px; }
+#shopMerchantGreeting{
+  border-color:rgba(246,198,105,.44) !important;
+  background:linear-gradient(180deg,rgba(77,48,27,.90),rgba(38,27,22,.94)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 8px 18px rgba(0,0,0,.22) !important;
+}
+.shop-evo2-slime{
+  width:72px; height:58px; flex:0 0 72px; position:relative; filter:drop-shadow(0 7px 8px rgba(0,0,0,.32));
+}
+.shop-evo2-slime .slime-ear{
+  position:absolute; top:18px; width:30px; height:25px; background:linear-gradient(145deg,#37c764,#137d35);
+  border:2px solid rgba(221,255,225,.68); z-index:0;
+}
+.shop-evo2-slime .slime-ear.left{ left:0; border-radius:82% 18% 72% 28%; transform:rotate(-18deg) skewX(-8deg); }
+.shop-evo2-slime .slime-ear.right{ right:0; border-radius:18% 82% 28% 72%; transform:rotate(18deg) skewX(8deg); }
+.shop-evo2-slime .slime-body{
+  position:absolute; left:9px; top:2px; width:54px; height:52px; z-index:1;
+  border-radius:52% 52% 43% 43% / 48% 48% 54% 54%;
+  background:radial-gradient(circle at 34% 22%,#effff1 0 7%,#9bffb0 8% 26%,#3ad06a 54%,#138238 100%);
+  border:2px solid rgba(222,255,228,.80); box-shadow:inset 0 -7px 10px rgba(0,70,28,.18),0 0 14px rgba(83,255,124,.18);
+}
+.shop-evo2-slime .slime-body::after{
+  content:''; position:absolute; left:6px; right:6px; bottom:-5px; height:13px;
+  background:linear-gradient(180deg,#2ebd5d,#14843a); border-radius:50%; z-index:-1;
+}
+.shop-evo2-slime .eye{ position:absolute; top:19px; width:6px; height:9px; border-radius:50%; background:#102c18; }
+.shop-evo2-slime .eye.left{ left:14px; } .shop-evo2-slime .eye.right{ right:14px; }
+.shop-evo2-slime .mouth{ position:absolute; left:20px; top:34px; width:14px; height:7px; border-bottom:2px solid #12391e; border-radius:0 0 12px 12px; }
+.shop-counter-strip{
+  height:7px; margin:2px -2px 0; border-radius:4px;
+  background:linear-gradient(180deg,#d7a15d,#7b4928); box-shadow:0 2px 0 rgba(34,18,10,.65),inset 0 1px rgba(255,238,190,.38);
+}
+#closeShopBtn{ border-color:#dfb669 !important; color:#fff1c5 !important; background:linear-gradient(to bottom,#744928,#3b251a) !important; }
 
     /* ===== 오버레이 UI (타이틀, 게임오버, 스테이지선택) ===== */
     .overlay-screen {
@@ -3192,6 +3263,828 @@ body.dungeon-mode .dash-skill{ display:none !important; }
   #settingsBar .volume-control input[type="range"]{ width:68px; }
 }
 
+
+/* ===============================
+   ✅ [v.221.31] 30일 출석판
+   =============================== */
+#attendanceModal{
+  z-index:1000200;
+  width:min(94vw, 700px);
+  max-width:700px;
+  max-height:min(90vh, 760px);
+  padding:0;
+  overflow:hidden;
+  border:2px solid rgba(255,210,92,.82);
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(20,27,48,.99), rgba(7,10,22,.99));
+  box-shadow:0 24px 70px rgba(0,0,0,.68), 0 0 30px rgba(255,196,64,.16);
+}
+#attendanceModal .attendance-head{
+  flex:0 0 auto;
+  padding:16px 18px 12px;
+  text-align:center;
+  background:linear-gradient(180deg, rgba(255,190,50,.16), rgba(255,190,50,.03));
+  border-bottom:1px solid rgba(255,226,145,.22);
+}
+#attendanceModal .attendance-title{
+  font-size:27px;
+  font-weight:1000;
+  color:#ffe28d;
+  text-shadow:0 2px 12px rgba(255,178,38,.28), 0 2px 3px #000;
+}
+#attendanceModal .attendance-subtitle{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.45;
+  color:#dce7ff;
+  opacity:.92;
+}
+#attendanceProgressText{
+  margin-top:8px;
+  font-size:14px;
+  font-weight:900;
+  color:#8fffd1;
+}
+#attendanceGrid{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0,1fr));
+  gap:8px;
+  padding:12px;
+  background:rgba(0,0,0,.12);
+}
+.attendance-day{
+  position:relative;
+  min-height:88px;
+  padding:8px 5px 7px;
+  border-radius:12px;
+  border:1px solid rgba(160,190,235,.24);
+  background:linear-gradient(180deg, rgba(39,50,76,.95), rgba(16,22,38,.96));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:center;
+  gap:3px;
+  overflow:hidden;
+}
+.attendance-day .day-label{
+  font-size:12px;
+  font-weight:1000;
+  color:#b9c9e7;
+}
+.attendance-day .reward-icon{
+  font-size:24px;
+  line-height:1.05;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.36));
+}
+.attendance-day .reward-name{
+  font-size:10px;
+  line-height:1.2;
+  font-weight:900;
+  color:#fff;
+  word-break:keep-all;
+}
+.attendance-day .reward-gold{
+  font-size:9px;
+  font-weight:900;
+  color:#ffd86a;
+}
+.attendance-day.claimed{
+  opacity:.56;
+  filter:saturate(.68);
+  border-color:rgba(124,255,174,.45);
+}
+.attendance-day.claimed::after{
+  content:'✓';
+  position:absolute;
+  right:5px;
+  top:3px;
+  font-size:20px;
+  font-weight:1000;
+  color:#77ffad;
+  text-shadow:0 2px 5px #000;
+}
+.attendance-day.today{
+  border:2px solid #7cffd2;
+  background:linear-gradient(180deg, rgba(31,96,81,.98), rgba(10,43,40,.98));
+  box-shadow:0 0 18px rgba(124,255,210,.34), inset 0 0 12px rgba(124,255,210,.08);
+  transform:translateY(-1px);
+}
+.attendance-day.today .day-label{ color:#aaffdf; }
+.attendance-day.rare{
+  border-color:rgba(120,235,255,.88);
+  box-shadow:0 0 16px rgba(86,224,255,.20);
+}
+.attendance-day.rare .reward-name{ color:#d9fbff; }
+.attendance-day.milestone{
+  border-color:rgba(136,180,255,.62);
+  background:linear-gradient(180deg, rgba(43,62,115,.98), rgba(17,28,66,.98));
+}
+.attendance-day.final-reward{
+  grid-column:span 5;
+  min-height:116px;
+  display:grid;
+  grid-template-columns:auto 72px 1fr auto;
+  grid-template-rows:auto auto;
+  align-items:center;
+  column-gap:12px;
+  padding:12px 16px;
+  border:2px solid #ffd85e;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,228,103,.28), transparent 54%),
+    linear-gradient(135deg, rgba(115,62,8,.98), rgba(54,22,3,.98));
+  box-shadow:0 0 24px rgba(255,195,44,.30), inset 0 0 18px rgba(255,230,120,.08);
+}
+.attendance-day.final-reward::before{
+  content:'★ GRAND REWARD ★';
+  position:absolute;
+  top:5px;
+  right:10px;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.5px;
+  color:#fff1a6;
+}
+.attendance-day.final-reward .day-label{
+  grid-row:1 / span 2;
+  font-size:20px;
+  color:#fff0a3;
+}
+.attendance-day.final-reward .reward-icon{
+  grid-row:1 / span 2;
+  font-size:46px;
+}
+.attendance-day.final-reward .reward-name{
+  align-self:end;
+  text-align:left;
+  font-size:15px;
+  color:#fff6c7;
+}
+.attendance-day.final-reward .reward-gold{
+  align-self:start;
+  text-align:left;
+  font-size:14px;
+  color:#ffd85e;
+}
+.attendance-final-badge{
+  grid-row:1 / span 2;
+  align-self:center;
+  padding:7px 9px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff09b,#ffb82e);
+  color:#4a2500;
+  font-size:10px;
+  font-weight:1000;
+  box-shadow:0 0 14px rgba(255,215,80,.28);
+}
+#attendanceResult{
+  flex:0 0 auto;
+  min-height:42px;
+  padding:8px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  line-height:1.45;
+  font-size:12px;
+  font-weight:900;
+  color:#eff7ff;
+  background:rgba(255,255,255,.035);
+  border-top:1px solid rgba(255,255,255,.08);
+}
+#attendanceResult.reward-won{
+  color:#fff0a3;
+  background:rgba(255,196,64,.08);
+}
+#attendanceActions{
+  flex:0 0 auto;
+  padding:10px 12px 12px;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+#attendanceClaimBtn,
+#attendanceCloseBtn{
+  min-width:150px;
+  max-width:240px;
+  flex:1 1 0;
+  min-height:42px;
+  border-radius:10px;
+  font-weight:1000;
+  cursor:pointer;
+}
+#attendanceClaimBtn{
+  border:2px solid #7cffd2;
+  color:#042d22;
+  background:linear-gradient(180deg,#9bffe0,#35c998);
+}
+#attendanceClaimBtn:disabled{
+  opacity:.5;
+  filter:grayscale(.35);
+  cursor:default;
+}
+#attendanceCloseBtn{
+  border:1px solid rgba(255,255,255,.26);
+  color:#eef4ff;
+  background:linear-gradient(180deg,#46516a,#252c3c);
+}
+@media(max-width:560px){
+  #attendanceModal{
+    width:96vw;
+    max-height:88dvh;
+  }
+  #attendanceModal .attendance-head{ padding:11px 10px 9px; }
+  #attendanceModal .attendance-title{ font-size:21px; }
+  #attendanceModal .attendance-subtitle{ font-size:10px; }
+  #attendanceProgressText{ font-size:12px; margin-top:5px; }
+  #attendanceGrid{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:5px;
+    padding:7px;
+  }
+  .attendance-day{
+    min-height:70px;
+    border-radius:9px;
+    padding:5px 2px;
+    gap:2px;
+  }
+  .attendance-day .day-label{ font-size:10px; }
+  .attendance-day .reward-icon{ font-size:18px; }
+  .attendance-day .reward-name{ font-size:8px; }
+  .attendance-day .reward-gold{ font-size:7px; }
+  .attendance-day.final-reward{
+    grid-column:span 5;
+    min-height:92px;
+    grid-template-columns:auto 48px 1fr auto;
+    column-gap:7px;
+    padding:9px 8px;
+  }
+  .attendance-day.final-reward .day-label{ font-size:15px; }
+  .attendance-day.final-reward .reward-icon{ font-size:34px; }
+  .attendance-day.final-reward .reward-name{ font-size:11px; }
+  .attendance-day.final-reward .reward-gold{ font-size:10px; }
+  .attendance-final-badge{ padding:5px 6px; font-size:8px; }
+  #attendanceResult{ min-height:36px; padding:6px 9px; font-size:10px; }
+  #attendanceActions{ padding:7px 8px 9px; gap:6px; }
+  #attendanceClaimBtn,#attendanceCloseBtn{ min-width:0; min-height:38px; font-size:12px; }
+}
+
+
+/* ===== [v.221.43] 전체 화면 상점 씬 ===== */
+body.shop-mode #shopModal{
+  width:min(960px,100%) !important;
+  max-width:960px !important;
+  height:auto !important;
+  max-height:min(640px,78vh) !important;
+  top:auto !important;
+  bottom:0 !important;
+  transform:translateX(-50%) !important;
+  padding:12px 18px 14px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.shop-mode #shopModal::before,body.shop-mode #shopModal::after{display:none !important;}
+body.shop-mode #shopModal .modal-header{
+  align-self:flex-start; margin-left:10px; padding:6px 14px;
+  border-radius:12px; background:rgba(57,31,16,.82); border:1px solid rgba(255,220,148,.56);
+  box-shadow:0 6px 18px rgba(0,0,0,.28); font-size:22px;
+}
+body.shop-mode #shopModal .modal-body{
+  width:min(720px,96%); align-self:center; padding:8px 10px 4px;
+  background:rgba(22,14,10,.56); border:1px solid rgba(255,221,157,.24); border-radius:18px;
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+}
+body.shop-mode #shopModal .modal-body::before,body.shop-mode #shopModal .modal-body::after{display:none !important;}
+body.shop-mode #shopMerchantGreeting{background:rgba(64,38,20,.78) !important;}
+body.shop-mode #shopList{padding-bottom:4px;}
+body.shop-mode #closeShopBtn{width:min(300px,72%); align-self:center; margin-top:4px;}
+body.shop-mode #hud{opacity:.18; pointer-events:none;}
+body.shop-mode #consumableQuickBar,body.shop-mode .laser-skill,body.shop-mode .bubble-skill,
+body.shop-mode .blizzard-skill,body.shop-mode .meteor-skill,body.shop-mode .lightning-skill,
+body.shop-mode .quake-skill,body.shop-mode .spin-skill,body.shop-mode #pauseBtn{display:none !important;}
+@media(max-width:520px){
+ body.shop-mode #shopModal{max-height:72vh !important;padding:8px 8px 10px !important;}
+ body.shop-mode #shopModal .modal-header{font-size:18px;margin-left:4px;}
+ body.shop-mode #shopModal .modal-body{width:98%;}
+}
+
+
+/* ===== [v.221.43] 슬라임 마을식 '전체 화면 상점 씬' ===== */
+body.shop-mode{
+  overflow:hidden !important;
+}
+body.shop-mode #shopModal{
+  position:fixed !important;
+  inset:0 !important;
+  left:0 !important;
+  top:0 !important;
+  transform:none !important;
+  width:100vw !important;
+  height:100vh !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  z-index:9999 !important;
+  display:grid !important;
+  grid-template-columns:minmax(250px, 36vw) minmax(0, 1fr);
+  grid-template-rows:auto 1fr auto;
+  gap:0 !important;
+  color:#fff6db;
+  overflow:hidden !important;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255,220,125,.22), transparent 22%),
+    radial-gradient(circle at 82% 24%, rgba(255,190,80,.15), transparent 26%),
+    linear-gradient(180deg, rgba(105,61,30,.12), rgba(21,14,11,.15)),
+    repeating-linear-gradient(0deg, rgba(255,228,171,.05) 0 2px, transparent 2px 46px),
+    linear-gradient(180deg,#7a4b2a 0 11%,#5b371f 11% 64%,#2b1b15 64% 100%) !important;
+}
+
+/* 천막 */
+body.shop-mode #shopModal::before{
+  display:block !important;
+  content:'' !important;
+  position:absolute !important;
+  z-index:0 !important;
+  left:0; right:0; top:0;
+  height:11vh;
+  min-height:68px;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,#b74235 0 74px,#f2d58f 74px 148px);
+  clip-path:polygon(0 0,100% 0,100% 76%,96% 100%,92% 76%,88% 100%,84% 76%,80% 100%,76% 76%,72% 100%,68% 76%,64% 100%,60% 76%,56% 100%,52% 76%,48% 100%,44% 76%,40% 100%,36% 76%,32% 100%,28% 76%,24% 100%,20% 76%,16% 100%,12% 76%,8% 100%,4% 76%,0 100%);
+  filter:drop-shadow(0 6px 5px rgba(0,0,0,.35));
+}
+/* 바닥/카운터 */
+body.shop-mode #shopModal::after{
+  display:block !important;
+  content:'' !important;
+  position:absolute !important;
+  z-index:0 !important;
+  left:0; right:0; bottom:0;
+  height:34vh;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,#b5763e 0 18px,#784625 18px 26px,transparent 26px),
+    repeating-linear-gradient(90deg,#59331e 0 88px,#673d24 88px 176px);
+  box-shadow:inset 0 12px 22px rgba(0,0,0,.24);
+}
+
+/* 헤더는 간판처럼 */
+body.shop-mode #shopModal .modal-header{
+  position:relative !important;
+  z-index:3 !important;
+  grid-column:1 / -1;
+  grid-row:1;
+  justify-self:center;
+  align-self:start;
+  margin:calc(max(68px, 11vh) + 12px) 0 4px !important;
+  padding:9px 26px !important;
+  border-radius:12px !important;
+  border:3px solid #d6a45c !important;
+  background:#492a18 !important;
+  color:#fff0b0 !important;
+  font-size:clamp(20px,3vw,30px) !important;
+  letter-spacing:.03em;
+  box-shadow:0 7px 0 #2b170f,0 12px 22px rgba(0,0,0,.3) !important;
+  text-shadow:0 2px 0 #6e371c !important;
+}
+
+/* 전체 상점 본문: 좌측 점원 / 우측 상품 진열 */
+body.shop-mode #shopModal .modal-body{
+  position:relative !important;
+  z-index:2 !important;
+  grid-column:1 / -1;
+  grid-row:2;
+  display:grid !important;
+  grid-template-columns:minmax(230px,36vw) minmax(0,1fr) !important;
+  grid-template-rows:auto auto 1fr !important;
+  column-gap:clamp(14px,2.5vw,34px) !important;
+  row-gap:10px !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:14px clamp(16px,4vw,52px) 8px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  overflow:hidden !important;
+}
+body.shop-mode #shopModal .modal-body::before,
+body.shop-mode #shopModal .modal-body::after{display:none !important;}
+
+/* 점원 영역: 별도 창 느낌을 없애고 상점 안에 서 있게 */
+body.shop-mode #shopMerchantGreeting{
+  grid-column:1;
+  grid-row:1 / 4;
+  align-self:end;
+  display:flex !important;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:center !important;
+  gap:10px !important;
+  min-height:0;
+  height:100%;
+  padding:0 8px 13vh !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  text-align:center;
+}
+body.shop-mode .shop-merchant-original{
+  width:clamp(116px,18vw,220px);
+  height:auto;
+  object-fit:contain;
+  image-rendering:auto;
+  filter:drop-shadow(0 12px 12px rgba(0,0,0,.38));
+  border-radius:8px;
+}
+body.shop-mode #shopMerchantGreeting > div:last-child{
+  width:min(330px,100%);
+  padding:12px 14px;
+  border:2px solid rgba(255,222,149,.58);
+  border-radius:16px;
+  background:rgba(62,36,20,.88);
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+}
+body.shop-mode #shopMerchantGreeting > div:last-child > div:first-child{
+  font-size:13px !important;
+  color:#b7ff9e !important;
+}
+body.shop-mode #shopMerchantText{
+  font-size:13px !important;
+  color:#fff8e5 !important;
+}
+
+/* 카운터 장식은 불필요 */
+body.shop-mode .shop-counter-strip{display:none !important;}
+
+/* 보유 골드 */
+body.shop-mode #shopModal .modal-body > div:nth-of-type(3){
+  grid-column:2;
+  grid-row:1;
+  margin:0 !important;
+  background:rgba(37,22,14,.78) !important;
+  border:2px solid rgba(230,178,91,.42) !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.2);
+}
+
+/* 설명 */
+body.shop-mode #shopModal .modal-body > div:nth-of-type(4){
+  grid-column:2;
+  grid-row:2;
+  padding:8px 12px;
+  color:#ffe9bc !important;
+  background:rgba(50,28,16,.62);
+  border-radius:10px;
+}
+
+/* 상품 영역은 '창'이 아니라 진열대처럼 */
+body.shop-mode #shopList{
+  grid-column:2;
+  grid-row:3;
+  min-height:0;
+  overflow-y:auto !important;
+  overscroll-behavior:contain;
+  padding:2px 8px 18px 0 !important;
+  gap:8px !important;
+  scrollbar-color:#c39154 rgba(30,18,13,.28);
+}
+body.shop-mode #shopList > *{
+  background:rgba(30,20,16,.78) !important;
+  border-color:rgba(215,164,93,.42) !important;
+  box-shadow:0 5px 14px rgba(0,0,0,.2) !important;
+}
+
+/* 퇴장 버튼은 하단 중앙의 문/출구 느낌 */
+body.shop-mode #closeShopBtn{
+  position:relative !important;
+  z-index:4 !important;
+  grid-column:1 / -1;
+  grid-row:3;
+  justify-self:center;
+  align-self:end;
+  width:min(310px,70vw) !important;
+  margin:4px 0 10px !important;
+  padding:12px 20px !important;
+  border:2px solid #d7a55c !important;
+  border-radius:10px !important;
+  color:#fff3cf !important;
+  background:linear-gradient(#7d4827,#4b2818) !important;
+  box-shadow:0 5px 0 #2d180f,0 8px 16px rgba(0,0,0,.3) !important;
+}
+
+/* 상점 중에는 기존 전투 HUD/버튼 숨김 */
+body.shop-mode #hud,
+body.shop-mode #consumableQuickBar,
+body.shop-mode #pauseBtn,
+body.shop-mode .laser-skill,
+body.shop-mode .bubble-skill,
+body.shop-mode .blizzard-skill,
+body.shop-mode .meteor-skill,
+body.shop-mode .lightning-skill,
+body.shop-mode .quake-skill,
+body.shop-mode .spin-skill{
+  display:none !important;
+}
+
+@media(max-width:700px){
+  body.shop-mode #shopModal{
+    grid-template-columns:1fr !important;
+  }
+  body.shop-mode #shopModal .modal-header{
+    margin-top:calc(max(62px, 10vh) + 6px) !important;
+    padding:7px 18px !important;
+  }
+  body.shop-mode #shopModal .modal-body{
+    grid-template-columns:1fr !important;
+    grid-template-rows:auto auto minmax(0,1fr) !important;
+    padding:8px 10px 6px !important;
+    gap:7px !important;
+  }
+  body.shop-mode #shopMerchantGreeting{
+    grid-column:1;
+    grid-row:1;
+    height:auto;
+    min-height:106px;
+    flex-direction:row !important;
+    justify-content:center !important;
+    padding:0 4px !important;
+  }
+  body.shop-mode .shop-merchant-original{width:84px;}
+  body.shop-mode #shopMerchantGreeting > div:last-child{max-width:calc(100% - 98px);}
+  body.shop-mode #shopModal .modal-body > div:nth-of-type(3){
+    grid-column:1; grid-row:2;
+  }
+  body.shop-mode #shopModal .modal-body > div:nth-of-type(4){display:none;}
+  body.shop-mode #shopList{
+    grid-column:1; grid-row:3;
+    padding-bottom:8px !important;
+  }
+  body.shop-mode #closeShopBtn{
+    margin-bottom:8px !important;
+    padding:10px 16px !important;
+  }
+}
+
+
+/* ===== [v.221.43] 게임 화면 비율 상점 + 드로잉 상점 슬라임 ===== */
+/* 상점은 브라우저 전체가 아니라 실제 gameCanvas 영역만 덮습니다.
+   JS가 --shop-left/top/width/height를 gameCanvas.getBoundingClientRect()로 갱신합니다. */
+body.shop-mode #shopModal{
+  position:fixed !important;
+  inset:auto !important;
+  left:var(--shop-left, 50%) !important;
+  top:var(--shop-top, 50%) !important;
+  width:var(--shop-width, min(95vw,640px)) !important;
+  height:var(--shop-height, min(90dvh,960px)) !important;
+  max-width:none !important;
+  max-height:none !important;
+  transform:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+  border:2px solid rgba(255,224,158,.64) !important;
+  border-radius:0 !important;
+  z-index:9999 !important;
+  display:grid !important;
+  grid-template-rows:auto minmax(0,1fr) auto !important;
+  grid-template-columns:1fr !important;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,225,140,.14),transparent 30%),
+    repeating-linear-gradient(0deg,rgba(255,236,193,.045) 0 2px,transparent 2px 42px),
+    linear-gradient(180deg,#704426 0 12%,#55321f 12% 66%,#2a1913 66% 100%) !important;
+  box-shadow:0 0 28px rgba(0,0,0,.72),inset 0 0 0 1px rgba(255,255,255,.06) !important;
+}
+
+/* 붉은/크림 천막 */
+body.shop-mode #shopModal::before{
+  display:block !important;
+  content:'' !important;
+  position:absolute !important;
+  z-index:0 !important;
+  top:0; left:0; right:0;
+  height:clamp(48px,10%,76px);
+  background:repeating-linear-gradient(90deg,#b84438 0 42px,#efd28d 42px 84px) !important;
+  clip-path:polygon(0 0,100% 0,100% 75%,95% 100%,90% 75%,85% 100%,80% 75%,75% 100%,70% 75%,65% 100%,60% 75%,55% 100%,50% 75%,45% 100%,40% 75%,35% 100%,30% 75%,25% 100%,20% 75%,15% 100%,10% 75%,5% 100%,0 75%);
+  filter:drop-shadow(0 5px 4px rgba(0,0,0,.3));
+  pointer-events:none;
+}
+body.shop-mode #shopModal::after{
+  display:block !important;
+  content:'' !important;
+  position:absolute !important;
+  z-index:0 !important;
+  left:0; right:0; bottom:0;
+  height:22%;
+  background:
+    linear-gradient(180deg,#b4773f 0 13px,#6e3d22 13px 21px,transparent 21px),
+    repeating-linear-gradient(90deg,#57331f 0 62px,#633a22 62px 124px) !important;
+  pointer-events:none;
+}
+
+/* 간판 */
+body.shop-mode #shopModal .modal-header{
+  position:relative !important;
+  z-index:3 !important;
+  grid-row:1 !important;
+  justify-self:center !important;
+  align-self:start !important;
+  width:auto !important;
+  margin:clamp(54px,11%,84px) 0 5px !important;
+  padding:7px 17px !important;
+  border:2px solid #d6a45e !important;
+  border-radius:10px !important;
+  background:#4a2a19 !important;
+  color:#fff0b4 !important;
+  font-size:clamp(17px,4vw,24px) !important;
+  line-height:1.15 !important;
+  box-shadow:0 5px 0 #2c170f,0 9px 16px rgba(0,0,0,.28) !important;
+  text-shadow:0 2px 0 #6c351d !important;
+}
+
+/* 내부는 세로형 모바일 게임 화면에 맞춘 한 열 구조 */
+body.shop-mode #shopModal .modal-body{
+  position:relative !important;
+  z-index:2 !important;
+  grid-row:2 !important;
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  grid-template-rows:auto auto minmax(0,1fr) !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:4px clamp(10px,3.5vw,18px) 4px !important;
+  gap:7px !important;
+  overflow:hidden !important;
+  border:0 !important;
+  background:transparent !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+body.shop-mode #shopModal .modal-body::before,
+body.shop-mode #shopModal .modal-body::after{display:none !important;}
+
+/* 점원: 업로드된 기준 캐릭터를 캔버스로 직접 드로잉 */
+body.shop-mode #shopMerchantGreeting{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  display:grid !important;
+  grid-template-columns:clamp(70px,22%,106px) minmax(0,1fr) !important;
+  align-items:center !important;
+  gap:8px !important;
+  min-height:82px !important;
+  padding:7px 9px !important;
+  margin:0 !important;
+  border:1px solid rgba(240,192,105,.48) !important;
+  border-radius:12px !important;
+  background:rgba(61,36,21,.80) !important;
+  box-shadow:0 5px 15px rgba(0,0,0,.20) !important;
+  text-align:left !important;
+}
+body.shop-mode .shop-merchant-drawing{
+  display:block !important;
+  width:100% !important;
+  max-width:106px !important;
+  height:auto !important;
+  aspect-ratio:196/188 !important;
+  justify-self:center !important;
+  filter:drop-shadow(0 7px 7px rgba(0,0,0,.30));
+}
+body.shop-mode #shopMerchantGreeting > div:last-child{
+  width:auto !important;
+  max-width:none !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.shop-mode #shopMerchantGreeting > div:last-child > div:first-child{
+  color:#baff9f !important;
+  font-size:clamp(10px,2.5vw,12px) !important;
+}
+body.shop-mode #shopMerchantText{
+  color:#fff8e9 !important;
+  font-size:clamp(10px,2.65vw,12px) !important;
+  line-height:1.45 !important;
+}
+
+/* 기존 장식 제거 */
+body.shop-mode .shop-counter-strip{display:none !important;}
+
+/* 보유 골드 + 안내를 한 줄 영역으로 압축 */
+body.shop-mode #shopModal .modal-body > div:nth-of-type(3){
+  grid-column:1 !important;
+  grid-row:2 !important;
+  margin:0 !important;
+  padding:7px 9px !important;
+  border:1px solid rgba(234,184,93,.38) !important;
+  border-radius:10px !important;
+  background:rgba(39,24,15,.78) !important;
+}
+body.shop-mode #shopModal .modal-body > div:nth-of-type(4){
+  display:none !important;
+}
+
+/* 상품은 남은 영역 전체에서 세로 스크롤/스와이프 */
+body.shop-mode #shopList{
+  grid-column:1 !important;
+  grid-row:3 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  min-height:0 !important;
+  height:100% !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  -webkit-overflow-scrolling:touch !important;
+  overscroll-behavior:contain !important;
+  touch-action:pan-y !important;
+  padding:2px 3px 18px 0 !important;
+  gap:7px !important;
+  scrollbar-width:thin;
+  scrollbar-color:#ca9556 rgba(25,15,10,.25);
+}
+body.shop-mode #shopList::-webkit-scrollbar{width:6px;}
+body.shop-mode #shopList::-webkit-scrollbar-track{background:rgba(25,15,10,.25);}
+body.shop-mode #shopList::-webkit-scrollbar-thumb{background:#b47b42;border-radius:99px;}
+body.shop-mode #shopList > *{
+  flex:0 0 auto !important;
+}
+
+/* 출구 */
+body.shop-mode #closeShopBtn{
+  position:relative !important;
+  z-index:4 !important;
+  grid-row:3 !important;
+  justify-self:center !important;
+  align-self:end !important;
+  width:min(72%,300px) !important;
+  margin:4px 0 max(7px,env(safe-area-inset-bottom)) !important;
+  padding:9px 14px !important;
+  min-height:38px !important;
+  border:2px solid #d7a45d !important;
+  border-radius:9px !important;
+  color:#fff1cf !important;
+  background:linear-gradient(#784426,#472618) !important;
+  box-shadow:0 4px 0 #2a160e,0 7px 13px rgba(0,0,0,.28) !important;
+}
+
+/* 기존 전투 UI가 상점 위에 섞이지 않게 */
+body.shop-mode #hud,
+body.shop-mode #consumableQuickBar,
+body.shop-mode #pauseBtn,
+body.shop-mode .laser-skill,
+body.shop-mode .bubble-skill,
+body.shop-mode .blizzard-skill,
+body.shop-mode .meteor-skill,
+body.shop-mode .lightning-skill,
+body.shop-mode .quake-skill,
+body.shop-mode .spin-skill,
+body.shop-mode .dash-skill,
+body.shop-mode .plasma-skill,
+body.shop-mode .toxic-skill,
+body.shop-mode .blackhole-skill{
+  visibility:hidden !important;
+}
+
+/* 아주 작은 휴대폰에서도 상점 자체의 세로 비율은 gameCanvas가 결정하고,
+   내부 요소만 더 압축합니다. */
+@media(max-width:430px){
+  body.shop-mode #shopModal .modal-header{
+    margin-top:clamp(48px,10%,66px) !important;
+    padding:6px 14px !important;
+    font-size:17px !important;
+  }
+  body.shop-mode #shopModal .modal-body{
+    padding-left:8px !important;
+    padding-right:8px !important;
+    gap:5px !important;
+  }
+  body.shop-mode #shopMerchantGreeting{
+    grid-template-columns:68px minmax(0,1fr) !important;
+    min-height:72px !important;
+    padding:5px 7px !important;
+  }
+  body.shop-mode .shop-merchant-drawing{max-width:70px !important;}
+  body.shop-mode #closeShopBtn{min-height:34px !important;padding:7px 12px !important;}
+}
+
 </style>
 
 
@@ -4118,6 +5011,22 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
 </div>
 
 
+
+<!-- ✅ [v.221.31] 1~30일 출석 보상판 -->
+<div id="attendanceModal" class="modal hidden">
+  <div class="attendance-head">
+    <div class="attendance-title">📅 30일 출석 보상</div>
+    <div class="attendance-subtitle">매일 접속해 출석 도장을 찍고 보상을 모아보세요.<br>7일마다 보상이 커지며, 30일차에는 초대형 보상이 기다립니다!</div>
+    <div id="attendanceProgressText">현재 출석 진행도</div>
+  </div>
+  <div id="attendanceGrid"></div>
+  <div id="attendanceResult">오늘의 출석 보상을 확인해 보세요.</div>
+  <div id="attendanceActions">
+    <button id="attendanceClaimBtn">🎁 오늘 보상 받기</button>
+    <button id="attendanceCloseBtn">닫기</button>
+  </div>
+</div>
+
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
@@ -4256,11 +5165,19 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
 
 
 <!-- 상점 모달 -->
-<div id="shopModal" class="modal hidden" style="z-index: 160; border-color:#ffd700;">
-  <div class="modal-header">🛒 상점</div>
+<div id="shopModal" class="modal hidden" style="z-index: 160; border-color:#7cff9b; background:linear-gradient(180deg, rgba(14,37,28,0.98), rgba(10,18,28,0.98));">
+  <div class="modal-header" style="color:#9dffb5;">🛒 슬라임 상점</div>
   <div class="modal-body" style="gap:10px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border:1px solid rgba(255,255,255,0.12); border-radius:10px; background:rgba(0,0,0,0.22);">
-      <div style="font-size:13px; color:#ffd700; font-weight:800;">보유 골드</div>
+    <div id="shopMerchantGreeting" style="display:flex; gap:12px; align-items:center; padding:12px; border:1px solid rgba(124,255,155,0.36); border-radius:14px; background:linear-gradient(135deg, rgba(72,176,95,0.18), rgba(17,50,37,0.30)); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);">
+      <canvas id="shopMerchantCanvas" class="shop-merchant-drawing" width="196" height="188" aria-label="상점 슬라임"></canvas>
+      <div style="min-width:0;">
+        <div style="font-size:11px; font-weight:900; color:#9dffb5; margin-bottom:4px;">상점 슬라임 👋</div>
+        <div id="shopMerchantText" style="font-size:12px; color:#effff2; line-height:1.55; word-break:keep-all;">어서오세요! 상점에 오신 것을 환영합니다.<br>게임에 도움이 되는 다양한 아이템을 구경해보세요~~!</div>
+      </div>
+    </div>
+    <div class="shop-counter-strip"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border:1px solid rgba(240,197,111,0.28); border-radius:10px; background:rgba(33,20,14,0.68);">
+      <div style="font-size:13px; color:#ffd98a; font-weight:800;">보유 골드</div>
       <div id="shopGoldText" style="font-size:14px; font-weight:900;">0</div>
     </div>
 
@@ -4271,7 +5188,7 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
 
     <div id="shopList" style="display:flex; flex-direction:column; gap:10px;"></div>
   </div>
-  <button id="closeShopBtn" class="close-btn">닫기</button>
+  <button id="closeShopBtn" class="close-btn" style="border:1px solid rgba(124,255,155,0.42); color:#dffff0; background:linear-gradient(to bottom,#245d38,#10291b);">상점 나가기</button>
 </div>
 
 <!-- 인벤토리 모달 -->
@@ -6071,6 +6988,7 @@ function ensureBgmWebAudioRouting() {
 const bgmTracks = {
   title:    new Audio('bg_title.mp3'),
   game:     new Audio('bg_game.mp3'),
+  shop:     new Audio('bg_shop.mp3'),    // ✅ [v.221.40] 상점 전용
   boss:     new Audio('bg_boss.mp3'),
   mission:  new Audio('bg_mission.mp3'),  // ✅ 미션 모드 전용
   bonus:    new Audio('bg_bonus.mp3'),    // ✅ 미션 보너스 스테이지 전용
@@ -6220,7 +7138,7 @@ function getSeasonKeyNow(date = new Date()) {
 
 function resolveBgmName(requested) {
   // 보스/미션/보너스/던전/특수 모드는 시즌보다 우선
-  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'dimension' || requested === 'slimerush' || requested === 'village' || requested === 'fever') return requested;
+  if (requested === 'boss' || requested === 'mission' || requested === 'bonus' || requested === 'dungeon' || requested === 'itempark' || requested === 'minigame' || requested === 'treasure' || requested === 'dimension' || requested === 'slimerush' || requested === 'village' || requested === 'shop' || requested === 'fever') return requested;
 
   const season = getSeasonKeyNow();
   if (season !== 'none' && bgmTracks && bgmTracks[season]) return season;
@@ -6891,10 +7809,7 @@ function applyBuff(typeKey, minutes, mult, cost) {
   return { ok:true, msg:`${minutes}분 버프 적용!` };
 }
 function confirmShopBuffPurchase(itemTitle, minutes, cost, note = '') {
-  const suffix = note ? `
-효과: ${note}` : '';
-  return confirm(`${itemTitle} ${minutes}분을 구매하시겠습니까?
-가격: ${formatNumber(cost)}G${suffix}`);
+  return shopMerchantConfirm(`${itemTitle} ${minutes}분`, cost, '골드', note ? `효과: ${note}` : '');
 }
 
 // ===== [추가] 스테이지 기반 배경 테마 / 별 필드 =====
@@ -7759,6 +8674,8 @@ level: 1,
 nickname: 'PLAYER', nicknameLastChangedAt: 0, // ✅ 닉네임 마지막 변경 시각(Date.now())
 playerElement: 'fire', // ✅ 플레이어 속성
 totalScore: 0, // ✅ 누적 점수
+cashCrystals: 0, // ✅ [v.221.39] 정식 크리스탈 시작값
+cashCrystalProductionResetDone: true, // 신규 캐릭터는 처음부터 정식 설정
 totalMonsterKills: 0, // ✅ 새 시작부터 지금까지 몬스터 누적 처치 수
 totalBossKills: 0, // ✅ 새 시작부터 지금까지 보스 누적 처치 수
 bestInfiniteDistance: 0, // ✅ 무한 모드 최고 거리
@@ -7788,7 +8705,7 @@ dungeon: { dayKey: '', used: 0, unlockedTier: 1 },
 itemPark: { dayKey: '', used: 0 },
 miniGame: { dayKey: '', used: 0 },
 training: { dayKey: '', used: 0 },
-dailyAttendance: { dateKey: '' },
+dailyAttendance: { dateKey: '', day: 0, cycle: 1 },
 
 // ✅ 펫 단계(0=없음, 1~5=보유 단계)
 petStage: 0,
@@ -8119,7 +9036,20 @@ function getPlayerHitDamage(hitInfo = null) {
 
 function damagePlayer(amount, px, py, hitInfo = null) {
   const dmg = Math.max(1, Math.floor(Number(amount) || 0));
-  playerHp = Math.max(0, playerHp - dmg);
+
+  // ✅ [v.221.35] 수호형 펫 보호막: 피격 1회를 완전히 무효화(상태이상 포함)
+  if (isPetGuardianShieldActive()) {
+    petGuardianShield.charges = Math.max(0, petGuardianShield.charges - 1);
+    playerInvulnTimer = Math.max(playerInvulnTimer || 0, 350);
+    try { spawnExplosion(px || player.x, py || player.y, 'rgba(142,231,255,0.95)', 10); } catch(e){}
+    try { spawnDamageText(px || player.x, (py || player.y) - 18, `🛡 BLOCK ${petGuardianShield.charges}/${petGuardianShield.maxCharges}`, '#8ee7ff'); } catch(e){}
+    if (petGuardianShield.charges <= 0) {
+      petGuardianShield.expiresAt = 0;
+      try { spawnDamageText(player.x, player.y - player.size - 24, '보호막 소진', '#dffaff'); } catch(e){}
+    }
+    return;
+  }
+    playerHp = Math.max(0, playerHp - dmg);
   stageRunHits = (stageRunHits || 0) + 1;
   playerInvulnTimer = 1000;
 
@@ -8540,6 +9470,30 @@ let petSkillBursts = [];
 let petSkillStreams = [];
 let petSkillCooldowns = { left: 0, right: 0 };
 let petProductionTimers = { left: 0, right: 0 };
+// ✅ [v.221.35] 수호형 펫 전용 보호막 상태
+let petGuardianShield = { charges:0, maxCharges:0, expiresAt:0, durationMs:0, star:0, slot:null };
+
+function isPetGuardianShieldActive() { return !!(petGuardianShield && petGuardianShield.charges > 0); }
+function clearPetGuardianShield() {
+  petGuardianShield = { charges:0, maxCharges:0, expiresAt:0, durationMs:0, star:0, slot:null };
+}
+function getGuardianPetShieldDurationMs(star = 1) {
+  return ([0,3000,3500,4000,4500,5000][Math.max(1, Math.min(5, Number(star) || 1))] || 3000);
+}
+function getGuardianPetShieldCharges(star = 1) {
+  return ([0,1,1,2,2,3][Math.max(1, Math.min(5, Number(star) || 1))] || 1);
+}
+function castGuardianPetShield(slot, petData, color = '#8ee7ff', accent = '#effcff') {
+  const star = Math.max(1, Math.min(5, Number(petData?.star) || 1));
+  const durationMs = getGuardianPetShieldDurationMs(star);
+  const charges = getGuardianPetShieldCharges(star);
+  const now = performance.now();
+  petGuardianShield = { charges, maxCharges:charges, expiresAt:0, durationMs:0, star, slot };
+  petSkillStreams = petSkillStreams.filter(s => !(s && s.kind === 'guardianpet'));
+  petSkillStreams.push({ kind:'guardianpet', slot, petUid:petData.uid || 0, color, accent, life:Infinity, maxLife:Infinity });
+  spawnDamageText(player.x, player.y - player.size - 26, `🛡 보호막 ${charges}회`, color);
+}
+
 
 function getPetActiveSkillCooldownByStar(star, type = '') {
   const s = Math.max(1, Math.min(5, Number(star) || 1));
@@ -8548,6 +9502,11 @@ function getPetActiveSkillCooldownByStar(star, type = '') {
   }
   if (type === 'bombpet') return 2000;
   if (type === 'tornadopet') return 5000;
+  if (type === 'gustpet') return ([0,7000,6000,5000,4000,3000][s] || 7000);
+  if (type === 'lightningpet') return ([0,7000,6000,5000,4000,3000][s] || 7000);
+  if (type === 'freezepet') return ([0,8000,7000,6000,5000,4000][s] || 8000);
+  if (type === 'guardianpet') return ([0,12000,11000,10000,9000,8000][s] || 12000);
+  if (type === 'blackholepet') return ([0,10000,9000,8000,7000,6000][s] || 10000);
   switch (s) {
     case 1: return 6000;
     case 2: return 4000;
@@ -10172,8 +11131,12 @@ if (typeof saveData.weeklyQuest.key !== 'string') saveData.weeklyQuest.key = '';
 if (!Array.isArray(saveData.weeklyQuest.quests)) saveData.weeklyQuest.quests = [];
 if (typeof saveData.weeklyQuest.claimed !== 'object' || !saveData.weeklyQuest.claimed) saveData.weeklyQuest.claimed = {};
 
-if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '' };
+if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') saveData.dailyAttendance = { dateKey: '', day: 0, cycle: 1 };
 if (typeof saveData.dailyAttendance.dateKey !== 'string') saveData.dailyAttendance.dateKey = '';
+if (!Number.isFinite(Number(saveData.dailyAttendance.day))) saveData.dailyAttendance.day = 0;
+saveData.dailyAttendance.day = Math.max(0, Math.min(30, Math.floor(Number(saveData.dailyAttendance.day) || 0)));
+if (!Number.isFinite(Number(saveData.dailyAttendance.cycle)) || Number(saveData.dailyAttendance.cycle) < 1) saveData.dailyAttendance.cycle = 1;
+saveData.dailyAttendance.cycle = Math.max(1, Math.floor(Number(saveData.dailyAttendance.cycle) || 1));
 
 // ✅ 던전 저장값 보정 + 일일 리셋
 if (!saveData.dungeon || typeof saveData.dungeon !== 'object') saveData.dungeon = { dayKey: '', used: 0 };
@@ -10198,6 +11161,14 @@ if (typeof saveData.cosmetic.manual !== 'string') saveData.cosmetic.manual = 'no
 if (typeof saveData.gold !== 'number' || !isFinite(saveData.gold)) saveData.gold = 0;
 if (typeof saveData.goldEarned !== 'number' || !isFinite(saveData.goldEarned)) saveData.goldEarned = 0;
 if (typeof saveData.goldSpent !== 'number' || !isFinite(saveData.goldSpent)) saveData.goldSpent = 0;
+if (typeof saveData.cashCrystals !== 'number' || !isFinite(saveData.cashCrystals)) saveData.cashCrystals = 0;
+saveData.cashCrystals = Math.max(0, Math.floor(Number(saveData.cashCrystals) || 0));
+// ✅ [v.221.39] 테스트 빌드에서 넘어온 기존 캐릭터는 딱 한 번만 크리스탈을 0으로 초기화합니다.
+// 이후 획득한 크리스탈은 재접속해도 유지됩니다.
+if (saveData.cashCrystalProductionResetDone !== true) {
+  saveData.cashCrystals = 0;
+  saveData.cashCrystalProductionResetDone = true;
+}
 if (typeof saveData.playTimeSec !== 'number' || !isFinite(saveData.playTimeSec)) saveData.playTimeSec = 0;
 if (typeof saveData.totalMonsterKills !== 'number' || !isFinite(saveData.totalMonsterKills)) saveData.totalMonsterKills = 0;
 if (typeof saveData.totalBossKills !== 'number' || !isFinite(saveData.totalBossKills)) saveData.totalBossKills = 0;
@@ -11831,15 +12802,177 @@ function maybeShowNoticeOnTitle() {
   if (seen !== '1') openNoticeModal();
 }
 
-if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', claimDailyAttendanceReward);
+try { prepareAttendanceCycleIfNeeded(); } catch(e) {}
+if (dailyRewardBtn) dailyRewardBtn.addEventListener('click', openAttendanceModal);
+const attendanceClaimBtn = document.getElementById('attendanceClaimBtn');
+const attendanceCloseBtn = document.getElementById('attendanceCloseBtn');
+if (attendanceClaimBtn) attendanceClaimBtn.addEventListener('click', claimDailyAttendanceReward);
+if (attendanceCloseBtn) attendanceCloseBtn.addEventListener('click', closeAttendanceModal);
 if (openNoticeBtn) openNoticeBtn.addEventListener('click', openNoticeModal);
 if (closeNoticeBtn) closeNoticeBtn.addEventListener('click', closeNoticeModalFn);
 openQuestBtn.addEventListener('click', openQuestModal);
 closeQuestBtn.addEventListener('click', () => { stopQuestCountdown(); questModal.classList.add('hidden'); });
 
+function setShopMerchantText(message) {
+  const el = document.getElementById('shopMerchantText');
+  if (el) el.innerHTML = String(message || '').replace(/\n/g, '<br>');
+}
+function resetShopMerchantGreeting() {
+  setShopMerchantText('어서오세요! 상점에 오신 것을 환영합니다.<br>게임에 도움이 되는 다양한 아이템을 구경해보세요~~!');
+}
+function shopMerchantConfirm(itemName, price, currencyLabel = '골드', extra = '') {
+  const suffix = extra ? `\n${extra}` : '';
+  const msg = `${itemName}을(를) 구매하시겠어요?\n가격은 ${formatNumber(price)}${currencyLabel}(이)에요!${suffix}`;
+  setShopMerchantText(`${itemName}을(를) 구매하시겠어요?<br>가격은 <b style="color:#ffe487;">${formatNumber(price)}${currencyLabel}</b>(이)에요!`);
+  const ok = confirm(msg);
+  if (!ok) resetShopMerchantGreeting();
+  return ok;
+}
+function shopMerchantThanks() {
+  setShopMerchantText('감사합니다. 또 오세요~~!');
+  try { showToast('🟢 상점 슬라임: 감사합니다. 또 오세요~~!', '#9dffb5', 1800); } catch(e) {}
+}
+
+
+// ===== [v.221.43] 상점 슬라임 드로잉 / 상점 씬 게임캔버스 맞춤 =====
+function drawShopMerchantSlime(){
+  const c = document.getElementById('shopMerchantCanvas');
+  if (!c || !c.getContext) return;
+  const x = c.getContext('2d');
+  const W = c.width, H = c.height;
+  x.clearRect(0,0,W,H);
+  x.save();
+
+  // 기준 이미지처럼 밝은 연두색 아우라
+  const aura = x.createRadialGradient(W*0.5,H*0.56,8,W*0.5,H*0.56,W*0.48);
+  aura.addColorStop(0,'rgba(176,255,157,.35)');
+  aura.addColorStop(.68,'rgba(83,222,96,.17)');
+  aura.addColorStop(1,'rgba(83,222,96,0)');
+  x.fillStyle=aura;
+  x.beginPath(); x.ellipse(W*.5,H*.56,W*.49,H*.44,0,0,Math.PI*2); x.fill();
+
+  // 슬라임 몸체: 위 중앙이 뾰족하고 아래는 둥근 물방울/젤리 형태
+  x.beginPath();
+  x.moveTo(W*.50,H*.095);
+  x.bezierCurveTo(W*.455,H*.18, W*.405,H*.23, W*.32,H*.285);
+  x.bezierCurveTo(W*.19,H*.37, W*.12,H*.50, W*.13,H*.655);
+  x.bezierCurveTo(W*.145,H*.84, W*.29,H*.91, W*.50,H*.91);
+  x.bezierCurveTo(W*.71,H*.91, W*.855,H*.84, W*.87,H*.655);
+  x.bezierCurveTo(W*.88,H*.50, W*.81,H*.37, W*.68,H*.285);
+  x.bezierCurveTo(W*.595,H*.23, W*.545,H*.18, W*.50,H*.095);
+  x.closePath();
+
+  const body = x.createRadialGradient(W*.36,H*.31,8,W*.49,H*.55,W*.46);
+  body.addColorStop(0,'#a6ff86');
+  body.addColorStop(.34,'#55d95a');
+  body.addColorStop(.72,'#1cae43');
+  body.addColorStop(1,'#087f34');
+  x.fillStyle=body;
+  x.shadowColor='rgba(72,255,105,.55)';
+  x.shadowBlur=15;
+  x.fill();
+  x.shadowBlur=0;
+  x.lineWidth=Math.max(4,W*.021);
+  x.strokeStyle='rgba(231,255,219,.90)';
+  x.stroke();
+
+  // 몸체 안쪽 하이라이트
+  x.beginPath();
+  x.ellipse(W*.35,H*.34,W*.105,H*.17,-.45,0,Math.PI*2);
+  const hi=x.createRadialGradient(W*.32,H*.28,0,W*.35,H*.36,W*.14);
+  hi.addColorStop(0,'rgba(255,255,255,.58)');
+  hi.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=hi; x.fill();
+
+  // 눈: 기준 이미지의 큰 흰 눈 + 짙은 초록 동공
+  function eye(cx){
+    x.beginPath();
+    x.ellipse(cx,H*.45,W*.105,H*.135,0,0,Math.PI*2);
+    x.fillStyle='#f8fff4'; x.fill();
+    x.lineWidth=2.5; x.strokeStyle='rgba(16,112,50,.62)'; x.stroke();
+
+    x.beginPath();
+    x.ellipse(cx,H*.465,W*.053,H*.071,0,0,Math.PI*2);
+    x.fillStyle='#123a2b'; x.fill();
+
+    x.beginPath();
+    x.arc(cx-W*.016,H*.438,W*.014,0,Math.PI*2);
+    x.fillStyle='#ffffff'; x.fill();
+  }
+  eye(W*.365); eye(W*.635);
+
+  // 작은 미소
+  x.beginPath();
+  x.arc(W*.50,H*.625,W*.075,0.13*Math.PI,0.87*Math.PI);
+  x.lineWidth=Math.max(3,W*.018);
+  x.lineCap='round';
+  x.strokeStyle='#0b5d2c';
+  x.stroke();
+
+  // 아래쪽 반사광
+  x.beginPath();
+  x.ellipse(W*.50,H*.79,W*.24,H*.065,0,0,Math.PI*2);
+  x.fillStyle='rgba(126,255,136,.17)'; x.fill();
+
+  x.restore();
+}
+
+function fitShopSceneToGameCanvas(){
+  const modal = document.getElementById('shopModal');
+  const field = document.getElementById('gameCanvas');
+  if (!modal || !field) return;
+  const r = field.getBoundingClientRect();
+  if (!(r.width > 0 && r.height > 0)) return;
+  modal.style.setProperty('--shop-left', `${Math.round(r.left)}px`);
+  modal.style.setProperty('--shop-top', `${Math.round(r.top)}px`);
+  modal.style.setProperty('--shop-width', `${Math.round(r.width)}px`);
+  modal.style.setProperty('--shop-height', `${Math.round(r.height)}px`);
+}
+let shopFitRaf = 0;
+function scheduleShopSceneFit(){
+  cancelAnimationFrame(shopFitRaf);
+  shopFitRaf = requestAnimationFrame(() => {
+    fitShopSceneToGameCanvas();
+    drawShopMerchantSlime();
+  });
+}
+window.addEventListener('resize', () => {
+  if (document.body.classList.contains('shop-mode')) scheduleShopSceneFit();
+});
+window.addEventListener('orientationchange', () => {
+  if (document.body.classList.contains('shop-mode')) setTimeout(scheduleShopSceneFit,120);
+});
+
+let shopPreviousBgmName = null;
+let shopPreviousState = null;
+let shopPreviousGameMode = null;
+function getCurrentBgmTrackName() {
+  try {
+    for (const [name, track] of Object.entries(bgmTracks || {})) if (track === currentBgm) return name;
+  } catch(e) {}
+  return null;
+}
+function restoreBgmAfterShop() {
+  const back = shopPreviousBgmName || ((state === 'title') ? 'title' : (typeof getModeBgmName === 'function' ? getModeBgmName() : 'game'));
+  shopPreviousBgmName = null;
+  try { playBgmTrack(back); } catch(e) {}
+}
+
 closeShopBtn.addEventListener('click', () => {
+  shopMerchantThanks();
   stopShopAutoRefresh();
   shopModal.classList.add('hidden');
+  document.body.classList.remove('shop-mode');
+  const backState = shopPreviousState || 'title';
+  const backMode = shopPreviousGameMode || (backState === 'town' ? 'town' : 'stage');
+  state = backState;
+  gameMode = backMode;
+  shopPreviousState = null;
+  shopPreviousGameMode = null;
+  if (state === 'title') { document.body.classList.add('title-mode'); if (titleUI) titleUI.classList.remove('hidden'); }
+  else { document.body.classList.remove('title-mode'); if (titleUI) titleUI.classList.add('hidden'); }
+  restoreBgmAfterShop();
+  updateHUD();
 });
 
 let shopAutoRefreshTimer = null;
@@ -11863,7 +12996,22 @@ function startShopAutoRefresh() {
 function openShop() {
   stopProfileAutoRefresh();
   renderShop();
+  resetShopMerchantGreeting();
+  if (shopModal && shopModal.classList.contains('hidden')) {
+    shopPreviousBgmName = getCurrentBgmTrackName() || ((state === 'title') ? 'title' : (typeof getModeBgmName === 'function' ? getModeBgmName() : 'game'));
+    shopPreviousState = state;
+    shopPreviousGameMode = gameMode;
+  }
+  state = 'shop';
+  gameMode = 'shop';
+  isPaused = false;
+  document.body.classList.remove('title-mode','dead-mode','tutorial-mode');
+  document.body.classList.add('shop-mode');
+  if (titleUI) titleUI.classList.add('hidden');
   shopModal.classList.remove('hidden');
+  scheduleShopSceneFit();
+  setTimeout(scheduleShopSceneFit, 60);
+  try { playBgmTrack('shop'); } catch(e) {}
   startShopAutoRefresh();
   showContextTutorial('shop', [
     '상점 화면입니다. 회복 아이템, 경험치 팩, 성장에 필요한 소모품을 구매할 수 있습니다.',
@@ -12285,6 +13433,9 @@ function buyConsumableItem(itemKey) {
   const qty = qtyInfo.qty;
   const cost = Math.max(0, Math.floor(Number(item.price) || 0)) * qty;
   if (gold < cost) return { ok:false, msg:`골드가 부족합니다. 필요 골드: ${formatNumber(cost)}G` };
+  if (!shopMerchantConfirm(`${item.title} ${formatNumber(qty)}개`, cost, '골드')) {
+    return { ok:false, cancelled:true, msg:'구매를 취소했습니다.' };
+  }
 
   gold -= cost;
   saveData.goldSpent = (saveData.goldSpent || 0) + cost;
@@ -12933,9 +14084,11 @@ function renderShop() {
   eggBtn.textContent = `펫 알 구매 (${formatNumber(PET_EGG_COST)}G)`;
   eggBtn.disabled = gold < PET_EGG_COST;
   eggBtn.addEventListener('click', () => {
+    if (!shopMerchantConfirm('펫 알', PET_EGG_COST, '골드')) return;
     const r = hatchPetEgg();
     if (!r.ok) { alert(r.msg); return; }
     showToast(r.msg, PET_STAR_COLORS[r.pet.star] || '#7ce7ff', 1400);
+    resetShopMerchantGreeting();
     renderShop();
     renderInventoryContent();
     if (!profileModal.classList.contains('hidden')) openProfile(true);
@@ -12955,6 +14108,165 @@ function renderShop() {
   petWrap.appendChild(petRecent);
 
   shopListEl.appendChild(petWrap);
+
+  const crystalWrap = document.createElement('div');
+  crystalWrap.style.border = '1px solid rgba(154,232,255,0.38)';
+  crystalWrap.style.borderRadius = '12px';
+  crystalWrap.style.padding = '10px';
+  crystalWrap.style.background = 'linear-gradient(180deg, rgba(34,79,110,0.20), rgba(9,24,40,0.36))';
+  crystalWrap.style.display = 'flex';
+  crystalWrap.style.flexDirection = 'column';
+  crystalWrap.style.gap = '8px';
+
+  const crystalBal = getCashCrystalBalance();
+  crystalWrap.innerHTML = `
+    <div style="font-weight:1000; font-size:15px; color:#c9f7ff;">💠 크리스탈 상점</div>
+    <div style="font-size:12px; color:#dff8ff; line-height:1.6;">
+      보유 크리스탈: <b style="color:#8ff4ff;">${formatNumber(crystalBal)}개</b><br>
+      크리스탈은 일반 몬스터가 드랍하는 보석과 <b>완전히 다른 희귀 캐시 재화</b>입니다.
+      출석 등 제한된 경로에서만 획득할 수 있습니다.<br>
+      환전: 크리스탈 1개 → <b>${formatNumber(CASH_CRYSTAL_TO_GOLD_RATE)}G</b>
+    </div>
+    <button class="ui-btn" id="crystalExchange1" ${crystalBal < 1 ? 'disabled' : ''}>💠 1개 → ${formatNumber(CASH_CRYSTAL_TO_GOLD_RATE)}G 환전</button>
+    <div style="margin-top:2px; font-weight:900; color:#e5fbff;">💨 돌풍형 펫 · 크리스탈 전용</div>
+    <div style="font-size:11px; color:#cfdcff; line-height:1.55;">
+      3초 동안 거대한 바람을 일으켜 일반 몬스터를 부드럽게 뒤로 밀어내며 피해를 줍니다.<br>
+      피해: 1성 50% · 2성 80% · 3성 120% · 4성 200% · 5성 300%<br>
+      쿨타임: 7초 · 6초 · 5초 · 4초 · 3초
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;">
+      ${[1,2,3,4,5].map(star => {
+        const cost = GUST_PET_CRYSTAL_COSTS[star];
+        return `<button class="ui-btn" data-buy-gust-star="${star}" ${crystalBal < cost ? 'disabled' : ''}
+          style="padding:7px 3px; font-size:10px; border-color:${PET_STAR_COLORS[star] || '#fff'};">
+          ${star}성<br>${cost}💠
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:7px; font-weight:900; color:#fff8a8;">⚡ 번개형 펫 · 크리스탈 전용</div>
+    <div style="font-size:11px; color:#fffbd1; line-height:1.55;">
+      가장 가까운 적을 시작으로 주변 몬스터에게 번개가 연쇄됩니다.<br>
+      연쇄 대상: 1성 3마리 · 2성 4마리 · 3성 5마리 · 4성 6마리 · 5성 8마리<br>
+      대상당 피해: 공격력 60% · 80% · 100% · 130% · 160% / 쿨타임 7초 · 6초 · 5초 · 4초 · 3초
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;">
+      ${[1,2,3,4,5].map(star => {
+        const cost = LIGHTNING_PET_CRYSTAL_COSTS[star];
+        return `<button class="ui-btn" data-buy-lightning-star="${star}" ${crystalBal < cost ? 'disabled' : ''}
+          style="padding:7px 3px; font-size:10px; border-color:${PET_STAR_COLORS[star] || '#fff'};">
+          ${star}성<br>${cost}💠
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:7px; font-weight:900; color:#bfefff;">🧊 빙결형 펫 · 크리스탈 전용</div>
+    <div style="font-size:11px; color:#e5f9ff; line-height:1.55;">
+      일정 범위의 일반 몬스터를 얼려 이동과 탄환 발사를 완전히 멈춥니다. 보스는 빙결되지 않습니다.<br>
+      빙결 시간: 1성 2초 · 2성 2.5초 · 3성 3초 · 4성 3.5초 · 5성 4초<br>
+      범위: 170 · 195 · 220 · 245 · 270 / 쿨타임 8초 · 7초 · 6초 · 5초 · 4초
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;">
+      ${[1,2,3,4,5].map(star => {
+        const cost = FREEZE_PET_CRYSTAL_COSTS[star];
+        return `<button class="ui-btn" data-buy-freeze-star="${star}" ${crystalBal < cost ? 'disabled' : ''}
+          style="padding:7px 3px; font-size:10px; border-color:${PET_STAR_COLORS[star] || '#fff'};">
+          ${star}성<br>${cost}💠
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:7px; font-weight:900; color:#bfefff;">🛡️ 수호형 펫 · 크리스탈 전용</div>
+    <div style="font-size:11px; color:#effcff; line-height:1.55;">
+      플레이어 주변에 보호막을 생성하여 적의 공격 피해와 상태이상을 함께 막습니다.<br>
+      방어 횟수: 1성 1회 · 2성 1회 · 3성 2회 · 4성 2회 · 5성 3회<br>
+      보호막은 피격으로 방어 횟수를 모두 소모할 때까지 유지 / 쿨타임 12초 · 11초 · 10초 · 9초 · 8초
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;">
+      ${[1,2,3,4,5].map(star => {
+        const cost = GUARDIAN_PET_CRYSTAL_COSTS[star];
+        return `<button class="ui-btn" data-buy-guardian-star="${star}" ${crystalBal < cost ? 'disabled' : ''}
+          style="padding:7px 3px; font-size:10px; border-color:${PET_STAR_COLORS[star] || '#fff'};">
+          ${star}성<br>${cost}💠
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:7px; font-weight:900; color:#d6c0ff;">🕳️ 블랙홀형 펫 · 크리스탈 전용</div>
+    <div style="font-size:11px; color:#f0e4ff; line-height:1.55;">
+      3초 동안 블랙홀을 생성해 범위 안의 일반 몬스터를 강하게, 부드러운 관성으로 중심까지 끌어당기며 지속 피해를 줍니다. 보스는 끌려오지 않고 피해만 받습니다.<br>
+      범위: 1성 150 · 2성 180 · 3성 210 · 4성 245 · 5성 280<br>
+      틱당 피해: 공격력 18% · 24% · 32% · 42% · 55% / 쿨타임 10초 · 9초 · 8초 · 7초 · 6초
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;">
+      ${[1,2,3,4,5].map(star => {
+        const cost = BLACKHOLE_PET_CRYSTAL_COSTS[star];
+        return `<button class="ui-btn" data-buy-blackhole-star="${star}" ${crystalBal < cost ? 'disabled' : ''}
+          style="padding:7px 3px; font-size:10px; border-color:${PET_STAR_COLORS[star] || '#fff'};">
+          ${star}성<br>${cost}💠
+        </button>`;
+      }).join('')}
+    </div>
+  `;
+  const ex1 = crystalWrap.querySelector('#crystalExchange1');
+  if (ex1) ex1.addEventListener('click', () => {
+    const r = exchangeCashCrystalToGold(1);
+    showToast(r.msg, r.ok ? '#8ff4ff' : '#ffb0b0', 1600);
+    renderShop(); renderInventoryContent(); updateHUD();
+  });
+  crystalWrap.querySelectorAll('[data-buy-gust-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-buy-gust-star')) || 1;
+      if (!shopMerchantConfirm(`${star}성 돌풍형 펫`, GUST_PET_CRYSTAL_COSTS[star] || 5, '크리스탈')) return;
+      const r = purchaseGustPetWithCrystals(star);
+      showToast(r.msg, r.ok ? (PET_STAR_COLORS[star] || '#8ff4ff') : '#ffb0b0', 1800);
+      if (r.ok && r.pet) { try { playPetBirthAnimation(r.pet); } catch(e) {} }
+      if (r.ok) resetShopMerchantGreeting();
+      renderShop(); renderInventoryContent(); updateHUD();
+    });
+  });
+  crystalWrap.querySelectorAll('[data-buy-lightning-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-buy-lightning-star')) || 1;
+      if (!shopMerchantConfirm(`${star}성 번개형 펫`, LIGHTNING_PET_CRYSTAL_COSTS[star] || 5, '크리스탈')) return;
+      const r = purchaseLightningPetWithCrystals(star);
+      showToast(r.msg, r.ok ? (PET_STAR_COLORS[star] || '#fff36b') : '#ffb0b0', 1800);
+      if (r.ok && r.pet) { try { playPetBirthAnimation(r.pet); } catch(e) {} }
+      if (r.ok) resetShopMerchantGreeting();
+      renderShop(); renderInventoryContent(); updateHUD();
+    });
+  });
+  crystalWrap.querySelectorAll('[data-buy-freeze-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-buy-freeze-star')) || 1;
+      if (!shopMerchantConfirm(`${star}성 빙결형 펫`, FREEZE_PET_CRYSTAL_COSTS[star] || 5, '크리스탈')) return;
+      const r = purchaseFreezePetWithCrystals(star);
+      showToast(r.msg, r.ok ? (PET_STAR_COLORS[star] || '#9fe8ff') : '#ffb0b0', 1800);
+      if (r.ok && r.pet) { try { playPetBirthAnimation(r.pet); } catch(e) {} }
+      if (r.ok) resetShopMerchantGreeting();
+      renderShop(); renderInventoryContent(); updateHUD();
+    });
+  });
+  crystalWrap.querySelectorAll('[data-buy-guardian-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-buy-guardian-star')) || 1;
+      if (!shopMerchantConfirm(`${star}성 수호형 펫`, GUARDIAN_PET_CRYSTAL_COSTS[star] || 5, '크리스탈')) return;
+      const r = purchaseGuardianPetWithCrystals(star);
+      showToast(r.msg, r.ok ? (PET_STAR_COLORS[star] || '#8ee7ff') : '#ffb0b0', 1800);
+      if (r.ok && r.pet) { try { playPetBirthAnimation(r.pet); } catch(e) {} }
+      if (r.ok) resetShopMerchantGreeting();
+      renderShop(); renderInventoryContent(); updateHUD();
+    });
+  });
+  crystalWrap.querySelectorAll('[data-buy-blackhole-star]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = Number(btn.getAttribute('data-buy-blackhole-star')) || 1;
+      if (!shopMerchantConfirm(`${star}성 블랙홀형 펫`, BLACKHOLE_PET_CRYSTAL_COSTS[star] || 5, '크리스탈')) return;
+      const r = purchaseBlackholePetWithCrystals(star);
+      showToast(r.msg, r.ok ? (PET_STAR_COLORS[star] || '#b58cff') : '#ffb0b0', 1800);
+      if (r.ok && r.pet) { try { playPetBirthAnimation(r.pet); } catch(e) {} }
+      if (r.ok) resetShopMerchantGreeting();
+      renderShop(); renderInventoryContent(); updateHUD();
+    });
+  });
+  shopListEl.appendChild(crystalWrap);
+
 
   const entries = [
     { buffKey:'exp',   title:'📈 경험치 증가율', note:`${Math.round((SHOP_CONFIG.exp.mult - 1) * 100)}%`,   costs:SHOP_CONFIG.exp.costs,   mult:SHOP_CONFIG.exp.mult },
@@ -13015,6 +14327,7 @@ function renderShop() {
         const r = applyBuff(it.buffKey, min, it.mult, cost);
         if (!r.ok) { alert(r.msg); return; }
         showToast(`${it.title} ${min}분 구매 완료!`, '#7ce7ff', 1200);
+        resetShopMerchantGreeting();
         renderShop();
       });
       btnRow.appendChild(btn);
@@ -13067,6 +14380,7 @@ function renderShop() {
     btn.addEventListener('click', () => {
       const r = buyConsumableItem(key);
       if (!r.cancelled) alert(r.msg);
+      if (r.ok) resetShopMerchantGreeting();
       renderShop();
       renderInventoryContent();
       if (!profileModal.classList.contains('hidden')) openProfile(true);
@@ -13121,6 +14435,7 @@ function renderShop() {
   buyBtn.textContent = `1회 뽑기 · ${formatNumber(EXP_GACHA.cost)}G`;
   buyBtn.disabled = gold < EXP_GACHA.cost;
   buyBtn.addEventListener('click', () => {
+    if (!shopMerchantConfirm('경험치 뽑기 1회', EXP_GACHA.cost, '골드')) return;
     doExpGachaOnce();
     renderShop();
   });
@@ -13135,6 +14450,7 @@ buy5Btn.style.flex = '1.2';
 buy5Btn.textContent = `5회 뽑기 · ${formatNumber(EXP_GACHA.cost * 5)}G`;
 buy5Btn.disabled = gold < (EXP_GACHA.cost * 5);
 buy5Btn.addEventListener('click', async () => {
+  if (!shopMerchantConfirm('경험치 뽑기 5회', EXP_GACHA.cost * 5, '골드')) return;
   await doExpGachaFive();
   renderShop();
 });
@@ -16108,6 +17424,52 @@ function drawTownMoon(date, t, period){
   ctx.restore();
 }
 
+
+function drawShopScreen(timestamp){
+  const t=timestamp||performance.now();
+  ctx.save();
+  // 따뜻한 목조 상점 실내
+  const wall=ctx.createLinearGradient(0,0,0,height);
+  wall.addColorStop(0,'#6b4126'); wall.addColorStop(.62,'#3d271c'); wall.addColorStop(1,'#241713');
+  ctx.fillStyle=wall; ctx.fillRect(0,0,width,height);
+  // 나무 판자
+  ctx.strokeStyle='rgba(255,210,135,.12)'; ctx.lineWidth=2;
+  for(let y=42;y<height*.72;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();}
+  for(let x=70;x<width;x+=150){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height*.72);ctx.stroke();}
+  // 상단 천막
+  const awnH=Math.max(54,height*.105), stripe=Math.max(54,width/12);
+  for(let x=0,n=0;x<width;x+=stripe,n++){
+    ctx.fillStyle=n%2===0?'#b94335':'#efd18b'; ctx.fillRect(x,0,stripe+1,awnH);
+  }
+  ctx.fillStyle='rgba(75,35,18,.34)'; ctx.fillRect(0,awnH-7,width,10);
+  // 선반
+  function shelf(y){
+    ctx.fillStyle='#8b572f';ctx.fillRect(width*.07,y,width*.86,14);
+    ctx.fillStyle='#4b2b19';ctx.fillRect(width*.08,y+14,width*.84,8);
+  }
+  shelf(height*.29); shelf(height*.49);
+  // 포션/병 장식
+  const bottles=[['#ff6b75',.12,.22],['#73d9ff',.20,.21],['#8dff8d',.29,.225],['#ffd66b',.72,.22],['#c797ff',.81,.21],['#ff9d62',.89,.225],
+                 ['#75e5ff',.13,.42],['#ff75b8',.22,.415],['#9dff7a',.78,.42],['#ffe071',.87,.415]];
+  for(const [c,px,py] of bottles){
+    const x=width*px,y=height*py,w=Math.max(16,width*.024),h=Math.max(25,height*.05);
+    ctx.fillStyle='rgba(245,231,190,.8)';ctx.fillRect(x-w*.22,y-h*.22,w*.44,h*.22);
+    ctx.fillStyle=c;ctx.beginPath();ctx.roundRect(x-w/2,y,w,h,5);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.34)';ctx.fillRect(x-w*.25,y+4,3,h*.52);
+  }
+  // 중앙 간판
+  const signW=Math.min(width*.42,360),signH=Math.max(50,height*.085),sx=(width-signW)/2,sy=awnH+16;
+  ctx.fillStyle='#4b2b19';ctx.strokeStyle='#d7a65b';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(sx,sy,signW,signH,12);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff0b3';ctx.font=`900 ${Math.max(20,Math.floor(width*.031))}px ${getUIFontFamily()}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('SLIME SHOP',width/2,sy+signH/2);
+  // 카운터
+  const cy=height*.69;ctx.fillStyle='#7b4728';ctx.fillRect(0,cy,width,height-cy);
+  ctx.fillStyle='#b8783e';ctx.fillRect(0,cy,width,18);ctx.fillStyle='rgba(255,222,164,.12)';ctx.fillRect(0,cy+20,width,5);
+  // 은은한 램프 빛
+  const glow=ctx.createRadialGradient(width*.5,height*.28,10,width*.5,height*.28,width*.42);
+  glow.addColorStop(0,'rgba(255,206,107,.18)');glow.addColorStop(1,'rgba(255,180,70,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+  ctx.restore();
+}
+
 function drawTownScreen(timestamp){
   const t = timestamp || performance.now();
   const now = new Date();
@@ -17021,44 +18383,78 @@ function getLocalDateKey(d = new Date()) {
 }
 
 
-function getDailyAttendanceRewardTables() {
-  return {
-    // [v.221.18] 몬스터 EXP 상향에 맞춰 출석의 직접 EXP 지급을 제거하고
-    // 플레이를 통해 활용하는 경험치 쿠폰 보상으로 변경합니다.
-    coupon: [
-      { value: 'expCoupon15', chance: 70 },
-      { value: 'expCoupon2',  chance: 25 },
-      { value: 'expCoupon3',  chance: 5 }
-    ],
-    gold: [
-      { value: 10, chance: 60 },
-      { value: 100, chance: 20 },
-      { value: 1000, chance: 15 },
-      { value: 10000, chance: 5 }
-    ]
-  };
+// ===============================
+ // ✅ [v.221.31] 30일 누적 출석 보상
+ // - 브라우저 alert 제거
+ // - 1~30일 보상을 게임 내 출석판에 표시
+ // - 7/14/21/28일 중간 보너스, 30일차 GRAND REWARD
+ // ===============================
+function getDailyAttendanceRewards30() {
+  // [v.221.32] 크리스탈은 희귀 캐시 재화: 일부 날짜에만 소량 지급
+  return [
+    { day:1,  coupon:'expCoupon15', couponQty:1, gold:500 },
+    { day:2,  item:'smallPotion', itemQty:3, gold:1000 },
+    { day:3,  coupon:'expCoupon15', couponQty:1, gold:1500 },
+    { day:4,  item:'antidote', itemQty:2, gold:2000 },
+    { day:5,  coupon:'expCoupon2', couponQty:1, gold:2500 },
+    { day:6,  item:'largePotion', itemQty:2, gold:3000 },
+    { day:7,  pet:{ type:'random', star:1 }, gold:5000, milestone:true },
+
+    { day:8,  coupon:'expCoupon15', couponQty:2, gold:4000 },
+    { day:9,  item:'largePotion', itemQty:3, gold:5000 },
+    { day:10, crystal:1, coupon:'expCoupon2', couponQty:1, gold:6000, rare:true },
+    { day:11, item:'expSmallPack', itemQty:1, gold:7000 },
+    { day:12, coupon:'expCoupon15', couponQty:2, gold:8000 },
+    { day:13, item:'largePotion', itemQty:4, gold:9000 },
+    { day:14, pet:{ type:'random', star:2 }, coupon:'expCoupon2', couponQty:1, gold:15000, milestone:true },
+
+    { day:15, coupon:'expCoupon3', couponQty:1, gold:15000 },
+    { day:16, item:'expMediumPack', itemQty:1, gold:17000 },
+    { day:17, coupon:'expCoupon2', couponQty:2, gold:20000 },
+    { day:18, item:'largePotion', itemQty:5, gold:22000 },
+    { day:19, coupon:'expCoupon3', couponQty:1, gold:25000 },
+    { day:20, crystal:2, gold:30000, rare:true },
+    { day:21, pet:{ type:'random', star:3 }, coupon:'expCoupon3', couponQty:1, gold:40000, milestone:true },
+
+    { day:22, item:'expMediumPack', itemQty:2, gold:35000 },
+    { day:23, coupon:'expCoupon2', couponQty:3, gold:40000 },
+    { day:24, item:'largePotion', itemQty:7, gold:45000 },
+    { day:25, crystal:2, coupon:'expCoupon3', couponQty:1, gold:50000, rare:true },
+    { day:26, item:'expMediumPack', itemQty:2, gold:60000 },
+    { day:27, coupon:'expCoupon3', couponQty:2, gold:75000 },
+    { day:28, pet:{ type:'random', star:4 }, crystal:2, gold:100000, milestone:true, rare:true },
+    { day:29, coupon:'expCoupon3', couponQty:3, item:'expMediumPack', itemQty:2, gold:150000 },
+
+    // 30일차 GRAND REWARD
+    { day:30, coupon:'expCoupon3', couponQty:5, pet:{ type:'random', star:4 }, crystal:10, gold:1000000, milestone:true, grand:true, rare:true }
+  ];
 }
 
-function rollWeightedDailyAttendanceItem(table) {
-  const r = Math.random() * 100;
-  let acc = 0;
-  for (const item of table) {
-    acc += Number(item.chance || 0);
-    if (r < acc) return String(item.value || 'expCoupon15');
-  }
-  const last = table && table.length ? table[table.length - 1] : null;
-  return String(last && last.value || 'expCoupon15');
+function getAttendanceRewardForDay(day) {
+  const d = Math.max(1, Math.min(30, Math.floor(Number(day) || 1)));
+  return getDailyAttendanceRewards30().find(r => r.day === d) || getDailyAttendanceRewards30()[0];
 }
 
-function rollWeightedDailyAttendanceReward(table) {
-  const r = Math.random() * 100;
-  let acc = 0;
-  for (const item of table) {
-    acc += Number(item.chance || 0);
-    if (r < acc) return Math.floor(Number(item.value || 0));
+function getAttendanceCouponName(reward) {
+  if (!reward || !reward.coupon || !reward.couponQty) return '';
+  const def = (typeof DIMENSION_ITEM_DEFS_V182 !== 'undefined') ? DIMENSION_ITEM_DEFS_V182[reward.coupon] : null;
+  return def ? def.name : '경험치 쿠폰';
+}
+
+function getAttendanceRewardSummary(reward) {
+  if (!reward) return '';
+  const parts = [];
+  const couponName = getAttendanceCouponName(reward);
+  if (couponName && reward.couponQty > 0) parts.push(`🎟️ ${couponName} ×${reward.couponQty}`);
+  if (reward.item && reward.itemQty > 0) {
+    const cat = (typeof getConsumableCatalog === 'function') ? getConsumableCatalog() : {};
+    const itemName = cat[reward.item]?.title || reward.item;
+    parts.push(`🎒 ${itemName} ×${reward.itemQty}`);
   }
-  const last = table && table.length ? table[table.length - 1] : null;
-  return Math.floor(Number(last && last.value || 0));
+  if (reward.pet) parts.push(`🐾 ${reward.pet.star}성 펫`);
+  if (reward.crystal > 0) parts.push(`💠 크리스탈 ×${reward.crystal}`);
+  if (reward.gold > 0) parts.push(`💰 ${formatNumber(reward.gold)} 골드`);
+  return parts.join(' + ');
 }
 
 function canClaimDailyAttendanceReward() {
@@ -17067,42 +18463,180 @@ function canClaimDailyAttendanceReward() {
   return claimedKey !== todayKey;
 }
 
+function getNextAttendanceDay() {
+  const current = Math.max(0, Math.min(30, Math.floor(Number(saveData?.dailyAttendance?.day) || 0)));
+  // 30일차까지 받은 다음 날부터 새 출석판 1일차 시작
+  return current >= 30 ? 1 : current + 1;
+}
+
 function refreshDailyRewardButton() {
   if (!dailyRewardBtn) return;
   const canClaim = canClaimDailyAttendanceReward();
-  dailyRewardBtn.disabled = !canClaim;
-  dailyRewardBtn.textContent = canClaim ? '📦 출석 보상' : '✅ 오늘 출석 완료';
-  dailyRewardBtn.style.opacity = canClaim ? '1' : '0.72';
+  const nextDay = getNextAttendanceDay();
+  // 출석 완료 후에도 30일 보상표를 다시 열어볼 수 있도록 버튼을 비활성화하지 않습니다.
+  dailyRewardBtn.disabled = false;
+  dailyRewardBtn.textContent = canClaim ? `📅 출석 보상 (${nextDay}일차)` : '✅ 오늘 출석 완료 · 보상표';
+  dailyRewardBtn.style.opacity = '1';
+}
+
+function renderAttendanceBoard() {
+  const modal = document.getElementById('attendanceModal');
+  const grid = document.getElementById('attendanceGrid');
+  const progress = document.getElementById('attendanceProgressText');
+  const claimBtn = document.getElementById('attendanceClaimBtn');
+  const result = document.getElementById('attendanceResult');
+  if (!modal || !grid || !progress || !claimBtn || !result) return;
+
+  const currentDay = Math.max(0, Math.min(30, Math.floor(Number(saveData?.dailyAttendance?.day) || 0)));
+  const cycle = Math.max(1, Math.floor(Number(saveData?.dailyAttendance?.cycle) || 1));
+  const canClaim = canClaimDailyAttendanceReward();
+  const nextDay = getNextAttendanceDay();
+  const boardClaimedThrough = currentDay >= 30 && nextDay === 1 ? 0 : currentDay;
+
+  progress.textContent = `${cycle}회차 · ${currentDay}/30일 출석 완료${canClaim ? ` · 오늘 ${nextDay}일차 보상 수령 가능` : ' · 오늘 출석 완료'}`;
+
+  grid.innerHTML = getDailyAttendanceRewards30().map(reward => {
+    const isClaimed = reward.day <= boardClaimedThrough;
+    const isToday = canClaim && reward.day === nextDay;
+    const classes = [
+      'attendance-day',
+      isClaimed ? 'claimed' : '',
+      isToday ? 'today' : '',
+      reward.milestone ? 'milestone' : '',
+      reward.rare ? 'rare' : '',
+      reward.grand ? 'final-reward' : ''
+    ].filter(Boolean).join(' ');
+
+    const couponName = getAttendanceCouponName(reward);
+    const itemCatalog = (typeof getConsumableCatalog === 'function') ? getConsumableCatalog() : {};
+    const itemName = reward.item ? (itemCatalog[reward.item]?.title || reward.item) : '';
+    let icon = reward.grand ? '👑'
+      : reward.crystal ? '💠'
+      : reward.pet ? '🐾'
+      : reward.item ? '🎒'
+      : reward.coupon ? '🎟️' : '💰';
+    const primaryParts = [];
+    if (reward.pet) primaryParts.push(`${reward.pet.star}성 펫`);
+    if (reward.crystal) primaryParts.push(`크리스탈 ×${reward.crystal}`);
+    if (reward.coupon && reward.couponQty) primaryParts.push(`${couponName} ×${reward.couponQty}`);
+    if (reward.item && reward.itemQty) primaryParts.push(`${itemName} ×${reward.itemQty}`);
+    const rewardName = primaryParts.slice(0,2).join(' · ') || '골드 보상';
+    const badge = reward.grand ? '<span class="attendance-final-badge">초대형 보상</span>' : '';
+
+    return `<div class="${classes}">
+      <div class="day-label">${reward.day}일차</div>
+      <div class="reward-icon">${icon}</div>
+      <div class="reward-name">${rewardName}</div>
+      <div class="reward-gold">💰 ${formatNumber(reward.gold || 0)}</div>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  claimBtn.disabled = !canClaim;
+  claimBtn.textContent = canClaim ? `🎁 ${nextDay}일차 보상 받기` : '✅ 오늘 보상 수령 완료';
+
+  if (!result.classList.contains('reward-won')) {
+    const todayReward = getAttendanceRewardForDay(nextDay);
+    result.textContent = canClaim
+      ? `오늘 받을 보상: ${getAttendanceRewardSummary(todayReward)}`
+      : '오늘의 출석 보상을 이미 받았습니다. 내일 다시 만나요!';
+  }
+
+  // 오늘 칸이 보이도록 자동 스크롤
+  requestAnimationFrame(() => {
+    const todayCell = grid.querySelector('.attendance-day.today');
+    if (todayCell && typeof todayCell.scrollIntoView === 'function') {
+      try { todayCell.scrollIntoView({ block:'nearest', behavior:'smooth' }); } catch(e) {}
+    }
+  });
+}
+
+function openAttendanceModal() {
+  const modal = document.getElementById('attendanceModal');
+  const result = document.getElementById('attendanceResult');
+  if (!modal) return;
+  if (result) result.classList.remove('reward-won');
+
+  // 다른 주요 모달과 겹치지 않도록 닫습니다.
+  try { if (typeof noticeModal !== 'undefined' && noticeModal) noticeModal.classList.add('hidden'); } catch(e){}
+  try { if (typeof questModal !== 'undefined' && questModal) questModal.classList.add('hidden'); } catch(e){}
+  try { if (typeof stageModal !== 'undefined' && stageModal) stageModal.classList.add('hidden'); } catch(e){}
+  try { if (typeof modeModal !== 'undefined' && modeModal) modeModal.classList.add('hidden'); } catch(e){}
+
+  modal.classList.remove('hidden');
+  renderAttendanceBoard();
+}
+
+function closeAttendanceModal() {
+  const modal = document.getElementById('attendanceModal');
+  if (modal) modal.classList.add('hidden');
 }
 
 function claimDailyAttendanceReward() {
   if (!canClaimDailyAttendanceReward()) {
-    alert('오늘은 이미 출석 보상을 받았습니다.');
-    refreshDailyRewardButton();
+    renderAttendanceBoard();
     return;
   }
 
-  const tables = getDailyAttendanceRewardTables();
-  const couponType = rollWeightedDailyAttendanceItem(tables.coupon);
-  const goldReward = rollWeightedDailyAttendanceReward(tables.gold);
+  const rewardDay = getNextAttendanceDay();
+  const reward = getAttendanceRewardForDay(rewardDay);
+  if (!reward) return;
 
-  // 기존 디멘션 인벤토리의 경험치 쿠폰 시스템을 그대로 재사용합니다.
-  addDimensionItemV182(couponType, 1);
-  const couponDef = DIMENSION_ITEM_DEFS_V182[couponType];
-  const couponName = couponDef ? couponDef.name : '경험치 쿠폰';
+  if (reward.coupon && reward.couponQty > 0) {
+    addDimensionItemV182(reward.coupon, reward.couponQty);
+  }
+  if (reward.item && reward.itemQty > 0) {
+    const inv = getInventorySafe();
+    inv[reward.item] = Math.max(0, Math.floor(inv[reward.item] || 0)) + Math.max(1, Math.floor(Number(reward.itemQty) || 1));
+  }
+  if (reward.crystal && reward.crystal > 0) {
+    addCashCrystals(reward.crystal);
+  }
+  let attendancePet = null;
+  if (reward.pet) {
+    const petType = reward.pet.type === 'random' ? rollPetType() : reward.pet.type;
+    attendancePet = grantPetDirect(petType, reward.pet.star || 1, 'attendance');
+    try { playPetBirthAnimation(attendancePet); } catch(e) {}
+  }
 
-  gold = Math.max(0, Math.floor(gold || 0) + goldReward);
-  saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + goldReward);
+  gold = Math.max(0, Math.floor(gold || 0) + Math.max(0, Math.floor(Number(reward.gold) || 0)));
+  saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + Math.max(0, Math.floor(Number(reward.gold) || 0)));
+
+  if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') {
+    saveData.dailyAttendance = { dateKey:'', day:0, cycle:1 };
+  }
   saveData.dailyAttendance.dateKey = getLocalDateKey();
+  saveData.dailyAttendance.day = rewardDay;
+
+  // 30일 완주 시 다음 수령은 새 회차 1일차이며, 현재 화면에서는 30일 완료 상태를 유지합니다.
+  if (rewardDay === 30) {
+    saveData.dailyAttendance.cycle = Math.max(1, Math.floor(Number(saveData.dailyAttendance.cycle) || 1));
+  }
+
   saveGameData();
   updateHUD();
   refreshDailyRewardButton();
 
-  alert(`출석 보상 획득!
-🎟️ ${couponName} ×1
-골드 +${formatNumber(goldReward)}
+  const result = document.getElementById('attendanceResult');
+  if (result) {
+    const grandText = reward.grand ? ' 👑 30일 완주 GRAND REWARD!' : '';
+    result.textContent = `획득 완료! ${getAttendanceRewardSummary(reward)}${grandText}`;
+    result.classList.add('reward-won');
+  }
 
-쿠폰은 인벤토리에서 원하는 때 사용할 수 있습니다.`);
+  renderAttendanceBoard();
+}
+
+function prepareAttendanceCycleIfNeeded() {
+  // 30일차를 이전 날짜에 수령했다면 새 회차를 시작할 준비를 합니다.
+  if (!saveData.dailyAttendance || typeof saveData.dailyAttendance !== 'object') return;
+  const day = Math.max(0, Math.min(30, Math.floor(Number(saveData.dailyAttendance.day) || 0)));
+  if (day !== 30) return;
+  if (!canClaimDailyAttendanceReward()) return;
+
+  saveData.dailyAttendance.day = 0;
+  saveData.dailyAttendance.cycle = Math.max(1, Math.floor(Number(saveData.dailyAttendance.cycle) || 1)) + 1;
+  saveGameData();
 }
 
 function ensureDungeonDailyReset() {
@@ -17781,7 +19315,12 @@ const PET_DEFS = {
   piercepet: { id:'piercepet', name:'관통형 펫',   icon:'🗡️', color:'#ffc46b', accent:'#fff2d0', ability:'piercepet' },
   laserpet:  { id:'laserpet',  name:'레이저형 펫', icon:'🔺', color:'#ff6ad5', accent:'#ffd8f5', ability:'laserpet'  },
   bombpet:   { id:'bombpet',   name:'폭탄형 펫',   icon:'💣', color:'#ffb347', accent:'#fff0bf', ability:'bombpet'   },
-  tornadopet:{ id:'tornadopet',name:'토네이도형 펫', icon:'🌪️', color:'#9beeff', accent:'#e8fbff', ability:'tornadopet'}
+  tornadopet:{ id:'tornadopet',name:'토네이도형 펫', icon:'🌪️', color:'#9beeff', accent:'#e8fbff', ability:'tornadopet'},
+  gustpet:   { id:'gustpet',   name:'돌풍형 펫', icon:'💨', color:'#b8f6ff', accent:'#f4ffff', ability:'gustpet', cashOnly:true },
+  lightningpet:{ id:'lightningpet', name:'번개형 펫', icon:'⚡', color:'#fff36b', accent:'#fffbd1', ability:'lightningpet', cashOnly:true },
+  freezepet:{ id:'freezepet', name:'빙결형 펫', icon:'🧊', color:'#9fe8ff', accent:'#eafcff', ability:'freezepet', cashOnly:true },
+  guardianpet:{ id:'guardianpet', name:'수호형 펫', icon:'🛡️', color:'#8ee7ff', accent:'#effcff', ability:'guardianpet', cashOnly:true },
+  blackholepet:{ id:'blackholepet', name:'블랙홀형 펫', icon:'🕳️', color:'#b58cff', accent:'#f0e4ff', ability:'blackholepet', cashOnly:true }
 };
 
 const PET_ACTIVE_SKILL_LABELS = {
@@ -17790,7 +19329,12 @@ const PET_ACTIVE_SKILL_LABELS = {
   angel: '엔젤 힐링',
   laserpet: '펫 레이저',
   bombpet: '펫 폭탄',
-  tornadopet: '펫 토네이도'
+  tornadopet: '펫 토네이도',
+  gustpet: '거대한 돌풍',
+  lightningpet: '연쇄 번개',
+  freezepet: '빙결 영역',
+  guardianpet: '수호 보호막',
+  blackholepet: '블랙홀'
 };
 
 function getPetActiveSkillLabel(type) {
@@ -17908,7 +19452,8 @@ function getPetUnlockGuideText() {
 }
 
 function rollPetType() {
-  const keys = Object.keys(PET_DEFS);
+  // [v.221.32] 크리스탈 전용 펫은 일반 펫 알 및 합성에서 등장하지 않습니다.
+  const keys = Object.keys(PET_DEFS).filter(k => !PET_DEFS[k].cashOnly);
   return keys[Math.floor(Math.random() * keys.length)] || 'slime';
 }
 
@@ -18054,6 +19599,11 @@ function getPetAbilityText(pet) {
   }
   if ((pet && pet.type) === 'copypet') return `능력: 플레이어와 같은 속성의 총알 발사 · ${star}발`;
   if ((pet && pet.type) === 'piercepet') return `능력: 몬스터를 관통하는 펫 총알 발사 · ${star}발`;
+  if ((pet && pet.type) === 'gustpet') return `능력: 3초간 거대한 돌풍 · 총 피해 ${[0,50,80,120,200,300][star]}% · 쿨타임 ${[0,7,6,5,4,3][star]}초 · 일반 몬스터 넉백`;
+  if ((pet && pet.type) === 'lightningpet') return `능력: 연쇄 번개 ${[0,3,4,5,6,8][star]}대상 · 대상당 공격력 ${[0,60,80,100,130,160][star]}% · 쿨타임 ${[0,7,6,5,4,3][star]}초`;
+  if ((pet && pet.type) === 'freezepet') return `능력: 범위 빙결 · ${[0,2,2.5,3,3.5,4][star]}초 정지 · 범위 ${[0,170,195,220,245,270][star]} · 쿨타임 ${[0,8,7,6,5,4][star]}초 · 보스 제외`;
+  if ((pet && pet.type) === 'guardianpet') return `능력: 수호 보호막 · ${[0,1,1,2,2,3][star]}회 피격 무효 · 피격 전까지 유지 · 쿨타임 ${[0,12,11,10,9,8][star]}초`;
+  if ((pet && pet.type) === 'blackholepet') return `능력: 3초 블랙홀 · 범위 ${[0,150,180,210,245,280][star]} · 일반 몬스터 흡입 · 틱당 공격력 ${[0,18,24,32,42,55][star]}% · 쿨타임 ${[0,10,9,8,7,6][star]}초`;
   if (getPetDef(pet && pet.type).ability === 'producer') return `능력: ${[0,6,5,4,3,2][star]}초마다 골드·보석·EXP 구슬 생산`;
   return '능력 없음';
 }
@@ -18315,6 +19865,107 @@ function getPetHpFlatBonus() {
   return Math.max(0, Math.floor(getPetBonusTotals().hp || 0));
 }
 
+
+const GUST_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
+const LIGHTNING_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
+const FREEZE_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
+const GUARDIAN_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
+const BLACKHOLE_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
+const CASH_CRYSTAL_TO_GOLD_RATE = 50000;
+
+function getCashCrystalBalance() {
+  saveData.cashCrystals = Math.max(0, Math.floor(Number(saveData.cashCrystals) || 0));
+  return saveData.cashCrystals;
+}
+function addCashCrystals(amount) {
+  const n = Math.max(0, Math.floor(Number(amount) || 0));
+  saveData.cashCrystals = getCashCrystalBalance() + n;
+  return n;
+}
+function exchangeCashCrystalToGold(amount = 1) {
+  const n = Math.max(1, Math.floor(Number(amount) || 1));
+  const have = getCashCrystalBalance();
+  if (have < n) return { ok:false, msg:`크리스탈이 부족합니다. (보유 ${formatNumber(have)}개)` };
+  const gain = n * CASH_CRYSTAL_TO_GOLD_RATE;
+  saveData.cashCrystals -= n;
+  gold += gain;
+  saveData.goldEarned = Math.max(0, Math.floor(saveData.goldEarned || 0) + gain);
+  saveGameData();
+  updateHUD();
+  return { ok:true, msg:`크리스탈 ${n}개를 ${formatNumber(gain)}G로 환전했습니다.` };
+}
+function grantPetDirect(type, star, source = 'reward') {
+  const petsState = ensurePetSystemState();
+  const petType = PET_DEFS[type] ? type : 'slime';
+  const petStar = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const pet = { uid:petsState.nextId++, type:petType, star:petStar, source };
+  petsState.owned.push(pet);
+  registerPetDexEntry(pet);
+  if (!petsState.equipped.left) petsState.equipped.left = pet.uid;
+  else if (!petsState.equipped.right) petsState.equipped.right = pet.uid;
+  syncPlayerHealthToLevel({ keepRatio:true });
+  return pet;
+}
+function purchaseGustPetWithCrystals(star = 1) {
+  const s = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const cost = GUST_PET_CRYSTAL_COSTS[s] || 5;
+  const have = getCashCrystalBalance();
+  if (have < cost) return { ok:false, msg:`크리스탈이 부족합니다. (${s}성 돌풍형 펫: ${cost}개 필요 / 보유 ${have}개)` };
+  saveData.cashCrystals -= cost;
+  const pet = grantPetDirect('gustpet', s, 'crystal-shop');
+  saveGameData();
+  updateHUD();
+  return { ok:true, pet, msg:`💨 ${s}성 돌풍형 펫을 크리스탈 ${cost}개로 구매했습니다!` };
+}
+
+function purchaseLightningPetWithCrystals(star = 1) {
+  const s = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const cost = LIGHTNING_PET_CRYSTAL_COSTS[s] || 5;
+  const have = getCashCrystalBalance();
+  if (have < cost) return { ok:false, msg:`크리스탈이 부족합니다. (${s}성 번개형 펫: ${cost}개 필요 / 보유 ${have}개)` };
+  saveData.cashCrystals -= cost;
+  const pet = grantPetDirect('lightningpet', s, 'crystal-shop');
+  saveGameData();
+  updateHUD();
+  return { ok:true, pet, msg:`⚡ ${s}성 번개형 펫을 크리스탈 ${cost}개로 구매했습니다!` };
+}
+
+function purchaseFreezePetWithCrystals(star = 1) {
+  const s = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const cost = FREEZE_PET_CRYSTAL_COSTS[s] || 5;
+  const have = getCashCrystalBalance();
+  if (have < cost) return { ok:false, msg:`크리스탈이 부족합니다. (${s}성 빙결형 펫: ${cost}개 필요 / 보유 ${have}개)` };
+  saveData.cashCrystals -= cost;
+  const pet = grantPetDirect('freezepet', s, 'crystal-shop');
+  saveGameData();
+  updateHUD();
+  return { ok:true, pet, msg:`🧊 ${s}성 빙결형 펫을 크리스탈 ${cost}개로 구매했습니다!` };
+}
+
+function purchaseGuardianPetWithCrystals(star = 1) {
+  const s = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const cost = GUARDIAN_PET_CRYSTAL_COSTS[s] || 5;
+  const have = getCashCrystalBalance();
+  if (have < cost) return { ok:false, msg:`크리스탈이 부족합니다. (${s}성 수호형 펫: ${cost}개 필요 / 보유 ${have}개)` };
+  saveData.cashCrystals -= cost;
+  const pet = grantPetDirect('guardianpet', s, 'crystal-shop');
+  saveGameData();
+  updateHUD();
+  return { ok:true, pet, msg:`🛡️ ${s}성 수호형 펫을 크리스탈 ${cost}개로 구매했습니다!` };
+}
+
+function purchaseBlackholePetWithCrystals(star = 1) {
+  const s = Math.max(1, Math.min(5, Math.floor(Number(star) || 1)));
+  const cost = BLACKHOLE_PET_CRYSTAL_COSTS[s] || 5;
+  const have = getCashCrystalBalance();
+  if (have < cost) return { ok:false, msg:`크리스탈이 부족합니다. (${s}성 블랙홀형 펫: ${cost}개 필요 / 보유 ${have}개)` };
+  saveData.cashCrystals -= cost;
+  const pet = grantPetDirect('blackholepet', s, 'crystal-shop');
+  saveGameData();
+  updateHUD();
+  return { ok:true, pet, msg:`🕳️ ${s}성 블랙홀형 펫을 크리스탈 ${cost}개로 구매했습니다!` };
+}
+
 function hatchPetEgg() {
   const petsState = ensurePetSystemState();
   if (Math.floor(gold || 0) < PET_EGG_COST) {
@@ -18385,6 +20036,11 @@ function renderPetCard(pet, slot = null) {
     : s.distance ? `거리 점수 +${Math.round(s.distance * 100)}%`
     : pet.type === 'producer' ? `생산 ${[0,6,5,4,3,2][pet.star] || 6}초`
     : pet.type === 'laserpet' ? `레이저 ${([0,40,80,120,160,200][pet.star] || 40)}%`
+    : pet.type === 'gustpet' ? `돌풍 ${([0,50,80,120,200,300][pet.star] || 50)}% · ${([0,7,6,5,4,3][pet.star] || 7)}초`
+    : pet.type === 'lightningpet' ? `연쇄 ${([0,3,4,5,6,8][pet.star] || 3)}대상 · ${([0,60,80,100,130,160][pet.star] || 60)}%`
+    : pet.type === 'freezepet' ? `빙결 ${([0,2,2.5,3,3.5,4][pet.star] || 2)}초 · 범위 ${([0,170,195,220,245,270][pet.star] || 170)}`
+    : pet.type === 'guardianpet' ? `보호막 ${([0,1,1,2,2,3][pet.star] || 1)}회 · 피격 전까지 유지`
+    : pet.type === 'blackholepet' ? `블랙홀 범위 ${([0,150,180,210,245,280][pet.star] || 150)} · 3초`
     : `능력 없음`;
   const slotLabel = slot === 'left' ? '왼쪽 장착중' : slot === 'right' ? '오른쪽 장착중' : '';
   const sellGold = getPetSellPrice(pet);
@@ -19867,7 +21523,7 @@ function shootPet2Bullet(currentTime) {
 }
 
 function isPetActiveSkillType(type) {
-  return type === 'fairy' || type === 'dragon' || type === 'angel' || type === 'laserpet' || type === 'bombpet' || type === 'tornadopet';
+  return type === 'fairy' || type === 'dragon' || type === 'angel' || type === 'laserpet' || type === 'bombpet' || type === 'tornadopet' || type === 'gustpet' || type === 'lightningpet' || type === 'freezepet' || type === 'guardianpet' || type === 'blackholepet';
 }
 
 function getProducerIntervalByStar(star = 1) {
@@ -19956,6 +21612,245 @@ function getTornadoPetTickMultiplier(star = 1) {
 function getTornadoPetRadius(star = 1) {
   const s = Math.max(1, Math.min(5, Number(star) || 1));
   return 105 + s * 16;
+}
+function getGustPetTotalDamageMultiplier(star = 1) {
+  return ([0,0.50,0.80,1.20,2.00,3.00][Math.max(1, Math.min(5, Number(star) || 1))] || 0.50);
+}
+function getGustPetRadius(star = 1) {
+  const s = Math.max(1, Math.min(5, Number(star) || 1));
+  return 150 + s * 18;
+}
+function getLightningPetChainCount(star = 1) {
+  return ([0,3,4,5,6,8][Math.max(1, Math.min(5, Number(star) || 1))] || 3);
+}
+function getLightningPetDamageMultiplier(star = 1) {
+  return ([0,0.60,0.80,1.00,1.30,1.60][Math.max(1, Math.min(5, Number(star) || 1))] || 0.60);
+}
+function castLightningPetChain(slot, petData, anchor, color, accent) {
+  const star = Math.max(1, Math.min(5, Number(petData?.star) || 1));
+  const maxTargets = getLightningPetChainCount(star);
+  const chainRange = 220 + star * 18;
+  const baseDamage = Math.max(1, Math.floor(getPlayerAttackPower() * getLightningPetDamageMultiplier(star)));
+  const candidates = [];
+  for (const e of enemies) if (e && e.hp > 0) candidates.push({ kind:'enemy', ref:e, x:e.x, y:e.y, size:e.size || 18 });
+  if (boss && !isBossInvincible() && !boss._deadHandled && boss.hp > 0) candidates.push({ kind:'boss', ref:boss, x:boss.x, y:boss.y, size:Math.max(boss.width || 40, boss.height || 40) * 0.45 });
+  if (!candidates.length) return;
+
+  const points = [{ x:anchor.x, y:anchor.y - anchor.size * 0.82 }];
+  const used = new Set();
+  let cx = points[0].x, cy = points[0].y;
+  for (let i = 0; i < maxTargets; i++) {
+    let best = null, bestD2 = Infinity;
+    for (const c of candidates) {
+      if (used.has(c.ref)) continue;
+      const dx = c.x - cx, dy = c.y - cy;
+      const d2 = dx*dx + dy*dy;
+      if (i > 0 && d2 > chainRange * chainRange) continue;
+      if (d2 < bestD2) { bestD2 = d2; best = c; }
+    }
+    if (!best) break;
+    used.add(best.ref);
+    points.push({ x:best.x, y:best.y });
+    cx = best.x; cy = best.y;
+
+    const dmg = calcLevelScaledDamage(baseDamage, best.ref);
+    try { updateTownQuestProgress('petDamage', dmg); } catch(e) {}
+    if (best.kind === 'enemy') {
+      best.ref.hp -= dmg;
+      best.ref.hitTimer = 120;
+      spawnDamageText(best.ref.x, best.ref.y - (best.ref.size || 20) * 0.72, dmg, color || '#fff36b', false, 'pet');
+      spawnElementalHitEffect(best.ref.x, best.ref.y, best.ref.element, best.ref.isElite ? 1.15 : 1);
+      if (best.ref.hp <= 0) {
+        try { updateTownQuestProgress('petOnlyKills', 1); } catch(e) {}
+        handleEnemyKilledBySkill(best.ref);
+        best.ref.hp = 0;
+      }
+    } else {
+      best.ref.hp -= dmg;
+      spawnDamageText(best.ref.x, best.ref.y - Math.max(26, (best.ref.height || 80) * 0.2), dmg, color || '#fff36b', false, 'pet');
+      if (best.ref.hp <= 0) handleBossKilledBySkill();
+    }
+  }
+  if (points.length > 1) {
+    petSkillStreams.push({ kind:'lightningpet', slot, petUid:petData.uid || 0, points, color:color || '#fff36b', accent:accent || '#fffbd1', life:360, maxLife:360, jitterSeed:Math.random()*9999 });
+  }
+}
+
+function getFreezePetDurationMs(star = 1) {
+  return ([0,2000,2500,3000,3500,4000][Math.max(1, Math.min(5, Number(star) || 1))] || 2000);
+}
+function getFreezePetRadius(star = 1) {
+  return ([0,170,195,220,245,270][Math.max(1, Math.min(5, Number(star) || 1))] || 170);
+}
+function castFreezePetArea(slot, petData, anchor, color, accent) {
+  const star = Math.max(1, Math.min(5, Number(petData?.star) || 1));
+  const radius = getFreezePetRadius(star);
+  const duration = getFreezePetDurationMs(star);
+  const target = pickPetAreaTarget(anchor);
+  const x = clamp(target.x, radius * 0.4, width - radius * 0.4);
+  const y = clamp(target.y, 55, height - 35);
+  let frozenCount = 0;
+  for (const e of enemies) {
+    if (!e || e.hp <= 0) continue;
+    const rr = radius + (e.size || 18) * 0.65;
+    const dx = e.x - x, dy = e.y - y;
+    if (dx*dx + dy*dy > rr*rr) continue;
+    e.petFreezeMs = Math.max(Number(e.petFreezeMs) || 0, duration);
+    e.petFreezeMaxMs = Math.max(Number(e.petFreezeMaxMs) || 0, duration);
+    e.hitTimer = Math.max(Number(e.hitTimer) || 0, 80);
+    frozenCount++;
+  }
+  petSkillStreams.push({
+    kind:'freezepet', slot, petUid:petData.uid || 0, x, y, radius,
+    color:color || '#9fe8ff', accent:accent || '#eafcff',
+    life:520, maxLife:520, phase:Math.random()*Math.PI*2, frozenCount
+  });
+  if (frozenCount > 0) spawnDamageText(x, y - Math.min(80, radius * 0.35), `❄ ${frozenCount}마리 빙결`, color || '#9fe8ff');
+}
+
+function getBlackholePetRadius(star = 1) {
+  return ([0,150,180,210,245,280][Math.max(1, Math.min(5, Number(star) || 1))] || 150);
+}
+function getBlackholePetTickMultiplier(star = 1) {
+  return ([0,0.18,0.24,0.32,0.42,0.55][Math.max(1, Math.min(5, Number(star) || 1))] || 0.18);
+}
+function getBlackholePetPullStrength(star = 1) {
+  return ([0,0.085,0.100,0.118,0.138,0.160][Math.max(1, Math.min(5, Number(star) || 1))] || 0.085);
+}
+function castBlackholePet(slot, petData, anchor, color, accent) {
+  const star = Math.max(1, Math.min(5, Number(petData?.star) || 1));
+  const radius = getBlackholePetRadius(star);
+  const target = pickPetAreaTarget(anchor);
+  const x = clamp(target.x, Math.min(radius * 0.5, 120), width - Math.min(radius * 0.5, 120));
+  const y = clamp(target.y, 70, height - 45);
+  petSkillStreams.push({
+    kind:'blackholepet',
+    slot,
+    petUid:petData.uid || 0,
+    star,
+    x, y,
+    radius,
+    pullStrength:getBlackholePetPullStrength(star),
+    tickDamage:getPetSkillDamage(petData, getBlackholePetTickMultiplier(star)),
+    tickTimer:0,
+    tickInterval:300,
+    color:color || '#b58cff',
+    accent:accent || '#f0e4ff',
+    life:3000,
+    maxLife:3000,
+    phase:Math.random() * Math.PI * 2
+  });
+}
+function applyBlackholePetTick(stream) {
+  if (!stream) return;
+  const radius = Math.max(80, Number(stream.radius) || 150);
+  const pullStrength = Math.max(0.01, Number(stream.pullStrength) || 0.055);
+  const tickDamage = Math.max(1, Math.floor(Number(stream.tickDamage) || 1));
+
+  for (const e of enemies) {
+    if (!e || e.hp <= 0) continue;
+    const dx = stream.x - e.x;
+    const dy = stream.y - e.y;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    const rr = radius + (e.size || 18) * 0.6;
+    if (dist > rr) continue;
+
+    // ✅ [v.221.38] 블랙홀: 좌표를 순간 이동시키지 않고 중심 방향으로 지속적인 가속을 부여
+    // 외곽에서는 강하게 끌고, 중심 근처에서는 힘을 줄여 자연스럽게 수렴합니다.
+    const normalized = Math.max(0, Math.min(1, dist / Math.max(1, radius)));
+    const centerEase = 0.28 + 0.72 * normalized;
+    const accel = (2.8 + stream.star * 0.55) * centerEase;
+    e.petForceVX = (Number(e.petForceVX) || 0) + (dx / dist) * accel;
+    e.petForceVY = (Number(e.petForceVY) || 0) + (dy / dist) * accel;
+
+    // 너무 빠른 순간 이동처럼 보이지 않도록 최대 흡입 속도 제한
+    const maxPullSpeed = 9.0 + stream.star * 1.4;
+    const forceSpeed = Math.hypot(e.petForceVX || 0, e.petForceVY || 0);
+    if (forceSpeed > maxPullSpeed) {
+      e.petForceVX = (e.petForceVX / forceSpeed) * maxPullSpeed;
+      e.petForceVY = (e.petForceVY / forceSpeed) * maxPullSpeed;
+    }
+
+    const dmg = calcLevelScaledDamage(tickDamage, e);
+    try { updateTownQuestProgress('petDamage', dmg); } catch(err) {}
+    e.hp -= dmg;
+    e.hitTimer = 100;
+    spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#b58cff', false, 'pet');
+
+    if (e.hp <= 0) {
+      try { updateTownQuestProgress('petOnlyKills', 1); } catch(err) {}
+      handleEnemyKilledBySkill(e);
+      e.hp = 0;
+    }
+  }
+
+  // 보스는 끌려오지 않고 블랙홀 범위 안에 있을 때 피해만 받습니다.
+  if (boss && !isBossInvincible() && !boss._deadHandled) {
+    const br = Math.max(boss.width || 40, boss.height || 40) * 0.42;
+    const dx = boss.x - stream.x;
+    const dy = boss.y - stream.y;
+    if (dx * dx + dy * dy <= (radius + br) * (radius + br)) {
+      const bdmg = calcLevelScaledDamage(tickDamage, boss);
+      try { updateTownQuestProgress('petDamage', bdmg); } catch(err) {}
+      boss.hp -= bdmg;
+      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, stream.color || '#b58cff', false, 'pet');
+      if (boss.hp <= 0) handleBossKilledBySkill();
+    }
+  }
+}
+
+function applyGustPetTick(stream) {
+  if (!stream) return;
+  const radius = Math.max(80, Number(stream.radius) || 170);
+  const tickDamage = Math.max(1, Math.floor(Number(stream.tickDamage) || 1));
+  const knockback = Math.max(4, Number(stream.knockback) || 12);
+
+  for (const e of enemies) {
+    if (!e || e.hp <= 0) continue;
+    const rr = radius + (e.size || 18) * 0.6;
+    const dx = e.x - stream.x;
+    const dy = e.y - stream.y;
+    if (dx * dx + dy * dy > rr * rr) continue;
+
+    const dmg = calcLevelScaledDamage(tickDamage, e);
+    try { updateTownQuestProgress('petDamage', dmg); } catch(err) {}
+    e.hp -= dmg;
+    e.hitTimer = 110;
+
+    // ✅ [v.221.38] 돌풍: 좌표를 딱딱하게 이동시키지 않고 위쪽 방향의 관성 속도를 부여
+    // 블랙홀과 반대로 바깥쪽/위쪽으로 부드럽게 밀립니다.
+    const sidePush = Math.max(-1.5, Math.min(1.5, dx * 0.008));
+    e.petForceVX = (Number(e.petForceVX) || 0) + sidePush;
+    e.petForceVY = (Number(e.petForceVY) || 0) - Math.max(2.2, knockback * 0.32);
+
+    const maxGustSpeed = 8.5 + Math.min(4, knockback * 0.11);
+    const gustSpeed = Math.hypot(e.petForceVX || 0, e.petForceVY || 0);
+    if (gustSpeed > maxGustSpeed) {
+      e.petForceVX = (e.petForceVX / gustSpeed) * maxGustSpeed;
+      e.petForceVY = (e.petForceVY / gustSpeed) * maxGustSpeed;
+    }
+
+    spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#b8f6ff', false, 'pet');
+    if (e.hp <= 0) {
+      try { updateTownQuestProgress('petOnlyKills', 1); } catch(err) {}
+      handleEnemyKilledBySkill(e);
+      e.hp = 0;
+    }
+  }
+
+  // 보스는 피해만 받고 넉백되지 않습니다.
+  if (boss && !isBossInvincible() && !boss._deadHandled) {
+    const br = Math.max(boss.width || 40, boss.height || 40) * 0.42;
+    const dx = boss.x - stream.x;
+    const dy = boss.y - stream.y;
+    if (dx * dx + dy * dy <= (radius + br) * (radius + br)) {
+      const bdmg = calcLevelScaledDamage(tickDamage, boss);
+      try { updateTownQuestProgress('petDamage', bdmg); } catch(err) {}
+      boss.hp -= bdmg;
+      spawnDamageText(boss.x, boss.y - Math.max(26, (boss.height || 80) * 0.2), bdmg, stream.color || '#b8f6ff', false, 'pet');
+      if (boss.hp <= 0) handleBossKilledBySkill();
+    }
+  }
 }
 function pickPetAreaTarget(anchor) {
   let target = null;
@@ -20232,6 +22127,42 @@ function castPetActiveSkill(slot, petData) {
     });
     try { if (SFX && SFX.petTornado) SFX.petTornado(); } catch(e) {}
   }
+  else if (petData.type === 'gustpet') {
+    const star = Math.max(1, Math.min(5, Number(petData.star) || 1));
+    const target = pickPetAreaTarget(anchor);
+    const radius = getGustPetRadius(star);
+    const duration = 3000;
+    const tickInterval = 500; // 3초간 6회
+    const ticks = Math.max(1, Math.round(duration / tickInterval));
+    const totalDamage = Math.max(1, Math.floor(getPlayerAttackPower() * getGustPetTotalDamageMultiplier(star)));
+    const tickDamage = Math.max(1, Math.floor(totalDamage / ticks));
+    petSkillStreams.push({
+      kind:'gustpet', slot, petUid:petData.uid || 0,
+      x:clamp(target.x, radius * 0.45, width - radius * 0.45),
+      y:clamp(target.y, 55, height - 35),
+      radius, tickDamage, totalDamage, color, accent:def.accent || '#f4ffff',
+      life:duration, maxLife:duration, tickTimer:0, tickInterval,
+      knockback:10 + star * 3,
+      phase:Math.random() * Math.PI * 2
+    });
+    try { if (SFX && SFX.petTornado) SFX.petTornado(); } catch(e) {}
+  }
+  else if (petData.type === 'lightningpet') {
+    castLightningPetChain(slot, petData, anchor, color, def.accent || '#fffbd1');
+    try { if (SFX && SFX.lightning) SFX.lightning(); else if (SFX && SFX.petTornado) SFX.petTornado(); } catch(e) {}
+  }
+  else if (petData.type === 'freezepet') {
+    castFreezePetArea(slot, petData, anchor, color, def.accent || '#eafcff');
+    try { if (SFX && SFX.blizzardWind) SFX.blizzardWind(); else if (SFX && SFX.petTornado) SFX.petTornado(); } catch(e) {}
+  }
+  else if (petData.type === 'guardianpet') {
+    castGuardianPetShield(slot, petData, color, def.accent || '#effcff');
+    try { if (SFX && SFX.levelUp) SFX.levelUp(); } catch(e) {}
+  }
+  else if (petData.type === 'blackholepet') {
+    castBlackholePet(slot, petData, anchor, color, def.accent || '#f0e4ff');
+    try { if (SFX && SFX.petTornado) SFX.petTornado(); else if (SFX && SFX.blizzardWind) SFX.blizzardWind(); } catch(e) {}
+  }
 }
 
 function updatePetSkillProjectiles(dt) {
@@ -20440,6 +22371,20 @@ function updatePetSkillStreams(dt) {
       while (s.tickTimer <= 0 && s.life > 0) {
         s.tickTimer += s.tickInterval || 200;
         applyPetAreaDamage(s.x, s.y, s.radius || 120, s.damage || 1, s.color || '#9beeff', 'tornadopet');
+      }
+    } else if (s.kind === 'gustpet') {
+      s.phase = (s.phase || 0) + 0.10 * delta;
+      s.tickTimer = (s.tickTimer || 0) - dt;
+      while (s.tickTimer <= 0 && s.life > 0) {
+        s.tickTimer += s.tickInterval || 500;
+        applyGustPetTick(s);
+      }
+    } else if (s.kind === 'blackholepet') {
+      s.phase = (s.phase || 0) + 0.075 * delta;
+      s.tickTimer = (s.tickTimer || 0) - dt;
+      while (s.tickTimer <= 0 && s.life > 0) {
+        s.tickTimer += s.tickInterval || 300;
+        applyBlackholePetTick(s);
       }
     }
   }
@@ -25130,6 +27075,10 @@ function updateEnemies(dt) {
     const hyperDriftScale = hyperFlightActive ? 1.18 : 1;
     enemies.forEach(e => {
         e.hitTimer = Math.max(0, e.hitTimer - dt);
+        if ((e.petFreezeMs || 0) > 0) {
+            e.petFreezeMs = Math.max(0, e.petFreezeMs - dt);
+            return; // 🧊 빙결형 펫: 이동 + 몬스터 탄환 발사 정지
+        }
         if (e.pattern === 'straight') e.y += e.vy * delta * hyperFallScale;
         else if (e.pattern === 'fan') {
             e.x += (e.vx || 0) * delta * hyperDriftScale;
@@ -25156,6 +27105,31 @@ function updateEnemies(dt) {
             e.x += (e.vx || 0) * delta * hyperDriftScale;
             e.y += e.vy * delta * 1.15 * hyperFallScale;
         }
+
+        // ✅ [v.221.38] 펫 외력: 돌풍/블랙홀의 힘을 좌표 순간이동이 아닌 관성 이동으로 적용
+        // - 돌풍: 위쪽으로 밀린 뒤 서서히 감속
+        // - 블랙홀: 중심 방향으로 빨려들며 서서히 감속
+        if (Math.abs(Number(e.petForceVX) || 0) > 0.01 || Math.abs(Number(e.petForceVY) || 0) > 0.01) {
+            e.x += (Number(e.petForceVX) || 0) * delta;
+            e.y += (Number(e.petForceVY) || 0) * delta;
+
+            // 프레임 독립형 감쇠: 60fps 기준 약 0.90씩 감소
+            const drag = Math.pow(0.90, delta);
+            e.petForceVX = (Number(e.petForceVX) || 0) * drag;
+            e.petForceVY = (Number(e.petForceVY) || 0) * drag;
+
+            if (Math.abs(e.petForceVX) < 0.02) e.petForceVX = 0;
+            if (Math.abs(e.petForceVY) < 0.02) e.petForceVY = 0;
+
+            e.x = clamp(e.x, 10, width - 10);
+            e.y = clamp(e.y, -45, height + 25);
+
+            // sine 패턴은 다음 프레임에 baseX가 되돌려 놓지 않도록 외력만큼 기준점도 이동
+            if (e.pattern === 'sine' && typeof e.baseX === 'number') {
+                e.baseX = clamp(e.baseX + (Number(e.petForceVX) || 0) * delta * 0.55, 10, width - 10);
+            }
+        }
+
 if (gameMode === 'stage' && stage > 5 && player && player.alive && !isPlayerDying && e.y > 0 && e.y < height - 100) {
             e.shootTimer -= dt;
             if (e.shootTimer <= 0) {
@@ -27579,6 +29553,162 @@ function drawPetSkillEffects() {
       ctx.restore();
       return;
     }
+    if (s.kind === 'blackholepet') {
+      const alpha = Math.max(0.20, Math.min(0.92, s.life / Math.max(1, s.maxLife || 3000)));
+      const t = performance.now();
+      const r = s.radius || 150;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.globalAlpha = alpha;
+
+      // 외곽 중력장
+      const grad = ctx.createRadialGradient(0, 0, r * 0.08, 0, 0, r);
+      grad.addColorStop(0, 'rgba(0,0,0,0.98)');
+      grad.addColorStop(0.20, 'rgba(32,10,60,0.95)');
+      grad.addColorStop(0.55, 'rgba(116,64,185,0.34)');
+      grad.addColorStop(1, 'rgba(181,140,255,0.02)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 회전하는 흡입 고리
+      ctx.rotate((s.phase || 0));
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        const rr = r * (0.28 + i * 0.15);
+        ctx.globalAlpha = alpha * (0.75 - i * 0.10);
+        ctx.strokeStyle = i % 2 === 0 ? (s.color || '#b58cff') : (s.accent || '#f0e4ff');
+        ctx.lineWidth = Math.max(2, 5 - i * 0.7);
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = s.color || '#b58cff';
+        ctx.beginPath();
+        ctx.arc(0, 0, rr, i * 0.7 + t / 700, i * 0.7 + t / 700 + Math.PI * 1.35);
+        ctx.stroke();
+      }
+
+      // 사건의 지평선
+      ctx.globalAlpha = Math.min(1, alpha + 0.08);
+      ctx.fillStyle = '#020005';
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = s.color || '#b58cff';
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(18, r * 0.16), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = s.accent || '#f0e4ff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (s.kind === 'guardianpet') {
+      if (!player || !player.alive || !isPetGuardianShieldActive()) return;
+      const alpha = 0.9;
+      const radius = (player.size || 24) * 1.75 + 7;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = s.color || '#8ee7ff';
+      ctx.fillStyle = 'rgba(142,231,255,0.10)';
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = s.color || '#8ee7ff';
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, radius + Math.sin(now / 120) * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.globalAlpha = Math.min(1, alpha + 0.1);
+      ctx.font = `900 ${Math.max(12, Math.floor(radius * 0.42))}px ${getUIFontFamily()}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = s.accent || '#effcff';
+      ctx.fillText(`🛡${petGuardianShield.charges}`, player.x, player.y - radius - 11);
+      ctx.restore();
+      return;
+    }
+    if (s.kind === 'freezepet') {
+      const alpha = Math.max(0.08, Math.min(0.82, s.life / (s.maxLife || 520)));
+      const radius = s.radius || 180;
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.34;
+      ctx.fillStyle = s.color || '#9fe8ff';
+      ctx.strokeStyle = s.accent || '#eafcff';
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = s.color || '#9fe8ff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, radius * (1.04 - alpha * 0.08), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = Math.min(1, alpha + 0.18);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.font = `900 ${Math.max(20, Math.floor(radius * 0.16))}px ${getUIFontFamily()}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('❄', s.x, s.y);
+      ctx.restore();
+      return;
+    }
+    if (s.kind === 'lightningpet') {
+      const alpha = Math.max(0.12, Math.min(1, s.life / (s.maxLife || 360)));
+      const pts = Array.isArray(s.points) ? s.points : [];
+      if (pts.length < 2) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = s.color || '#fff36b';
+      for (let pass = 0; pass < 2; pass++) {
+        ctx.strokeStyle = pass === 0 ? (s.color || '#fff36b') : (s.accent || '#fffbd1');
+        ctx.lineWidth = pass === 0 ? 6 : 2.2;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i-1], b = pts[i];
+          const dx = b.x-a.x, dy = b.y-a.y;
+          const len = Math.max(1, Math.hypot(dx,dy));
+          const nx = -dy/len, ny = dx/len;
+          const segs = 5;
+          for (let j=1;j<=segs;j++) {
+            const t=j/segs;
+            const amp = (j===segs ? 0 : Math.sin((s.jitterSeed||0)+i*7+j*4.3)*10*(1-Math.abs(t-.5)));
+            ctx.lineTo(a.x+dx*t+nx*amp, a.y+dy*t+ny*amp);
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+    if (s.kind === 'gustpet') {
+      const alpha = Math.max(0.18, Math.min(0.86, s.life / (s.maxLife || 3000)));
+      const radius = s.radius || 170;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(s.x, s.y);
+      ctx.strokeStyle = s.color || '#b8f6ff';
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = s.color || '#b8f6ff';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 7; i++) {
+        const yy = (-radius * 0.62) + i * (radius * 0.20);
+        const wobble = Math.sin((s.phase || 0) + i * 0.8) * 14;
+        ctx.lineWidth = 2.2 + (i % 3) * 0.8;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.88, yy);
+        ctx.bezierCurveTo(-radius * 0.35, yy - 14 + wobble, radius * 0.24, yy + 12 - wobble, radius * 0.92, yy - 3);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = alpha * 0.18;
+      ctx.fillStyle = s.accent || '#f4ffff';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 0.90, radius * 0.54, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
     if (s.kind === 'laserpet') {
       const alpha = Math.max(0.12, Math.min(1, s.life / (s.maxLife || 220)));
       ctx.save();
@@ -27773,7 +29903,33 @@ function drawEnemyBullets() {
   });
 }
 
-function drawEnemies() { enemies.forEach(e => drawEnemyShape(e)); }
+function drawEnemies() {
+  enemies.forEach(e => {
+    drawEnemyShape(e);
+    if ((e.petFreezeMs || 0) > 0) {
+      const r = Math.max(10, Number(e.size) || 18);
+      const ratio = Math.max(0.18, Math.min(1, (Number(e.petFreezeMs) || 0) / Math.max(1, Number(e.petFreezeMaxMs) || Number(e.petFreezeMs) || 1)));
+      ctx.save();
+      ctx.globalAlpha = 0.28 + ratio * 0.28;
+      ctx.fillStyle = '#9fe8ff';
+      ctx.strokeStyle = '#eafcff';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#8fdfff';
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r * 1.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.globalAlpha = 0.9;
+      ctx.font = `900 ${Math.max(12, Math.floor(r * 0.7))}px ${getUIFontFamily()}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('❄', e.x, e.y - r * 0.95);
+      ctx.restore();
+    }
+  });
+}
 function drawParticles() {
   if (!particles.length) return;
   ctx.save();
@@ -27976,7 +30132,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.30', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
