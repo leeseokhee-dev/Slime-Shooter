@@ -6959,7 +6959,40 @@ let audioCtx = null;
 // iOS/Safari 계열은 HTMLAudioElement.volume 변경을 무시하는 경우가 있어
 // BGM을 GainNode로 라우팅하여 0~100 볼륨이 실제 출력에 반영되도록 합니다.
 let bgmMasterGain = null;
+let sfxMasterGain = null;
 const bgmMediaSources = new Map();
+
+// BGM/SFX 슬라이더를 움직여도 재생 노드를 다시 만들거나 재시작하지 않고
+// 마스터 GainNode만 부드럽게 변경합니다.
+function smoothGainTo(gainNode, value, timeConstant = 0.035) {
+    if (!audioCtx || !gainNode) return;
+    const now = audioCtx.currentTime;
+    const v = Math.max(0, Math.min(1, Number(value) || 0));
+    try {
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.setTargetAtTime(v, now, timeConstant);
+    } catch (e) {
+        try { gainNode.gain.value = v; } catch (_) {}
+    }
+}
+
+function ensureSfxMasterGain() {
+    if (!audioCtx) return null;
+    if (!sfxMasterGain) {
+        sfxMasterGain = audioCtx.createGain();
+        sfxMasterGain.connect(audioCtx.destination);
+        const v = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
+        sfxMasterGain.gain.setValueAtTime(v, audioCtx.currentTime);
+    }
+    return sfxMasterGain;
+}
+
+function applySfxVolume() {
+    if (!audioCtx) return;
+    const node = ensureSfxMasterGain();
+    const v = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
+    smoothGainTo(node, v);
+}
 
 function ensureBgmWebAudioRouting() {
     if (!audioCtx) return;
@@ -6978,6 +7011,7 @@ function ensureBgmWebAudioRouting() {
         });
 
         const v = Math.max(0, Math.min(100, Number(bgmVolume) || 0)) / 100;
+        // 라우팅 직후에는 현재 볼륨만 맞추고, 이후 슬라이더 변화는 applyBgmVolume()에서 부드럽게 처리
         bgmMasterGain.gain.setValueAtTime(v, audioCtx.currentTime);
     } catch (e) {
         console.warn('BGM Web Audio routing failed:', e);
@@ -7017,23 +7051,22 @@ let sfxVolume = 100;
 function applyBgmVolume() {
     const v = Math.max(0, Math.min(100, Number(bgmVolume) || 0)) / 100;
 
-    // PC/Android 등 HTMLAudioElement.volume을 지원하는 환경용
-    Object.values(bgmTracks).forEach(track => {
-        track.loop = true;
-        try { track.volume = v; } catch (e) {}
-    });
+    // Web Audio 라우팅 전 환경용 fallback. 라우팅 후에는 element volume을 1로 고정해
+    // 슬라이더 input마다 여러 Audio element를 갱신하지 않도록 합니다.
+    if (!audioCtx || !bgmMasterGain) {
+        Object.values(bgmTracks).forEach(track => {
+            track.loop = true;
+            try { track.volume = v; } catch (e) {}
+        });
+    }
 
-    // iPhone/iPad Safari 등에서는 GainNode가 실제 볼륨을 담당
     if (audioCtx) {
         ensureBgmWebAudioRouting();
-        if (bgmMasterGain) {
-            try {
-                bgmMasterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                bgmMasterGain.gain.setValueAtTime(v, audioCtx.currentTime);
-            } catch (e) {
-                bgmMasterGain.gain.value = v;
-            }
-        }
+        Object.values(bgmTracks).forEach(track => {
+            track.loop = true;
+            try { track.volume = 1; } catch (e) {}
+        });
+        smoothGainTo(bgmMasterGain, v);
     }
 }
 Object.values(bgmTracks).forEach(track => { track.loop = true; });
@@ -7087,7 +7120,9 @@ function initAudio() {
 
     // 사용자 터치/클릭으로 AudioContext가 열린 직후 BGM도 Web Audio에 연결
     ensureBgmWebAudioRouting();
+    ensureSfxMasterGain();
     applyBgmVolume();
+    applySfxVolume();
 }
 
 // [중요] MP3 재생 함수
@@ -7175,12 +7210,11 @@ function playTone(freq, type, duration, volume = 0.1) {
         const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        const sfxScale = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
-        const startGain = Math.max(0.0001, volume * sfxScale);
+        const startGain = Math.max(0.0001, volume);
         gain.gain.setValueAtTime(startGain, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ensureSfxMasterGain() || audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + duration);
     } catch(e){}
@@ -7198,12 +7232,11 @@ function playNoise(duration, volume = 0.1) {
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
         const gain = audioCtx.createGain();
-        const sfxScale = Math.max(0, Math.min(100, Number(sfxVolume) || 0)) / 100;
-        const startGain = Math.max(0.0001, volume * sfxScale);
+        const startGain = Math.max(0.0001, volume);
         gain.gain.setValueAtTime(startGain, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
         noise.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ensureSfxMasterGain() || audioCtx.destination);
         noise.start();
     } catch(e){}
 }
@@ -12540,6 +12573,8 @@ function setBgmVolume(value, persist = true) {
 function setSfxVolume(value, persist = true) {
   sfxVolume = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
   sfxEnabled = sfxVolume > 0;
+  // 이미 재생 중인 효과음도 끊지 않고 마스터 게인만 부드럽게 변경
+  applySfxVolume();
   updateSettingsUI();
   if (persist) saveGameData();
 }
@@ -30098,7 +30133,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
