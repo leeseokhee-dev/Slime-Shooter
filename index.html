@@ -9199,7 +9199,7 @@ let gainMessages = []; // ✅ [v.145] EXP/골드 획득 로그(최대 10줄)
 function clearStageCombatObjects(options = {}) {
   const clearDrops = !!options.clearDrops;
   // ✅ [v.221.24] 보너스 스테이지에서는 발동 중 스킬을 지우지 않고 계속 유지
-  const preserveSkills = !!options.preserveSkills;
+  const preserveSkills = !!options.preserveSkills || (gameMode === 'stage' && stageCleared); // ✅ [v.222.4] 스테이지 클리어 전환에서는 활성 스킬 유지
 
   if (Array.isArray(enemies)) enemies.length = 0;
   if (Array.isArray(enemyBullets)) enemyBullets.length = 0;
@@ -29959,7 +29959,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222.5', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -38580,6 +38580,39 @@ restoreStageActiveSkillsV2216 = function(){
   }
   return ret;
 };
+
+
+/* ===============================
+   ✅ [v.222.4] 스테이지 클리어 → 다음 스테이지 스킬 지속 최종 보강
+   - 클리어 순간의 활성 스킬/남은 지속시간/쿨타임을 보존
+   - 결과창에서 [다음 스테이지]를 누르는 직전에도 최신 상태를 다시 캡처
+   - startStage() 내부 초기화가 실행된 뒤 스냅샷을 마지막으로 복원
+   =============================== */
+(function installStageSkillCarryV2224(){
+  // 결과창에서 다음 스테이지로 넘어가기 직전, 현재 스킬 상태를 가장 최신 값으로 저장합니다.
+  if (typeof nextStageBtn !== 'undefined' && nextStageBtn) {
+    nextStageBtn.addEventListener('click', function(){
+      try {
+        if (gameMode === 'stage' && stageCleared && typeof captureStageActiveSkillsV2216 === 'function') {
+          captureStageActiveSkillsV2216();
+        }
+      } catch(e) {}
+    }, true);
+  }
+
+  // 자동 진행/버튼 진행을 모두 포함해 startStage()가 끝난 "뒤"에 한 번 더 복원합니다.
+  // 기존 v.221.x 복원 로직이 먼저 소비했으면 아무 일도 하지 않으므로 중복 발동되지 않습니다.
+  const startStageBeforeV2224 = startStage;
+  startStage = function(){
+    const ret = startStageBeforeV2224.apply(this, arguments);
+    try {
+      if (gameMode === 'stage' && typeof restoreStageActiveSkillsV2216 === 'function') {
+        restoreStageActiveSkillsV2216();
+      }
+    } catch(e) {}
+    return ret;
+  };
+})();
 
 
 </script>
