@@ -15288,60 +15288,8 @@ function updateQuestUI() {
     '#8ff0ff'
   );
 
-  // 7. 펫 획득/강화
-  const petMilestones = [10, 30, 60, 100, 200];
-  const petQ = saveData.quests.pet;
-  if (typeof petQ.claimed !== 'number') petQ.claimed = 0;
-
-  const nextIndex = clamp(petQ.claimed, 0, 5);
-  const nextTarget = (nextIndex < 5) ? petMilestones[nextIndex] : null;
-
-  const petStageNow = clamp(saveData.petStage, 0, 5);
-  const petDesc = (nextTarget === null)
-    ? `펫 최종 단계 달성! (현재: ${petStageNow}단계 / 5단계)`
-    : `플레이어 레벨 ${nextTarget} 달성 (현재: LV.${level}) → 펫 ${nextIndex + 1}단계`;
-
-  const canClaimPet = (nextTarget !== null) && (level >= nextTarget) && (petQ.claimed < 5);
-
-  createQuestItem(
-    '펫 파트너',
-    petDesc,
-    0,
-    canClaimPet,
-    () => {
-      const prevPetStage = clamp(saveData.petStage, 0, 5);
-
-      petQ.claimed = clamp(petQ.claimed + 1, 0, 5);
-      saveData.petStage = clamp(petQ.claimed, 0, 5);
-
-      if (state === 'playing' && !pet && saveData.petStage >= 1) {
-        pet = createPet();
-        petBullets = [];
-        lastPetShotTime = 0;
-      }
-
-      // ✅ 첫 펫 획득 시 펫 시스템 튜토리얼 안내
-      if (prevPetStage < 1 && saveData.petStage >= 1) {
-        tutorialActive = true;
-        tutorialNonBlocking = true;
-        tutorialFlow = 'none';
-        tutorialIndex = 0;
-        tutorialMessages = [
-          "축하합니다! 첫 번째 펫을 획득했습니다.",
-          "펫은 전투 중 플레이어를 도와 함께 공격하는 든든한 파트너입니다.",
-          "펫 단계가 올라갈수록 공격 방식과 전투 성능도 함께 강화됩니다.",
-          "앞으로 퀘스트와 성장 진행을 통해 펫을 더욱 강하게 육성할 수 있습니다."
-        ];
-      }
-
-      saveGameData();
-      updateQuestUI();
-      SFX.questComplete();
-    },
-    level,
-    nextTarget || 5,
-    '#ffb8ff'
-  );
+  // 7. [v.222.1] 기본 퀘스트의 펫 획득/강화 항목 제거
+  // 펫 획득은 상점 시스템에서 담당합니다.
 
   // 8. 스킬 사용 퀘스트
   createQuestSectionTitle('✨ 스킬 퀘스트', '#7ce7ff');
@@ -30132,7 +30080,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
