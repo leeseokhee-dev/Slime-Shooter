@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.28)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.29)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -15253,15 +15253,25 @@ function getBeginnerQuestGuideMessages(q){
   };
   return [header].concat(guideMap[q?.type] || [`현재 임무: ${desc}`]);
 }
+function getBeginnerGuideEntryGreetingMessages(){
+  return [
+    '안녕하세요! 저는 여러분의 튜토리얼을 도와드릴 길잡이 슬라임입니다.',
+    '슬라임 슈터에 오신 것을 환영합니다! 지금부터 기본 조작과 전투 방법을 하나씩 함께 배워볼게요.',
+    '어렵지 않으니 제 안내에 따라 천천히 진행해 주세요. 준비되셨다면 첫 번째 튜토리얼을 시작하겠습니다!'
+  ];
+}
+
 function showBeginnerGuideInGame(q){
   if (!isBeginnerGuideQuest(q)) return;
   tutorialFlow = 'beginnerGuide';
+  // ✅ 튜토리얼 입장 직후에는 길잡이 슬라임이 먼저 인사한 뒤 현재 퀘스트 안내를 시작합니다.
   // ✅ [v.212.2] 튜토리얼 대사 중에는 전투/자동공격/스폰을 일시정지합니다.
   // 대사가 모두 끝난 뒤에만 퀘스트 진행과 자동 발사가 다시 시작됩니다.
   tutorialNonBlocking = false;
   tutorialActive = true;
   tutorialIndex = 0;
-  tutorialMessages = getBeginnerQuestGuideMessages(q);
+  tutorialMessages = getBeginnerGuideEntryGreetingMessages()
+    .concat(getBeginnerQuestGuideMessages(q));
 }
 
 function ensureTutorialPetAutoEquipped(){
@@ -27972,7 +27982,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.28', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.29', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
