@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.221.27)</title>
+<title>Slime Shooter - Ultimate Evolution (v.221.28)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -15368,6 +15368,42 @@ function prependTutorialClearPraiseV20312(q){
 
 let tutorialRewardPopupTimer = null;
 let tutorialRewardPopupContinue = null;
+let tutorialRewardPopupPausedGame = false;
+
+function pauseGameForTutorialRewardPopup(){
+  // 일반 일시정지 오버레이는 띄우지 않고, 실제 게임 업데이트만 정지합니다.
+  if (state !== 'playing' || isPaused) {
+    tutorialRewardPopupPausedGame = false;
+    return;
+  }
+
+  tutorialRewardPopupPausedGame = true;
+  isPaused = true;
+
+  // 보상 확인 중에는 BGM도 함께 멈춰 일시정지 상태가 명확하게 느껴지도록 합니다.
+  if (currentBgm && !currentBgm.paused) {
+    try { currentBgm.pause(); } catch(e) {}
+  }
+
+  // 다음 프레임 복귀 시 큰 dt가 한 번에 적용되지 않도록 초기화합니다.
+  lastTime = 0;
+}
+
+function resumeGameAfterTutorialRewardPopup(){
+  if (!tutorialRewardPopupPausedGame) return;
+
+  tutorialRewardPopupPausedGame = false;
+  isPaused = false;
+  lastTime = 0;
+  lastRenderTs = 0;
+
+  if (bgmEnabled) {
+    try { playBgmTrack(getModeBgmName()); } catch(e) {}
+  }
+
+  // 일반 일시정지 UI가 혹시 남아 있지 않도록 상태만 동기화합니다.
+  try { setPauseUI(); } catch(e) {}
+}
 
 function closeTutorialQuestRewardPopup(runContinue = false){
   const popup = document.getElementById('tutorialRewardPopup');
@@ -15383,6 +15419,11 @@ function closeTutorialQuestRewardPopup(runContinue = false){
 
   popup.classList.remove('show');
   setTimeout(() => popup.classList.add('hidden'), 220);
+
+  // 확인 버튼을 누른 경우에만 보상창 전용 일시정지를 해제합니다.
+  if (runContinue) {
+    resumeGameAfterTutorialRewardPopup();
+  }
 
   if (runContinue && typeof next === 'function') {
     // 팝업이 사라지는 연출 뒤 길잡이 대사가 자연스럽게 이어지도록 아주 짧게 지연
@@ -15417,6 +15458,9 @@ function showTutorialQuestRewardPopup(q, expReward, goldReward, itemName, onConf
   rewardsEl.innerHTML = rewards.map(v => `<span class="tutorial-reward-chip">${v}</span>`).join('');
 
   tutorialRewardPopupContinue = (typeof onConfirm === 'function') ? onConfirm : null;
+
+  // 보상창이 나타나는 순간 게임 전체 업데이트를 일시정지합니다.
+  pauseGameForTutorialRewardPopup();
 
   // 보상창이 떠 있는 동안 기존 길잡이 오버레이는 숨겨서 대사가 뒤에서 먼저 보이지 않게 합니다.
   const tutorialOverlay = document.getElementById('tutorialOverlay');
@@ -27928,7 +27972,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 221.27', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 221.28', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
