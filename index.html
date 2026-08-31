@@ -24499,39 +24499,27 @@ function spawnNextWave() {
     } else if (gameMode === 'stage' || gameMode === 'mission') {
       enemyCount = Math.min(enemyCount, STAGE_ENEMY_CAP);
     }
-// [v.169] 속도 로직(300스테이지 확장):
-// - 1~100: 기존 성장 구간
-// - 101~200: 101스테이지에서 느리게 재시작 후 200까지 완만히 상승
-// - 201~300: 신규 크리스탈 지역. 201스테이지도 101스테이지처럼 느리게 재시작
+// [v.222.3] 속도 로직(300스테이지 확장):
+// - 1~100: 101~200과 동일한 낙하 속도 곡선 사용 (1 = 101, 100 = 200)
+// - 101~200: 느리게 시작 후 200까지 완만히 상승
+// - 201~300: 101~200과 동일한 속도 곡선 사용 (201 = 101, 300 = 200)
 let speedBase;
+const speedAt100 = 1.0 + 100 * 0.07;
+const slowBase = speedAt100 * 0.25;
 if (stage <= 100) {
-  speedBase = 1.0 + stage * 0.045;
+  const t = clamp((stage - 1) / 99, 0, 1);
+  speedBase = slowBase + t * 0.8;
 } else if (stage <= 200) {
-  const speedAt100 = 1.0 + 100 * 0.07;
-  const slowBase = speedAt100 * 0.25;
   const t = clamp((stage - 101) / 99, 0, 1);
   speedBase = slowBase + t * 0.8;
 } else {
-  // ✅ [v.221.2] 201~300은 101~200과 동일한 속도 곡선을 사용
-  // 201 = 101의 속도, 300 = 200의 속도
-  const speedAt100 = 1.0 + 100 * 0.07;
-  const slowBase = speedAt100 * 0.25;
   const t = clamp((stage - 201) / 99, 0, 1);
   speedBase = slowBase + t * 0.8;
 }
 if (gameMode === 'infinite') speedBase *= 1.25; // 무한 모드: 더 빠르게
 
-// ✅ [v.189.2] 스테이지 모드 낙하 속도 소폭 보정
-// - 1스테이지처럼 너무 느린 초반 구간만 살짝 빠르게
-// - 후반 스테이지는 기존 체감이 크게 바뀌지 않도록 보정폭을 점점 줄임
-// - 무한 모드/몬스터 파크/디멘션/슬라임 러시 등 다른 모드는 영향 없음
-if (gameMode === 'stage') {
-  if (stage <= 30) {
-    speedBase = Math.max(1.28, speedBase * 1.16);
-  } else if (stage <= 100) {
-    speedBase *= 1.08;
-  }
-}
+// [v.222.3] 1~100 전용 낙하 속도 보정 제거
+// 101~200과 완전히 같은 체감이 되도록 스테이지 모드 추가 배율을 적용하지 않음
 
 
     // ✅ [미션 모드] 1초당 10마리 스폰을 위해 호출당 1마리만 생성
@@ -29971,7 +29959,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 222.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
