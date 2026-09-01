@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.224.4)</title>
+<title>Slime Shooter - Ultimate Evolution (v.224.4.1)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -9614,8 +9614,8 @@ function closeStageMissionIntroV2244() {
 
   // 미션 안내가 띄우기 전부터 일시정지 상태였던 경우에는 그대로 유지
   if (!stageMissionIntroPausedBeforeV2244) {
+    // 미션 안내용 임시 정지만 해제하고, 기존 일시정지 UI는 건드리지 않습니다.
     isPaused = false;
-    try { setPauseUI(); } catch(e) {}
   }
 }
 
@@ -9662,8 +9662,9 @@ function showStageMissionIntroV2244(stg = stage) {
 
   // 현재 일시정지 여부를 기억한 뒤, 미션 안내 중에는 게임을 강제 일시정지
   stageMissionIntroPausedBeforeV2244 = !!isPaused;
+  // 미션 안내 중에는 게임 로직만 임시 정지합니다.
+  // 기존 pauseOverlay / 일시정지 버튼 UI는 표시하지 않습니다.
   isPaused = true;
-  try { setPauseUI(); } catch(e) {}
 
   stageMissionIntroActiveV2244 = true;
   el.style.display = 'block';
@@ -31063,7 +31064,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 224.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 224.4.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
