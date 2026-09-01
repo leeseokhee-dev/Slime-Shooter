@@ -5629,7 +5629,7 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
           <div id="stageClearExpValueWrap">
             <div id="stageClearExpLabel">획득 경험치</div>
             <span id="stageClearExpText">+0</span>
-            <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 보너스 구슬 0</div>
+            <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 보너스 구슬 0<br>🔥 피버 추가 +0 · 🎟️ 쿠폰 추가 +0 · 💥 멀티킬 보너스 +0</div>
             <div id="stageClearOrbCountDetail">EXP 구슬 · 하: 0 EXP · 중: 0 EXP · 상: 0 EXP</div>
             <div id="stageClearPetBonusRow">
               <div id="stageClearPetBonusTitle">장착 펫 보너스</div>
@@ -9797,6 +9797,10 @@ let stageRunStartExp = 0;
 let stageRunExpMonsters = 0;
 let stageRunExpBoss = 0;
 let stageRunExpOrbs = 0;
+// ✅ [v.224.5] 결과창 EXP 보너스 출처별 상세 집계
+let stageRunExpFeverBonus = 0;
+let stageRunExpCouponBonus = 0;
+let stageRunExpMultiKillBonus = 0;
 // ✅ [v.222.8] 스테이지 1판 동안 실제 획득한 EXP 구슬 등급별 개수
 let stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
 // ✅ [v.222.8.1] 등급별로 실제 획득한 EXP 누적량(핫타임/피버 배율 적용 후)
@@ -15569,7 +15573,10 @@ function flushMultiKillIfReady(force = false) {
   const base = estimateKillBaseExpForMultiKill() * count;
   const tutorialNoExp = (gameMode === 'tutorial' && tutorialModeActive);
   const bonus = tutorialNoExp ? 0 : Math.max(1, Math.floor(base * rate));
-  const gained = tutorialNoExp ? 0 : addExp(bonus, { baseAmount: bonus, hotMultiplier: 1, showGainMessage:false });
+  const gained = tutorialNoExp ? 0 : addExp(bonus, { source: 'multikill', baseAmount: bonus, hotMultiplier: 1, showGainMessage:false });
+  if ((gameMode === 'stage' || gameMode === 'mission' || gameMode === 'tutorial') && gained > 0) {
+    stageRunExpMultiKillBonus += Math.max(0, Math.floor(gained));
+  }
   saveData.multikill.total += 1;
   saveData.multikill.best = Math.max(saveData.multikill.best || 0, count);
   saveData.multikill.bonusExp += Math.max(0, gained || bonus);
@@ -22071,6 +22078,16 @@ function drawGainMessages() {
   ctx.restore();
 }
 
+// ✅ [v.224.5] 현재 활성화된 경험치 쿠폰의 '추가 비율'만 반환
+function getActiveExpCouponBonusRateV2245() {
+  try {
+    ensureBuffContainer();
+    const b = saveData?.buffs?.expCoupon;
+    if (!b || !b.until || !b.mult || Date.now() >= b.until) return 0;
+    return Math.max(0, (Number(b.mult) || 1) - 1);
+  } catch(e) { return 0; }
+}
+
 function addExp(amount, opts = {}) {
   const rawBaseAmount = Math.max(0, Number((opts && opts.baseAmount) ?? amount) || 0);
   const hotMult = Math.max(1, Number((opts && opts.hotMultiplier) || 1) || 1);
@@ -22113,8 +22130,21 @@ function addExp(amount, opts = {}) {
 
   amount = Math.max(0, Math.round(prePenaltyTotal * stageHitRate));
 
+  // ✅ [v.224.5] 실제 지급 직전, 피버/쿠폰이 만들어낸 추가 EXP를 판 단위로 기록
+  // 결과창의 몬스터/보스/구슬 수치는 기존처럼 최종 지급량이고, 아래 두 값은 그 안에 포함된 '추가분'입니다.
+  const beforeExpV2245 = exp;
+  const couponRateV2245 = getActiveExpCouponBonusRateV2245();
+  const feverPartV2245 = Math.max(0, Math.round(feverBonusRaw * stageHitRate));
+  const couponPartV2245 = Math.max(0, Math.round((rawBaseAmount * couponRateV2245) * stageHitRate));
+
   // ✅ 상한을 넘지 못하게 clamp
   exp = Math.min(MAX_EXP_CAP, exp + amount);
+  const actuallyGrantedV2245 = Math.max(0, Math.floor(exp - beforeExpV2245));
+  if ((gameMode === 'stage' || gameMode === 'mission' || gameMode === 'tutorial') && actuallyGrantedV2245 > 0) {
+    const scaleV2245 = amount > 0 ? Math.min(1, actuallyGrantedV2245 / amount) : 0;
+    stageRunExpFeverBonus += Math.max(0, Math.round(feverPartV2245 * scaleV2245));
+    stageRunExpCouponBonus += Math.max(0, Math.round(couponPartV2245 * scaleV2245));
+  }
 
   const newLevel = getLevelFromExp(exp);
   if (newLevel > oldLevel) {
@@ -25467,6 +25497,9 @@ if (gameMode === 'stage' || gameMode === 'mission') {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpFeverBonus = 0;
+  stageRunExpCouponBonus = 0;
+  stageRunExpMultiKillBonus = 0;
   stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
@@ -26453,6 +26486,9 @@ if (gameMode === 'stage') {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpFeverBonus = 0;
+  stageRunExpCouponBonus = 0;
+  stageRunExpMultiKillBonus = 0;
   stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
@@ -26474,6 +26510,9 @@ if (gameMode === 'stage') {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpFeverBonus = 0;
+  stageRunExpCouponBonus = 0;
+  stageRunExpMultiKillBonus = 0;
   stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
@@ -26687,7 +26726,10 @@ function finalizeStageClearStats(options = {}) {
   const mExp = Math.max(0, Math.floor(stageRunExpMonsters || 0));
   const bExp = Math.max(0, Math.floor(stageRunExpBoss || 0));
   const oExp = Math.max(0, Math.floor(stageRunExpOrbs || 0));
-  const expGained = Math.max(0, Math.floor((typeof stageRunExpEarned === "number" && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + bExp + oExp)));
+  const expGained = Math.max(0, Math.floor((Number(exp) || 0) - (Number(stageRunStartExp) || 0)));
+  const feverBonusExp = Math.max(0, Math.floor(stageRunExpFeverBonus || 0));
+  const couponBonusExp = Math.max(0, Math.floor(stageRunExpCouponBonus || 0));
+  const multiKillBonusExp = Math.max(0, Math.floor(stageRunExpMultiKillBonus || 0));
 
   // ✅ [v.223.1] 클리어 랭크 계산: 결과창 표시 + 스테이지별 최고 랭크 저장
   let rank = 'D';
@@ -26722,9 +26764,9 @@ function finalizeStageClearStats(options = {}) {
   if (stageClearStageEl) stageClearStageEl.textContent = String(stage || 1);
   if (stageClearDurationEl) stageClearDurationEl.textContent = `${timeSec}초`;
   if (stageClearExpDetailEl) {
-    stageClearExpDetailEl.textContent = isMonsterParkClear
-      ? `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 경험치 없음`
-      : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
+    stageClearExpDetailEl.innerHTML = isMonsterParkClear
+      ? `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 경험치 없음<br>🔥 피버 추가 +${formatNumber(feverBonusExp)} · 🎟️ 쿠폰 추가 +${formatNumber(couponBonusExp)} · 💥 멀티킬 보너스 +${formatNumber(multiKillBonusExp)}`
+      : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}<br>🔥 피버 추가 +${formatNumber(feverBonusExp)} · 🎟️ 쿠폰 추가 +${formatNumber(couponBonusExp)} · 💥 멀티킬 보너스 +${formatNumber(multiKillBonusExp)}`;
   }
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
   if (stageClearOrbCountEl) {
@@ -26783,6 +26825,9 @@ function initMissionBonusStage() {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpFeverBonus = 0;
+  stageRunExpCouponBonus = 0;
+  stageRunExpMultiKillBonus = 0;
   stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
@@ -27202,6 +27247,9 @@ function initTutorialModeRun(){
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpFeverBonus = 0;
+  stageRunExpCouponBonus = 0;
+  stageRunExpMultiKillBonus = 0;
   stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
@@ -31075,7 +31123,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 224.4.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 224.5', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -31389,9 +31437,12 @@ function updateStageClearModalBonusResult() {
   const mExp = Math.max(0, Math.floor(stageRunExpMonsters || 0));
   const bExp = Math.max(0, Math.floor(stageRunExpBoss || 0));
   const oExp = Math.max(0, Math.floor(stageRunExpOrbs || 0));
-  const total = Math.max(0, Math.floor((typeof stageRunExpEarned === "number" && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + bExp + oExp)));
+  const total = Math.max(0, Math.floor((Number(exp) || 0) - (Number(stageRunStartExp) || 0)));
+  const feverBonusExp = Math.max(0, Math.floor(stageRunExpFeverBonus || 0));
+  const couponBonusExp = Math.max(0, Math.floor(stageRunExpCouponBonus || 0));
+  const multiKillBonusExp = Math.max(0, Math.floor(stageRunExpMultiKillBonus || 0));
   const detailEl = document.getElementById('stageClearExpDetail');
-  if (detailEl) detailEl.textContent = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
+  if (detailEl) detailEl.innerHTML = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}<br>🔥 피버 추가 +${formatNumber(feverBonusExp)} · 🎟️ 쿠폰 추가 +${formatNumber(couponBonusExp)} · 💥 멀티킬 보너스 +${formatNumber(multiKillBonusExp)}`;
   const orbCountEl = document.getElementById('stageClearOrbCountDetail');
   if (orbCountEl) {
     const orbCounts = stageRunExpOrbCounts || { low:0, mid:0, high:0 };
