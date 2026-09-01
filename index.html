@@ -9385,7 +9385,8 @@ function getStageMonsterSpawnBatchSize(stg) {
   // ✅ [v.221.2] 201~300도 101~200과 동일한 생성량 적용
   // 전 구간 공통 생성 간격은 0.75초이며, 101~300은 1회당 4마리
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
-  if (stg <= 15) return 1;
+  if (stg <= 5) return 1;
+  if (stg <= 15) return 2;
   if (stg <= 100) return 3;
   return 4;
 }
