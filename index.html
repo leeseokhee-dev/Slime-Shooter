@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.224.2.1)</title>
+<title>Slime Shooter - Ultimate Evolution (v.224.4)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4907,6 +4907,68 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
 
 </style>
 
+
+<style id="v2244MissionIntroCss">
+/* ===== [v.224.4] 스테이지 미션 시작 안내 ===== */
+#stageMissionIntroV2244{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.96);
+  width:min(86%,520px);
+  z-index:135;
+  pointer-events:auto;
+  text-align:center;
+  opacity:0;
+  transition:opacity .22s ease, transform .22s ease;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+#stageMissionIntroV2244.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+#stageMissionIntroV2244 .mission-intro-card{
+  padding:18px 20px 16px;
+  border:2px solid rgba(124,231,255,.86);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(10,22,38,.96),rgba(4,10,20,.94));
+  box-shadow:0 18px 52px rgba(0,0,0,.52),0 0 22px rgba(80,210,255,.22);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+#stageMissionIntroV2244 .mission-intro-title{
+  font-size:clamp(24px,5vw,38px);
+  font-weight:1000;
+  letter-spacing:2px;
+  color:#7ce7ff;
+  text-shadow:0 0 14px rgba(124,231,255,.45),0 2px 4px #000;
+}
+#stageMissionIntroV2244 .mission-intro-stage{
+  margin-top:2px;
+  font-size:13px;
+  font-weight:900;
+  color:#c7d8f7;
+}
+#stageMissionIntroV2244 .mission-intro-text{
+  margin-top:10px;
+  font-size:clamp(14px,3.4vw,20px);
+  line-height:1.55;
+  font-weight:1000;
+  color:#fff4b8;
+  text-shadow:0 2px 4px rgba(0,0,0,.86);
+}
+#stageMissionIntroV2244 .mission-intro-hint{
+  margin-top:8px;
+  font-size:11px;
+  color:#a9bbd8;
+  font-weight:800;
+}
+@media(max-width:520px){
+  #stageMissionIntroV2244 .mission-intro-card{padding:14px 14px 13px}
+}
+</style>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -9218,6 +9280,18 @@ function damagePlayer(amount, px, py, hitInfo = null) {
   stageRunHits = (stageRunHits || 0) + 1;
   playerInvulnTimer = 1000;
 
+  // ✅ [v.224.3] 피격 제한 복합 미션: 제한 횟수에 도달하면 즉시 실패 처리
+  try {
+    if (gameMode === 'stage' && !stageCleared) {
+      const stageObjV2243 = getStageObjectiveV224(stage);
+      if (stageObjV2243 && stageObjV2243.type === 'hitkill' &&
+          (stageRunHits || 0) >= stageObjV2243.hitLimit) {
+        try { showToast(`❌ 미션 실패: 피격 ${stageRunHits}/${stageObjV2243.hitLimit}`, '#ff8a8a', 1800); } catch(_) {}
+        playerHp = 0;
+      }
+    }
+  } catch(e) {}
+
   try { spawnExplosion(px || player.x, py || player.y, 'rgba(255,90,90,1)', 14); } catch(e){}
   try { spawnDamageText(px || player.x, (py || player.y) - 18, `-${dmg}`, '#ff6666'); } catch(e){}
   try { if (SFX && SFX.explosion) SFX.explosion(); } catch(e){}
@@ -9335,6 +9409,50 @@ function getStageMultiKillMissionSpecV224(stg) {
   return { chain, times };
 }
 
+
+// ===============================
+// ✅ [v.224.3] 고레벨 복합 미션
+// - 101~200: '피격 제한 + 몬스터 처치' 미션이 새로 추가
+// - 201~300: 위 미션을 유지하면서 '스킬 사용 + 몬스터 처치' 미션도 추가
+// - 기존 일반 처치 / 멀티킬 / 생존 / 최초 보스 미션은 그대로 유지
+// ===============================
+function getCompositeStageKillTargetV2243(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  const normalTarget = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
+  // 복합 조건이 붙으므로 일반 처치 목표의 약 80%, 5마리 단위 반올림
+  // 예: 101스테이지 30 -> 25 / 201스테이지 50 -> 40
+  return Math.max(5, Math.round((normalTarget * 0.8) / 5) * 5);
+}
+
+function getStageHitLimitMissionV2243(stg) {
+  return 3;
+}
+
+function getStageSkillUseTargetV2243(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  if (s >= 281) return 10;
+  if (s >= 241) return 7;
+  return 5;
+}
+
+function isHitLimitMissionStageV2243(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  if (s < 101) return false;
+  if (s < 201) {
+    // 101, 121, 141, 161, 181
+    return ((s - 101) % 20) === 0;
+  }
+  // 201 이후에도 피격 제한 미션 유지: 211, 241, 271
+  return ((s - 211) % 30) === 0;
+}
+
+function isSkillUseMissionStageV2243(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  if (s < 201) return false;
+  // 201, 231, 261, 291
+  return ((s - 201) % 30) === 0;
+}
+
 function getStageObjectiveV224(stg) {
   const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
   const killTarget = getStageKillTarget(s);
@@ -9360,6 +9478,32 @@ function getStageObjectiveV224(stg) {
     };
   }
   // 1~10은 기본 조작에 익숙해질 수 있도록 처치/생존만 사용
+  // ✅ [v.224.3] 고레벨 신규 복합 미션
+  // 보스 스테이지 판정보다 뒤에 두어 최초 보스 규칙을 침범하지 않습니다.
+  if (isSkillUseMissionStageV2243(s)) {
+    const target = getCompositeStageKillTargetV2243(s);
+    const skillTarget = getStageSkillUseTargetV2243(s);
+    return {
+      type:'skillkill',
+      target,
+      skillTarget,
+      label:`스킬 ${skillTarget}회 사용하고 몬스터 ${formatNumber(target)}마리 처치`,
+      shortLabel:`스킬 ${skillTarget}회 + 처치 ${formatNumber(target)}마리`
+    };
+  }
+
+  if (isHitLimitMissionStageV2243(s)) {
+    const target = getCompositeStageKillTargetV2243(s);
+    const hitLimit = getStageHitLimitMissionV2243(s);
+    return {
+      type:'hitkill',
+      target,
+      hitLimit,
+      label:`${hitLimit}회 피격을 받기 전에 몬스터 ${formatNumber(target)}마리 처치`,
+      shortLabel:`피격 제한 ${hitLimit}회 + 처치 ${formatNumber(target)}마리`
+    };
+  }
+
   if (s < 11) {
     if ((s % 2) === 0) {
       const sec = getStageSurvivalTargetSecV224(s);
@@ -9386,18 +9530,151 @@ function getStageObjectiveV224(stg) {
 
 function getStageObjectiveProgressTextV224(stg = stage) {
   const obj = getStageObjectiveV224(stg);
+  const mark = (done) => done ? ' ✓' : '';
+
   if (obj.type === 'boss') {
     const kills = Math.min(obj.killTarget, Math.max(0, Math.floor(stageRunKillCount || 0)));
     const bossKills = Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)));
-    return `몬스터 ${formatNumber(kills)}/${formatNumber(obj.killTarget)} · 보스 ${bossKills}/1`;
+    return `몬스터 ${formatNumber(kills)}/${formatNumber(obj.killTarget)}${mark(kills >= obj.killTarget)} · 보스 ${bossKills}/1${mark(bossKills >= 1)}`;
   }
-  if (obj.type === 'multikill') return `${obj.chain} MULTI ${Math.min(obj.target, Math.max(0, Math.floor(stageRunMultiKillMissionCount || 0)))}/${obj.target}`;
+  if (obj.type === 'multikill') {
+    const count = Math.min(obj.target, Math.max(0, Math.floor(stageRunMultiKillMissionCount || 0)));
+    return `${obj.chain} MULTI ${count}/${obj.target}${mark(count >= obj.target)}`;
+  }
+  if (obj.type === 'hitkill') {
+    const hits = Math.max(0, Math.floor(stageRunHits || 0));
+    const kills = Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0)));
+    const hitState = hits >= obj.hitLimit ? ' ❌' : ' ✓';
+    return `피격 ${Math.min(hits, obj.hitLimit)}/${obj.hitLimit}${hitState} · 몬스터 처치 ${formatNumber(kills)}/${formatNumber(obj.target)}${mark(kills >= obj.target)}`;
+  }
+  if (obj.type === 'skillkill') {
+    const skills = Math.min(obj.skillTarget, Math.max(0, Math.floor(stageRunSkillUseCountV2243 || 0)));
+    const kills = Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0)));
+    return `스킬 ${skills}/${obj.skillTarget}${mark(skills >= obj.skillTarget)} · 몬스터 처치 ${formatNumber(kills)}/${formatNumber(obj.target)}${mark(kills >= obj.target)}`;
+  }
   if (obj.type === 'survival') {
     const elapsed = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
-    return `생존 ${Math.min(obj.target, Math.floor(elapsed))}/${obj.target}초`;
+    const shown = Math.min(obj.target, Math.floor(elapsed));
+    return `생존 ${shown}/${obj.target}초${mark(shown >= obj.target)}`;
   }
-  return `처치 ${formatNumber(Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0))))}/${formatNumber(obj.target)}`;
+
+  const kills = Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0)));
+  return `처치 ${formatNumber(kills)}/${formatNumber(obj.target)}${mark(kills >= obj.target)}`;
 }
+
+// ===== [v.224.4] 스테이지 시작 미션 안내 + 임시 일시정지 =====
+let stageMissionIntroTimerV2244 = null;
+let stageMissionIntroActiveV2244 = false;
+let stageMissionIntroPausedBeforeV2244 = false;
+
+function getStageMissionIntroLinesV2244(stg = stage) {
+  const obj = getStageObjectiveV224(stg);
+  if (!obj) return ['미션 정보를 불러올 수 없습니다.'];
+
+  if (obj.type === 'boss') {
+    return [
+      `몬스터 ${formatNumber(obj.killTarget)}마리 처치`,
+      `보스 1마리 처치`
+    ];
+  }
+  if (obj.type === 'hitkill') {
+    return [
+      `피격 ${obj.hitLimit}회 전에 클리어`,
+      `몬스터 ${formatNumber(obj.target)}마리 처치`
+    ];
+  }
+  if (obj.type === 'skillkill') {
+    return [
+      `스킬 ${obj.skillTarget}회 사용`,
+      `몬스터 ${formatNumber(obj.target)}마리 처치`
+    ];
+  }
+  if (obj.type === 'multikill') return [`${obj.chain} MULTI 이상 ${obj.target}회 달성`];
+  if (obj.type === 'survival') return [`${obj.target}초 동안 생존`];
+  return [`몬스터 ${formatNumber(obj.target)}마리 처치`];
+}
+
+function closeStageMissionIntroV2244() {
+  if (!stageMissionIntroActiveV2244) return;
+
+  stageMissionIntroActiveV2244 = false;
+
+  if (stageMissionIntroTimerV2244) {
+    clearTimeout(stageMissionIntroTimerV2244);
+    stageMissionIntroTimerV2244 = null;
+  }
+
+  const el = document.getElementById('stageMissionIntroV2244');
+  if (el) {
+    el.classList.remove('show');
+    setTimeout(() => {
+      if (!stageMissionIntroActiveV2244) el.style.display = 'none';
+    }, 220);
+  }
+
+  // 미션 안내가 띄우기 전부터 일시정지 상태였던 경우에는 그대로 유지
+  if (!stageMissionIntroPausedBeforeV2244) {
+    isPaused = false;
+    try { setPauseUI(); } catch(e) {}
+  }
+}
+
+function showStageMissionIntroV2244(stg = stage) {
+  if (gameMode !== 'stage') return;
+  if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return;
+
+  const host = document.getElementById('gameContainer') || document.body;
+  let el = document.getElementById('stageMissionIntroV2244');
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'stageMissionIntroV2244';
+    el.innerHTML = `
+      <div class="mission-intro-card">
+        <div class="mission-intro-title">MISSION</div>
+        <div class="mission-intro-stage"></div>
+        <div class="mission-intro-text"></div>
+        <div class="mission-intro-hint">터치 또는 클릭하면 바로 시작합니다</div>
+      </div>`;
+    host.appendChild(el);
+
+    const dismiss = (ev) => {
+      if (!stageMissionIntroActiveV2244) return;
+      try { ev.preventDefault(); ev.stopPropagation(); } catch(e) {}
+      closeStageMissionIntroV2244();
+    };
+    el.addEventListener('pointerdown', dismiss, { passive:false });
+    el.addEventListener('click', dismiss);
+  }
+
+  const stageLabel = el.querySelector('.mission-intro-stage');
+  const missionText = el.querySelector('.mission-intro-text');
+  if (stageLabel) stageLabel.textContent = `STAGE ${Math.max(1, Math.floor(Number(stg) || 1))}`;
+  if (missionText) {
+    missionText.innerHTML = getStageMissionIntroLinesV2244(stg)
+      .map(line => `<div>${line}</div>`).join('');
+  }
+
+  if (stageMissionIntroTimerV2244) {
+    clearTimeout(stageMissionIntroTimerV2244);
+    stageMissionIntroTimerV2244 = null;
+  }
+
+  // 현재 일시정지 여부를 기억한 뒤, 미션 안내 중에는 게임을 강제 일시정지
+  stageMissionIntroPausedBeforeV2244 = !!isPaused;
+  isPaused = true;
+  try { setPauseUI(); } catch(e) {}
+
+  stageMissionIntroActiveV2244 = true;
+  el.style.display = 'block';
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+
+  // 자동: 일정 시간이 지나면 닫고 게임 재개
+  stageMissionIntroTimerV2244 = setTimeout(closeStageMissionIntroV2244, 2000);
+}
+
 
 function recordStageMultiKillMissionV224(count) {
   if (gameMode !== 'stage' || stageCleared) return;
@@ -9434,6 +9711,15 @@ function checkStageKillClearNow() {
     }
   } else if (obj.type === 'multikill') {
     if ((stageRunMultiKillMissionCount || 0) < obj.target) return false;
+    stageCleared = true;
+  } else if (obj.type === 'hitkill') {
+    // 피격 제한에 도달하면 이 판에서는 조건 실패
+    if ((stageRunHits || 0) >= obj.hitLimit) return false;
+    if ((stageRunKillCount || 0) < obj.target) return false;
+    stageCleared = true;
+  } else if (obj.type === 'skillkill') {
+    if ((stageRunSkillUseCountV2243 || 0) < obj.skillTarget) return false;
+    if ((stageRunKillCount || 0) < obj.target) return false;
     stageCleared = true;
   } else if (obj.type === 'survival') {
     const elapsedSec = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
@@ -9521,6 +9807,7 @@ function hasStageClearRecordV2241(stg) {
 }
 let stageRunHits = 0;
 let stageRunMultiKillMissionCount = 0; // ✅ [v.224.0] 이번 스테이지 멀티킬 미션 달성 횟수
+let stageRunSkillUseCountV2243 = 0;   // ✅ [v.224.3] 이번 스테이지 실제 스킬 사용 횟수
 // ✅ [v.222.9] 스테이지 최근 20판 기록 중복 저장 방지
 let stageRunHistoryRecorded = false;
 
@@ -15458,6 +15745,11 @@ function addSkillQuestCount(type, amount = 1) {
   addQuestStat('skillUses', addAmount);
   if (gameMode === 'mission') {
     missionState.skillUses = Math.max(0, Math.floor(Number(missionState.skillUses) || 0) + Math.max(0, Math.floor(Number(amount) || 0)));
+  }
+  // ✅ [v.224.3] 스테이지 복합 미션: 실제 발동에 성공한 스킬만 집계
+  if (gameMode === 'stage' && addAmount > 0) {
+    stageRunSkillUseCountV2243 = Math.max(0, Math.floor(Number(stageRunSkillUseCountV2243) || 0) + addAmount);
+    try { checkStageKillClearNow(); } catch(e) {}
   }
   q.target = Math.max(10, Math.floor(Number(q.target) || 10));
   q.tier = Math.max(1, Math.floor(Number(q.tier) || Math.max(1, q.target / 10)));
@@ -25168,6 +25460,7 @@ if (gameMode === 'stage' || gameMode === 'mission') {
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunMultiKillMissionCount = 0;
+  stageRunSkillUseCountV2243 = 0;
   stageRunItemPickupCount = 0;
   stageRunGemPickupCount = 0;
   stageBossTriggered = false;
@@ -25208,6 +25501,11 @@ if (gameMode === 'stage' || gameMode === 'mission') {
   // ✅ [v.42+] 스테이지 EXP 상세 집계
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
+}
+
+// ✅ [v.224.4] 전투 시작 전 현재 스테이지 미션을 안내하고 잠시 일시정지
+if (gameMode === 'stage') {
+  try { showStageMissionIntroV2244(stage); } catch(e) {}
 }
 
 spawnNextWave();
@@ -26148,6 +26446,7 @@ if (gameMode === 'stage') {
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunMultiKillMissionCount = 0;
+  stageRunSkillUseCountV2243 = 0;
   stageRunItemPickupCount = 0;
   stageRunGemPickupCount = 0;
   stageBossTriggered = false;
@@ -30764,7 +31063,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 224.2.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 224.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
