@@ -661,6 +661,15 @@ body.dead-mode #consumableQuickBar{
     }
     .ui-btn:active { background: #112233; transform: translateY(1px); }
 
+/* ===== [v.223.0] 전체 데이터 초기화 ===== */
+#factoryResetBtn{
+  border-color:#ff6b6b !important;
+  color:#ffd7d7 !important;
+  background:linear-gradient(to bottom,#6b2020,#2b0909) !important;
+  font-weight:900;
+}
+#factoryResetBtn:active{ background:#3a0909 !important; }
+
 /* ===== FPS 선택 버튼 ===== */
 .fps-btn{
   min-width: 48px;
@@ -1921,6 +1930,14 @@ body.dead-mode #townQuestTracker{
   font-size: 12px !important;
   line-height: 1.55;
   color:#d9ebff !important;
+}
+#stageClearOrbCountDetail{
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  font-size: 12px;
+  line-height: 1.55;
+  color:#eaf4ff;
 }
 
 #stageClearBestRow .stage-clear-value{
@@ -4897,6 +4914,7 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
         <button id="nickBtn" class="ui-btn">캐릭터</button>
         <button id="backupBtn" class="ui-btn">백업</button>
         <button id="restoreBtn" class="ui-btn">복원</button>
+        <button id="factoryResetBtn" class="ui-btn" type="button" title="모든 저장 데이터 삭제">데이터 초기화</button>
         <button id="shopBtn" class="ui-btn">상점</button>
         <button id="skillGuideBtn" class="ui-btn">스킬 가이드</button>
         <button id="inventoryBtn" class="ui-btn">인벤토리</button>
@@ -5413,7 +5431,6 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
     <div class="modal-header">스테이지 선택</div>
     
 
->
 <div id="stageGrid" class="modal-body stage-grid" style="max-height: 400px;">
         <!-- JS로 생성 -->
     </div>
@@ -5470,6 +5487,7 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
             <div id="stageClearExpLabel">획득 경험치</div>
             <span id="stageClearExpText">+0</span>
             <div id="stageClearExpDetail">몬스터 0 · 보스 0 · 보너스 구슬 0</div>
+            <div id="stageClearOrbCountDetail">EXP 구슬 · 하: 0 EXP · 중: 0 EXP · 상: 0 EXP</div>
             <div id="stageClearPetBonusRow">
               <div id="stageClearPetBonusTitle">장착 펫 보너스</div>
               <div id="stageClearPetBonusText">EXP +0% · 골드 +0% · 점수 +0% · 공격력 +0%</div>
@@ -6732,6 +6750,7 @@ function getExpPercentDigitsByLevel(lv = level){
 const nickBtn = document.getElementById('nickBtn');
 const backupBtn = document.getElementById('backupBtn');
 const restoreBtn = document.getElementById('restoreBtn');
+const factoryResetBtn = document.getElementById('factoryResetBtn');
 const shopBtn = document.getElementById('shopBtn');
 const inventoryBtn = document.getElementById('inventoryBtn');
 const consumableQuickBar = document.getElementById('consumableQuickBar');
@@ -8740,6 +8759,8 @@ cashCrystalProductionResetDone: true, // 신규 캐릭터는 처음부터 정식
 totalMonsterKills: 0, // ✅ 새 시작부터 지금까지 몬스터 누적 처치 수
 totalBossKills: 0, // ✅ 새 시작부터 지금까지 보스 누적 처치 수
 bestInfiniteDistance: 0, // ✅ 무한 모드 최고 거리
+totalPlayCount: 0, // ✅ [v.222.9] 전체 누적 플레이 판수
+stageRecentHistory: [], // ✅ [v.222.9] 스테이지 모드 최근 20판 기록
 titleSystem: { equipped: 'title_slime' }, // ✅ 칭호 시스템
 bgmEnabled: true,
 sfxEnabled: true,
@@ -9294,11 +9315,55 @@ let stageRunStartExp = 0;
 let stageRunExpMonsters = 0;
 let stageRunExpBoss = 0;
 let stageRunExpOrbs = 0;
+// ✅ [v.222.8] 스테이지 1판 동안 실제 획득한 EXP 구슬 등급별 개수
+let stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+// ✅ [v.222.8.1] 등급별로 실제 획득한 EXP 누적량(핫타임/피버 배율 적용 후)
+let stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
 let stageRunGoldEarned = 0;
 let stageRunKillCount = 0;
 let stageBossTriggered = false; // ✅ 스테이지 모드 보스 스폰 트리거(매 스테이지)
 let stageBossKillCount = 0;   // ✅ 스테이지 모드 보스 처치 카운트(0/1)
 let stageRunHits = 0;
+// ✅ [v.222.9] 스테이지 최근 20판 기록 중복 저장 방지
+let stageRunHistoryRecorded = false;
+
+function ensureStageRecentHistoryV2229() {
+  if (!saveData || typeof saveData !== 'object') return [];
+  if (!Array.isArray(saveData.stageRecentHistory)) saveData.stageRecentHistory = [];
+  if (saveData.stageRecentHistory.length > 20) saveData.stageRecentHistory = saveData.stageRecentHistory.slice(0, 20);
+  return saveData.stageRecentHistory;
+}
+
+function addStageRecentHistoryV2229(resultType, options = {}) {
+  if (gameMode !== 'stage' || stageRunHistoryRecorded) return false;
+  const history = ensureStageRecentHistoryV2229();
+  const now = performance.now();
+  const timeMs = Math.max(0, Math.floor(Number(options.timeMs) || (now - (stageRunStartTime || now))));
+  const gainedExp = Math.max(0, Math.floor(Number(options.expGained) || Math.max(0, (Number(exp) || 0) - (Number(stageRunStartExp) || 0))));
+  const entry = {
+    at: Date.now(),
+    stage: Math.max(1, Math.floor(Number(stage) || 1)),
+    result: resultType === 'CLEAR' ? 'CLEAR' : 'GAME OVER',
+    timeMs,
+    expGained: gainedExp,
+    kills: Math.max(0, Math.floor(Number(stageRunKillCount) || 0)),
+    hits: Math.max(0, Math.floor(Number(stageRunHits) || 0)),
+    gold: Math.max(0, Math.floor(Number(stageRunGoldEarned) || 0))
+  };
+  history.unshift(entry);
+  if (history.length > 20) history.length = 20;
+  stageRunHistoryRecorded = true;
+  try { saveGameData(); } catch(e) { try { saveGameDataDebounced(); } catch(_) {} }
+  return true;
+}
+
+function formatStageHistoryDateV2229(ts) {
+  try {
+    const d = new Date(Number(ts) || Date.now());
+    return d.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false });
+  } catch(e) { return '-'; }
+}
+
 
 let currentBossLevel = 1;
 let lastBossBonus = 0;
@@ -10883,6 +10948,19 @@ function drawExpItems() {
   }
 }
 
+function countStageRunExpOrbPickup(gradeKey, gainedExp = 0) {
+  if (gameMode !== 'stage') return;
+  const key = (gradeKey === 'high' || gradeKey === 'mid') ? gradeKey : 'low';
+  if (!stageRunExpOrbCounts || typeof stageRunExpOrbCounts !== 'object') {
+    stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  }
+  if (!stageRunExpOrbExp || typeof stageRunExpOrbExp !== 'object') {
+    stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
+  }
+  stageRunExpOrbCounts[key] = Math.max(0, Math.floor(Number(stageRunExpOrbCounts[key]) || 0)) + 1;
+  stageRunExpOrbExp[key] = Math.max(0, Math.floor(Number(stageRunExpOrbExp[key]) || 0)) + Math.max(0, Math.floor(Number(gainedExp) || 0));
+}
+
 function tryPickupExpItems() {
   if (!player || !player.alive || isPlayerDying) return;
   if (gameMode === 'dungeon') return; // 던전: EXP 구슬 없음
@@ -10916,6 +10994,7 @@ function tryPickupExpItems() {
           }
         }
       }
+      countStageRunExpOrbPickup(it.gradeKey, gained);
       if (saveData.quests && saveData.quests.expOrb) {
   saveData.quests.expOrb.count = (saveData.quests.expOrb.count || 0) + 1;
   // ✅ [v.30] 일일/주간 카운트
@@ -11022,6 +11101,7 @@ try {
           addExp(gained, { baseAmount: baseExp, hotMultiplier: hotMult });
           if (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'tutorial') stageRunExpOrbs += gained;
         }
+        countStageRunExpOrbPickup(it.gradeKey, gained);
         if (saveData.quests && saveData.quests.expOrb) {
           saveData.quests.expOrb.count = (saveData.quests.expOrb.count || 0) + 1;
           addQuestStat('expOrbs', 1);
@@ -11231,6 +11311,11 @@ if (typeof saveData.playTimeSec !== 'number' || !isFinite(saveData.playTimeSec))
 if (typeof saveData.totalMonsterKills !== 'number' || !isFinite(saveData.totalMonsterKills)) saveData.totalMonsterKills = 0;
 if (typeof saveData.totalBossKills !== 'number' || !isFinite(saveData.totalBossKills)) saveData.totalBossKills = 0;
 if (typeof saveData.bestInfiniteDistance !== 'number' || !isFinite(saveData.bestInfiniteDistance)) saveData.bestInfiniteDistance = 0;
+// ✅ [v.222.9] 구버전 저장 데이터 호환: 누적 판수 / 스테이지 최근 20판
+if (typeof saveData.totalPlayCount !== 'number' || !isFinite(saveData.totalPlayCount)) saveData.totalPlayCount = 0;
+saveData.totalPlayCount = Math.max(0, Math.floor(saveData.totalPlayCount || 0));
+if (!Array.isArray(saveData.stageRecentHistory)) saveData.stageRecentHistory = [];
+saveData.stageRecentHistory = saveData.stageRecentHistory.slice(0, 20).filter(v => v && typeof v === 'object');
 if (!saveData.titleSystem || typeof saveData.titleSystem !== 'object') saveData.titleSystem = { equipped: 'title_slime' };
 if (typeof saveData.titleSystem.equipped !== 'string' || !saveData.titleSystem.equipped) saveData.titleSystem.equipped = 'title_slime';
 if (typeof saveData.petCollector !== 'boolean') saveData.petCollector = false;
@@ -11249,6 +11334,7 @@ updateSettingsUI();
 }
 
 function saveGameData() {
+if (window.__SS_FACTORY_RESETTING__) return;
 saveData.exp = exp;
 saveData.level = level;
 saveData.bgmEnabled = bgmEnabled;
@@ -11632,6 +11718,11 @@ function openRestorePromptFallback() {
 }
 
 // 버튼 이벤트 연결(버튼이 없을 수도 있으니 안전하게)
+factoryResetBtn && factoryResetBtn.addEventListener('click', () => {
+  initAudio();
+  requestFactoryResetV223();
+});
+
 backupBtn && backupBtn.addEventListener('click', () => {
   if (confirm('현재 진행 상황을 백업할까요?\n(파일 저장 + 백업코드 복사)')) {
     doBackup();
@@ -13819,6 +13910,8 @@ function openProfile(isRefresh = false) {
   const curGold = Math.floor(gold || 0);
   const bestStage = getBestStage();
   const bestInfiniteDistance = getBestInfiniteDistanceSafe();
+  const totalPlayCount = Math.max(0, Math.floor(Number(saveData.totalPlayCount) || 0));
+  const stageRecentHistory = ensureStageRecentHistoryV2229();
   const atk = getPlayerAttackPower();
   const leftPet = getEquippedPet('left');
   ensureTitleSystemState();
@@ -13832,6 +13925,34 @@ function openProfile(isRefresh = false) {
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
         <div style="font-weight:900; color:#cfefff;">⏱️ 게임 플레이 시간</div>
         <div style="margin-top:2px; font-size:15px; font-weight:900;">${formatPlayTime(playSec)}</div>
+      </div>
+
+      <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
+        <div style="font-weight:900; color:#cfefff;">🎮 누적 플레이 판수</div>
+        <div style="margin-top:2px; font-size:15px; font-weight:900;">${formatNumber(totalPlayCount)}판</div>
+        <div style="margin-top:4px; font-size:11px; color:#aeb9d8;">튜토리얼·연습 모드는 제외</div>
+      </div>
+
+      <div style="padding:10px 12px; border:1px solid rgba(68,255,184,0.22); border-radius:12px; background:rgba(17,48,42,0.24);">
+        <div style="font-weight:900; color:#8fffe3;">🕘 최근 스테이지 20판</div>
+        <div style="margin-top:4px; font-size:11px; color:#aeb9d8;">스테이지 모드의 CLEAR / GAME OVER 기록만 저장됩니다.</div>
+        <div style="margin-top:9px; display:flex; flex-direction:column; gap:6px;">
+          ${stageRecentHistory.length ? stageRecentHistory.map((r, idx) => {
+            const cleared = String(r.result || '') === 'CLEAR';
+            const resultColor = cleared ? '#7cffb7' : '#ff9f9f';
+            return `
+              <div style="padding:8px 9px; border:1px solid rgba(255,255,255,0.08); border-radius:9px; background:rgba(0,0,0,0.18);">
+                <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                  <span style="font-weight:900; color:#fff2b2;">#${idx + 1} · STAGE ${formatNumber(r.stage || 1)}</span>
+                  <span style="font-weight:1000; color:${resultColor};">${cleared ? 'CLEAR' : 'GAME OVER'}</span>
+                </div>
+                <div style="margin-top:4px; font-size:12px; color:#dbe6ff; line-height:1.5;">
+                  ${formatMMSSFromMs(r.timeMs || 0)} · +${formatNumber(r.expGained || 0)} EXP · ${formatNumber(r.kills || 0)}마리 처치
+                </div>
+                <div style="margin-top:2px; font-size:10px; color:#8f9ab7;">${formatStageHistoryDateV2229(r.at)}</div>
+              </div>`;
+          }).join('') : '<div style="padding:10px; text-align:center; color:#8f9ab7; font-size:12px;">아직 스테이지 기록이 없습니다.</div>'}
+        </div>
       </div>
 
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
@@ -15654,6 +15775,65 @@ function exitGameFromTitle() {
     if (closeGameWindow()) return;
     alert('게임을 종료합니다. 만약 게임이 종료되지 않을 경우 탭 닫기 또는 앱 나가기를 해주시기 바랍니다.');
   }, '게임 종료');
+}
+
+
+// ===============================
+// ✅ [v.223.0] 전체 데이터 초기화 (2중 확인)
+// - 모든 캐릭터/진행도/인벤토리/펫/골드/기록/환경설정 삭제
+// - 튜토리얼/공지/파티 등 Slime Shooter 보조 localStorage도 함께 삭제
+// - 삭제 직후 자동 저장이 데이터를 되살리지 못하도록 저장 차단 후 새로고침
+// ===============================
+function getAllSlimeShooterStorageKeysV223() {
+  const keys = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key.startsWith('slimeShooter') || key.startsWith('ss_')) keys.push(key);
+    }
+  } catch(e) {}
+  return keys;
+}
+
+function executeFactoryResetV223() {
+  window.__SS_FACTORY_RESETTING__ = true;
+  try {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+  } catch(e) {}
+  try { stopProfileAutoRefresh(); } catch(e) {}
+  try { if (typeof forceEndFever === 'function') forceEndFever('factory-reset'); } catch(e) {}
+
+  const keys = getAllSlimeShooterStorageKeysV223();
+  try { keys.forEach(key => localStorage.removeItem(key)); } catch(e) {}
+
+  // 메모리에 남은 현재 계정이 unload 직전에 다시 저장되지 않도록 한 뒤 재시작합니다.
+  try { hideConfirmDialog(); } catch(e) {}
+  try { location.reload(); }
+  catch(e) {
+    alert('데이터 초기화가 완료되었습니다. 게임을 다시 실행해 주세요.');
+  }
+}
+
+function requestFactoryResetV223() {
+  showConfirmDialog(
+    '<b style="color:#ff9c9c;">주의: 지금까지 저장된 모든 데이터가 삭제됩니다.</b>\n' +
+    '모든 캐릭터, 레벨, 경험치, 골드, 스테이지 진행도, 펫, 인벤토리, 퀘스트, 최근 기록과 설정이 사라집니다.\n\n' +
+    '이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?',
+    () => {
+      showConfirmDialog(
+        '<b style="color:#ff6b6b; font-size:16px;">정말로 삭제하시겠습니까?</b>\n' +
+        '다시 한 번 확인합니다. 예를 누르면 계정이 사라지는 것처럼 모든 저장 데이터가 즉시 삭제되고, 게임이 처음 설치된 상태로 돌아갑니다.\n\n' +
+        '<b>백업하지 않은 데이터는 복구할 수 없습니다.</b>',
+        () => executeFactoryResetV223(),
+        '⚠ 최종 데이터 삭제 확인'
+      );
+    },
+    '⚠ 데이터 초기화 주의'
+  );
 }
 
 
@@ -24675,11 +24855,16 @@ lasers = [];
 
 // ✅ [v.41] 스테이지 시작 시 체력/기록 리셋(스테이지 모드만)
 if (gameMode === 'stage' || gameMode === 'mission') {
+  // ✅ [v.222.9.1] 다음 스테이지/재도전도 각각 새로운 1판으로 기록될 수 있도록
+  // 이전 판의 최근 기록 중복 방지 플래그를 스테이지 시작 시 해제합니다.
+  if (gameMode === 'stage') stageRunHistoryRecorded = false;
   syncPlayerHealthToLevel({ refill: true });
   stageRunHits = 0;
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunItemPickupCount = 0;
@@ -25603,6 +25788,13 @@ function startGame(startStageNum = 1) {
 try { if (typeof forceEndFever === 'function') forceEndFever('start-game'); } catch(e) {}
 clearMissionAutoAdvanceTimer();
 initAudio();
+// ✅ [v.222.9] 실제 플레이 시작 1회 = 누적 플레이 판수 1 증가
+// 튜토리얼/연습 모드는 일반 플레이 판수에서 제외합니다.
+if (gameMode !== 'tutorial' && gameMode !== 'practice') {
+  saveData.totalPlayCount = Math.max(0, Math.floor(Number(saveData.totalPlayCount) || 0)) + 1;
+  try { saveGameDataDebounced(); } catch(e) {}
+}
+stageRunHistoryRecorded = false;
 score = 0; bullets = []; bubbles = []; enemies = []; enemyBullets = []; particles = []; boss = null; lasers = []; expItems = []; goldDrops = []; fieldItems = []; parkItems = []; miniTargets = [];
 resetInfiniteItemEffects();
 
@@ -25643,6 +25835,8 @@ if (gameMode === 'stage') {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunItemPickupCount = 0;
@@ -25660,6 +25854,8 @@ if (gameMode === 'stage') {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunItemPickupCount = 0;
@@ -25854,11 +26050,17 @@ function rankOrder(r) {
   return map[r] || 0;
 }
 
-function finalizeStageClearStats() {
+function finalizeStageClearStats(options = {}) {
   if (gameMode !== 'stage') return null;
 
   const now = performance.now();
-  const timeMs = Math.max(0, now - (stageRunStartTime || now));
+  const baseTimeMs = Math.max(0, now - (stageRunStartTime || now));
+  // ✅ [v.222.7] 일반 스테이지에서 보너스 스테이지가 발생한 판은
+  // 시작 카운트다운 4초 + 수집 구간 15초 = 19초를 플레이 시간에 포함합니다.
+  const bonusStageTimeMs = options && options.hasBonusStage
+    ? (STAGE_BONUS_COUNTDOWN_MS + STAGE_BONUS_DURATION_MS)
+    : 0;
+  const timeMs = baseTimeMs + bonusStageTimeMs;
   const timeSec = Math.max(0, Math.floor(timeMs / 1000));
 
   // ✅ 스테이지에서 '이번 클리어로만' 얻은 EXP/골드 집계
@@ -25893,6 +26095,7 @@ function finalizeStageClearStats() {
   const stageClearGoldRowEl = document.getElementById('stageClearGoldRow');
   const stageClearBestEl = document.getElementById('stageClearBestText');
   const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
+  const stageClearOrbCountEl = document.getElementById('stageClearOrbCountDetail');
   const prevStageRecord = (saveData.stageRanks || {})[String(stage)] || null;
   const petBonus = (typeof getPetBonusTotals === 'function') ? getPetBonusTotals() : { exp:0, gold:0, score:0, attack:0, hp:0 };
 
@@ -25904,6 +26107,11 @@ function finalizeStageClearStats() {
       : `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
   }
   if (stageClearKillsEl) stageClearKillsEl.textContent = `${formatNumber(kills)}마리`;
+  if (stageClearOrbCountEl) {
+    const orbCounts = stageRunExpOrbCounts || { low:0, mid:0, high:0 };
+    const orbExp = stageRunExpOrbExp || { low:0, mid:0, high:0 };
+    stageClearOrbCountEl.textContent = `EXP 구슬 · 하: ${formatNumber(Math.max(0, Math.floor(orbExp.low || 0)))} EXP · 중: ${formatNumber(Math.max(0, Math.floor(orbExp.mid || 0)))} EXP · 상: ${formatNumber(Math.max(0, Math.floor(orbExp.high || 0)))} EXP`;
+  }
   if (stageClearGoldRowEl) stageClearGoldRowEl.style.display = goldGained > 0 ? 'flex' : 'none';
   if (stageClearGoldEl) stageClearGoldEl.textContent = `${formatNumber(goldGained)}골드`;
   if (stageClearBestEl) {
@@ -25955,6 +26163,8 @@ function initMissionBonusStage() {
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunItemPickupCount = 0;
@@ -26287,6 +26497,14 @@ if (gameMode === 'infinite') {
   }
 }
 
+// ✅ [v.222.9] 스테이지 모드 실패도 최근 20판에 남깁니다.
+if (gameMode === 'stage') {
+  addStageRecentHistoryV2229('GAME OVER', {
+    timeMs: Math.max(0, performance.now() - (stageRunStartTime || performance.now())),
+    expGained: Math.max(0, (Number(exp) || 0) - (Number(stageRunStartExp) || 0))
+  });
+}
+
 saveGameData();
 updateGameOverModal();
 gameOverUI.classList.remove('hidden');
@@ -26364,6 +26582,8 @@ function initTutorialModeRun(){
   stageRunExpMonsters = 0;
   stageRunExpBoss = 0;
   stageRunExpOrbs = 0;
+  stageRunExpOrbCounts = { low: 0, mid: 0, high: 0 };
+  stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
   stageRunItemPickupCount = 0;
@@ -27005,7 +27225,11 @@ if (stageCleared) {
     }
 
     if (gameMode === 'stage') {
-      const res = finalizeStageClearStats() || { bonusExp: 0, rank: 'D', expGained: 0 };
+      // ✅ [v.222.7] 보너스 스테이지 발생 여부를 먼저 확정합니다.
+      // 그래야 결과 시간/최단 기록 저장에도 보너스 19초가 동일하게 반영됩니다.
+      const hasStageBonus = !(typeof monsterParkActive !== 'undefined' && monsterParkActive)
+        && Math.random() < STAGE_BONUS_CHANCE;
+      const res = finalizeStageClearStats({ hasBonusStage: hasStageBonus }) || { bonusExp: 0, rank: 'D', expGained: 0 };
 
       // ✅ [v.61 FIX] 보스가 없는 스테이지도 '클리어 판정'이면 다음 스테이지 해금
       // - 스테이지 선택 모달(stageModal)에서 다음 스테이지가 열리도록 saveData.maxUnlockedStage 갱신
@@ -27041,13 +27265,18 @@ if (stageCleared) {
       stageClearSeq.formulaText = '';
       stageClearSeq.formulaText2 = '';
       stageClearSeq.resultExp = Math.max(0, Math.floor(res.expGained || 0));
-      stageClearSeq.hasBonusStage = !(typeof monsterParkActive !== 'undefined' && monsterParkActive) && Math.random() < STAGE_BONUS_CHANCE;
+      stageClearSeq.hasBonusStage = hasStageBonus;
       clearStageCombatObjects({ clearDrops: false });
       stageClearModal.classList.add('hidden');
 
       if (stageClearSeq.hasBonusStage) {
         startStageBonusStageAfterClear({ rank: stageClearSeq.rank, expGained: stageClearSeq.resultExp });
       } else {
+        // ✅ [v.222.9] 보너스 스테이지가 없는 경우 여기서 최근 20판 CLEAR 기록 확정
+        addStageRecentHistoryV2229('CLEAR', {
+          timeMs: Math.max(0, performance.now() - (stageRunStartTime || performance.now())),
+          expGained: Math.max(0, (Number(exp) || 0) - (Number(stageRunStartExp) || 0))
+        });
         showStageClearModalAnimated(stageClearSeq.resultExp, stageClearSeq.rank);
         maybeStartPostClearTutorial();
         if (SFX && SFX.stageClear) SFX.stageClear();
@@ -30232,7 +30461,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 222.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 223', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -30549,6 +30778,12 @@ function updateStageClearModalBonusResult() {
   const total = Math.max(0, Math.floor((typeof stageRunExpEarned === "number" && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + bExp + oExp)));
   const detailEl = document.getElementById('stageClearExpDetail');
   if (detailEl) detailEl.textContent = `몬스터 ${formatNumber(mExp)} · 보스 ${formatNumber(bExp)} · 보너스 구슬 ${formatNumber(oExp)}`;
+  const orbCountEl = document.getElementById('stageClearOrbCountDetail');
+  if (orbCountEl) {
+    const orbCounts = stageRunExpOrbCounts || { low:0, mid:0, high:0 };
+    const orbExp = stageRunExpOrbExp || { low:0, mid:0, high:0 };
+    orbCountEl.textContent = `EXP 구슬 · 하: ${formatNumber(Math.max(0, Math.floor(orbExp.low || 0)))} EXP · 중: ${formatNumber(Math.max(0, Math.floor(orbExp.mid || 0)))} EXP · 상: ${formatNumber(Math.max(0, Math.floor(orbExp.high || 0)))} EXP`;
+  }
   animateStageClearExp(total);
   return total;
 }
@@ -30608,6 +30843,12 @@ function finishStageBonusStage() {
   clearStageCombatObjects({ clearDrops: true });
 
   try { playBgmTrack(getModeBgmName()); } catch(e) {}
+
+  // ✅ [v.222.9] 보너스 스테이지까지 끝난 시점의 최종 EXP/시간으로 CLEAR 기록
+  addStageRecentHistoryV2229('CLEAR', {
+    timeMs: Math.max(0, performance.now() - (stageRunStartTime || performance.now())),
+    expGained: Math.max(0, (Number(exp) || 0) - (Number(stageRunStartExp) || 0))
+  });
 
   const totalExp = updateStageClearModalBonusResult();
   showStageClearModalAnimated(totalExp, stageBonusState.rank || 'D');
