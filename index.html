@@ -1156,6 +1156,23 @@ body.hot-time-popup-mode #titleUI.title-buttons-hidden .overlay-content{
     .stage-btn:not(.locked):hover { background: #335577; }
     .stage-btn:not(.locked):active { background: #557799; }
 
+
+    /* ===== [v.224.0] 스테이지 상세 정보 ===== */
+    #stageDetailModal{ z-index:145; border-color:#62d8ff; }
+    #stageDetailBody{ gap:10px; }
+    .stage-detail-card{
+        padding:11px 12px; border-radius:10px;
+        background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.12);
+        line-height:1.55;
+    }
+    .stage-detail-label{ font-size:11px; color:#9fb4d8; font-weight:800; margin-bottom:3px; }
+    .stage-detail-value{ font-size:14px; color:#fff; font-weight:900; }
+    .stage-detail-mission{ color:#9fffd5; }
+    .stage-detail-boss{ color:#ffbd8a; }
+    #stageDetailActions{ display:flex; gap:8px; width:100%; }
+    #stageDetailStartBtn{ flex:1; padding:11px; font-weight:900; border-color:#7cffb7; color:#dffff0; background:linear-gradient(to bottom,#17613d,#0b2e20); }
+    #stageDetailBackBtn{ flex:1; margin-top:0; }
+
     .close-btn {
         margin-top: 5px;
         padding: 10px;
@@ -5466,6 +5483,34 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
     </div>
     <button id="closeStageBtn" class="close-btn">취소</button>
 </div>
+
+<!-- ✅ [v.224.0] 스테이지 상세 정보 모달 -->
+<div id="stageDetailModal" class="modal hidden">
+    <div id="stageDetailTitle" class="modal-header">스테이지 상세 정보</div>
+    <div id="stageDetailBody" class="modal-body">
+        <div class="stage-detail-card">
+            <div class="stage-detail-label">미션</div>
+            <div id="stageDetailMission" class="stage-detail-value stage-detail-mission">-</div>
+        </div>
+        <div class="stage-detail-card">
+            <div class="stage-detail-label">일반 몬스터 1마리 기본 EXP</div>
+            <div id="stageDetailMonsterExp" class="stage-detail-value">-</div>
+        </div>
+        <div id="stageDetailBossCard" class="stage-detail-card hidden">
+            <div class="stage-detail-label">보스 처치 기본 EXP</div>
+            <div id="stageDetailBossExp" class="stage-detail-value stage-detail-boss">-</div>
+        </div>
+        <div class="stage-detail-card">
+            <div class="stage-detail-label">최고 기록</div>
+            <div id="stageDetailBest" class="stage-detail-value">아직 기록 없음</div>
+        </div>
+        <div style="font-size:11px;color:#91a0bf;line-height:1.5;text-align:center;">※ 표시 EXP는 기본값이며 핫타임·엘리트 등 실제 전투 보정에 따라 달라질 수 있습니다.</div>
+    </div>
+    <div id="stageDetailActions">
+        <button id="stageDetailBackBtn" class="close-btn">스테이지 목록</button>
+        <button id="stageDetailStartBtn" class="ui-btn">도전하기</button>
+    </div>
+</div>
 <!-- 던전 선택 모달 -->
 <div id="dungeonModal" class="modal hidden" style="z-index: 130;">
     <div class="modal-header">던전 선택</div>
@@ -6965,6 +7010,16 @@ if (petFxOverlay) petFxOverlay.addEventListener('click', (e) => { if (e.target =
 const stageModal = document.getElementById('stageModal');
 const stageGrid = document.getElementById('stageGrid');
 const closeStageBtn = document.getElementById('closeStageBtn');
+const stageDetailModal = document.getElementById('stageDetailModal');
+const stageDetailTitle = document.getElementById('stageDetailTitle');
+const stageDetailMission = document.getElementById('stageDetailMission');
+const stageDetailMonsterExp = document.getElementById('stageDetailMonsterExp');
+const stageDetailBossCard = document.getElementById('stageDetailBossCard');
+const stageDetailBossExp = document.getElementById('stageDetailBossExp');
+const stageDetailBest = document.getElementById('stageDetailBest');
+const stageDetailBackBtn = document.getElementById('stageDetailBackBtn');
+const stageDetailStartBtn = document.getElementById('stageDetailStartBtn');
+let selectedStageDetailStage = 1;
 
 // 던전 선택 모달
 const dungeonModal = document.getElementById('dungeonModal');
@@ -9254,39 +9309,138 @@ function getStageMonsterSpawnBatchSize(stg) {
   if (stg <= 100) return 3;
   return 4;
 }
+// ===============================
+// ✅ [v.224.1] 스테이지 모드 미션 다양화
+// - 5의 배수: 해당 스테이지 최초 클리어 도전에서만 보스 1마리 처치 필수
+// - 이미 클리어한 5단위 스테이지 재도전은 보스 없이 일반 처치 미션
+// - 그 외: 몬스터 처치 / 멀티킬 / 생존 미션을 순환
+// ===============================
+function getStageSurvivalTargetSecV224(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  if (s <= 20) return 12;
+  if (s <= 60) return 18;
+  if (s <= 100) return 25;
+  if (s <= 160) return 30;
+  if (s <= 220) return 40;
+  return 50;
+}
+
+function getStageMultiKillMissionSpecV224(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  let chain = 3, times = 1;
+  if (s >= 61) chain = 4;
+  if (s >= 121) { chain = 5; times = 2; }
+  if (s >= 201) { chain = 6; times = 3; }
+  if (s >= 261) { chain = 7; times = 3; }
+  return { chain, times };
+}
+
+function getStageObjectiveV224(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  const killTarget = getStageKillTarget(s);
+  if (isBossStage(s)) {
+    const firstClearBossRequired =
+      (gameMode === 'stage' && Number(stage) === s)
+        ? !!stageBossRequiredThisRunV2241
+        : !hasStageClearRecordV2241(s);
+
+    if (firstClearBossRequired) {
+      return {
+        type:'boss', killTarget, target:1,
+        label:`몬스터 ${formatNumber(killTarget)}마리 처치 후 보스 1마리 처치`,
+        shortLabel:`몬스터 ${formatNumber(killTarget)}마리 + 보스 1마리`
+      };
+    }
+
+    // ✅ 이미 클리어한 5단위 스테이지 재도전: 보스 없이 일반 처치 미션
+    return {
+      type:'kill', target:killTarget,
+      label:`몬스터 ${formatNumber(killTarget)}마리 처치 (보스 최초 클리어 완료)`,
+      shortLabel:`처치 ${formatNumber(killTarget)}마리`
+    };
+  }
+  // 1~10은 기본 조작에 익숙해질 수 있도록 처치/생존만 사용
+  if (s < 11) {
+    if ((s % 2) === 0) {
+      const sec = getStageSurvivalTargetSecV224(s);
+      return { type:'survival', target:sec, label:`${sec}초 동안 생존`, shortLabel:`생존 ${sec}초` };
+    }
+    return { type:'kill', target:killTarget, label:`몬스터 ${formatNumber(killTarget)}마리 처치`, shortLabel:`처치 ${formatNumber(killTarget)}마리` };
+  }
+  // 각 5스테이지 묶음: 처치 → 멀티킬 → 생존 → 멀티킬 → 보스
+  const pos = s % 5;
+  if (pos === 2 || pos === 4) {
+    const spec = getStageMultiKillMissionSpecV224(s);
+    return {
+      type:'multikill', target:spec.times, chain:spec.chain,
+      label:`${spec.chain} MULTI 이상 ${spec.times}회 달성`,
+      shortLabel:`${spec.chain} MULTI × ${spec.times}`
+    };
+  }
+  if (pos === 3) {
+    const sec = getStageSurvivalTargetSecV224(s);
+    return { type:'survival', target:sec, label:`${sec}초 동안 생존`, shortLabel:`생존 ${sec}초` };
+  }
+  return { type:'kill', target:killTarget, label:`몬스터 ${formatNumber(killTarget)}마리 처치`, shortLabel:`처치 ${formatNumber(killTarget)}마리` };
+}
+
+function getStageObjectiveProgressTextV224(stg = stage) {
+  const obj = getStageObjectiveV224(stg);
+  if (obj.type === 'boss') {
+    const kills = Math.min(obj.killTarget, Math.max(0, Math.floor(stageRunKillCount || 0)));
+    const bossKills = Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0)));
+    return `몬스터 ${formatNumber(kills)}/${formatNumber(obj.killTarget)} · 보스 ${bossKills}/1`;
+  }
+  if (obj.type === 'multikill') return `${obj.chain} MULTI ${Math.min(obj.target, Math.max(0, Math.floor(stageRunMultiKillMissionCount || 0)))}/${obj.target}`;
+  if (obj.type === 'survival') {
+    const elapsed = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
+    return `생존 ${Math.min(obj.target, Math.floor(elapsed))}/${obj.target}초`;
+  }
+  return `처치 ${formatNumber(Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0))))}/${formatNumber(obj.target)}`;
+}
+
+function recordStageMultiKillMissionV224(count) {
+  if (gameMode !== 'stage' || stageCleared) return;
+  const obj = getStageObjectiveV224(stage);
+  if (obj.type !== 'multikill') return;
+  if (Math.max(0, Math.floor(Number(count) || 0)) < obj.chain) return;
+  stageRunMultiKillMissionCount = Math.max(0, Math.floor(stageRunMultiKillMissionCount || 0)) + 1;
+  try { checkStageKillClearNow(); } catch(e) {}
+}
+
 function checkStageKillClearNow() {
   if (gameMode === 'mission') return checkMissionStageClearNow();
   if (gameMode !== 'stage') return false;
   if (stageCleared) return false;
 
-  const target = getStageKillTarget(stage);
-  if ((stageRunKillCount || 0) < target) return false;
+  const obj = getStageObjectiveV224(stage);
 
-  const prevClearRank = (saveData.stageRanks && (saveData.stageRanks[stage] || saveData.stageRanks[String(stage)]));
-  const skipBossForReplay = !!prevClearRank;
-
-  // ✅ 5스테이지마다: 목표 처치 달성 → 보스 출현 → 보스 처치 후 클리어
-  if (isBossStage(stage) && !skipBossForReplay) {
-    // 이미 보스까지 잡았으면 여기서 클리어 처리
+  if (obj.type === 'boss') {
+    // ✅ [v.224.1] 최초 클리어 도전인 5단위 스테이지만 보스 처치가 필수
+    if ((stageRunKillCount || 0) < obj.killTarget) return false;
     if ((stageBossKillCount || 0) >= 1) {
       stageCleared = true;
     } else {
-      // 보스 트리거(한 번만)
       if (stageBossTriggered) return true;
       stageBossTriggered = true;
-
-      // 남아있는 적/탄환 정리 후 보스 인트로 시작
       enemies.length = 0;
       enemyBullets.length = 0;
       lasers = [];
       boss = null;
-      bossSpawned = true; // 재트리거 방지
+      bossSpawned = true;
       startBossIntro();
       updateHUD();
       return true;
     }
+  } else if (obj.type === 'multikill') {
+    if ((stageRunMultiKillMissionCount || 0) < obj.target) return false;
+    stageCleared = true;
+  } else if (obj.type === 'survival') {
+    const elapsedSec = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
+    if (elapsedSec < obj.target) return false;
+    stageCleared = true;
   } else {
-    // ✅ 일반 스테이지: 목표 달성 즉시 클리어
+    if ((stageRunKillCount || 0) < obj.target) return false;
     stageCleared = true;
   }
 
@@ -9353,7 +9507,20 @@ let stageRunGoldEarned = 0;
 let stageRunKillCount = 0;
 let stageBossTriggered = false; // ✅ 스테이지 모드 보스 스폰 트리거(매 스테이지)
 let stageBossKillCount = 0;   // ✅ 스테이지 모드 보스 처치 카운트(0/1)
+// ✅ [v.224.1] 5단위 보스는 해당 스테이지 최초 클리어 도전에서만 등장
+let stageBossRequiredThisRunV2241 = false;
+
+function hasStageClearRecordV2241(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  try {
+    if (saveData && saveData.stageRanks && saveData.stageRanks[String(s)]) return true;
+    const unlocked = Math.max(1, Math.floor(Number(saveData && saveData.maxUnlockedStage) || 1));
+    if (s < unlocked) return true;
+  } catch(e) {}
+  return false;
+}
 let stageRunHits = 0;
+let stageRunMultiKillMissionCount = 0; // ✅ [v.224.0] 이번 스테이지 멀티킬 미션 달성 횟수
 // ✅ [v.222.9] 스테이지 최근 20판 기록 중복 저장 방지
 let stageRunHistoryRecorded = false;
 
@@ -15095,6 +15262,9 @@ function flushMultiKillIfReady(force = false) {
   multiKillPending = { count:0, firstAt:0, lastAt:0, skillCount:0 };
   if (count < 3) return;
 
+  // ✅ [v.224.0] 스테이지 멀티킬 미션 진행도 반영
+  try { recordStageMultiKillMissionV224(count); } catch(e) {}
+
   ensureMultiKillPatchState();
   const rate = getMultiKillBonusRate(count);
   const base = estimateKillBaseExpForMultiKill() * count;
@@ -19204,6 +19374,47 @@ function updateDungeon(dt, currentTime) {
 
 
 
+function openStageDetailV224(stageNum) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageNum) || 1)));
+  selectedStageDetailStage = s;
+  const obj = getStageObjectiveV224(s);
+  const monsterExp = Math.max(1, Math.floor(Number(getStageMonsterExpReward(s)) || 1));
+  const bossStage = isBossStage(s);
+  const bossRequired = bossStage && !hasStageClearRecordV2241(s);
+  const rec = (saveData.stageRanks && saveData.stageRanks[String(s)]) || null;
+
+  if (stageDetailTitle) stageDetailTitle.textContent = `STAGE ${s} 상세 정보`;
+  if (stageDetailMission) stageDetailMission.textContent = obj.label;
+  if (stageDetailMonsterExp) stageDetailMonsterExp.textContent = `${formatNumber(monsterExp)} EXP` + (s >= 101 ? ' · 엘리트는 2.5배' : '');
+  if (stageDetailBossCard) stageDetailBossCard.classList.toggle('hidden', !bossRequired);
+  if (stageDetailBossExp) stageDetailBossExp.textContent = bossRequired ? `${formatNumber(getStageBossExpReward(s))} EXP` : '-';
+  if (stageDetailBest) {
+    if (rec) stageDetailBest.textContent = `RANK ${String(rec.rank || '-').toUpperCase()} · ${formatMMSSFromMs(rec.timeMs || 0)}`;
+    else stageDetailBest.textContent = '아직 클리어 기록 없음';
+  }
+  if (stageModal) stageModal.classList.add('hidden');
+  if (stageDetailModal) stageDetailModal.classList.remove('hidden');
+}
+
+function startSelectedStageFromDetailV224() {
+  const i = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(selectedStageDetailStage) || 1)));
+  const unlocked = Math.max(1, Math.floor(Number(saveData.maxUnlockedStage) || 1));
+  if (i > unlocked) return;
+  gameMode = 'stage';
+  lastSelectedStage = i;
+  runStartStage = i;
+  if (stageDetailModal) stageDetailModal.classList.add('hidden');
+  if (stageModal) stageModal.classList.add('hidden');
+  startGame(i);
+  if (introTutorialActive && introStep === 3 && i === 1) beginIngameTutorial();
+}
+
+if (stageDetailBackBtn) stageDetailBackBtn.addEventListener('click', () => {
+  if (stageDetailModal) stageDetailModal.classList.add('hidden');
+  if (stageModal) stageModal.classList.remove('hidden');
+});
+if (stageDetailStartBtn) stageDetailStartBtn.addEventListener('click', startSelectedStageFromDetailV224);
+
 function openStageSelect() {
   // 다른 모달 닫기(겹침 방지)
   try { if (dungeonModal) dungeonModal.classList.add('hidden'); } catch(e){}
@@ -19252,16 +19463,8 @@ btn.onclick = () => {
     }
   }
 
-  gameMode = 'stage';
-  lastSelectedStage = i;
-  runStartStage = i;
-  stageModal.classList.add('hidden');
-  startGame(i);
-
-  // ✅ 인트로 튜토리얼: 전투 시작 후 인게임 안내로 전환
-  if (introTutorialActive && introStep === 3 && i === 1) {
-    beginIngameTutorial();
-  }
+  // ✅ [v.224.0] 번호를 누르면 즉시 시작하지 않고 상세 정보부터 표시
+  openStageDetailV224(i);
 };
 } else {
 btn.classList.add('locked');
@@ -19273,6 +19476,7 @@ stageModal.classList.remove('hidden');
 
 closeStageBtn.addEventListener('click', () => {
 stageModal.classList.add('hidden');
+if (stageDetailModal) stageDetailModal.classList.add('hidden');
 });
 
 // ===== 입력 처리 =====
@@ -24912,10 +25116,18 @@ if (gameMode === 'stage' || gameMode === 'mission') {
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunMultiKillMissionCount = 0;
   stageRunItemPickupCount = 0;
   stageRunGemPickupCount = 0;
   stageBossTriggered = false;
   stageBossKillCount = 0;
+  // ✅ [v.224.1] 시작 시점의 클리어 이력으로 이번 판 보스 필요 여부를 고정
+  // 진행 중 maxUnlockedStage/rank가 갱신되어도 현재 판의 조건은 바뀌지 않습니다.
+  if (gameMode === 'stage') {
+    stageBossRequiredThisRunV2241 = isBossStage(stage) && !hasStageClearRecordV2241(stage);
+  } else {
+    stageBossRequiredThisRunV2241 = false;
+  }
   stageClearSeq.active = false;
   stageClearSeq.timer = 0;
   stageClearSeq.bonusExp = 0;
@@ -25884,6 +26096,7 @@ if (gameMode === 'stage') {
   stageRunExpOrbExp = { low: 0, mid: 0, high: 0 };
   stageRunGoldEarned = 0;
   stageRunKillCount = 0;
+  stageRunMultiKillMissionCount = 0;
   stageRunItemPickupCount = 0;
   stageRunGemPickupCount = 0;
   stageBossTriggered = false;
@@ -28459,14 +28672,8 @@ if (gameMode === 'dungeon') {
   stageEl.textContent = `연습 모드 · 허수아비 HP ${hpText} · ${Math.floor(practiceState.elapsedSec || 0)}초 측정`;
 } else {
   if (gameMode === 'stage') {
-    const t = getStageKillTarget(stage);
-    const k = Math.max(0, Math.floor(stageRunKillCount || 0));
-    const b = (isBossStage(stage) ? Math.max(0, Math.min(1, Math.floor(stageBossKillCount || 0))) : 0);
-    const bossStageAlreadyCleared = !!(saveData.stageRanks && (saveData.stageRanks[stage] || saveData.stageRanks[String(stage)]));
-    const showBossObjective = isBossStage(stage) && !bossStageAlreadyCleared;
-    stageEl.textContent = showBossObjective
-      ? `스테이지: ${stage} · 몬스터 처치 ${k}/${t}, 보스 처치 ${b}/1`
-      : `스테이지: ${stage} · 몬스터 처치 ${k}/${t}`;
+    const obj = getStageObjectiveV224(stage);
+    stageEl.textContent = `스테이지: ${stage} · ${getStageObjectiveProgressTextV224(stage)}`;
   } else if (gameMode === 'mission') {
     const obj = getMissionObjective(stage);
     stageEl.textContent = isMissionBonusStage(stage)
@@ -30506,7 +30713,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 223.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 224.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -38353,11 +38560,13 @@ updateHUD = function() {
   const ret = updateHUDBeforeV2117.apply(this, arguments);
   try {
     if (state === 'playing' && gameMode === 'stage' && stageEl) {
-      const target = Math.max(1, Math.floor(Number(getStageKillTarget(stage)) || 1));
-      const kills = Math.max(0, Math.floor(Number(stageRunKillCount) || 0));
-      const batch = getStageMonsterSpawnBatchSize(stage);
-      const modeTxt = (typeof adventureModeActive !== 'undefined' && adventureModeActive) ? '모험 모드' : '스테이지';
-      stageEl.textContent = `${modeTxt} ${stage} · 처치 ${formatNumber(kills)}/${formatNumber(target)} · 0.5초당 ${batch}마리`;
+      if (typeof adventureModeActive !== 'undefined' && adventureModeActive) {
+        const target = Math.max(1, Math.floor(Number(getStageKillTarget(stage)) || 1));
+        const kills = Math.max(0, Math.floor(Number(stageRunKillCount) || 0));
+        stageEl.textContent = `모험 모드 ${stage} · 처치 ${formatNumber(kills)}/${formatNumber(target)}`;
+      } else {
+        stageEl.textContent = `스테이지 ${stage} · ${getStageObjectiveProgressTextV224(stage)}`;
+      }
     }
     if (state === 'playing' && gameMode === 'dungeon' && stageEl && dungeonState && dungeonState.active) {
       const leftSec = Math.ceil(Math.max(0, Number(dungeonState.timeLeft || 0)) / 1000);
