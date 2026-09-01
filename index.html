@@ -25579,8 +25579,8 @@ function spawnNextWave() {
 // - 101~200: 느리게 시작 후 200까지 완만히 상승
 // - 201~300: 101~200과 동일한 속도 곡선 사용 (201 = 101, 300 = 200)
 let speedBase;
-const speedAt100 = 1.0 + 100 * 0.07;
-const slowBase = speedAt100 * 0.25;
+const speedAt100 = 1.0 + 100 * 0.04;
+const slowBase = speedAt100 * 0.20;
 if (stage <= 100) {
   const t = clamp((stage - 1) / 99, 0, 1);
   speedBase = slowBase + t * 0.8;
