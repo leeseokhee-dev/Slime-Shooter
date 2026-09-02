@@ -9920,10 +9920,25 @@ let stageRunSkillUseCountV2243 = 0;   // ✅ [v.224.3] 이번 스테이지 실�
 // ✅ [v.222.9] 스테이지 최근 20판 기록 중복 저장 방지
 let stageRunHistoryRecorded = false;
 
+function getStageRankFromHitsV2251(hits) {
+  const n = Math.max(0, Math.floor(Number(hits) || 0));
+  if (n <= 0) return 'S';
+  if (n === 1) return 'A';
+  if (n === 2) return 'B';
+  if (n === 3) return 'C';
+  return 'D';
+}
+
 function ensureStageRecentHistoryV2229() {
   if (!saveData || typeof saveData !== 'object') return [];
   if (!Array.isArray(saveData.stageRecentHistory)) saveData.stageRecentHistory = [];
   if (saveData.stageRecentHistory.length > 20) saveData.stageRecentHistory = saveData.stageRecentHistory.slice(0, 20);
+  // ✅ [v.225.1] 구버전 최근 기록도 피격 횟수로 랭크 자동 복원
+  saveData.stageRecentHistory.forEach(r => {
+    if (!r || typeof r !== 'object') return;
+    const savedRank = String(r.rank || '').toUpperCase();
+    r.rank = ['S','A','B','C','D'].includes(savedRank) ? savedRank : getStageRankFromHitsV2251(r.hits);
+  });
   return saveData.stageRecentHistory;
 }
 
@@ -9941,6 +9956,7 @@ function addStageRecentHistoryV2229(resultType, options = {}) {
     expGained: gainedExp,
     kills: Math.max(0, Math.floor(Number(stageRunKillCount) || 0)),
     hits: Math.max(0, Math.floor(Number(stageRunHits) || 0)),
+    rank: getStageRankFromHitsV2251(stageRunHits), // ✅ [v.225.1] 피격 0=S, 1=A, 2=B, 3=C, 4+=D
     gold: Math.max(0, Math.floor(Number(stageRunGoldEarned) || 0))
   };
   history.unshift(entry);
@@ -14533,14 +14549,27 @@ function openProfile(isRefresh = false) {
           ${stageRecentHistory.length ? stageRecentHistory.map((r, idx) => {
             const cleared = String(r.result || '') === 'CLEAR';
             const resultColor = cleared ? '#7cffb7' : '#ff9f9f';
+            const recentRank = ['S','A','B','C','D'].includes(String(r.rank || '').toUpperCase())
+              ? String(r.rank).toUpperCase()
+              : getStageRankFromHitsV2251(r.hits);
+            const rankStyle = {
+              S:'background:#ffd84d;color:#3a2600;border-color:#fff0a6;',
+              A:'background:#89d5ff;color:#08283e;border-color:#d5f2ff;',
+              B:'background:#66e3d5;color:#06372f;border-color:#cffff7;',
+              C:'background:#b69aff;color:#28164c;border-color:#e6dcff;',
+              D:'background:#ff9292;color:#461616;border-color:#ffd6d6;'
+            }[recentRank] || '';
             return `
               <div style="padding:8px 9px; border:1px solid rgba(255,255,255,0.08); border-radius:9px; background:rgba(0,0,0,0.18);">
                 <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
                   <span style="font-weight:900; color:#fff2b2;">#${idx + 1} · STAGE ${formatNumber(r.stage || 1)}</span>
-                  <span style="font-weight:1000; color:${resultColor};">${cleared ? 'CLEAR' : 'GAME OVER'}</span>
+                  <span style="display:flex; align-items:center; gap:6px;">
+                    <span style="display:inline-block; min-width:48px; padding:2px 7px; border:1px solid; border-radius:999px; text-align:center; font-size:11px; font-weight:1000; ${rankStyle}">RANK ${recentRank}</span>
+                    <span style="font-weight:1000; color:${resultColor};">${cleared ? 'CLEAR' : 'GAME OVER'}</span>
+                  </span>
                 </div>
                 <div style="margin-top:4px; font-size:12px; color:#dbe6ff; line-height:1.5;">
-                  ${formatMMSSFromMs(r.timeMs || 0)} · +${formatNumber(r.expGained || 0)} EXP · ${formatNumber(r.kills || 0)}마리 처치
+                  ${formatMMSSFromMs(r.timeMs || 0)} · +${formatNumber(r.expGained || 0)} EXP · ${formatNumber(r.kills || 0)}마리 처치 · 피격 ${formatNumber(r.hits || 0)}회
                 </div>
                 <div style="margin-top:2px; font-size:10px; color:#8f9ab7;">${formatStageHistoryDateV2229(r.at)}</div>
               </div>`;
@@ -26819,14 +26848,9 @@ function finalizeStageClearStats(options = {}) {
   // ✅ [v.224.4.6] 멀티킬/각종 보너스까지 포함한 실제 EXP 증가량을 총 획득량으로 사용
   const expGained = Math.max(0, Math.floor((Number(exp) || 0) - (Number(stageRunStartExp) || 0)));
 
-  // ✅ [v.223.1] 클리어 랭크 계산: 결과창 표시 + 스테이지별 최고 랭크 저장
-  let rank = 'D';
-  const hits = (stageRunHits || 0);
-  if (hits <= 0) rank = 'S';
-  else if (hits === 1) rank = 'A';
-  else if (hits === 2) rank = 'B';
-  else if (hits === 3) rank = 'C';
-  else rank = 'D';
+  // ✅ [v.225.1] 클리어 랭크 계산: 피격할 때마다 S → A → B → C → D로 1단계 하락
+  const hits = Math.max(0, Math.floor(Number(stageRunHits) || 0));
+  const rank = getStageRankFromHitsV2251(hits);
 
   // ✅ [v.196.1] 스테이지 클리어 EXP 제거
   // - 클리어 보너스 EXP는 더 이상 지급하지 않습니다.
@@ -31244,7 +31268,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
