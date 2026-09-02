@@ -9387,8 +9387,18 @@ function getStageMonsterSpawnBatchSize(stg) {
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
   if (stg <= 5) return 1;
   if (stg <= 15) return 2;
-  if (stg <= 100) return 3;
-  return 4;
+  if (stg <= 60) return 3;
+  if (stg <= 100) return 4;
+  if (stg <= 120) return 2;
+  if (stg <= 140) return 3;
+  if (stg <= 160) return 4;
+  if (stg <= 180) return 5;
+  if (stg <= 200) return 6;
+  if (stg <= 220) return 3;
+  if (stg <= 240) return 4;
+  if (stg <= 260) return 5;
+  if (stg <= 280) return 6;
+  return 7;
 }
 // ===============================
 // ✅ [v.224.1] 스테이지 모드 미션 다양화
@@ -31234,7 +31244,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 224.4.7', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
