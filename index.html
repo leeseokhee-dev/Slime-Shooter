@@ -31234,7 +31234,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 224.4.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 224.4.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -39933,6 +39933,36 @@ restoreStageActiveSkillsV2216 = function(){
   };
 })();
 
+
+
+/* ===============================
+   ✅ [v.224.4.7] 몬스터 파크 입장/EXP 보정
+   - 몬스터 파크 버튼을 누르고 실제 입장하는 즉시 일일 입장 횟수 1회 차감
+   - 기존 v.171 버튼 리스너가 구형 startMonsterParkMode를 직접 참조하던 문제를 캡처 단계에서 차단
+   - 몬스터 파크에서 획득하는 EXP는 동일 스테이지 모드 EXP의 6배로 누적
+   =============================== */
+(function installMonsterParkEntryAndExpV22447(){
+  // 구형 클릭 리스너보다 먼저 실행해 최신 입장 함수(일일 횟수 차감 포함)를 사용합니다.
+  const parkBtn = document.getElementById('modeMonsterParkBtn');
+  if (parkBtn && !parkBtn.dataset.v22447EntryFixed) {
+    parkBtn.dataset.v22447EntryFixed = '1';
+    parkBtn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      startMonsterParkMode();
+    }, true);
+  }
+
+  // 현재 addExp 체인을 감싸 몬스터 파크 플레이 중 들어오는 EXP만 정확히 6배로 만듭니다.
+  const addExpBeforeV22447 = addExp;
+  addExp = function(amount, opts = {}){
+    if (typeof monsterParkActive !== 'undefined' && monsterParkActive && state === 'playing') {
+      const base = Math.max(0, Math.floor(Number(amount) || 0));
+      return addExpBeforeV22447.call(this, base * 6, opts);
+    }
+    return addExpBeforeV22447.apply(this, arguments);
+  };
+})();
 
 </script>
 
