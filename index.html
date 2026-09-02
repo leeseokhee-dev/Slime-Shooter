@@ -10933,6 +10933,14 @@ function applyBossBulletStatus(bullet, px, py) {
   const el = sanitizeElementKey(bullet.element || 'fire');
   if (el === 'ice') {
     playerStatus.freezeMs = Math.max(playerStatus.freezeMs, 2000);
+    // [v.225.7] 빙결 피격 즉시 현재 조작 입력을 해제하여 2초 동안 완전히 멈춤
+    dragActive = false;
+    pointerActive = false;
+    stickActive = false;
+    stickDx = 0;
+    stickDy = 0;
+    dragTargetX = player.x;
+    dragTargetY = player.y;
     spawnDamageText(px || player.x, (py || player.y) - 34, '빙결 2초', '#9fe8ff');
     spawnElementalHitEffect(px || player.x, py || player.y, 'ice', 1.15);
   } else if (el === 'fire') {
@@ -30142,6 +30150,64 @@ if (hyperFlightActive) {
   ctx.restore();
 }
 
+// [v.225.7] 보스 속성 피격 상태이상 시각화
+// 빙결: 플레이어를 반투명 얼음 결정에 가두고 남은 2초 동안 유지
+if (playerStatus.freezeMs > 0) {
+  const freezeRatio = Math.max(0, Math.min(1, playerStatus.freezeMs / 2000));
+  const icePulse = 0.96 + Math.sin(t / 75) * 0.035;
+  ctx.save();
+  ctx.scale(icePulse, icePulse);
+  ctx.globalAlpha *= 0.72 + freezeRatio * 0.18;
+  const iceGrad = ctx.createLinearGradient(-size * 1.35, -size * 1.55, size * 1.25, size * 1.55);
+  iceGrad.addColorStop(0, 'rgba(225,250,255,0.88)');
+  iceGrad.addColorStop(0.45, 'rgba(120,220,255,0.42)');
+  iceGrad.addColorStop(1, 'rgba(55,145,255,0.64)');
+  ctx.fillStyle = iceGrad;
+  ctx.strokeStyle = 'rgba(225,250,255,0.95)';
+  ctx.lineWidth = Math.max(2, size * 0.09);
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 1.55);
+  ctx.lineTo(size * 1.10, -size * 0.72);
+  ctx.lineTo(size * 1.28, size * 0.72);
+  ctx.lineTo(size * 0.48, size * 1.48);
+  ctx.lineTo(-size * 0.62, size * 1.42);
+  ctx.lineTo(-size * 1.30, size * 0.55);
+  ctx.lineTo(-size * 1.08, -size * 0.82);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.globalAlpha *= 0.72;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = Math.max(1.2, size * 0.045);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.75, -size * 0.75); ctx.lineTo(size * 0.18, size * 0.10); ctx.lineTo(size * 0.72, -size * 0.62);
+  ctx.moveTo(size * 0.18, size * 0.10); ctx.lineTo(-size * 0.42, size * 0.95);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 화상: 화상 지속 중 플레이어 몸 주변에 불꽃이 계속 피어오름
+if (playerStatus.burnMs > 0) {
+  ctx.save();
+  const flameCount = saveData.lowPower ? 4 : 7;
+  for (let i = 0; i < flameCount; i++) {
+    const phase = (t / (310 + i * 19) + i * 0.173) % 1;
+    const fx = ((i / Math.max(1, flameCount - 1)) - 0.5) * size * 1.65 + Math.sin(t / 120 + i) * size * 0.12;
+    const fy = size * 0.95 - phase * size * 2.15;
+    const fr = size * (0.18 + (1 - phase) * 0.18);
+    ctx.globalAlpha = 0.30 + (1 - phase) * 0.58;
+    const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+    fg.addColorStop(0, 'rgba(255,245,150,0.98)');
+    fg.addColorStop(0.42, 'rgba(255,145,35,0.92)');
+    fg.addColorStop(1, 'rgba(255,55,20,0)');
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 drawElementBadge(0, -size * 1.45, playerElement, 0.9);
 ctx.restore();
 }
@@ -31431,7 +31497,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
