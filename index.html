@@ -9655,6 +9655,8 @@ function closeStageMissionIntroV2244() {
 
 function showStageMissionIntroV2244(stg = stage) {
   if (gameMode !== 'stage') return;
+  // [v.225.8] 몬스터 파크는 스테이지형 내부 로직을 사용하지만 일반 스테이지 미션창은 표시하지 않음
+  if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return;
   if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return;
 
   const host = document.getElementById('gameContainer') || document.body;
@@ -23990,10 +23992,16 @@ function handleBossKilledBySkill() {
       const bossExpReward = Math.max(0, Math.floor(Number(originalBossExpReward) || 0));
       const bossHotMult = (gameMode === 'stage') ? Math.max(1, Number(getHotMultiplier()) || 1) : 1;
       const bossFinalExpReward = Math.max(0, Math.floor(bossExpReward * bossHotMult));
-      const grantedBossExp = (gameMode === 'stage')
-        ? addExpDirect(bossFinalExpReward)
-        : addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 });
-      if (gameMode === 'stage') {
+      // ✅ [v.225.9] 몬스터 파크 보스 EXP도 누적 저장 EXP에 포함
+      // 몬스터 파크에서는 addExp() 체인을 통과시켜 3배 보정 후
+      // monsterParkRunExp / pendingExp에 저장되도록 합니다.
+      // 일반 스테이지 보스는 기존 v.214.2 규칙(addExpDirect + 핫타임만 적용)을 유지합니다.
+      const grantedBossExp = (typeof monsterParkActive !== 'undefined' && monsterParkActive)
+        ? addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 })
+        : ((gameMode === 'stage')
+            ? addExpDirect(bossFinalExpReward)
+            : addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 }));
+      if (gameMode === 'stage' && !(typeof monsterParkActive !== 'undefined' && monsterParkActive)) {
         // 보스는 v.214.2 규칙상 핫타임만 적용되므로 기본/핫타임을 직접 분리 집계
         const bossGrantedSafeV22443 = Math.max(0, Math.floor(grantedBossExp || 0));
         const bossBaseSafeV22443 = Math.min(bossGrantedSafeV22443, Math.max(0, Math.floor(bossExpReward || 0)));
@@ -31497,7 +31505,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.8', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.10', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33807,6 +33815,58 @@ const modeAdventureBtnV171 = document.getElementById('modeAdventureBtn');
 const modeMonsterParkBtnV171 = document.getElementById('modeMonsterParkBtn');
 let monsterParkClaimBtn = null;
 
+// ===============================
+// ✅ [v.225.10] 몬스터 파크 일일 입장 횟수 영구 보정
+// ===============================
+function getMonsterParkEntryCounterKeyV22510(){
+  let cid = 'global';
+  try { cid = String(currentCharacterId || 'global'); } catch(e) {}
+  let day = '';
+  try { day = getMonsterParkTodayKeyV1712(); } catch(e) {
+    const d = new Date();
+    day = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  return `ss_monster_park_entries_v22510__${cid}__${day}`;
+}
+function readMonsterParkEntryCounterV22510(){
+  try {
+    const n = Number(localStorage.getItem(getMonsterParkEntryCounterKeyV22510()));
+    return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  } catch(e) { return 0; }
+}
+function syncMonsterParkEntryCounterV22510(){
+  try {
+    ensureMonsterParkSave();
+    const today = getMonsterParkTodayKeyV1712();
+    if (saveData.monsterPark.entryDate !== today) {
+      saveData.monsterPark.entryDate = today;
+      saveData.monsterPark.entriesUsed = 0;
+    }
+    const savedUsed = Math.max(0, Math.floor(v171SafeNum(saveData.monsterPark.entriesUsed, 0)));
+    const backupUsed = readMonsterParkEntryCounterV22510();
+    const used = Math.max(savedUsed, backupUsed);
+    saveData.monsterPark.entriesUsed = used;
+    try { localStorage.setItem(getMonsterParkEntryCounterKeyV22510(), String(used)); } catch(e) {}
+    return used;
+  } catch(e) { return 0; }
+}
+function consumeMonsterParkEntryV22510(){
+  const maxEntries = (typeof MONSTER_PARK_MAX_DAILY_ENTRIES_V1712 !== 'undefined') ? MONSTER_PARK_MAX_DAILY_ENTRIES_V1712 : 5;
+  const used = syncMonsterParkEntryCounterV22510();
+  if (used >= maxEntries) {
+    alert(`오늘 몬스터 파크 입장 횟수를 모두 사용했습니다.\n하루 입장 가능 횟수: ${maxEntries}회`);
+    try { saveGameData(); } catch(e) {}
+    return false;
+  }
+  const next = used + 1;
+  ensureMonsterParkSave();
+  saveData.monsterPark.entryDate = getMonsterParkTodayKeyV1712();
+  saveData.monsterPark.entriesUsed = next;
+  try { localStorage.setItem(getMonsterParkEntryCounterKeyV22510(), String(next)); } catch(e) {}
+  try { saveGameData(); } catch(e) {}
+  return true;
+}
+
 function startAdventureMode(){
   if (v171SafeNum(level, 1) < ADVENTURE_LEVEL_REQ) {
     alert(`모험 모드는 LV.${ADVENTURE_LEVEL_REQ}부터 입장 가능합니다.\n(현재 LV.${level})`);
@@ -33826,6 +33886,8 @@ function startMonsterParkMode(){
     alert(`몬스터 파크는 LV.${MONSTER_PARK_LEVEL_REQ}부터 입장 가능합니다.\n(현재 LV.${level})`);
     return;
   }
+  // ✅ [v.225.10] 구형 리스너 경로에서도 입장 즉시 1회 차감
+  if (!consumeMonsterParkEntryV22510()) return;
   ensureMonsterParkSave();
   setAdventureMode(false);
   setMonsterParkMode(true);
@@ -34234,6 +34296,12 @@ function ensureMonsterParkDailyV1712(){
     saveData.monsterPark.entriesUsed = 0;
   }
   saveData.monsterPark.entriesUsed = Math.max(0, Math.floor(v171SafeNum(saveData.monsterPark.entriesUsed, 0)));
+  // ✅ [v.225.10] 보조 카운터와 동기화하여 다른 코드가 값을 덮어도 횟수가 되돌아가지 않음
+  try {
+    const backupUsed = readMonsterParkEntryCounterV22510();
+    if (backupUsed > saveData.monsterPark.entriesUsed) saveData.monsterPark.entriesUsed = backupUsed;
+    localStorage.setItem(getMonsterParkEntryCounterKeyV22510(), String(saveData.monsterPark.entriesUsed));
+  } catch(e) {}
 }
 
 function getMonsterParkEntriesLeftV1712(){
@@ -34266,19 +34334,14 @@ startMonsterParkMode = function(){
     return;
   }
   ensureMonsterParkDailyV1712();
-  const used = v171SafeNum(saveData.monsterPark.entriesUsed, 0);
-  if (used >= MONSTER_PARK_MAX_DAILY_ENTRIES_V1712) {
-    alert(`오늘 몬스터 파크 입장 횟수를 모두 사용했습니다.\n하루 입장 가능 횟수: ${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}회`);
-    saveGameDataDebounced();
-    return;
-  }
+  // ✅ [v.225.10] 최신 래퍼 경로에서도 동일 카운터를 1회만 소비
+  if (!consumeMonsterParkEntryV22510()) return;
 
   clearMonsterParkAutoAdvanceV1712();
   monsterParkClearRewardReadyV1712 = false;
   monsterParkAwaitingTitleTouchV1712 = false;
 
   ensureMonsterParkSave();
-  saveData.monsterPark.entriesUsed = used + 1;
   saveData.monsterPark.pendingExp = 0;
   saveGameData();
 
@@ -40203,7 +40266,7 @@ restoreStageActiveSkillsV2216 = function(){
    ✅ [v.224.4.7] 몬스터 파크 입장/EXP 보정
    - 몬스터 파크 버튼을 누르고 실제 입장하는 즉시 일일 입장 횟수 1회 차감
    - 기존 v.171 버튼 리스너가 구형 startMonsterParkMode를 직접 참조하던 문제를 캡처 단계에서 차단
-   - 몬스터 파크에서 획득하는 EXP는 동일 스테이지 모드 EXP의 6배로 누적
+   - 몬스터 파크에서 획득하는 EXP는 동일 스테이지 모드 EXP의 3배로 누적
    =============================== */
 (function installMonsterParkEntryAndExpV22447(){
   // 구형 클릭 리스너보다 먼저 실행해 최신 입장 함수(일일 횟수 차감 포함)를 사용합니다.
@@ -40217,12 +40280,12 @@ restoreStageActiveSkillsV2216 = function(){
     }, true);
   }
 
-  // 현재 addExp 체인을 감싸 몬스터 파크 플레이 중 들어오는 EXP만 정확히 6배로 만듭니다.
+  // 현재 addExp 체인을 감싸 몬스터 파크 플레이 중 들어오는 EXP만 정확히 3배로 만듭니다.
   const addExpBeforeV22447 = addExp;
   addExp = function(amount, opts = {}){
     if (typeof monsterParkActive !== 'undefined' && monsterParkActive && state === 'playing') {
       const base = Math.max(0, Math.floor(Number(amount) || 0));
-      return addExpBeforeV22447.call(this, base * 6, opts);
+      return addExpBeforeV22447.call(this, base * 3, opts);
     }
     return addExpBeforeV22447.apply(this, arguments);
   };
@@ -40230,76 +40293,28 @@ restoreStageActiveSkillsV2216 = function(){
 
 
 
-/* ===============================
-   ✅ [v.225.8] 몬스터 파크 입장 횟수 확정 차감
-   - 입장 직전 사용 횟수를 스냅샷
-   - 실제 몬스터 파크 진입 성공 후 정확히 +1로 확정
-   - 즉시 localStorage 저장 및 HUD 갱신
-   - 중간 래퍼/구형 리스너가 값을 되돌려도 5/5로 복귀하지 않도록 보강
-   =============================== */
-(function installMonsterParkEntryCommitV2258(){
-  const startMonsterParkModeBeforeV2258 = startMonsterParkMode;
-
-  startMonsterParkMode = function(){
-    try { ensureMonsterParkDailyV1712(); } catch(e) {}
-
-    const beforeUsed = Math.max(
-      0,
-      Math.floor(v171SafeNum(
-        saveData && saveData.monsterPark ? saveData.monsterPark.entriesUsed : 0,
-        0
-      ))
-    );
-
-    // 이미 일일 5회를 모두 썼다면 기존 함수가 안내를 담당합니다.
-    if (beforeUsed >= MONSTER_PARK_MAX_DAILY_ENTRIES_V1712) {
-      return startMonsterParkModeBeforeV2258.apply(this, arguments);
+// ===============================
+// ✅ [v.225.8] 몬스터 파크 입장 횟수 차감 / 미션창 방지 보정
+// - 초기 v.171에서 버튼에 구형 startMonsterParkMode 함수가 직접 바인딩되어
+//   이후 v.171.2의 일일 5회 차감 래퍼가 호출되지 않던 문제를 수정합니다.
+// - 기존 구형 리스너를 제거하고 클릭 시 항상 최신 startMonsterParkMode를 호출합니다.
+// ===============================
+try {
+  if (typeof modeMonsterParkBtnV171 !== 'undefined' && modeMonsterParkBtnV171) {
+    if (typeof startMonsterParkModeBeforeV1712 === 'function') {
+      modeMonsterParkBtnV171.removeEventListener('click', startMonsterParkModeBeforeV1712);
     }
-
-    const ret = startMonsterParkModeBeforeV2258.apply(this, arguments);
-
-    // 실제 진입에 성공한 경우에만 정확히 1회 차감을 확정합니다.
-    if (typeof monsterParkActive !== 'undefined' && monsterParkActive) {
-      try {
-        ensureMonsterParkSave();
-        saveData.monsterPark.entryDate = getMonsterParkTodayKeyV1712();
-        saveData.monsterPark.entriesUsed = Math.min(
-          MONSTER_PARK_MAX_DAILY_ENTRIES_V1712,
-          beforeUsed + 1
-        );
-
-        // 디바운스가 아니라 즉시 저장하여 새로고침/다른 저장 호출에도 유지
-        saveGameData();
-
-        const left = Math.max(
-          0,
-          MONSTER_PARK_MAX_DAILY_ENTRIES_V1712 - saveData.monsterPark.entriesUsed
-        );
-
-        try {
-          if (highScoreEl) {
-            highScoreEl.style.display = '';
-            highScoreEl.textContent =
-              `오늘 남은 입장: ${left}/${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}`;
-          }
-        } catch(e) {}
-
-        try {
-          showToast(
-            `🎪 몬스터 파크 입장 · 남은 횟수 ${left}/${MONSTER_PARK_MAX_DAILY_ENTRIES_V1712}`,
-            '#ffb8ef',
-            1800
-          );
-        } catch(e) {}
-      } catch(e) {
-        console.error('[v.225.8] 몬스터 파크 입장 횟수 저장 실패', e);
-      }
+    if (!window.__monsterParkEntryRebindV2258) {
+      window.__monsterParkEntryRebindV2258 = true;
+      modeMonsterParkBtnV171.addEventListener('click', function(ev){
+        try { ev.preventDefault(); } catch(e) {}
+        // 혹시 이전 모드에서 미션 안내가 남아 있으면 즉시 닫습니다.
+        try { if (typeof closeStageMissionIntroV2244 === 'function') closeStageMissionIntroV2244(); } catch(e) {}
+        return startMonsterParkMode();
+      });
     }
-
-    return ret;
-  };
-})();
-
+  }
+} catch(e) {}
 </script>
 
 </body>
