@@ -22254,7 +22254,17 @@ function addExpGainMessages(baseAmount, hotMult = 1, expBuffMult = 1, petExpMult
 
   const combinedHotMult = Math.max(1, Number(hotMult) || 1);
   const feverExpMult = getFeverExpMultiplier();
-  const baseHotMult = (feverExpMult > 1) ? Math.max(1, combinedHotMult / feverExpMult) : combinedHotMult;
+
+  // ✅ [v.225.13] 획득 메시지도 실제 EXP 계산과 동일하게 핫타임/피버를 독립 처리
+  // 몬스터 처치처럼 hotMult가 순수 핫타임 배수(2배/3배)인 경우 피버 1.25배로 나누지 않습니다.
+  // EXP 구슬처럼 이미 피버 배율까지 포함된 값만 피버분을 제거합니다.
+  const currentHotMultForMessage = (typeof getHotMultiplier === 'function')
+    ? Math.max(1, Number(getHotMultiplier()) || 1)
+    : 1;
+  const hotMultiplierIncludesFeverForMessage = feverExpMult > 1 && combinedHotMult > currentHotMultForMessage + 0.000001;
+  const baseHotMult = hotMultiplierIncludesFeverForMessage
+    ? Math.max(1, combinedHotMult / feverExpMult)
+    : combinedHotMult;
   const hotRate = Math.max(0, baseHotMult - 1);
   const feverRate = Math.max(0, feverExpMult - 1);
   const expBuffRate = Math.max(0, (Number(expBuffMult) || 1) - 1);
@@ -22407,7 +22417,17 @@ function addExp(amount, opts = {}) {
 
   const combinedHotMult = Math.max(1, Number(hotMult) || 1);
   const feverExpMult = getFeverExpMultiplier();
-  const baseHotMult = (feverExpMult > 1) ? Math.max(1, combinedHotMult / feverExpMult) : combinedHotMult;
+
+  // ✅ [v.225.12] 핫타임 중 피버가 발동해도 핫타임 보너스가 줄어들지 않도록 분리 계산
+  // 기존에는 피버 발동 시 전달된 핫타임 2배를 다시 1.25로 나눠 1.6배(+60%)로 오인하는 경우가 있었습니다.
+  // EXP 구슬처럼 hotMultiplier에 이미 피버 배율까지 곱해 전달한 경우에만 피버분을 제거합니다.
+  const currentHotMult = (typeof getHotMultiplier === 'function')
+    ? Math.max(1, Number(getHotMultiplier()) || 1)
+    : 1;
+  const hotMultiplierIncludesFever = feverExpMult > 1 && combinedHotMult > currentHotMult + 0.000001;
+  const baseHotMult = hotMultiplierIncludesFever
+    ? Math.max(1, combinedHotMult / feverExpMult)
+    : combinedHotMult;
   const hotBonusRaw = rawBaseAmount * Math.max(0, baseHotMult - 1);
   const feverBonusRaw = rawBaseAmount * Math.max(0, feverExpMult - 1);
   const expBuffBonusRaw = rawBaseAmount * Math.max(0, expBuffMult - 1);
@@ -31505,7 +31525,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.11', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.13', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
