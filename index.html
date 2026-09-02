@@ -244,6 +244,31 @@ padding: 8px 0;
 }
 
 
+/* ===== [v.225.14] EXP 표시 방식 / 상세 툴팁 ===== */
+#expTooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, calc(-100% - 10px));
+    z-index: 1000001;
+    max-width: min(92vw, 520px);
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(154,255,132,0.72);
+    background: rgba(4,12,7,0.96);
+    color: #efffea;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.25;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.58), 0 0 12px rgba(72,255,85,0.18);
+    text-shadow: 0 1px 0 #000;
+}
+#expTooltip.hidden { display:none !important; }
+#expWrapper.exp-percent-mode { cursor: help; }
+
+
 
 /* ===== 피버 게이지 바 ===== */
 #feverRow {
@@ -5012,6 +5037,10 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
             <option value="2">EXP 2자리</option>
             <option value="3">EXP 3자리</option>
         </select>
+        <select id="expDisplayModeSelect" class="ui-btn" title="경험치 표시 방식">
+            <option value="detailed">EXP 상세</option>
+            <option value="percent">EXP %</option>
+        </select>
         <button id="homingBtn" class="ui-btn">유도탄 ?</button>
         <select id="fontSelect" class="ui-btn">
             <option value="system">기기 기본</option>
@@ -5049,6 +5078,7 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
             <span id="expText">0 / 10 [0.00%]</span>
             <div id="expBarFill"></div>
         </div>
+        <div id="expTooltip" class="hidden" role="tooltip">0 / 10 [0.00%]</div>
     </div>
 
     <div id="feverRow" class="hidden">
@@ -6882,6 +6912,8 @@ const plasmaSkillBtn = document.getElementById('plasmaSkillBtn');
 const fontSelect = document.getElementById('fontSelect');
 const fpsSelect = document.getElementById('fpsSelect');
 const expPercentDigitsSelect = document.getElementById('expPercentDigitsSelect');
+const expDisplayModeSelect = document.getElementById('expDisplayModeSelect');
+const expTooltipEl = document.getElementById('expTooltip');
 
 // ✅ [v.220.6] EXP 퍼센트 소수 자릿수 자동 결정
 // LV.1~199: 소수점 2자리 / LV.200 이상: 소수점 3자리
@@ -8939,6 +8971,7 @@ homingEnabled: true,
 playerBulletCount: 5, // ✅ [v.207.3] 플레이어 탄환 수 선택(1~5)
 fontKey: 'system',
 expPercentDigits: 2, // ✅ EXP 퍼센트 표시 소수 자릿수 기본값(2자리, 설정에서 3자리 가능)
+expDisplayMode: 'detailed', // ✅ [v.225.14] 'detailed'=현재/필요[%], 'percent'=현재[%] + 툴팁 상세
 maxUnlockedStage: 1,
  
 
@@ -11907,6 +11940,7 @@ if (typeof saveData.homingEnabled !== 'boolean') saveData.homingEnabled = true;
 saveData.playerBulletCount = Math.max(1, Math.min(5, Math.floor(Number(saveData.playerBulletCount) || 5)));
 if (typeof saveData.fontKey !== 'string') saveData.fontKey = 'system';
 saveData.expPercentDigits = getExpPercentDigitsByLevel(saveData.level || level); // ✅ 레벨 기준 자동: 200 미만 2자리, 200 이상 3자리
+if (!['detailed','percent'].includes(saveData.expDisplayMode)) saveData.expDisplayMode = 'detailed';
 
 // (옵션) 점수 퀘스트 canClaim 누락 방지
 if (!saveData.quests.score) saveData.quests.score = { tier: 1 };
@@ -12549,6 +12583,14 @@ function updateSettingsUI() {
     expPercentDigitsSelect.title = `EXP 퍼센트 자릿수 자동 설정 · LV.200부터 3자리`;
     expPercentDigitsSelect.style.color = digits === 3 ? '#44ffb8' : '#fff';
   }
+  if (expDisplayModeSelect) {
+    const mode = ['detailed','percent'].includes(saveData.expDisplayMode) ? saveData.expDisplayMode : 'detailed';
+    expDisplayModeSelect.value = mode;
+    expDisplayModeSelect.style.color = mode === 'percent' ? '#44ffb8' : '#fff';
+    expDisplayModeSelect.title = mode === 'percent'
+      ? '현재 경험치[%]만 표시 · EXP 바를 가리키거나 길게 터치하면 상세 표시'
+      : '현재 경험치 / 레벨업 필요 경험치 [%] 표시';
+  }
   syncTopSettingsVisibility();
   syncPauseSettingButtons();
   updateRankIcon();
@@ -12985,6 +13027,7 @@ function createCharacterData(name, options = {}) {
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
   data.fontKey = saveData.fontKey || 'system';
   data.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
+  data.expDisplayMode = ['detailed','percent'].includes(saveData.expDisplayMode) ? saveData.expDisplayMode : 'detailed';
   data.bgmEnabled = bgmEnabled;
   data.sfxEnabled = sfxEnabled;
   data.lowPower = !!saveData.lowPower;
@@ -13407,6 +13450,15 @@ saveGameData();
   saveData.expPercentDigits = getExpPercentDigitsByLevel(level);
   updateSettingsUI();
   updateHUD();
+  saveGameData();
+});
+
+(expDisplayModeSelect && expDisplayModeSelect.addEventListener) && expDisplayModeSelect.addEventListener('change', () => {
+  const mode = expDisplayModeSelect.value === 'percent' ? 'percent' : 'detailed';
+  saveData.expDisplayMode = mode;
+  updateSettingsUI();
+  updateHUD();
+  if (mode !== 'percent') hideExpTooltip();
   saveGameData();
 });
 
@@ -29321,6 +29373,59 @@ if (boss && !bossInvincible) {
 }
 }
 
+// ===== [v.225.14] EXP 상세 툴팁 (PC hover / 모바일 누른 채 이동) =====
+let __expTooltipTouchActive = false;
+
+function positionExpTooltip(clientX, clientY){
+  if (!expTooltipEl) return;
+  const pad = 10;
+  const x = Math.max(pad, Math.min(window.innerWidth - pad, Number(clientX) || window.innerWidth / 2));
+  const y = Math.max(38, Math.min(window.innerHeight - pad, Number(clientY) || 38));
+  expTooltipEl.style.left = `${x}px`;
+  expTooltipEl.style.top = `${y}px`;
+}
+
+function showExpTooltip(clientX, clientY){
+  if (!expTooltipEl || saveData.expDisplayMode !== 'percent') return;
+  positionExpTooltip(clientX, clientY);
+  expTooltipEl.classList.remove('hidden');
+}
+
+function hideExpTooltip(){
+  if (expTooltipEl) expTooltipEl.classList.add('hidden');
+}
+
+if (expWrapperEl) {
+  expWrapperEl.addEventListener('mouseenter', (e) => {
+    if (e.pointerType === 'touch') return;
+    showExpTooltip(e.clientX, e.clientY);
+  });
+  expWrapperEl.addEventListener('mousemove', (e) => {
+    if (saveData.expDisplayMode === 'percent') positionExpTooltip(e.clientX, e.clientY);
+  });
+  expWrapperEl.addEventListener('mouseleave', () => {
+    if (!__expTooltipTouchActive) hideExpTooltip();
+  });
+  expWrapperEl.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    __expTooltipTouchActive = true;
+    showExpTooltip(e.clientX, e.clientY);
+  });
+}
+
+document.addEventListener('pointermove', (e) => {
+  if (!__expTooltipTouchActive || (e.pointerType !== 'touch' && e.pointerType !== 'pen')) return;
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  if (target && expWrapperEl && (target === expWrapperEl || expWrapperEl.contains(target))) {
+    showExpTooltip(e.clientX, e.clientY);
+  } else {
+    hideExpTooltip();
+  }
+}, { passive:true });
+
+document.addEventListener('pointerup', () => { __expTooltipTouchActive = false; hideExpTooltip(); }, { passive:true });
+document.addEventListener('pointercancel', () => { __expTooltipTouchActive = false; hideExpTooltip(); }, { passive:true });
+
 function updateHUD() {
   // 던전에서는 전투 스킬 버튼을 모두 숨기고, 다른 모드로 나오면 자동 복원
   document.body.classList.toggle('dungeon-mode', gameMode === 'dungeon');
@@ -29378,8 +29483,12 @@ if (expPercentDigitsSelect) {
   expPercentDigitsSelect.style.color = percentDigits === 3 ? '#44ffb8' : '#fff';
 }
 
-expEl.textContent =
-  `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
+const expDetailText = `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
+const expPercentOnlyText = `${formatNumber(Math.floor(prog.current))} [${nextPercent.toFixed(percentDigits)}%]`;
+const expDisplayMode = (saveData.expDisplayMode === 'percent') ? 'percent' : 'detailed';
+expEl.textContent = expDisplayMode === 'percent' ? expPercentOnlyText : expDetailText;
+if (expWrapperEl) expWrapperEl.classList.toggle('exp-percent-mode', expDisplayMode === 'percent');
+if (expTooltipEl) expTooltipEl.textContent = expDetailText;
 
 // ✅ 레벨업 등으로 %가 떨어질 때(바가 줄어들 때)는 애니메이션 없이 즉시 반영
 if (nextPercent + 0.001 < __lastExpBarPercent) {
@@ -31525,7 +31634,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.13', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.14', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
