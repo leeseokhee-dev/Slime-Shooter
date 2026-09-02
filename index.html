@@ -7683,6 +7683,8 @@ function ensureCharacterSystem() {
     const isFreshInstall = !migrated;
     const id = `char_${Date.now()}`;
     const baseData = migrated ? deepClone(migrated) : createCharacterData('', { forceBlankNickname: true });
+    const characterCreatedAt = Math.max(0, Number(baseData.characterCreatedAt) || Date.now());
+    baseData.characterCreatedAt = characterCreatedAt;
     const name = (baseData && baseData.nickname) ? String(baseData.nickname).trim() : '';
     const saveKey = getCharacterStorageKey(id);
     try {
@@ -7694,7 +7696,7 @@ function ensureCharacterSystem() {
       level: Number((baseData && baseData.level) || 1) || 1,
       highScore: Number((baseData && baseData.highScore) || 0) || 0,
       element: sanitizeElementKey((baseData && baseData.playerElement) || 'fire'),
-      createdAt: Date.now(),
+      createdAt: characterCreatedAt,
       updatedAt: Date.now()
     }];
     setCharacterIndex(list);
@@ -8906,6 +8908,7 @@ highScore: 0,
 exp: 0,
 level: 1,
 nickname: 'PLAYER', nicknameLastChangedAt: 0, // ✅ 닉네임 마지막 변경 시각(Date.now())
+characterCreatedAt: 0, // ✅ [v.225.4] 캐릭터 생성 시각(Date.now)
 playerElement: 'fire', // ✅ 플레이어 속성
 totalScore: 0, // ✅ 누적 점수
 cashCrystals: 0, // ✅ [v.221.39] 정식 크리스탈 시작값
@@ -12936,6 +12939,7 @@ function createCharacterData(name, options = {}) {
   const forceBlank = !!options.forceBlankNickname;
   data.nickname = forceBlank ? '' : sanitizeNickname(name || 'PLAYER');
   data.nicknameLastChangedAt = 0;
+  data.characterCreatedAt = Date.now(); // ✅ [v.225.4] 신규 캐릭터 생성일
   data.playerElement = sanitizeElementKey((saveData && saveData.playerElement) || 'fire');
   data.fontKey = saveData.fontKey || 'system';
   data.expPercentDigits = [2,3].includes(Number(saveData.expPercentDigits)) ? Number(saveData.expPercentDigits) : 2;
@@ -13071,11 +13075,13 @@ function createCharacterSlot() {
   if (elementKey === null) return;
   const id = `char_${Date.now()}_${Math.floor(Math.random()*1000)}`;
   const data = createCharacterData(newNick);
+  const characterCreatedAt = Date.now();
+  data.characterCreatedAt = characterCreatedAt;
   data.playerElement = elementKey;
   localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(data));
   try { localStorage.setItem(getInitialNicknameDoneKey(id), '1'); } catch(e) {}
   const list = getCharacterIndex();
-  list.push({ id, nickname: newNick, level: 1, highScore: 0, element: elementKey, createdAt: Date.now(), updatedAt: Date.now() });
+  list.push({ id, nickname: newNick, level: 1, highScore: 0, element: elementKey, createdAt: characterCreatedAt, updatedAt: Date.now() });
   setCharacterIndex(list);
   const goNow = confirm('새 캐릭터를 만들었습니다! 지금 바로 이 캐릭터로 시작할까요?');
   if (goNow) {
@@ -14546,6 +14552,39 @@ function startProfileAutoRefresh() {
   }, 1000);
 }
 
+// ===== [v.225.4] 캐릭터 생성일 =====
+function formatCharacterCreatedAtV2254(ts) {
+  const n = Number(ts) || 0;
+  if (n <= 0) return '기록 없음';
+  try {
+    const d = new Date(n);
+    if (Number.isNaN(d.getTime())) return '기록 없음';
+    const pad = v => String(v).padStart(2, '0');
+    return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch (e) { return '기록 없음'; }
+}
+function ensureCharacterCreatedAtV2254() {
+  let ts = Math.max(0, Number(saveData.characterCreatedAt) || 0);
+  try {
+    const list = getCharacterIndex();
+    const meta = list.find(v => v && v.id === currentCharacterId);
+    const metaTs = Math.max(0, Number(meta && meta.createdAt) || 0);
+    if (!ts && metaTs) ts = metaTs;
+    if (!ts) ts = Date.now(); // 기존 캐릭터는 v.225.4에서 최초 확인한 시각부터 기록
+    saveData.characterCreatedAt = ts;
+    if (meta && !Number(meta.createdAt)) {
+      meta.createdAt = ts;
+      setCharacterIndex(list);
+    }
+  } catch (e) {
+    if (!ts) {
+      ts = Date.now();
+      saveData.characterCreatedAt = ts;
+    }
+  }
+  return ts;
+}
+
 function openProfile(isRefresh = false) {
   if (!profileModal || !profileBodyEl) return;
   ensurePetSystemState();
@@ -14553,6 +14592,7 @@ function openProfile(isRefresh = false) {
   try { syncGoldAccountingV1882(); } catch (e) {}
 
   const playSec = Math.floor(saveData.playTimeSec || 0);
+  const characterCreatedAt = ensureCharacterCreatedAtV2254();
   const totalExp = Math.floor(exp || 0);
   const curLv = Math.floor(level || 1);
   const earned = Math.floor(saveData.goldEarned || 0);
@@ -14581,6 +14621,11 @@ function openProfile(isRefresh = false) {
 
   profileBodyEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:8px;">
+      <div style="padding:10px 12px; border:1px solid rgba(124,231,255,0.22); border-radius:12px; background:rgba(16,35,52,0.26);">
+        <div style="font-weight:900; color:#7ce7ff;">🎂 캐릭터 생성일</div>
+        <div style="margin-top:2px; font-size:15px; font-weight:900;">${formatCharacterCreatedAtV2254(characterCreatedAt)}</div>
+      </div>
+
       <div style="padding:10px 12px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.22);">
         <div style="font-weight:900; color:#cfefff;">⏱️ 게임 플레이 시간</div>
         <div style="margin-top:2px; font-size:15px; font-weight:900;">${formatPlayTime(playSec)}</div>
@@ -31351,7 +31396,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
