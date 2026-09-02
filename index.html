@@ -8331,7 +8331,7 @@ const SAFE_EARLY_NEEDED = (typeof EARLY_NEEDED !== "undefined") ? EARLY_NEEDED :
         299: 2409872323430    // 299→300
       };
 
-      if (l >= 250) {
+      if (l >= 300) {
         needed = lateExpAnchors[l] || Math.ceil(lastNeeded * 1.01);
       } else {
         let rate = 1.04;
@@ -8344,8 +8344,18 @@ const SAFE_EARLY_NEEDED = (typeof EARLY_NEEDED !== "undefined") ? EARLY_NEEDED :
         else if (prev === 229) rate = 1.8;
         else if (prev >= 230 && prev <= 238) rate = 1.02;
         else if (prev === 239) rate = 1.8;
-        else if (prev >= 240 && prev <= 247) rate = 1.01;
-        else if (prev === 248) rate = 2.0;
+        else if (prev >= 240 && prev <= 248) rate = 1.01;
+        else if (prev === 249) rate = 2.0;
+        else if (prev >= 250 && prev <= 258) rate = 1.005;
+        else if (prev === 259) rate = 1.9;
+        else if (prev >= 260 && prev <= 268) rate = 1.005;
+        else if (prev === 269) rate = 1.9;
+        else if (prev >= 270 && prev <= 278) rate = 1.005;
+        else if (prev === 279) rate = 1.9;
+        else if (prev >= 280 && prev <= 288) rate = 1.005;
+        else if (prev === 289) rate = 1.9;
+        else if (prev >= 290 && prev <= 297) rate = 1.005;
+        else if (prev === 298) rate = 2.4;
 
         needed = Math.ceil(lastNeeded * rate);
       }
@@ -9967,6 +9977,28 @@ function formatLevelReachedDateV2252(ts) {
     const d = new Date(n);
     return d.toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false });
   } catch(e) { return '-'; }
+}
+
+// ✅ [v.225.5] 만렙 타이틀 영구 보유 판정
+// - LV.300을 한 번이라도 달성했다면 이후 현재 레벨과 무관하게 '초월 슬라임' 칭호를 보유합니다.
+// - v.225.2의 levelReachedAt[300] 기록을 영구 달성 증거로 사용합니다.
+// - 구버전 세이브가 현재 LV.300인 경우도 즉시 만렙 달성으로 인정합니다.
+function hasReachedMaxLevelEverV2255() {
+  try {
+    if (Math.floor(Number(level) || 1) >= MAX_LEVEL) return true;
+    if (Number(exp) >= MAX_EXP_CAP) return true;
+
+    const reached = saveData && saveData.levelReachedAt;
+    if (reached && typeof reached === 'object' && Number(reached[String(MAX_LEVEL)]) > 0) {
+      return true;
+    }
+
+    // 과거 버전에서 이미 만렙 칭호를 장착한 채 저장된 캐릭터도 복구 인정
+    if (saveData && saveData.titleSystem && saveData.titleSystem.equipped === 'title_ancient_slime') {
+      return true;
+    }
+  } catch(e) {}
+  return false;
 }
 
 function ensureStageRecentHistoryV2229() {
@@ -13860,7 +13892,7 @@ const TITLE_DEFS = [
   { id:'title_awakened_slime', name:'각성한 슬라임', desc:'레벨 100 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 100 },
   { id:'title_ultimate_slime', name:'궁극 슬라임', desc:'레벨 200 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 200 },
   { id:'title_legend_slime', name:'전설 슬라임', desc:'레벨 250 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 250 },
-  { id:'title_ancient_slime', name:'초월 슬라임', desc:'레벨 300 달성', group:'레벨', unlocked: () => Math.floor(level || 1) >= 300 },
+  { id:'title_ancient_slime', name:'초월 슬라임', desc:'레벨 300 최초 달성 · 영구 보유 · 스테이지 사망 EXP 패널티 면제', group:'레벨', unlocked: () => hasReachedMaxLevelEverV2255() },
 
   { id:'title_gold_collector', name:'골드 수집가', desc:'누적 골드 100,000 획득', group:'골드', unlocked: () => getGoldEarnedSafe() >= 100000 },
   { id:'title_tycoon', name:'대부호', desc:'누적 골드 1,000,000 획득', group:'골드', unlocked: () => getGoldEarnedSafe() >= 1000000 },
@@ -25585,10 +25617,10 @@ function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
     const bands = [
       [1,5,10],[6,15,31],[16,20,127],[21,40,307],[41,60,1117],
-      [61,80,2509],[81,100,5105],[101,120,5883],[121,140,11281],
-      [141,160,22215],[161,180,33738],[181,200,70196],
-      [201,220,50927],[221,240,116068],[241,260,232425],
-      [261,280,435477],[281,300,835187]
+      [61,80,2509],[81,100,5334],[101,120,4368],[121,140,12374],
+      [141,160,30219],[161,180,71736],[181,200,149741],
+      [201,220,80927],[221,240,171038],[241,260,360993],
+      [261,280,835472],[281,300,2197645]
     ];
     for (const [a,b,per] of bands){
       if(lv>=a && lv<=b) {
@@ -26893,6 +26925,9 @@ isPlayerDying = true;
   document.body.classList.add('dead-mode');
 player.alive = false;
 if (gameMode === 'stage' && level >= 31
+  // ✅ [v.225.5] LV.300을 한 번이라도 달성한 캐릭터는 '초월 슬라임' 만렙 타이틀 효과로
+  // 스테이지 모드 사망 EXP 패널티가 영구 면제됩니다.
+  && !hasReachedMaxLevelEverV2255()
   && !(typeof isDimensionInvasionActiveV175 === 'function' && isDimensionInvasionActiveV175())
   && !(typeof isEvolutionActiveV188 === 'function' && isEvolutionActiveV188())) {
   let penaltyRate = 0;
@@ -31396,7 +31431,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.5', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
