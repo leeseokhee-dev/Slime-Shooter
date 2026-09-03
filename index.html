@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.224.4.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.225.15)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -25703,19 +25703,77 @@ function getStageLevelAdjustedExp(baseExp, stageValue = stage) {
 
 function getStageBossExpReward(stageValue) {
     const lv = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stageValue) || 1)));
+
+    // ✅ [v.225.15] 스테이지 모드 EXP 밸런스
+    // 5스테이지 단위로 '보스 기준 스테이지당 EXP'를 적용합니다.
+    // 실제 보스 EXP = 현재 스테이지 × 해당 구간의 스테이지당 EXP
+    // 일반 몬스터 EXP는 아래 기존 함수에서 보스 EXP의 50%를 목표 처치 수로 나누어 자동 계산됩니다.
     const bands = [
-      [1,5,10],[6,15,31],[16,20,127],[21,40,307],[41,60,1117],
-      [61,80,2509],[81,100,5334],[101,120,4368],[121,140,12374],
-      [141,160,30219],[161,180,71736],[181,200,149741],
-      [201,220,80927],[221,240,171038],[241,260,360993],
-      [261,280,835472],[281,300,2197645]
+      [1,5,10],
+      [6,10,24],
+      [11,15,63],
+      [16,20,129],
+      [21,25,346],
+      [26,30,437],
+      [31,35,528],
+      [36,40,619],
+      [41,45,1087],
+      [46,50,1193],
+      [51,55,1299],
+      [56,60,1405],
+      [61,65,2663],
+      [66,70,2800],
+      [71,75,2937],
+      [76,80,3074],
+      [81,85,6359],
+      [86,90,6510],
+      [91,95,6661],
+      [96,100,6812],
+      [101,105,3143],
+      [106,110,3340],
+      [111,115,3537],
+      [116,120,3734],
+      [121,125,8371],
+      [126,130,8611],
+      [131,135,8851],
+      [136,140,9091],
+      [141,145,19908],
+      [146,150,20236],
+      [151,155,20564],
+      [156,160,20892],
+      [161,165,45187],
+      [166,170,45603],
+      [171,175,46019],
+      [176,180,46435],
+      [181,185,103105],
+      [186,190,103632],
+      [191,195,104159],
+      [196,200,104686],
+      [201,205,32354],
+      [206,210,32800],
+      [211,215,37246],
+      [216,220,37692],
+      [221,225,81937],
+      [226,230,82515],
+      [231,235,88093],
+      [236,240,88671],
+      [241,245,185040],
+      [246,250,186242],
+      [251,255,198444],
+      [256,260,199646],
+      [261,265,483173],
+      [266,270,485612],
+      [271,275,511051],
+      [276,280,513490],
+      [281,285,1329762],
+      [286,290,1334778],
+      [291,295,1386394],
+      [296,300,1391410]
     ];
-    for (const [a,b,per] of bands){
-      if(lv>=a && lv<=b) {
-        const baseExp = lv * per;
-        // ✅ [v.221.3] 201~300 스테이지 몬스터/보스 EXP를 기존의 100%로 조정
-        // 일반 몬스터 EXP도 이 보스 EXP를 기준으로 계산되므로 동일 비율로 자동 적용됩니다.
-        return lv >= 201 ? Math.max(1, Math.floor(baseExp * 1.00)) : baseExp;
+
+    for (const [a,b,per] of bands) {
+      if (lv >= a && lv <= b) {
+        return Math.max(1, Math.floor(lv * per));
       }
     }
     return lv;
