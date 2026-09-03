@@ -4759,12 +4759,12 @@ body.watch-ui:not(.playing-ui) #settingsBar,
 
 
 <style id="v217ExpBarFinalFix">
-#expRow{width:100%!important;height:14px!important;min-height:14px!important;max-height:14px!important;display:flex!important;align-items:stretch!important;}
-#expLabel,#gameContainer.compact-ui #expLabel,#gameContainer.ultra-compact-ui #expLabel,#gameContainer.watch-ui #expLabel{flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:14px!important;min-height:14px!important;max-height:14px!important;padding:0 1px!important;font-size:9px!important;line-height:14px!important;overflow:hidden!important;}
-#expWrapper,#gameContainer.compact-ui #expWrapper,#gameContainer.ultra-compact-ui #expWrapper,#gameContainer.watch-ui #expWrapper{flex:1 1 auto!important;width:auto!important;min-width:0!important;height:14px!important;min-height:14px!important;max-height:14px!important;}
+#expRow{width:100%!important;height:18px!important;min-height:18px!important;max-height:18px!important;display:flex!important;align-items:stretch!important;}
+#expLabel,#gameContainer.compact-ui #expLabel,#gameContainer.ultra-compact-ui #expLabel,#gameContainer.watch-ui #expLabel{flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:18px!important;min-height:18px!important;max-height:18px!important;padding:0 1px!important;font-size:9px!important;line-height:18px!important;overflow:hidden!important;}
+#expWrapper,#gameContainer.compact-ui #expWrapper,#gameContainer.ultra-compact-ui #expWrapper,#gameContainer.watch-ui #expWrapper{flex:1 1 auto!important;width:auto!important;min-width:0!important;height:18px!important;min-height:18px!important;max-height:18px!important;}
 #expBarFill{height:100%!important;}
-#expText{font-size:9px!important;line-height:14px!important;padding:0 2px!important;}
-@media(max-width:520px){#expLabel,#gameContainer.compact-ui #expLabel,#gameContainer.ultra-compact-ui #expLabel{flex-basis:28px!important;width:28px!important;min-width:28px!important;max-width:28px!important;font-size:8px!important;}#expWrapper{height:14px!important;min-height:14px!important;max-height:14px!important;}}
+#expText{font-size:9px!important;line-height:18px!important;padding:0 2px!important;}
+@media(max-width:520px){#expLabel,#gameContainer.compact-ui #expLabel,#gameContainer.ultra-compact-ui #expLabel{flex-basis:28px!important;width:28px!important;min-width:28px!important;max-width:28px!important;font-size:8px!important;}#expWrapper{height:18px!important;min-height:18px!important;max-height:18px!important;}}
 </style>
 
 <style id="v219CanvasHudCss">
@@ -29541,12 +29541,12 @@ if (expPercentDigitsSelect) {
   expPercentDigitsSelect.style.color = percentDigits === 3 ? '#44ffb8' : '#fff';
 }
 
-const expDetailText = `${formatNumber(Math.floor(prog.current))} / ${formatNumber(Math.floor(prog.max))} [${nextPercent.toFixed(percentDigits)}%]`;
+const expDetailText = `${formatNumber(Math.floor(prog.current))}/${formatNumber(Math.floor(prog.max))}[${nextPercent.toFixed(percentDigits)}%]`;
 const expPercentOnlyText = `${formatNumber(Math.floor(prog.current))} [${nextPercent.toFixed(percentDigits)}%]`;
 const expDisplayMode = (saveData.expDisplayMode === 'percent') ? 'percent' : 'detailed';
 expEl.textContent = expDisplayMode === 'percent' ? expPercentOnlyText : expDetailText;
 if (expWrapperEl) expWrapperEl.classList.toggle('exp-percent-mode', expDisplayMode === 'percent');
-if (expTooltipEl) expTooltipEl.textContent = expDetailText;
+if (expTooltipEl) expTooltipEl.textContent = `EXP : ${expDetailText}`;
 
 // ✅ 레벨업 등으로 %가 떨어질 때(바가 줄어들 때)는 애니메이션 없이 즉시 반영
 if (nextPercent + 0.001 < __lastExpBarPercent) {
@@ -31692,7 +31692,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.16', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.17', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
