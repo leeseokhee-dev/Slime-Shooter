@@ -5940,7 +5940,6 @@ function startFeverMode() {
   document.body.classList.add('fever-mode');
   feverPreviousBgmName = getFeverReturnBgmName();
   try { initAudio(); playBgmTrack('fever'); } catch(e) {}
-  try { spawnDamageText(width / 2, height * 0.22, '🔥 FEVER TIME! 🔥', '#ffd86b', true); } catch(e) {}
   try { showToast('🔥 FEVER TIME! EXP+25% / 골드+50% / 공격 강화 / 스킬 쿨타임 75% 감소!', '#ffd86b', 1800); } catch(e) {}
   try { updateTownQuestProgress('fever', 1); } catch(e) {}
 }
@@ -6013,8 +6012,11 @@ function updateFeverUI() {
 
 function drawFeverOverlay() {
   if (state !== 'playing' || !isFeverActive()) return;
+  const now = Date.now();
+
+  // 피버 중 전체 배경에 은은한 주황/금빛 펄스
   ctx.save();
-  ctx.globalAlpha = 0.10 + 0.05 * Math.sin(Date.now() / 90);
+  ctx.globalAlpha = 0.10 + 0.05 * Math.sin(now / 90);
   const g = ctx.createRadialGradient(width / 2, height * 0.18, 10, width / 2, height * 0.18, Math.max(width, height) * 0.85);
   g.addColorStop(0, '#fff4a3');
   g.addColorStop(0.42, '#ff9f1a');
@@ -6023,16 +6025,31 @@ function drawFeverOverlay() {
   ctx.fillRect(0, 0, width, height);
   ctx.restore();
 
-  if (feverNoticeTimer > 0) {
+  // ✅ [v.225.23] 피버 시작 순간 배경에 박스 없는 FEVER! 글자 이펙트
+  // drawFeverOverlay()가 캐릭터보다 먼저 그려지므로 실제 '배경 글자'처럼 보입니다.
+  if (feverNoticeTimer > 0 && feverTimeLeft > 0) {
+    const duration = 1800;
+    const elapsed = Math.max(0, duration - feverNoticeTimer);
+    const p = Math.max(0, Math.min(1, elapsed / duration));
+    const pop = 1 - Math.pow(1 - Math.min(1, p * 3.4), 3);
+    const fade = p < 0.62 ? 1 : Math.max(0, 1 - (p - 0.62) / 0.38);
+    const pulse = 1 + Math.sin(now / 55) * 0.025;
+    const scale = (0.58 + pop * 0.48) * pulse;
+
     ctx.save();
+    ctx.translate(width / 2, height * 0.48);
+    ctx.scale(scale, scale);
     ctx.textAlign = 'center';
-    ctx.font = `bold ${Math.max(28, Math.floor(width * 0.052))}px ${getUIFontFamily()}`;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-    ctx.fillStyle = '#ffd86b';
-    const txt = feverTimeLeft > 0 ? '🔥 FEVER TIME! 🔥' : 'FEVER END!';
-    ctx.strokeText(txt, width / 2, height * 0.22);
-    ctx.fillText(txt, width / 2, height * 0.22);
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.14 * fade;
+    ctx.font = `900 ${Math.max(82, Math.floor(width * 0.18))}px ${getUIFontFamily()}`;
+    ctx.lineWidth = Math.max(5, width * 0.008);
+    ctx.strokeStyle = 'rgba(255,120,0,0.86)';
+    ctx.fillStyle = 'rgba(255,238,145,0.96)';
+    ctx.shadowColor = 'rgba(255,145,0,0.90)';
+    ctx.shadowBlur = Math.max(18, width * 0.035);
+    ctx.strokeText('FEVER!', 0, 0);
+    ctx.fillText('FEVER!', 0, 0);
     ctx.restore();
   }
 }
@@ -29898,23 +29915,123 @@ function drawTitleSlimes(dt, timestamp) {
 }
 
 function drawLevelUpEffect() {
-if (levelUpTimer <= 0) return;
-ctx.save();
-ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-ctx.globalAlpha = Math.min(1, levelUpTimer / 400);
-const drawX = width / 2;
-const drawY = height / 2 - 130;
-const lineGap = 42;
-ctx.shadowColor = 'rgba(255, 255, 0, 0.5)'; ctx.shadowBlur = 10;
-ctx.lineWidth = 4; ctx.strokeStyle = '#000000'; ctx.fillStyle = '#FFFF00';
-ctx.font = fontStr(32, 'bold');
-ctx.strokeText('레벨이 올랐습니다', drawX, drawY);
-ctx.fillText('레벨이 올랐습니다', drawX, drawY);
-ctx.font = fontStr(36, 'bold');
-const levelText = `LEVEL ${level}`;
-ctx.strokeText(levelText, drawX, drawY + lineGap);
-ctx.fillText(levelText, drawX, drawY + lineGap);
-ctx.restore();
+  if (levelUpTimer <= 0) return;
+
+  // ✅ [v.225.23] 레벨업 문구 팝업 애니메이션
+  const duration = 1500;
+  const elapsed = Math.max(0, duration - levelUpTimer);
+  const p = Math.max(0, Math.min(1, elapsed / duration));
+  const enter = Math.min(1, p / 0.24);
+  const ease = 1 - Math.pow(1 - enter, 3);
+  const fade = p < 0.72 ? 1 : Math.max(0, 1 - (p - 0.72) / 0.28);
+  const pop = 0.72 + ease * 0.28 + Math.sin(Math.min(1, enter) * Math.PI) * 0.08;
+  const rise = (1 - ease) * 20 - Math.max(0, p - 0.55) * 18;
+  const drawX = width / 2;
+  const drawY = height / 2 - 145 + rise;
+  const lineGap = Math.max(40, Math.floor(width * 0.048));
+
+  ctx.save();
+  ctx.translate(drawX, drawY);
+  ctx.scale(pop, pop);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = fade;
+
+  // 위쪽 작은 문구
+  ctx.font = fontStr(Math.max(25, Math.floor(width * 0.034)), '900');
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(35,24,5,0.92)';
+  ctx.fillStyle = '#fff4a6';
+  ctx.shadowColor = 'rgba(255,210,70,0.90)';
+  ctx.shadowBlur = 16;
+  ctx.strokeText('레벨이 올랐습니다', 0, 0);
+  ctx.fillText('레벨이 올랐습니다', 0, 0);
+
+  // LEVEL 숫자는 더 크고 강하게 팝
+  const levelPop = 1 + Math.sin(Math.min(1, p / 0.32) * Math.PI) * 0.10;
+  ctx.save();
+  ctx.translate(0, lineGap);
+  ctx.scale(levelPop, levelPop);
+  ctx.font = fontStr(Math.max(38, Math.floor(width * 0.052)), '1000');
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = 'rgba(25,18,5,0.96)';
+  ctx.fillStyle = '#ffd84d';
+  ctx.shadowColor = 'rgba(255,164,0,0.95)';
+  ctx.shadowBlur = 22;
+  const levelText = `LEVEL ${level}`;
+  ctx.strokeText(levelText, 0, 0);
+  ctx.fillText(levelText, 0, 0);
+  ctx.restore();
+
+  // 문구 주변 작은 별빛 파티클(저전력 모드에서는 개수 감소)
+  const sparkleCount = (typeof isLowPower === 'function' && isLowPower()) ? 4 : 8;
+  for (let i = 0; i < sparkleCount; i++) {
+    const a = (Math.PI * 2 * i / sparkleCount) + elapsed * 0.0022;
+    const rr = 74 + (i % 3) * 18 + p * 16;
+    const sx = Math.cos(a) * rr;
+    const sy = lineGap * 0.45 + Math.sin(a) * (38 + (i % 2) * 14);
+    const r = 1.8 + ((i + Math.floor(elapsed / 120)) % 3) * 0.9;
+    ctx.globalAlpha = fade * (0.45 + 0.45 * Math.abs(Math.sin(elapsed / 95 + i)));
+    ctx.fillStyle = i % 2 ? '#ffffff' : '#ffe16f';
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ✅ [v.225.23] 레벨업 순간 플레이어 슬라임 주변 링/광휘 이펙트
+function drawPlayerLevelUpAura(size) {
+  if (levelUpTimer <= 0) return;
+  const duration = 1500;
+  const elapsed = Math.max(0, duration - levelUpTimer);
+  const p = Math.max(0, Math.min(1, elapsed / duration));
+  const fade = p < 0.62 ? 1 : Math.max(0, 1 - (p - 0.62) / 0.38);
+  const burst = 1 - Math.pow(1 - Math.min(1, p * 4.5), 3);
+  const pulse = 1 + Math.sin(elapsed / 55) * 0.05;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  // 중심 광원
+  const glowR = size * (1.1 + burst * 1.55);
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+  glow.addColorStop(0, `rgba(255,255,220,${0.42 * fade})`);
+  glow.addColorStop(0.35, `rgba(255,221,92,${0.25 * fade})`);
+  glow.addColorStop(1, 'rgba(255,170,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 바깥으로 퍼지는 2중 링
+  for (let i = 0; i < 2; i++) {
+    const local = Math.max(0, Math.min(1, p * 1.35 - i * 0.16));
+    const rr = size * (1.18 + local * (1.45 + i * 0.42)) * pulse;
+    ctx.globalAlpha = fade * (1 - local) * (i === 0 ? 0.95 : 0.62);
+    ctx.strokeStyle = i === 0 ? '#fff4a8' : '#ffb52e';
+    ctx.lineWidth = Math.max(2, size * (0.12 - i * 0.025));
+    ctx.beginPath();
+    ctx.arc(0, 0, rr, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 방사형 빛살
+  const rayCount = (typeof isLowPower === 'function' && isLowPower()) ? 6 : 12;
+  for (let i = 0; i < rayCount; i++) {
+    const a = (Math.PI * 2 * i / rayCount) + elapsed * 0.0012;
+    const inner = size * (1.05 + burst * 0.28);
+    const outer = size * (1.8 + burst * 1.18 + (i % 3) * 0.18);
+    ctx.globalAlpha = fade * (0.25 + 0.28 * Math.abs(Math.sin(elapsed / 90 + i)));
+    ctx.strokeStyle = i % 2 ? '#ffffff' : '#ffd84d';
+    ctx.lineWidth = Math.max(1.2, size * 0.055);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+    ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 function drawEvolutionOverlay() {
@@ -30308,6 +30425,8 @@ const magnetActive = isInfiniteItemEffectActive('magnet');
 
 ctx.save();
 ctx.translate(x, y);
+// ✅ [v.225.23] 레벨업 순간 슬라임 자체 주변에 전용 광휘/링 표시
+drawPlayerLevelUpAura(size);
 // 빙글빙글 지속 중에는 슬라임 몸체 자체를 빠르게 회전
 if (isSpinSkillActive()) {
   ctx.rotate(getPlayerSpinRotationAngle());
@@ -31767,7 +31886,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.22', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 225.24', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -32179,6 +32298,10 @@ function finishStageBonusStage() {
 
 function updateStageBonusStage(dt) {
   if (!stageBonusState || !stageBonusState.active) return false;
+
+  // ✅ [v.225.24] 보너스 스테이지 진입/카운트다운 중에도 레벨업 애니메이션 시간은 계속 진행
+  // 일반 전투와 동일하게 levelUpTimer를 감소시켜, 진입 순간 이펙트가 멈춰 보이는 현상을 방지합니다.
+  if (levelUpTimer > 0) levelUpTimer = Math.max(0, levelUpTimer - dt);
 
   // 보너스 스테이지 중 몬스터/적탄은 계속 정리하되 활성 스킬은 유지합니다.
   clearStageCombatObjects({ clearDrops: false, preserveSkills: true });
