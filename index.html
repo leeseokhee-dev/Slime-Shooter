@@ -7924,129 +7924,141 @@ function showExpGachaFx({ gainedExp, spentGold, grade }) {
 }
 
 // ✅ [v.225.26] 레벨업 전용 스킬
-// - 레벨업 1.5초 후 발사 이펙트와 함께 발동
+// - 레벨업 1.5초 후 발동
 // - 보스 제외 모든 일반 적 즉사
-// - 플레이어 레벨이 현재 스테이지보다 +10 이상 높으면 발동하지 않음
-//   예: LV.20 / Stage 10 => 미발동
-//   예: LV.10 / Stage 20 => 발동 (-10 이상 차이는 허용)
+// - 스테이지가 레벨보다 +7 이상 높으면 미발동 (+6까지는 정상 발동)
+// - 플레이어에서 적 방향으로 빛탄/광선이 발사되는 연출 추가
 let levelUpKillSkillSerialV22526 = 0;
-let levelUpSkillShotFxV22526 = null;
 
-function canUseLevelUpKillSkillV22526() {
-  const stageNo = Number(currentStage || stage || 0);
-  const lv = Number(level || 0);
-  if (!Number.isFinite(stageNo) || !Number.isFinite(lv) || stageNo <= 0) return true;
+function spawnLevelUpSkillShotFxV22526(targets) {
+  if (!areEffectsEnabled() || !player || !Array.isArray(targets) || !targets.length) return;
 
-  // +10 이상: 플레이어 레벨이 스테이지보다 10 이상 높을 때만 차단
-  return (lv - stageNo) < 10;
-}
+  const sx = Number(player.x) || width / 2;
+  const sy = Number(player.y) || height * 0.72;
+  const low = isLowPower();
+  const maxVisualTargets = low ? 10 : 22;
+  const visualTargets = targets.slice(0, maxVisualTargets);
 
-function startLevelUpSkillShotFxV22526() {
-  if (!player) return;
-  levelUpSkillShotFxV22526 = {
-    x: player.x,
-    y: player.y - Math.max(10, player.size * 0.25),
-    timer: 420,
-    maxTimer: 420
-  };
-}
+  // 플레이어 중심 발사 충전광
+  try {
+    particles.push({
+      type: 'ring',
+      x: sx, y: sy,
+      r: 10,
+      grow: low ? 7.5 : 10.5,
+      life: 300,
+      maxLife: 300,
+      lineW: low ? 2 : 3,
+      color: 'rgba(255,245,135,1)'
+    });
+    spawnExplosion(sx, sy, 'rgba(255,238,120,1)', low ? 10 : 22);
+  } catch(e) {}
 
-function updateLevelUpSkillShotFxV22526(dt) {
-  if (!levelUpSkillShotFxV22526) return;
-  levelUpSkillShotFxV22526.timer -= dt;
-  if (levelUpSkillShotFxV22526.timer <= 0) {
-    levelUpSkillShotFxV22526 = null;
+  for (const enemy of visualTargets) {
+    if (!enemy) continue;
+    const tx = Number(enemy.x);
+    const ty = Number(enemy.y);
+    if (!Number.isFinite(tx) || !Number.isFinite(ty)) continue;
+
+    const dx = tx - sx;
+    const dy = ty - sy;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    // 약 0.18~0.28초 동안 적 방향으로 날아가는 고속 빛탄
+    const speed = low ? 19 : 24;
+    const life = Math.max(120, Math.min(280, (dist / speed) * 16.67));
+
+    particles.push({
+      type: 'rect',
+      x: sx + nx * 12,
+      y: sy + ny * 12,
+      vx: nx * speed,
+      vy: ny * speed,
+      w: low ? 12 : 17,
+      h: low ? 3 : 4,
+      rot: Math.atan2(dy, dx),
+      spin: 0,
+      life,
+      maxLife: life,
+      color: 'rgba(255,244,125,1)'
+    });
+
+    // 빛탄 주변의 작은 잔광 2개
+    if (!low) {
+      for (let j = 0; j < 2; j++) {
+        const spread = (j === 0 ? -1 : 1) * 0.045;
+        const ca = Math.cos(spread), sa = Math.sin(spread);
+        const vx = (nx * ca - ny * sa) * (speed * 0.88);
+        const vy = (nx * sa + ny * ca) * (speed * 0.88);
+        particles.push({
+          x: sx, y: sy,
+          vx, vy,
+          life: life * 0.92,
+          maxLife: life * 0.92,
+          color: 'rgba(255,255,225,0.95)',
+          size: 2.4
+        });
+      }
+    }
+
+    // 적 위치에 피격 플래시
+    particles.push({
+      type: 'ring',
+      x: tx, y: ty,
+      r: 5,
+      grow: low ? 4.0 : 6.0,
+      life: 220,
+      maxLife: 220,
+      lineW: 2,
+      color: 'rgba(255,231,92,1)'
+    });
   }
 }
 
-function drawLevelUpSkillShotFxV22526() {
-  const fx = levelUpSkillShotFxV22526;
-  if (!fx || state !== 'playing') return;
-
-  const p = 1 - Math.max(0, fx.timer) / fx.maxTimer;
-  const fade = Math.max(0, 1 - p);
-  const radius = 22 + p * 160;
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-
-  // 중심 발광
-  const g = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, 46 + p * 18);
-  g.addColorStop(0, `rgba(255,255,255,${0.95 * fade})`);
-  g.addColorStop(0.28, `rgba(255,245,140,${0.80 * fade})`);
-  g.addColorStop(1, 'rgba(255,190,20,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(fx.x, fx.y, 48 + p * 20, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 바깥으로 발사되는 충격파 링
-  ctx.globalAlpha = 0.92 * fade;
-  ctx.strokeStyle = '#fff59b';
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.globalAlpha = 0.62 * fade;
-  ctx.strokeStyle = '#ffb000';
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.arc(fx.x, fx.y, radius * 0.72, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 방사형 발사 광선
-  const rayCount = (typeof isLowPower === 'function' && isLowPower()) ? 8 : 16;
-  for (let i = 0; i < rayCount; i++) {
-    const a = (Math.PI * 2 * i / rayCount) + p * 0.65;
-    const inner = 26 + p * 30;
-    const outer = 72 + p * 150 + (i % 3) * 12;
-    ctx.globalAlpha = fade * (0.45 + 0.35 * Math.sin(i + p * 12) ** 2);
-    ctx.strokeStyle = (i % 2 === 0) ? '#ffffff' : '#ffd84d';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(fx.x + Math.cos(a) * inner, fx.y + Math.sin(a) * inner);
-    ctx.lineTo(fx.x + Math.cos(a) * outer, fx.y + Math.sin(a) * outer);
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
-function scheduleLevelUpKillSkillV22526() {
+function scheduleLevelUpKillSkillV22526(levelAtLevelUp) {
   const serial = ++levelUpKillSkillSerialV22526;
-
-  // 레벨업 시점 기준으로 격차를 판정합니다.
-  if (!canUseLevelUpKillSkillV22526()) {
-    try {
-      spawnDamageText(
-        width / 2,
-        height * 0.34,
-        'LEVEL UP SKILL - DISABLED',
-        '#aaaaaa',
-        true
-      );
-    } catch(e) {}
-    return;
-  }
+  const levelSnapshot = Math.max(1, Math.floor(Number(levelAtLevelUp) || level || 1));
+  const stageSnapshot = Math.max(1, Math.floor(Number(stage) || 1));
 
   setTimeout(() => {
-    if (serial !== levelUpKillSkillSerialV22526) return;
+    // 레벨업 이후 다른 화면으로 빠졌다면 발동하지 않습니다.
     if (state !== 'playing') return;
 
-    // 1.5초 후 플레이어 위치에서 발사 연출
-    try { startLevelUpSkillShotFxV22526(); } catch(e) {}
+    // ✅ [v.225.26] 스테이지 격차 제한
+    // 예) Stage 44 / LV.37 => +7이므로 미발동
+    //     Stage 44 / LV.38 => +6이므로 정상 발동
+    if (gameMode === 'stage') {
+      const stageGap = stageSnapshot - levelSnapshot;
+      if (stageGap >= 7) {
+        try {
+          spawnDamageText(
+            width / 2,
+            height * 0.34,
+            `LEVEL UP SKILL 미발동 (+${stageGap})`,
+            '#ffb36b',
+            true
+          );
+        } catch(e) {}
+        return;
+      }
+    }
 
+    // 현재 존재하는 일반 적만 대상으로 합니다. boss 객체는 절대 건드리지 않습니다.
     const targets = Array.isArray(enemies)
       ? enemies.filter(e => e && Number(e.hp) > 0)
       : [];
 
+    if (!targets.length) return;
+
+    // 발사형 이펙트
     try {
+      spawnLevelUpSkillShotFxV22526(targets);
       spawnDamageText(width / 2, height * 0.34, 'LEVEL UP SKILL!', '#fff07a', true);
     } catch(e) {}
 
-    if (!targets.length) return;
-
+    // 보스를 제외한 모든 일반 적 즉사
     for (const enemy of targets) {
       if (!enemy || Number(enemy.hp) <= 0) continue;
       enemy.hp = 0;
@@ -8057,6 +8069,7 @@ function scheduleLevelUpKillSkillV22526() {
       }
     }
 
+    // 같은 프레임 재충돌/재처치 방지
     try {
       enemies = enemies.filter(e => e && Number(e.hp) > 0);
     } catch(e) {}
@@ -8094,7 +8107,7 @@ function addExpDirect(amount) {
     SFX.levelUp();
     if (oldLevel < MAX_LEVEL && level === MAX_LEVEL) triggerMaxLevelCelebration();
     levelUpTimer = 1500;
-    scheduleLevelUpKillSkillV22526(); // ✅ [v.225.25] 레벨업 1.5초 후 일반 적 전체 즉사
+    scheduleLevelUpKillSkillV22526(level); // ✅ [v.225.26] 레벨업 1.5초 후 조건 확인 + 발사형 즉사 스킬
     if (player) spawnExplosion(player.x, player.y - 10, 'rgba(150, 220, 255, 1)', 20);
   }
 
@@ -22721,7 +22734,7 @@ function addExp(amount, opts = {}) {
         // ✅ [v.56] 만렙 도달 시 폭죽 + 사운드
     if (oldLevel < MAX_LEVEL && level === MAX_LEVEL) triggerMaxLevelCelebration();
 levelUpTimer = 1500;
-    scheduleLevelUpKillSkillV22526(); // ✅ [v.225.25] 레벨업 1.5초 후 일반 적 전체 즉사
+    scheduleLevelUpKillSkillV22526(level); // ✅ [v.225.26] 레벨업 1.5초 후 조건 확인 + 발사형 즉사 스킬
     if (player) {
       spawnExplosion(player.x, player.y - 10, 'rgba(150, 220, 255, 1)', 20);
     }
@@ -32444,7 +32457,6 @@ function updateStageBonusStage(dt) {
   // ✅ [v.225.24] 보너스 스테이지 진입/카운트다운 중에도 레벨업 애니메이션 시간은 계속 진행
   // 일반 전투와 동일하게 levelUpTimer를 감소시켜, 진입 순간 이펙트가 멈춰 보이는 현상을 방지합니다.
   if (levelUpTimer > 0) levelUpTimer = Math.max(0, levelUpTimer - dt);
-  updateLevelUpSkillShotFxV22526(dt);
 
   // 보너스 스테이지 중 몬스터/적탄은 계속 정리하되 활성 스킬은 유지합니다.
   clearStageCombatObjects({ clearDrops: false, preserveSkills: true });
@@ -32993,7 +33005,6 @@ requestAnimationFrame(gameLoop);
     drawSuddenQuestUI();
 
     // UI/오버레이(고정)
-    drawLevelUpSkillShotFxV22526();
     drawLevelUpEffect();
     drawEvolutionOverlay();
     drawMaxLevelCelebrationOverlay();
