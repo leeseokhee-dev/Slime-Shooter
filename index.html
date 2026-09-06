@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.225.15)</title>
+<title>Slime Shooter - Ultimate Evolution (v.226)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -9642,28 +9642,28 @@ function getStageTargetSpawnPerSecond(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  // ✅ [v.218] 스테이지 모드 전용: 반드시 0.75초(750ms)마다 출현
-  return 750;
+  // ✅ [v.218] 스테이지 모드 전용: 반드시 2.00초(2000ms)마다 출현
+  return 2000;
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
   // ✅ [v.221.2] 201~300도 101~200과 동일한 생성량 적용
-  // 전 구간 공통 생성 간격은 0.75초이며, 101~300은 1회당 4마리
+  // 전 구간 공통 생성 간격은 2초이며, 101~300은 1회당 4마리
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
   if (stg <= 5) return 1;
-  if (stg <= 15) return 2;
-  if (stg <= 60) return 3;
-  if (stg <= 100) return 4;
-  if (stg <= 120) return 2;
-  if (stg <= 140) return 3;
-  if (stg <= 160) return 4;
-  if (stg <= 180) return 5;
-  if (stg <= 200) return 6;
-  if (stg <= 220) return 3;
-  if (stg <= 240) return 4;
-  if (stg <= 260) return 5;
-  if (stg <= 280) return 6;
-  return 7;
+  if (stg <= 15) return 3;
+  if (stg <= 60) return 4;
+  if (stg <= 100) return 6;
+  if (stg <= 120) return 3;
+  if (stg <= 140) return 5;
+  if (stg <= 160) return 6;
+  if (stg <= 180) return 7;
+  if (stg <= 200) return 8;
+  if (stg <= 220) return 4;
+  if (stg <= 240) return 6;
+  if (stg <= 260) return 7;
+  if (stg <= 280) return 8;
+  return 10;
 }
 // ===============================
 // ✅ [v.224.1] 스테이지 모드 미션 다양화
@@ -24276,34 +24276,57 @@ function handleBossKilledBySkill() {
       spawnExpItemFromBoss(Math.random() < 0.10);
     } else {
       const originalBossExpReward = getStageBossExpReward((boss && boss.level) || currentBossLevel || stage);
-      // ✅ [v.214.2] 스테이지 보스 EXP는 피격 감소 없이 지급합니다.
-      // - 기본 보스 EXP에는 레벨 차이 보정/피격 랭크 감소/펫·상점 EXP 버프/피버 배수를 적용하지 않습니다.
-      // - 단, 핫타임 시간에는 현재 핫타임 배율(평일 2배, 주말 3배)만 적용합니다.
+      // ✅ [v.226] 스테이지 보스 EXP는 피격 감소 없이 지급합니다.
+      // - 기본 보스 EXP에는 레벨 차이 보정/피격 랭크 감소/상점 EXP 버프/쿠폰을 적용하지 않습니다.
+      // - 핫타임은 기존대로 적용하며, 장착 펫의 EXP 보너스와 피버 EXP 보너스는 실제 발동/적용 중일 때만 추가합니다.
       const bossExpReward = Math.max(0, Math.floor(Number(originalBossExpReward) || 0));
       const bossHotMult = (gameMode === 'stage') ? Math.max(1, Number(getHotMultiplier()) || 1) : 1;
-      const bossFinalExpReward = Math.max(0, Math.floor(bossExpReward * bossHotMult));
+      const bossPetExpMult = (gameMode === 'stage' && typeof getPetExpMultiplier === 'function')
+        ? Math.max(1, Number(getPetExpMultiplier()) || 1)
+        : 1;
+      const bossFeverExpMult = (gameMode === 'stage' && typeof getFeverExpMultiplier === 'function')
+        ? Math.max(1, Number(getFeverExpMultiplier()) || 1)
+        : 1;
+      const bossHotBonus = Math.max(0, Math.floor(bossExpReward * Math.max(0, bossHotMult - 1)));
+      const bossPetBonus = Math.max(0, Math.floor(bossExpReward * Math.max(0, bossPetExpMult - 1)));
+      const bossFeverBonus = Math.max(0, Math.floor(bossExpReward * Math.max(0, bossFeverExpMult - 1)));
+      const bossFinalExpReward = Math.max(0, bossExpReward + bossHotBonus + bossPetBonus + bossFeverBonus);
       // ✅ [v.225.9] 몬스터 파크 보스 EXP도 누적 저장 EXP에 포함
       // 몬스터 파크에서는 보스 보상 함수에서 스테이지 기준 3배가 계산된 뒤
       // addExp() 체인을 통과해 monsterParkRunExp / pendingExp에 저장됩니다.
-      // 일반 스테이지 보스는 기존 v.214.2 규칙(addExpDirect + 핫타임만 적용)을 유지합니다.
+      // 일반 스테이지 보스는 v.226 규칙(addExpDirect + 핫타임/펫/피버만 별도 적용)을 사용합니다.
       const grantedBossExp = (typeof monsterParkActive !== 'undefined' && monsterParkActive)
         ? addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 })
         : ((gameMode === 'stage')
             ? addExpDirect(bossFinalExpReward)
             : addExp(bossExpReward, { source: 'boss', baseAmount: bossExpReward, hotMultiplier: 1 }));
       if (gameMode === 'stage' && !(typeof monsterParkActive !== 'undefined' && monsterParkActive)) {
-        // 보스는 v.214.2 규칙상 핫타임만 적용되므로 기본/핫타임을 직접 분리 집계
+        // ✅ [v.226] 보스 기본 EXP + 핫타임 + 펫 EXP + 피버 EXP를 직접 분리 집계
         const bossGrantedSafeV22443 = Math.max(0, Math.floor(grantedBossExp || 0));
-        const bossBaseSafeV22443 = Math.min(bossGrantedSafeV22443, Math.max(0, Math.floor(bossExpReward || 0)));
+        const plannedTotalV226 = Math.max(1, bossFinalExpReward);
+        const scaleV226 = Math.min(1, bossGrantedSafeV22443 / plannedTotalV226);
+        let bossBaseSafeV22443 = Math.max(0, Math.floor(bossExpReward * scaleV226));
+        let bossHotSafeV226 = Math.max(0, Math.floor(bossHotBonus * scaleV226));
+        let bossPetSafeV226 = Math.max(0, Math.floor(bossPetBonus * scaleV226));
+        let bossFeverSafeV226 = Math.max(0, Math.floor(bossFeverBonus * scaleV226));
+        const usedV226 = bossBaseSafeV22443 + bossHotSafeV226 + bossPetSafeV226 + bossFeverSafeV226;
+        bossBaseSafeV22443 += Math.max(0, bossGrantedSafeV22443 - usedV226);
         stageRunExpBreakdown.bossBase += bossBaseSafeV22443;
-        stageRunExpBreakdown.hotTime += Math.max(0, bossGrantedSafeV22443 - bossBaseSafeV22443);
+        stageRunExpBreakdown.hotTime += bossHotSafeV226;
+        stageRunExpBreakdown.pet += bossPetSafeV226;
+        stageRunExpBreakdown.fever += bossFeverSafeV226;
         stageRunExpBoss = Math.max(0, Math.floor(stageRunExpBoss || 0)) + bossGrantedSafeV22443;
-        // ✅ [v.225.20] 보스 처치 시 기본 경험치 획득 메시지 표시
         if (bossBaseSafeV22443 > 0) {
           try { pushGainMessage(`경험치를 얻었습니다 (+${formatNumber(bossBaseSafeV22443)})`, '#7dffb2'); } catch(e) {}
         }
-        if (bossHotMult > 1 && bossExpReward > 0) {
-          try { pushGainMessage(`보스 핫타임 추가 경험치 ${Math.round((bossHotMult - 1) * 100)}%(+${formatNumber(bossFinalExpReward - bossExpReward)})`, '#ffb26b'); } catch(e) {}
+        if (bossHotSafeV226 > 0) {
+          try { pushGainMessage(`보스 핫타임 추가 경험치 ${Math.round((bossHotMult - 1) * 100)}%(+${formatNumber(bossHotSafeV226)})`, '#ffb26b'); } catch(e) {}
+        }
+        if (bossPetSafeV226 > 0) {
+          try { pushGainMessage(`보스 펫 추가 경험치 ${Math.round((bossPetExpMult - 1) * 100)}%(+${formatNumber(bossPetSafeV226)})`, '#9fe8ff'); } catch(e) {}
+        }
+        if (bossFeverSafeV226 > 0) {
+          try { pushGainMessage(`보스 피버 추가 경험치 ${Math.round((bossFeverExpMult - 1) * 100)}%(+${formatNumber(bossFeverSafeV226)})`, '#ffd86b'); } catch(e) {}
         }
       }
       spawnDamageText(bx, by - 62, `EXP +${formatNumber(Math.max(0, Math.floor(grantedBossExp || 0)))}`, '#8dffb1', true);
@@ -32041,7 +32064,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 225.26', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
