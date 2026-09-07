@@ -14376,7 +14376,7 @@ function getConsumableCatalog() {
       title: '🧪 작은 회복 물약',
       desc: '최대 HP의 30% 회복 · 공용 쿨타임 3초',
       flavor: '가벼운 상처를 빠르게 봉합해 주는 기본 회복 물약입니다.',
-      price: 80,
+      price: 500,
       dailyLimit: 100,
       hotkey: '1',
       useLabel: '사용',
@@ -14395,7 +14395,7 @@ function getConsumableCatalog() {
       title: '🧴 큰 회복 물약',
       desc: '최대 HP의 60% 회복 · 공용 쿨타임 3초',
       flavor: '전투가 길어질 때 든든한 버팀목이 되어 주는 강화형 회복 물약입니다.',
-      price: 190,
+      price: 800,
       dailyLimit: 100,
       hotkey: '2',
       useLabel: '사용',
@@ -14414,7 +14414,7 @@ function getConsumableCatalog() {
       title: '🧿 상태이상 해제약',
       desc: '빙결/화상 해제 + HP 10% 회복 · 공용 쿨타임 3초',
       flavor: '몸을 짓누르는 이상 상태를 정화해 다시 전투에 집중하게 해 줍니다.',
-      price: 130,
+      price: 650,
       dailyLimit: 100,
       hotkey: '3',
       useLabel: '사용',
@@ -14437,7 +14437,7 @@ function getConsumableCatalog() {
       title: '📦 경험치 소형 꾸러미',
       desc: '사용 시 경험치 2,000 획득',
       flavor: '몬스터에게서 모은 작은 경험치 조각을 묶어 만든 꾸러미입니다. 초보 모험가들이 자주 찾습니다.',
-      price: 10,
+      price: 200,
       dailyLimit: 3000,
       hotkey: '4',
       useLabel: '일괄 사용',
@@ -14447,7 +14447,7 @@ function getConsumableCatalog() {
       title: '🎒 경험치 중형 꾸러미',
       desc: '사용 시 경험치 5,000 획득',
       flavor: '여러 몬스터의 힘이 응축된 꾸러미로, 꾸준한 성장에 잘 어울립니다.',
-      price: 25,
+      price: 500,
       dailyLimit: 1800,
       hotkey: '4',
       useLabel: '일괄 사용',
@@ -14457,7 +14457,7 @@ function getConsumableCatalog() {
       title: '🧳 경험치 대형 꾸러미',
       desc: '사용 시 경험치 10,000 획득',
       flavor: '강력한 몬스터의 잔향이 담긴 꾸러미입니다. 숙련된 모험가들이 애용합니다.',
-      price: 50,
+      price: 1000,
       dailyLimit: 1200,
       hotkey: '4',
       useLabel: '일괄 사용',
@@ -14467,7 +14467,7 @@ function getConsumableCatalog() {
       title: '💼 경험치 특대형 꾸러미',
       desc: '사용 시 경험치 50,000 획득',
       flavor: '고위 몬스터의 힘이 고농도로 응축되어 한 번에 큰 성장을 돕습니다.',
-      price: 250,
+      price: 5000,
       dailyLimit: 600,
       hotkey: '4',
       useLabel: '일괄 사용',
@@ -14477,7 +14477,7 @@ function getConsumableCatalog() {
       title: '🏆 경험치 특급형 꾸러미',
       desc: '사용 시 경험치 300,000 획득',
       flavor: '전설급 몬스터의 힘이 깃든 희귀한 꾸러미입니다. 고레벨 성장용으로 적합합니다.',
-      price: 600,
+      price: 12000,
       dailyLimit: 300,
       hotkey: '4',
       useLabel: '일괄 사용',
@@ -32064,7 +32064,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.1', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
