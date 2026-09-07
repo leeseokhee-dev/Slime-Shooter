@@ -32100,7 +32100,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34855,17 +34855,6 @@ goToTitle = function(){
 
 setInterval(scheduleAdventureAutoAdvanceV1711, 120);
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.171')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,124,0.35); border-radius:10px; background:rgba(184,255,124,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#b8ff7c;">[v.171 업데이트]</b><br>모험 모드(LV.25+)와 몬스터 파크(LV.60+)가 추가되었습니다.<br>모험 모드는 1~100스테이지 연속 돌파형 콘텐츠이며, 몬스터 파크는 사망 시까지 EXP를 누적한 뒤 [경험치 받기!] 버튼으로 수령하는 성장 모드입니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
 
 // ✅ [v.171.2] 몬스터 파크 5회/5스테이지 완주 보상 패치
 // - 몬스터 파크는 하루 5회만 입장 가능
@@ -35132,34 +35121,12 @@ goToTitle = function(){
   return goToTitleBeforeV1712.apply(this, arguments);
 };
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.171.2')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb8ef;">[v.171.2 몬스터 파크 업데이트]</b><br>몬스터 파크는 하루 5회 입장 가능하며, 1회 입장 시 5개 스테이지를 모두 클리어하면 누적 EXP를 받을 수 있습니다.<br>클리어 후 [경험치 받기!] 버튼 하나로 보상을 획득하고, 이후 화면을 터치하면 타이틀 화면으로 이동합니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
-
 
 /* ===============================
    ✅ [v.172.5] 몬스터 파크 클리어 보너스 EXP 제거
    - 몬스터 파크에서는 스테이지 클리어 보너스를 지급하지 않습니다.
    - 몬스터/보스 처치로 누적된 EXP만 최종 수령합니다.
    =============================== */
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172.5')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.5 몬스터 파크 보상 수정]</b><br>몬스터 파크는 스테이지 클리어 보너스 EXP가 지급되지 않으며, 몬스터와 보스 처치로 누적된 EXP만 최종 [경험치 받기!]에서 받을 수 있습니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
 
 // ===============================
 // ✅ [v.172] 파티 원정 모드
@@ -35874,16 +35841,6 @@ updateGameOverModal = function(){
   return ret;
 };
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172 파티 원정')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#9dffea;">[v.172 파티 원정 업데이트]</b><br>LV.20부터 파티 원정 모드를 이용할 수 있습니다. 플레이어와 AI 파티원 3명이 함께 20스테이지를 진행하며, 1~19스테이지는 20초 사냥, 20스테이지는 최종 보스전으로 구성됩니다.<br>몬스터는 0.5초마다 5마리씩 등장하고 최대 30마리까지 유지됩니다. AI 파티원은 플레이어를 따라가지 않고 각자 움직이며, 플레이어 공격력의 80%로 공격합니다. 보스 레벨은 플레이어와 파티원 평균 레벨에 맞춰집니다. AI, AI가 처치한 몬스터와 보스의 EXP는 50%만 지급됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
 
 
 // ✅ [v.172.1] 타이틀 복귀 안정화 패치
@@ -36294,17 +36251,6 @@ updateHUD = function(){
   return ret;
 };
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172.2')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,124,0.35); border-radius:10px; background:rgba(184,255,124,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#b8ff7c;">[v.172.2 파티/몬스터 파크 업데이트]</b><br>파티 원정은 스테이지 시작 문구가 캔버스 안에 크게 표시되고, 문구가 사라진 뒤 몬스터가 등장합니다. 20초 후 웨이브 클리어 안내가 캔버스 안에 3초 표시된 뒤 다음 웨이브가 시작되며, 20웨이브에서는 플레이어 레벨 기준 -5~+5 범위의 최종 보스가 등장합니다.<br>몬스터 파크는 1~5스테이지 모두 100마리 처치 목표로 변경되었고, 3스테이지와 5스테이지에는 플레이어 레벨 기준 -5~+5 범위의 보스가 등장합니다. 보스 EXP는 몬스터 EXP의 약 50배입니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
 
 // ===============================
 // ✅ [v.172.3] 몬스터 파크 스폰 방식 재정리
@@ -36501,17 +36447,6 @@ updateHUD = function(){
   return ret;
 };
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172.3')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.3 몬스터 파크 스폰 개선]</b><br>몬스터 파크는 무한모드식 5마리 가로줄 스폰이 아니라 0.2초마다 1마리씩 랜덤 위치에 등장합니다. 화면에는 최대 30마리까지만 유지되며, 아이템·EXP 구슬·골드는 떨어지지 않고 처치 경험치만 누적됩니다.<br>1·2·4스테이지는 몬스터 100마리 처치 시 클리어, 3·5스테이지는 몬스터 100마리 처치 후 보스 1마리까지 처치하면 클리어됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
 
 // ===============================
 // ✅ [v.172.4] 몬스터 파크 무한모드 잔재 제거 + 표시 고정
@@ -36610,16 +36545,6 @@ getModeBgmName = function(){
   if (monsterParkActive) return 'game';
   return getModeBgmNameBeforeV1724.apply(this, arguments);
 };
-
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172.4')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb8ef;">[v.172.4 몬스터 파크 수정]</b><br>몬스터 파크가 무한모드로 인식되어 화면에 보스 N초가 표시되던 문제를 수정했습니다. 이제 몬스터 파크는 1~5스테이지 전용 모드로 동작하며, 0.2초마다 1마리씩 랜덤 분산 생성됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
 
 
 
@@ -36829,18 +36754,6 @@ updateHUD = function(){
   }
   return ret;
 };
-
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.172.6')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#9dffea;">[v.172.6 파티 원정 웨이브 개편]</b><br>파티 원정 1~19웨이브가 20초 제한 방식에서 목표 처치 수 달성 방식으로 변경되었습니다. 몬스터는 0.6초마다 웨이브별 지정 수량으로 리스폰되며, 웨이브 클리어 후 다음 웨이브 대기 시간은 5초입니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
 
 // ===============================
 // ✅ [v.176] 디멘션 인베이드 모드
@@ -37755,16 +37668,6 @@ installDimensionModeUIV175();
 };
 
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.175.1')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(214,184,255,0.35); border-radius:10px; background:rgba(214,184,255,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#d6b8ff;">[v.176 디멘션 인베이드 보스/상자/클리어 표시]</b><br>일반 몬스터는 모든 웨이브에서 1방 처치되도록 변경되었습니다. 1~4웨이브는 클리어 시 +N EXP를 3초 표시한 뒤 3,2,1 카운트다운 후 다음 웨이브가 시작되며, 5웨이브 클리어 후에는 WARNING 연출과 함께 HP 600,000 보스가 등장합니다. 보스 처치 시 확률에 따라 등급별 디멘션 상자가 인벤토리에 저장됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
 
 // ===============================
 // ✅ [v.181] 파티 인원 선택 + 파티원 슬라임 외형 개선
@@ -37976,15 +37879,6 @@ updateHUD = function(){
   return ret;
 };
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.181 파티 인원 선택')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(157,255,234,0.35); border-radius:10px; background:rgba(157,255,234,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#9dffea;">[v.181 파티 인원 선택]</b><br>파티 원정 입장 전 화살표로 전체 파티 인원을 2~4명까지 선택할 수 있습니다. 파티원은 기존 동그라미 AI 표시가 아니라 플레이어 슬라임과 비슷한 동료 슬라임 외형으로 표시되며, 각 파티원마다 색상이 다르게 적용됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
 
 
 installPartyMemberSelectorV181();
@@ -38204,15 +38098,6 @@ ensureDimensionInvasionSaveV175 = function(){
 cleanupDimensionCoreV185();
 
 // ===============================
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.184 디멘션 상자 보상 개편')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,216,107,0.35); border-radius:10px; background:rgba(255,216,107,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffd86b;">[v.184 디멘션 상자 보상 개편]</b><br>디멘션 상자는 일반/레어/유니크/에픽 4종으로 정리되었습니다. 부활권은 삭제되며, 각 상자는 지정된 경험치/골드/경험치 쿠폰/피버 충전권 중 하나를 랜덤으로 지급합니다. v.185에서 디멘션/몬스터 파크/파티 원정 스폰 주기는 별도 조정되었습니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
 
 installDimensionModeUIV175();
 
@@ -38274,18 +38159,6 @@ updateGameOverModal = function(){
   } catch(e) {}
   return updateGameOverModalBeforeV186.apply(this, arguments);
 };
-
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.186 결과창 모드 판별 수정')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,184,239,0.35); border-radius:10px; background:rgba(255,184,239,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffb8ef;">[v.186 결과창 모드 판별 수정]</b><br>몬스터 파크를 클리어했을 때 디멘션 인베이드 결과창이 표시되던 문제를 수정했습니다. 이제 몬스터 파크, 디멘션 인베이드, 파티 원정, 모험 모드가 각각 자기 모드에 맞는 결과창을 표시합니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
-
 
 // ===============================
 // ✅ [v.187] 슬라임 러시 모드 추가
@@ -38711,16 +38584,6 @@ if (restartBtn) {
   }, true);
 }
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.187 슬라임 러시')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(141,255,177,0.35); border-radius:10px; background:rgba(141,255,177,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#8dffb1;">[v.187 슬라임 러시]</b><br>LV.5부터 하루 5회 입장 가능한 신규 모드입니다. 10초마다 스폰량이 증가하여 최대 초당 20마리까지 등장하며, 10,000마리를 모두 처치하면 획득 EXP의 25%가 클리어 보상으로 추가 지급됩니다.<br>전용 BGM bg_slimerush.mp3가 슬라임 러시 진입 시 자동 재생되며, 피격 후에도 EXP 반감이 적용되지 않습니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-
 
 // ===============================
 // ✅ [v.188] 에볼루션 모드
@@ -39104,15 +38967,6 @@ if (restartBtn) {
   }, true);
 }
 
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.188 에볼루션 모드')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(184,255,122,0.35); border-radius:10px; background:rgba(184,255,122,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#b8ff7a;">[v.188 에볼루션 모드]</b><br>LV.40부터 입장 가능한 무한 성장 모드입니다. 몬스터는 Lv.1부터 시작하고 0.2초마다 1마리씩 등장하며, 3초마다 몬스터 레벨이 1씩 상승합니다.<br>몬스터 레벨에 따라 경험치와 공격력이 증가하고, 사망 시 총 획득 EXP, 총 처치 수, 생존 시간이 결과창에 표시됩니다.<br>전용 BGM 파일명은 bg_evolution.mp3입니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
 
 loadGameData();
 try { tutorialShown = (localStorage.getItem(`ss_tutorial_shown__${currentCharacterId || 'global'}`) === '1'); } catch(e) { tutorialShown = false; }
@@ -39584,23 +39438,6 @@ try {
     </div>
   </div>
 </div>
-
-
-<script>
-/* ===============================
-   ✅ [v.196.1] 스테이지 보너스 스테이지 업데이트 안내
-   =============================== */
-try {
-  const noticeBody = document.getElementById('noticeBody');
-  if (noticeBody && !noticeBody.textContent.includes('v.196.1')) {
-    const box = document.createElement('div');
-    box.style.cssText = 'margin:10px 0; padding:10px; border:1px solid rgba(255,232,107,0.35); border-radius:10px; background:rgba(255,232,107,0.08); line-height:1.6;';
-    box.innerHTML = '<b style="color:#ffe86b;">[v.196.1 보너스 스테이지 업데이트]</b><br>스테이지 클리어 EXP가 제거되고, 일반 스테이지 클리어 후 5% 확률로 15초 보너스 스테이지가 등장합니다.<br>보너스 스테이지에서는 bg_bonus.mp3가 재생되며, 0.2초마다 EXP 구슬이 떨어집니다. 구슬 EXP는 해당 스테이지 몬스터 EXP 기준 하 50%, 중 150%, 상 300%로 반올림 적용됩니다.';
-    noticeBody.prepend(box);
-  }
-} catch(e) {}
-</script>
-
 
 <script>
 /* ===============================
