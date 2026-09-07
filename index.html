@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.226)</title>
+<title>Slime Shooter - Ultimate Evolution (v.226.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5281,6 +5281,12 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 <div id="noticeModal" class="modal hidden" style="z-index: 190; border-color:#ffcc66; max-width:460px;">
     <div class="modal-header" style="color:#fff0c2;">📢 공지사항</div>
     <div id="noticeBody" class="modal-body" style="max-height: 380px; line-height: 1.65; color:#eef4ff; gap:10px;">
+        <div style="background:rgba(124,231,255,0.12); border:1px solid rgba(124,231,255,0.40); border-radius:10px; padding:10px;">
+            <div style="font-weight:900; color:#9beeff; margin-bottom:6px;">[v.226.2 크리스탈 초희귀 드롭 / 환전 조정]</div>
+            <div>스테이지 모드의 201~300 스테이지에서 크리스탈 슬라임 처치 시 0.001% 확률로 캐시 크리스탈 1개를 획득할 수 있습니다.</div>
+            <div>다이아몬드 크리스탈 슬라임에도 동일한 0.001% 드롭 확률이 적용됩니다.</div>
+            <div>캐시 크리스탈 환전 가격이 1개당 50,000G에서 10,000G로 조정되었습니다.</div>
+        </div>
         <div style="background:rgba(196,160,255,0.12); border:1px solid rgba(196,160,255,0.34); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#e1c9ff; margin-bottom:6px;">[v.221.9 신규 스킬 / 퀘스트]</div>
             <div>LV.11 신규 스킬 「회전」이 추가되었습니다.</div>
@@ -5605,6 +5611,10 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
         <div id="stageDetailBossCard" class="stage-detail-card hidden">
             <div class="stage-detail-label">보스 처치 기본 EXP</div>
             <div id="stageDetailBossExp" class="stage-detail-value stage-detail-boss">-</div>
+        </div>
+        <div id="stageDetailCrystalDropCard" class="stage-detail-card hidden" style="border-color:rgba(124,231,255,.38); background:rgba(124,231,255,.07);">
+            <div class="stage-detail-label" style="color:#9beeff;">크리스탈 슬라임 초희귀 드롭</div>
+            <div id="stageDetailCrystalDrop" class="stage-detail-value" style="color:#dffbff;">💠 캐시 크리스탈 1개 · 0.001%</div>
         </div>
         <div class="stage-detail-card">
             <div class="stage-detail-label">최고 기록</div>
@@ -7140,6 +7150,8 @@ const stageDetailTitle = document.getElementById('stageDetailTitle');
 const stageDetailMission = document.getElementById('stageDetailMission');
 const stageDetailMonsterExp = document.getElementById('stageDetailMonsterExp');
 const stageDetailBossCard = document.getElementById('stageDetailBossCard');
+const stageDetailCrystalDropCard = document.getElementById('stageDetailCrystalDropCard');
+const stageDetailCrystalDrop = document.getElementById('stageDetailCrystalDrop');
 const stageDetailBossExp = document.getElementById('stageDetailBossExp');
 const stageDetailBest = document.getElementById('stageDetailBest');
 const stageDetailBackBtn = document.getElementById('stageDetailBackBtn');
@@ -20297,6 +20309,8 @@ function openStageDetailV224(stageNum) {
   if (stageDetailMonsterExp) stageDetailMonsterExp.textContent = `${formatNumber(monsterExp)} EXP` + (s >= 101 ? ' · 엘리트는 2.5배' : '');
   if (stageDetailBossCard) stageDetailBossCard.classList.toggle('hidden', !bossRequired);
   if (stageDetailBossExp) stageDetailBossExp.textContent = bossRequired ? `${formatNumber(getStageBossExpReward(s))} EXP` : '-';
+  if (stageDetailCrystalDropCard) stageDetailCrystalDropCard.classList.toggle('hidden', s < 201);
+  if (stageDetailCrystalDrop) stageDetailCrystalDrop.textContent = s >= 201 ? '💠 캐시 크리스탈 1개 · 0.001% (크리스탈 슬라임 처치 시)' : '-';
   if (stageDetailBest) {
     if (rec) stageDetailBest.textContent = `RANK ${String(rec.rank || '-').toUpperCase()} · ${formatMMSSFromMs(rec.timeMs || 0)}`;
     else stageDetailBest.textContent = '아직 클리어 기록 없음';
@@ -21179,7 +21193,7 @@ const LIGHTNING_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
 const FREEZE_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
 const GUARDIAN_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
 const BLACKHOLE_PET_CRYSTAL_COSTS = { 1:5, 2:12, 3:25, 4:45, 5:80 };
-const CASH_CRYSTAL_TO_GOLD_RATE = 50000;
+const CASH_CRYSTAL_TO_GOLD_RATE = 10000;
 
 function getCashCrystalBalance() {
   saveData.cashCrystals = Math.max(0, Math.floor(Number(saveData.cashCrystals) || 0));
@@ -21189,6 +21203,28 @@ function addCashCrystals(amount) {
   const n = Math.max(0, Math.floor(Number(amount) || 0));
   saveData.cashCrystals = getCashCrystalBalance() + n;
   return n;
+}
+
+// ===============================
+// ✅ [v.226.2] 스테이지 모드 크리스탈 슬라임 초희귀 드롭
+// - 201~300 스테이지의 크리스탈/다이아몬드 크리스탈 슬라임 처치 시 0.001%
+// - 성공 시 캐시 크리스탈 1개 즉시 지급
+// ===============================
+const STAGE_CRYSTAL_SLIME_CASH_DROP_RATE_V2262 = 0.00001; // 0.001% = 1 / 100,000
+function tryStageCrystalSlimeCashDropV2262(enemy) {
+  if (gameMode !== 'stage' || !enemy || enemy.isCrystalSlime !== true) return false;
+  // 한 개체당 판정은 정확히 한 번만 수행
+  if (enemy.__cashCrystalDropRolledV2262) return false;
+  enemy.__cashCrystalDropRolledV2262 = true;
+  if (Math.random() >= STAGE_CRYSTAL_SLIME_CASH_DROP_RATE_V2262) return false;
+
+  addCashCrystals(1);
+  saveGameData();
+  updateHUD();
+  try { showToast('💠 초희귀 드롭! 캐시 크리스탈 +1', '#8ff5ff', 2800); } catch(e) {}
+  try { spawnDamageText(enemy.x || width/2, (enemy.y || height/2) - 34, '💠 CRYSTAL +1', '#8ff5ff', true); } catch(e) {}
+  try { spawnExplosion(enemy.x || width/2, enemy.y || height/2, '#8ff5ff', 36); } catch(e) {}
+  return true;
 }
 function exchangeCashCrystalToGold(amount = 1) {
   const n = Math.max(1, Math.floor(Number(amount) || 1));
@@ -21762,7 +21798,7 @@ function addScore(amount, source = 'monster', options = {}) {
     updateTownQuestProgress('kills', 1);
     try { if (gameMode === 'dungeon') updateTownQuestProgress('dungeonKills', 1); } catch(e) {}
     try { if (typeof dimensionInvasionActiveV175 !== 'undefined' && dimensionInvasionActiveV175) updateTownQuestProgress('dimensionKills', 1); } catch(e) {}
-    try { if (options && options.enemy && options.enemy.isCrystalSlime) { updateTownQuestProgress('crystalKills', 1); updateTownQuestProgress('kingCrystalKills', 1); } } catch(e) {}
+    try { if (options && options.enemy && options.enemy.isCrystalSlime) { updateTownQuestProgress('crystalKills', 1); updateTownQuestProgress('kingCrystalKills', 1); tryStageCrystalSlimeCashDropV2262(options.enemy); } } catch(e) {}
     try {
       const petEquippedAny = !!(saveData && saveData.pets && saveData.pets.equipped && (saveData.pets.equipped.right || saveData.pets.equipped.left));
       if (petEquippedAny) updateTownQuestProgress('pet', 1);
@@ -32064,7 +32100,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.1', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.2', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
