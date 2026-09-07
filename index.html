@@ -7815,13 +7815,13 @@ function ensureCharacterSystem() {
 // - 상점 버프: EXP / 탄속 / 데미지 (10/20/30분)
 // ===============================
 const SHOP_CONFIG = {
-  exp:    { label: 'EXP 증가',        mult: 1.25, costs: { 5: 2000, 10: 4000, 20: 8000, 30: 24000, 60: 72000 } },
-  speed:  { label: '탄속 증가',       mult: 1.15, costs: { 5: 3000, 10: 6000, 20: 12000, 30: 36000, 60: 108000 } },
-  dmg:    { label: '데미지 증가',     mult: 1.20, costs: { 5: 5000, 10: 10000, 20: 20000, 30: 60000, 60: 180000 } },
+  exp:    { label: 'EXP 증가',        mult: 1.25, costs: { 5: 2000, 10: 5000, 20: 8000, 30: 12000, 60: 30000 } },
+  speed:  { label: '탄속 증가',       mult: 1.15, costs: { 5: 3000, 10: 6000, 20: 10000, 30: 15000, 60: 32000 } },
+  dmg:    { label: '데미지 증가',     mult: 1.20, costs: { 5: 5000, 10: 10000, 20: 20000, 30: 30000, 60: 60000 } },
 
   // ✅ [v.51] 신규 아이템
-  pet:    { label: '펫 공격력 증가',  mult: 1.50, costs: { 5: 4000, 10: 8000, 20: 16000, 30: 48000, 60: 144000 } },
-  gold:   { label: '골드 획득 증가',  mult: 1.30, costs: { 5: 5000, 10: 10000, 20: 20000, 30: 50000, 60: 100000 } }
+  pet:    { label: '펫 공격력 증가',  mult: 1.50, costs: { 5: 4000, 10: 6000, 20: 10000, 30: 15000, 60: 40000 } },
+  gold:   { label: '골드 획득 증가',  mult: 1.30, costs: { 5: 5000, 10: 10000, 20: 20000, 30: 30000, 60: 60000 } }
 };
 
 
@@ -32100,7 +32100,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.3', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
