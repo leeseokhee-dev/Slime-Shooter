@@ -9654,8 +9654,8 @@ function getStageTargetSpawnPerSecond(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  // ✅ [v.218] 스테이지 모드 전용: 반드시 0.50초(500ms)마다 출현
-  return 500;
+  // ✅ [v.218] 스테이지 모드 전용: 반드시 1.00초(1000ms)마다 출현
+  return 1000;
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
