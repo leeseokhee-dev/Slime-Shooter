@@ -9654,8 +9654,8 @@ function getStageTargetSpawnPerSecond(stg) {
 // - 201~300: 50마리=1.2초당 5 / 120마리=1.2초당 8 / 250마리=1.2초당 12 / 375마리=1.2초당 15 / 500마리=1.2초당 20
 // - FPS가 낮아도 누적 시간(stageWaveSpawnAcc)으로 보정됩니다.
 function getStageMonsterSpawnIntervalMs(stg) {
-  // ✅ [v.218] 스테이지 모드 전용: 반드시 2.00초(2000ms)마다 출현
-  return 2000;
+  // ✅ [v.218] 스테이지 모드 전용: 반드시 0.50초(500ms)마다 출현
+  return 500;
 }
 
 function getStageMonsterSpawnBatchSize(stg) {
@@ -9663,19 +9663,19 @@ function getStageMonsterSpawnBatchSize(stg) {
   // 전 구간 공통 생성 간격은 2초이며, 101~300은 1회당 4마리
   stg = Math.max(1, Math.min(300, Math.floor(Number(stg) || 1)));
   if (stg <= 5) return 1;
-  if (stg <= 15) return 3;
-  if (stg <= 60) return 4;
-  if (stg <= 100) return 6;
-  if (stg <= 120) return 3;
-  if (stg <= 140) return 5;
-  if (stg <= 160) return 6;
-  if (stg <= 180) return 7;
-  if (stg <= 200) return 8;
-  if (stg <= 220) return 4;
-  if (stg <= 240) return 6;
-  if (stg <= 260) return 7;
-  if (stg <= 280) return 8;
-  return 10;
+  if (stg <= 15) return 2;
+  if (stg <= 60) return 3;
+  if (stg <= 100) return 4;
+  if (stg <= 120) return 2;
+  if (stg <= 140) return 3;
+  if (stg <= 160) return 4;
+  if (stg <= 180) return 5;
+  if (stg <= 200) return 5;
+  if (stg <= 220) return 3;
+  if (stg <= 240) return 4;
+  if (stg <= 260) return 5;
+  if (stg <= 280) return 5;
+  return 6;
 }
 // ===============================
 // ✅ [v.224.1] 스테이지 모드 미션 다양화
@@ -32100,7 +32100,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.5', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
