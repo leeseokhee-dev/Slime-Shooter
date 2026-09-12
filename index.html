@@ -9919,15 +9919,8 @@ function closeStageMissionIntroV2244() {
 }
 
 function showStageMissionIntroV2244(stg = stage) {
-  if (gameMode !== 'stage') return;
-
-  // ✅ [v.226.8] 스테이지 미션창은 '일반 스테이지 모드'에서만 표시
-  // 몬스터 파크 / 파티 원정 / 디멘션 인베이드 / 모험 모드는
-  // 내부 전투 로직상 gameMode='stage'를 재사용하므로 별도로 제외해야 합니다.
-  if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return;
-  if (typeof partyExpeditionActive !== 'undefined' && partyExpeditionActive) return;
-  if (typeof dimensionInvasionActiveV175 !== 'undefined' && dimensionInvasionActiveV175) return;
-  if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return;
+  // ✅ [v.226.9] 일반 스테이지 모드에서만 스테이지 미션창 표시
+  if (!isStandardStageModeV2269()) return;
 
   const host = document.getElementById('gameContainer') || document.body;
   let el = document.getElementById('stageMissionIntroV2244');
@@ -9985,8 +9978,22 @@ function showStageMissionIntroV2244(stg = stage) {
 }
 
 
+// ===== [v.226.9] 일반 스테이지 모드 판별 =====
+// 여러 특수 콘텐츠가 내부 전투 로직을 재사용하기 위해 gameMode='stage'를 사용하므로
+// gameMode만으로는 일반 스테이지 여부를 판별할 수 없습니다.
+function isStandardStageModeV2269() {
+  if (gameMode !== 'stage') return false;
+  if (typeof adventureModeActive !== 'undefined' && adventureModeActive) return false;
+  if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
+  if (typeof partyExpeditionActive !== 'undefined' && partyExpeditionActive) return false;
+  if (typeof dimensionInvasionActiveV175 !== 'undefined' && dimensionInvasionActiveV175) return false;
+  if (typeof slimeRushActiveV187 !== 'undefined' && slimeRushActiveV187) return false;
+  if (typeof evolutionActiveV188 !== 'undefined' && evolutionActiveV188) return false;
+  return true;
+}
+
 function recordStageMultiKillMissionV224(count) {
-  if (gameMode !== 'stage' || stageCleared) return;
+  if (!isStandardStageModeV2269() || stageCleared) return;
   const obj = getStageObjectiveV224(stage);
   if (obj.type !== 'multikill') return;
   if (Math.max(0, Math.floor(Number(count) || 0)) < obj.chain) return;
@@ -9996,7 +10003,10 @@ function recordStageMultiKillMissionV224(count) {
 
 function checkStageKillClearNow() {
   if (gameMode === 'mission') return checkMissionStageClearNow();
-  if (gameMode !== 'stage') return false;
+  // ✅ [v.226.9] 일반 스테이지 전용 미션 판정
+  // 몬스터 파크/파티 원정/디멘션 인베이드/모험/슬라임 러시/에볼루션에서는
+  // 일반 스테이지의 생존·처치·멀티킬·스킬 미션으로 stageCleared가 켜지지 않게 합니다.
+  if (!isStandardStageModeV2269()) return false;
   if (stageCleared) return false;
 
   const obj = getStageObjectiveV224(stage);
@@ -28584,7 +28594,7 @@ if (!boss && enemies.length === 0 && waveIndex >= getWavesPerStage(stage) && !bo
 // ✅ [v.224.4.6 FIX] 생존 미션은 몬스터 처치 이벤트와 무관하게 매 프레임 즉시 클리어 판정
 // 기존에는 처치 이벤트에서 checkStageKillClearNow()가 다시 호출될 때 뒤늦게 클리어되는 경우가 있었습니다.
 // 목표 시간이 되는 순간 이 메인 전투 업데이트에서 바로 판정합니다.
-if (gameMode === 'stage' && !stageCleared) {
+if (isStandardStageModeV2269() && !stageCleared) {
   try {
     const survivalObjV22446 = getStageObjectiveV224(stage);
     if (survivalObjV22446 && survivalObjV22446.type === 'survival') {
@@ -28648,7 +28658,8 @@ if (stageCleared) {
       return;
     }
 
-    if (gameMode === 'stage') {
+    if (isStandardStageModeV2269()) {
+      // ✅ [v.226.9] 일반 스테이지에서만 결과창/보너스 스테이지 처리
       // ✅ [v.222.7] 보너스 스테이지 발생 여부를 먼저 확정합니다.
       // 그래야 결과 시간/최단 기록 저장에도 보너스 19초가 동일하게 반영됩니다.
       const hasStageBonus = !(typeof monsterParkActive !== 'undefined' && monsterParkActive)
@@ -32122,7 +32133,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.8', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.9', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
