@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.226.10)</title>
+<title>Slime Shooter - Ultimate Evolution (v.226.12)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -9710,6 +9710,42 @@ function getStageMultiKillMissionSpecV224(stg) {
   return { chain, times };
 }
 
+// ===============================
+// ✅ [v.226.12] 스테이지 정규 미션 5종 순환 확장
+// - 1~10: 처치 → 생존 → 순수 처치 EXP → EXP 구슬 → 최초 보스
+// - 11~200: 기존 흐름 유지 + 각 5개 묶음의 4번째(14,19,24...)를 EXP 구슬 미션으로 변경
+// - 순수 처치 EXP는 핫타임/피버/상점/쿠폰/펫/멀티킬/구슬 EXP를 제외한 몬스터 기본 EXP만 계산
+// ===============================
+function getStagePureKillExpTargetV22612(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  const killTarget = Math.max(1, Math.floor(Number(getStageKillTarget(s)) || 1));
+  const perMonster = Math.max(1, Math.floor(Number(getStageMonsterExpReward(s)) || 1));
+  // 일반 처치 목표와 비슷한 전투량이 되도록 기본 몬스터 EXP × 목표 처치 수를 사용합니다.
+  return Math.max(1, perMonster * killTarget);
+}
+
+function getStageExpOrbTargetV22612(stg) {
+  const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
+  if (s <= 10) return 1;
+  if (s <= 40) return 2;
+  if (s <= 80) return 3;
+  if (s <= 120) return 4;
+  if (s <= 160) return 5;
+  return 6; // 161~200
+}
+
+function getStageRunPureMonsterExpV22612() {
+  // addExp()의 상세 집계 중 monsterBase는 버프가 붙기 전 baseAmount만 누적됩니다.
+  return Math.max(0, Math.floor(Number(stageRunExpBreakdown && stageRunExpBreakdown.monsterBase) || 0));
+}
+
+function getStageRunExpOrbPickupCountV22612() {
+  const c = stageRunExpOrbCounts || { low:0, mid:0, high:0 };
+  return Math.max(0, Math.floor(Number(c.low) || 0))
+       + Math.max(0, Math.floor(Number(c.mid) || 0))
+       + Math.max(0, Math.floor(Number(c.high) || 0));
+}
+
 
 // ===============================
 // ✅ [v.224.3] 고레벨 복합 미션
@@ -9758,10 +9794,11 @@ function getStageObjectiveV224(stg) {
   const s = Math.max(1, Math.min(MAX_STAGE_CAP, Math.floor(Number(stg) || 1)));
   const killTarget = getStageKillTarget(s);
   if (isBossStage(s)) {
-    const firstClearBossRequired =
-      (gameMode === 'stage' && Number(stage) === s)
-        ? !!stageBossRequiredThisRunV2241
-        : !hasStageClearRecordV2241(s);
+    const firstClearBossRequired = (s <= 10)
+      ? true // ✅ [v.226.12] 5·10스테이지는 정의된 5종 순환대로 재도전에서도 보스 미션 유지
+      : ((gameMode === 'stage' && Number(stage) === s)
+          ? !!stageBossRequiredThisRunV2241
+          : !hasStageClearRecordV2241(s));
 
     if (firstClearBossRequired) {
       return {
@@ -9771,16 +9808,41 @@ function getStageObjectiveV224(stg) {
       };
     }
 
-    // ✅ 이미 클리어한 5단위 스테이지 재도전: 보스 없이 일반 처치 미션
+    // 이미 클리어한 5단위 스테이지 재도전은 기존 규칙대로 일반 처치 미션
     return {
       type:'kill', target:killTarget,
       label:`몬스터 ${formatNumber(killTarget)}마리 처치 (보스 최초 클리어 완료)`,
       shortLabel:`처치 ${formatNumber(killTarget)}마리`
     };
   }
-  // 1~10은 기본 조작에 익숙해질 수 있도록 처치/생존만 사용
-  // ✅ [v.224.3] 고레벨 신규 복합 미션
-  // 보스 스테이지 판정보다 뒤에 두어 최초 보스 규칙을 침범하지 않습니다.
+
+  // ✅ [v.226.12] 1~10스테이지: 멀티킬 없이 5종 순환
+  if (s <= 10) {
+    const pos10 = ((s - 1) % 5) + 1;
+    if (pos10 === 2) {
+      const sec = getStageSurvivalTargetSecV224(s);
+      return { type:'survival', target:sec, label:`${sec}초 동안 생존`, shortLabel:`생존 ${sec}초` };
+    }
+    if (pos10 === 3) {
+      const target = getStagePureKillExpTargetV22612(s);
+      return {
+        type:'pureexp', target,
+        label:`버프 제외 순수 처치 경험치 ${formatNumber(target)} 획득`,
+        shortLabel:`순수 처치 EXP ${formatNumber(target)}`
+      };
+    }
+    if (pos10 === 4) {
+      const target = getStageExpOrbTargetV22612(s);
+      return {
+        type:'exporb', target,
+        label:`EXP 구슬 ${formatNumber(target)}개 획득`,
+        shortLabel:`EXP 구슬 ${formatNumber(target)}개`
+      };
+    }
+    return { type:'kill', target:killTarget, label:`몬스터 ${formatNumber(killTarget)}마리 처치`, shortLabel:`처치 ${formatNumber(killTarget)}마리` };
+  }
+
+  // ✅ [v.224.3] 기존 고레벨 복합 미션은 그대로 유지
   if (isSkillUseMissionStageV2243(s)) {
     const target = getCompositeStageKillTargetV2243(s);
     const skillTarget = getStageSkillUseTargetV2243(s);
@@ -9805,16 +9867,18 @@ function getStageObjectiveV224(stg) {
     };
   }
 
-  if (s < 11) {
-    if ((s % 2) === 0) {
-      const sec = getStageSurvivalTargetSecV224(s);
-      return { type:'survival', target:sec, label:`${sec}초 동안 생존`, shortLabel:`생존 ${sec}초` };
-    }
-    return { type:'kill', target:killTarget, label:`몬스터 ${formatNumber(killTarget)}마리 처치`, shortLabel:`처치 ${formatNumber(killTarget)}마리` };
-  }
-  // 각 5스테이지 묶음: 처치 → 멀티킬 → 생존 → 멀티킬 → 보스
+  // ✅ [v.226.12] 11~200: 처치 → 멀티킬 → 생존 → EXP 구슬 → 보스
+  // 14, 19, 24 ... 처럼 각 5개 묶음의 4번째 스테이지가 EXP 구슬 미션입니다.
   const pos = s % 5;
-  if (pos === 2 || pos === 4) {
+  if (s <= 200 && pos === 4) {
+    const target = getStageExpOrbTargetV22612(s);
+    return {
+      type:'exporb', target,
+      label:`EXP 구슬 ${formatNumber(target)}개 획득`,
+      shortLabel:`EXP 구슬 ${formatNumber(target)}개`
+    };
+  }
+  if (pos === 2 || (s > 200 && pos === 4)) {
     const spec = getStageMultiKillMissionSpecV224(s);
     return {
       type:'multikill', target:spec.times, chain:spec.chain,
@@ -9852,6 +9916,14 @@ function getStageObjectiveProgressTextV224(stg = stage) {
     const skills = Math.min(obj.skillTarget, Math.max(0, Math.floor(stageRunSkillUseCountV2243 || 0)));
     const kills = Math.min(obj.target, Math.max(0, Math.floor(stageRunKillCount || 0)));
     return `스킬 ${skills}/${obj.skillTarget}${mark(skills >= obj.skillTarget)} · 몬스터 처치 ${formatNumber(kills)}/${formatNumber(obj.target)}${mark(kills >= obj.target)}`;
+  }
+  if (obj.type === 'pureexp') {
+    const gained = Math.min(obj.target, getStageRunPureMonsterExpV22612());
+    return `순수 처치 EXP ${formatNumber(gained)}/${formatNumber(obj.target)}${mark(gained >= obj.target)}`;
+  }
+  if (obj.type === 'exporb') {
+    const count = Math.min(obj.target, getStageRunExpOrbPickupCountV22612());
+    return `EXP 구슬 ${formatNumber(count)}/${formatNumber(obj.target)}개${mark(count >= obj.target)}`;
   }
   if (obj.type === 'survival') {
     const elapsed = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
@@ -9891,6 +9963,8 @@ function getStageMissionIntroLinesV2244(stg = stage) {
     ];
   }
   if (obj.type === 'multikill') return [`${obj.chain} MULTI 이상 ${obj.target}회 달성`];
+  if (obj.type === 'pureexp') return [`버프 제외 순수 처치 EXP ${formatNumber(obj.target)} 획득`];
+  if (obj.type === 'exporb') return [`EXP 구슬 ${formatNumber(obj.target)}개 획득`];
   if (obj.type === 'survival') return [`${obj.target}초 동안 생존`];
   return [`몬스터 ${formatNumber(obj.target)}마리 처치`];
 }
@@ -10043,6 +10117,12 @@ function checkStageKillClearNow() {
   } else if (obj.type === 'skillkill') {
     if ((stageRunSkillUseCountV2243 || 0) < obj.skillTarget) return false;
     if ((stageRunKillCount || 0) < obj.target) return false;
+    stageCleared = true;
+  } else if (obj.type === 'pureexp') {
+    if (getStageRunPureMonsterExpV22612() < obj.target) return false;
+    stageCleared = true;
+  } else if (obj.type === 'exporb') {
+    if (getStageRunExpOrbPickupCountV22612() < obj.target) return false;
     stageCleared = true;
   } else if (obj.type === 'survival') {
     const elapsedSec = Math.max(0, (performance.now() - (stageRunStartTime || performance.now())) / 1000);
@@ -11800,6 +11880,12 @@ function spawnExpItemFromEnemy(enemy) {
   if (isMissionExpObjectiveActive()) {
     dropChance = Math.max(dropChance, 0.45);
   }
+  // ✅ [v.226.12] 일반 스테이지 EXP 구슬 미션은 RNG 때문에 진행이 막히지 않도록 드롭률 보정
+  try {
+    if (isStandardStageModeV2269() && getStageObjectiveV224(stage)?.type === 'exporb') {
+      dropChance = Math.max(dropChance, 0.45);
+    }
+  } catch(e) {}
   dropChance = Math.min(1, dropChance);
   if (Math.random() >= dropChance) return;
 
@@ -11937,6 +12023,8 @@ function countStageRunExpOrbPickup(gradeKey, gainedExp = 0) {
   }
   stageRunExpOrbCounts[key] = Math.max(0, Math.floor(Number(stageRunExpOrbCounts[key]) || 0)) + 1;
   stageRunExpOrbExp[key] = Math.max(0, Math.floor(Number(stageRunExpOrbExp[key]) || 0)) + Math.max(0, Math.floor(Number(gainedExp) || 0));
+  // ✅ [v.226.12] EXP 구슬 미션은 직접 획득/펫 자동 수집 모두 즉시 클리어 판정
+  try { if (isStandardStageModeV2269()) checkStageKillClearNow(); } catch(e) {}
 }
 
 function tryPickupExpItems() {
@@ -21922,6 +22010,8 @@ function addScore(amount, source = 'monster', options = {}) {
     if (gainedExp > 0) {
       stageRunExpMonsters += Math.max(0, Math.floor(gainedExp || 0));
     }
+    // ✅ [v.226.12] 순수 처치 EXP 미션은 addExp()의 버프 제외 monsterBase 집계 직후 판정
+    try { if (isStandardStageModeV2269()) checkStageKillClearNow(); } catch(e) {}
     if (options.multikillEligible === true) {
       recordMultiKillCandidate(gainedExp, options.enemy, { eligible: true, source: options.multikillSource || 'skill' });
     }
@@ -32154,7 +32244,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.11', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.12', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
