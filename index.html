@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.227.9)</title>
+<title>Slime Shooter - Ultimate Evolution (v.227.10)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5018,8 +5018,8 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
   gap:7px;
   max-height:min(76vh, 520px);
   border-color:#70e6ff;
-  background:linear-gradient(180deg,rgba(11,24,38,.985),rgba(5,11,20,.985));
-  box-shadow:0 18px 46px rgba(0,0,0,.72),0 0 20px rgba(90,220,255,.16);
+  background:linear-gradient(180deg,rgba(11,24,38,.68),rgba(5,11,20,.62));
+  box-shadow:0 10px 28px rgba(0,0,0,.42),0 0 14px rgba(90,220,255,.12);
 }
 #combatAnalysisModal .combat-analysis-head{
   display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -5058,6 +5058,36 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 @media(max-width:420px){
   #combatAnalysisModal{width:min(90vw, 300px); padding:9px;}
   #combatAnalysisGrid{gap:5px}.combat-analysis-card{padding:6px}.combat-analysis-value{font-size:13px}
+}
+
+
+/* ===== [v.227.10] 전투 분석 전체 숫자 자동 축소 =====
+   1,000 이상부터 상세/최소화 상태와 무관하게 숫자 글자 크기가 자동으로 줄어듭니다. */
+#combatAnalysisModal .combat-analysis-value{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+  min-width:0;
+  transition:font-size .12s ease;
+}
+#combatAnalysisModal .combat-analysis-value.ca-num-1{ font-size:12px; }
+#combatAnalysisModal .combat-analysis-value.ca-num-2{ font-size:11px; }
+#combatAnalysisModal .combat-analysis-value.ca-num-3{ font-size:10px; }
+#combatAnalysisModal .combat-analysis-value.ca-num-4{ font-size:9px; }
+#combatAnalysisModal .combat-analysis-value.ca-overflow-1{ font-size:8px; }
+#combatAnalysisModal .combat-analysis-value.ca-overflow-2{ font-size:7px; }
+
+/* 창 자체가 게임 화면을 덜 가리도록 카드/상태창도 반투명하게 */
+#combatAnalysisModal .combat-analysis-card{
+  background:rgba(8,18,28,.46) !important;
+  backdrop-filter:blur(1.5px);
+  -webkit-backdrop-filter:blur(1.5px);
+}
+#combatAnalysisModal #combatAnalysisStatus{
+  background:rgba(8,18,28,.42);
+}
+#combatAnalysisModal.ca-compact{
+  background:linear-gradient(180deg,rgba(11,24,38,.58),rgba(5,11,20,.54));
 }
 
 /* ===== [v.227.8] 전투 분석 최소화 숫자 자동 축소 ===== */
@@ -39457,25 +39487,47 @@ playBgmTrack('title');
     if (diff > 0 && isEligibleNow()) ca.kills += diff;
     ca.lastMonsterKills = current;
   }
-  // 최소화 상태에서 값의 내용은 유지하고 글자 크기만 칸에 맞게 자동 축소
-  function fitCompactValue(el){
-    if (!el || !modal || !modal.classList.contains('ca-compact')) {
-      if (el) el.classList.remove('ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4');
-      return;
-    }
-    el.classList.remove('ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4');
-    const levels = ['ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4'];
-    for (const cls of levels) {
-      if (el.scrollWidth <= el.clientWidth) break;
-      el.classList.add(cls);
-    }
+  // ✅ [v.227.10] 값이 1,000 이상이면 상세/최소화와 관계없이 자동 축소
+  function applyCombatValueScale(el, rawValue){
+    if (!el) return;
+
+    el.classList.remove(
+      'ca-num-1','ca-num-2','ca-num-3','ca-num-4',
+      'ca-overflow-1','ca-overflow-2',
+      'ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4'
+    );
+
+    const n = Math.abs(Number(rawValue) || 0);
+
+    // 숫자 자체가 커질수록 단계적으로 축소
+    if (n >= 1e12)      el.classList.add('ca-num-4');
+    else if (n >= 1e8)  el.classList.add('ca-num-3');
+    else if (n >= 1e4)  el.classList.add('ca-num-2');
+    else if (n >= 1e3)  el.classList.add('ca-num-1');
+
+    // 그래도 칸보다 길면 실제 너비를 보고 추가 축소
+    requestAnimationFrame(() => {
+      if (!el || !el.isConnected) return;
+      if (el.scrollWidth > el.clientWidth) el.classList.add('ca-overflow-1');
+      requestAnimationFrame(() => {
+        if (el && el.isConnected && el.scrollWidth > el.clientWidth) {
+          el.classList.add('ca-overflow-2');
+        }
+      });
+    });
   }
 
-  function fitCompactValues(){
-    // 최소화 화면에 실제로 보이는 3개 값만 조절
-    fitCompactValue(elapsedEl);
-    fitCompactValue(expValueEl);
-    fitCompactValue(killsValueEl);
+  function fitCombatValues(){
+    applyCombatValueScale(elapsedEl, 0);
+    applyCombatValueScale(expValueEl, ca.exp);
+    applyCombatValueScale(killsValueEl, ca.kills);
+    applyCombatValueScale(goldValueEl, ca.gold);
+    applyCombatValueScale(damageValueEl, ca.damage);
+
+    const ms = elapsedMs();
+    const minutes = ms / 60000;
+    const epm = minutes > 0 ? ca.exp / minutes : 0;
+    applyCombatValueScale(epmValueEl, epm);
   }
 
   function render(){
@@ -39499,6 +39551,7 @@ playBgmTrack('title');
     if (startBtn) startBtn.textContent = ca.running ? '측정 중…' : (ca.stoppedElapsedMs > 0 ? '새로 시작' : '분석 시작');
     if (startBtn) startBtn.disabled = ca.running;
     if (stopBtn) stopBtn.disabled = !ca.running;
+    fitCombatValues();
   }
   function clearValues(){
     ca.running = false;
@@ -39560,7 +39613,7 @@ playBgmTrack('title');
       modal.style.left = pos.left + 'px';
       modal.style.top = pos.top + 'px';
     });
-    requestAnimationFrame(fitCompactValues);
+    requestAnimationFrame(fitCombatValues);
   }
   function closeAndDelete(){
     clearValues();
@@ -40823,7 +40876,7 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
     if(w <= 360) return 13;
     if(w <= 520) return 15;
     return MAX_FONT;
-    requestAnimationFrame(fitCompactValues);
+    requestAnimationFrame(fitCombatValues);
   }
 
   function fitHudStageText(){
