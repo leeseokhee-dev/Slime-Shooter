@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.227.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.227.9)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5048,7 +5048,7 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 }
 .combat-analysis-label{font-size:9px; font-weight:900; color:#9fb1ca; margin-bottom:3px;}
 .combat-analysis-value{font-size:14px; font-weight:1000; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-#combatAnalysisElapsed{color:#c9f7ff}.ca-gold{color:#ffe47e}.ca-exp{color:#8effbc}.ca-dmg{color:#ff9f9f}.ca-epm{color:#b9d2ff}
+#combatAnalysisElapsed{color:#c9f7ff}.ca-gold{color:#ffe47e}.ca-exp{color:#8effbc}.ca-kills{color:#ffd6a0}.ca-dmg{color:#ff9f9f}.ca-epm{color:#b9d2ff}
 #combatAnalysisButtons{display:flex; gap:8px;}
 #combatAnalysisStartBtn,#combatAnalysisStopBtn{flex:1; padding:7px 6px; font-size:11px; font-weight:1000;}
 #combatAnalysisStartBtn{border-color:#72ffc0; color:#dffff0; background:linear-gradient(to bottom,#17613d,#0b2e20)}
@@ -5058,6 +5058,83 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 @media(max-width:420px){
   #combatAnalysisModal{width:min(90vw, 300px); padding:9px;}
   #combatAnalysisGrid{gap:5px}.combat-analysis-card{padding:6px}.combat-analysis-value{font-size:13px}
+}
+
+/* ===== [v.227.8] 전투 분석 최소화 숫자 자동 축소 ===== */
+#combatAnalysisModal.ca-compact .combat-analysis-value{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+  min-width:0;
+}
+#combatAnalysisModal.ca-compact .combat-analysis-value.ca-fit-1{ font-size:10px; }
+#combatAnalysisModal.ca-compact .combat-analysis-value.ca-fit-2{ font-size:9px; }
+#combatAnalysisModal.ca-compact .combat-analysis-value.ca-fit-3{ font-size:8px; }
+#combatAnalysisModal.ca-compact .combat-analysis-value.ca-fit-4{ font-size:7px; }
+
+/* ===== [v.227.5] 전투 분석 반응형 최소화 / 상세 확장 ===== */
+#combatAnalysisModal{
+  width:min(88vw, 340px);
+  max-width:calc(100vw - 16px);
+  max-height:min(78dvh, 560px);
+}
+/* 최소화: 플레이 중 꼭 필요한 3개 정보만 표시 */
+#combatAnalysisModal.ca-compact{
+  width:clamp(176px, 48vw, 238px);
+  max-width:calc(100vw - 12px);
+  padding:7px; gap:5px; max-height:none;
+}
+#combatAnalysisModal.ca-compact .combat-analysis-title{font-size:clamp(12px,3.2vw,14px);}
+#combatAnalysisModal.ca-compact .combat-analysis-head{min-height:26px;}
+#combatAnalysisModal.ca-compact #combatAnalysisStatus{padding:4px 6px;font-size:clamp(8px,2.5vw,10px);}
+#combatAnalysisModal.ca-compact #combatAnalysisGrid{
+  grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px;
+}
+#combatAnalysisModal.ca-compact .combat-analysis-card{display:none;}
+#combatAnalysisModal.ca-compact .combat-analysis-card.ca-compact-visible{
+  display:block; padding:5px 4px; min-width:0; text-align:center;
+}
+#combatAnalysisModal.ca-compact .combat-analysis-label{
+  font-size:clamp(7px,2.1vw,8px); margin-bottom:2px; white-space:nowrap;
+}
+#combatAnalysisModal.ca-compact .combat-analysis-value{
+  font-size:clamp(9px,2.7vw,12px); line-height:1.15;
+}
+#combatAnalysisModal.ca-compact #combatAnalysisHint{display:none;}
+#combatAnalysisModal.ca-compact #combatAnalysisButtons{gap:4px;}
+#combatAnalysisModal.ca-compact #combatAnalysisStartBtn,
+#combatAnalysisModal.ca-compact #combatAnalysisStopBtn{
+  padding:5px 3px; font-size:clamp(8px,2.3vw,9px);
+}
+#combatAnalysisDetailBtn{
+  min-width:42px;height:26px;padding:0 6px;border-radius:6px;
+  border:1px solid rgba(112,230,255,.38);background:#183044;color:#c9f7ff;
+  font-size:9px;font-weight:1000;cursor:pointer;
+}
+.combat-analysis-head-actions{display:flex;align-items:center;gap:5px;}
+/* 상세: 화면 폭에 맞춰 1~2열 자동 조절 */
+#combatAnalysisModal:not(.ca-compact) #combatAnalysisGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+@media(max-width:480px){
+  #combatAnalysisModal:not(.ca-compact){
+    width:min(92vw, 320px); padding:8px; gap:6px;
+    max-height:min(82dvh, 520px);
+  }
+  #combatAnalysisModal:not(.ca-compact) .combat-analysis-value{font-size:12px;}
+  #combatAnalysisModal:not(.ca-compact) .combat-analysis-card{padding:6px;}
+  #combatAnalysisModal.ca-compact{width:clamp(174px,58vw,220px);padding:6px;}
+}
+@media(max-width:340px){
+  #combatAnalysisModal.ca-compact{width:calc(100vw - 10px);}
+  #combatAnalysisModal.ca-compact #combatAnalysisGrid{gap:3px;}
+  #combatAnalysisModal:not(.ca-compact) #combatAnalysisGrid{grid-template-columns:1fr;}
+  #combatAnalysisModal:not(.ca-compact) .combat-analysis-card[style]{grid-column:auto !important;}
+}
+@media(max-height:560px){
+  #combatAnalysisModal:not(.ca-compact){max-height:88dvh; padding:7px; gap:5px;}
+  #combatAnalysisModal:not(.ca-compact) .combat-analysis-card{padding:5px 6px;}
+  #combatAnalysisModal:not(.ca-compact) #combatAnalysisHint{font-size:8px;}
 }
 </style>
 
@@ -5772,13 +5849,17 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 <div id="combatAnalysisModal" class="modal hidden" aria-hidden="true">
   <div class="combat-analysis-head">
     <div class="combat-analysis-title">⚔ 전투 분석</div>
-    <button id="combatAnalysisCloseBtn" type="button" aria-label="전투 분석 닫기">×</button>
+    <div class="combat-analysis-head-actions">
+      <button id="combatAnalysisDetailBtn" type="button" aria-label="전투 분석 상세 정보">상세</button>
+      <button id="combatAnalysisCloseBtn" type="button" aria-label="전투 분석 닫기">×</button>
+    </div>
   </div>
   <div id="combatAnalysisStatus">측정 대기</div>
   <div id="combatAnalysisGrid">
-    <div class="combat-analysis-card"><div class="combat-analysis-label">측정 시간</div><div id="combatAnalysisElapsed" class="combat-analysis-value">00:00</div></div>
+    <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">시간</div><div id="combatAnalysisElapsed" class="combat-analysis-value">00:00</div></div>
+    <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">획득 EXP</div><div id="combatAnalysisExp" class="combat-analysis-value ca-exp">0 EXP</div></div>
+    <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">처치 몬스터</div><div id="combatAnalysisKills" class="combat-analysis-value ca-kills">0마리</div></div>
     <div class="combat-analysis-card"><div class="combat-analysis-label">획득 골드</div><div id="combatAnalysisGold" class="combat-analysis-value ca-gold">0 G</div></div>
-    <div class="combat-analysis-card"><div class="combat-analysis-label">획득 경험치</div><div id="combatAnalysisExp" class="combat-analysis-value ca-exp">0 EXP</div></div>
     <div class="combat-analysis-card"><div class="combat-analysis-label">누적 데미지</div><div id="combatAnalysisDamage" class="combat-analysis-value ca-dmg">0</div></div>
     <div class="combat-analysis-card" style="grid-column:1 / -1"><div class="combat-analysis-label">분당 경험치</div><div id="combatAnalysisExpPerMin" class="combat-analysis-value ca-epm">0 EXP/분</div></div>
   </div>
@@ -32374,7 +32455,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 227.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 227.9', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -39266,12 +39347,14 @@ playBgmTrack('title');
   const openBtn = document.getElementById('combatAnalysisBtn');
   const modal = document.getElementById('combatAnalysisModal');
   const closeBtn = document.getElementById('combatAnalysisCloseBtn');
+  const detailBtn = document.getElementById('combatAnalysisDetailBtn');
   const startBtn = document.getElementById('combatAnalysisStartBtn');
   const stopBtn = document.getElementById('combatAnalysisStopBtn');
   const statusEl = document.getElementById('combatAnalysisStatus');
   const elapsedEl = document.getElementById('combatAnalysisElapsed');
   const goldValueEl = document.getElementById('combatAnalysisGold');
   const expValueEl = document.getElementById('combatAnalysisExp');
+  const killsValueEl = document.getElementById('combatAnalysisKills');
   const damageValueEl = document.getElementById('combatAnalysisDamage');
   const epmValueEl = document.getElementById('combatAnalysisExpPerMin');
 
@@ -39283,8 +39366,10 @@ playBgmTrack('title');
     stoppedElapsedMs:0,
     gold:0,
     exp:0,
+    kills:0,
     damage:0,
     lastGoldEarned:0,
+    lastMonsterKills:0,
     timer:null
   };
 
@@ -39296,9 +39381,54 @@ playBgmTrack('title');
   function getGoldEarned(){
     try { return Math.max(0, Math.floor(safeNum(saveData && saveData.goldEarned))); } catch(e) { return 0; }
   }
+  function getMonsterKills(){
+    try { return Math.max(0, Math.floor(safeNum(saveData && saveData.totalMonsterKills))); } catch(e) { return 0; }
+  }
+  // ✅ [v.227.6] 전투 분석 전용 한국식 4자리 단위 표기
+  // 예: 17,493 → 1만 7493 / 123,456,789 → 1억 2345만 6789
+  // ※ 경험치바/HUD의 formatNumber()에는 영향을 주지 않습니다.
+  // ✅ [v.227.9] 전투 분석 전용 한국식 단위 표기
+  // 1만 이상: 만 단위까지 자세히 표시
+  // 1억 이상: 천 이하 생략 → 억 + 만까지만 표시
+  // 1조 이상: 만 이하 생략 → 조부터 억까지만 표시
   function formatCA(v){
-    try { return formatNumber(Math.max(0, Math.floor(safeNum(v)))); }
-    catch(e) { return Math.max(0, Math.floor(safeNum(v))).toLocaleString('ko-KR'); }
+    const n = Math.max(0, Math.floor(safeNum(v)));
+    if (n < 10000) return n.toLocaleString('ko-KR');
+
+    const MAN = 10000;
+    const EOK = 100000000;
+    const JO  = 1000000000000;
+
+    // 만 ~ 9999만: 예) 17493 → 1만 7493
+    if (n < EOK){
+      const man = Math.floor(n / MAN);
+      const rest = n % MAN;
+      return rest > 0 ? `${man}만 ${rest}` : `${man}만`;
+    }
+
+    // 억 ~ 9999억: 천 단위 이하를 버리고 억 + 만까지만 표시
+    // 예) 1억 2345만 6789 → 1억 2345만
+    if (n < JO){
+      const eok = Math.floor(n / EOK);
+      const man = Math.floor((n % EOK) / MAN);
+      return man > 0 ? `${eok}억 ${man}만` : `${eok}억`;
+    }
+
+    // 조 이상: 4자리 그룹으로 나눈 뒤 '억'까지만 남김.
+    // 예) 1조 2345억 6789만 → 1조 2345억
+    const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
+    const groups = [];
+    let x = n;
+    while (x > 0 && groups.length < units.length){
+      groups.push(x % 10000);
+      x = Math.floor(x / 10000);
+    }
+
+    const parts = [];
+    for (let i = groups.length - 1; i >= 2; i--){
+      if (groups[i] > 0) parts.push(`${groups[i]}${units[i]}`);
+    }
+    return parts.length ? parts.join(' ') : '0';
   }
   function tickActiveTime(){
     if (!ca.running) return;
@@ -39321,15 +39451,44 @@ playBgmTrack('title');
     if (diff > 0 && isEligibleNow()) ca.gold += diff;
     ca.lastGoldEarned = current;
   }
+  function syncKills(){
+    const current = getMonsterKills();
+    const diff = current - ca.lastMonsterKills;
+    if (diff > 0 && isEligibleNow()) ca.kills += diff;
+    ca.lastMonsterKills = current;
+  }
+  // 최소화 상태에서 값의 내용은 유지하고 글자 크기만 칸에 맞게 자동 축소
+  function fitCompactValue(el){
+    if (!el || !modal || !modal.classList.contains('ca-compact')) {
+      if (el) el.classList.remove('ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4');
+      return;
+    }
+    el.classList.remove('ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4');
+    const levels = ['ca-fit-1','ca-fit-2','ca-fit-3','ca-fit-4'];
+    for (const cls of levels) {
+      if (el.scrollWidth <= el.clientWidth) break;
+      el.classList.add(cls);
+    }
+  }
+
+  function fitCompactValues(){
+    // 최소화 화면에 실제로 보이는 3개 값만 조절
+    fitCompactValue(elapsedEl);
+    fitCompactValue(expValueEl);
+    fitCompactValue(killsValueEl);
+  }
+
   function render(){
     tickActiveTime();
     syncGold();
+    syncKills();
     const ms = elapsedMs();
     const minutes = ms / 60000;
     const epm = minutes > 0 ? ca.exp / minutes : 0;
     if (elapsedEl) elapsedEl.textContent = formatElapsed(ms);
     if (goldValueEl) goldValueEl.textContent = `${formatCA(ca.gold)} G`;
     if (expValueEl) expValueEl.textContent = `${formatCA(ca.exp)} EXP`;
+    if (killsValueEl) killsValueEl.textContent = `${formatCA(ca.kills)}마리`;
     if (damageValueEl) damageValueEl.textContent = formatCA(ca.damage);
     if (epmValueEl) epmValueEl.textContent = `${formatCA(epm)} EXP/분`;
     if (statusEl) {
@@ -39351,17 +39510,25 @@ playBgmTrack('title');
     ca.stoppedElapsedMs = 0;
     ca.gold = 0;
     ca.exp = 0;
+    ca.kills = 0;
     ca.damage = 0;
     ca.lastGoldEarned = getGoldEarned();
+    ca.lastMonsterKills = getMonsterKills();
     render();
   }
   function start(){
+    // ✅ [v.227.4] 새 측정/재시작 시 시간까지 완전히 0부터 다시 측정
     ca.running = false;
+    ca.startAt = 0;
+    ca.activeElapsedMs = 0;
+    ca.lastTickAt = 0;
     ca.stoppedElapsedMs = 0;
     ca.gold = 0;
     ca.exp = 0;
+    ca.kills = 0;
     ca.damage = 0;
     ca.lastGoldEarned = getGoldEarned();
+    ca.lastMonsterKills = getMonsterKills();
     ca.startAt = performance.now();
     ca.lastTickAt = ca.startAt;
     ca.running = true;
@@ -39375,19 +39542,42 @@ playBgmTrack('title');
     ca.running = false;
     render();
   }
+  function setCompact(compact){
+    if (!modal) return;
+    modal.classList.toggle('ca-compact', !!compact);
+    if (detailBtn) {
+      detailBtn.textContent = compact ? '상세' : '최소화';
+      detailBtn.setAttribute('aria-label', compact ? '전투 분석 상세 정보 표시' : '전투 분석 최소화');
+    }
+    // 크기가 바뀐 뒤 현재 위치가 화면 밖으로 나가지 않도록 보정
+    requestAnimationFrame(() => {
+      if (!modal || modal.classList.contains('hidden')) return;
+      const pr = getDragParentRect();
+      const mr = modal.getBoundingClientRect();
+      let left = mr.left - pr.left, top = mr.top - pr.top;
+      const pos = clampModalIntoParent(left, top);
+      modal.style.transform = 'none';
+      modal.style.left = pos.left + 'px';
+      modal.style.top = pos.top + 'px';
+    });
+    requestAnimationFrame(fitCompactValues);
+  }
   function closeAndDelete(){
     clearValues();
+    setCompact(true);
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); }
   }
   function open(){
     if (!modal) return;
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden','false');
+    setCompact(true); // 열 때마다 작은 전투 분석창으로 시작
     render();
   }
 
   if (openBtn) openBtn.addEventListener('click', open);
   if (closeBtn) closeBtn.addEventListener('click', closeAndDelete);
+  if (detailBtn) detailBtn.addEventListener('click', (e) => { e.stopPropagation(); setCompact(!modal.classList.contains('ca-compact')); });
   if (startBtn) startBtn.addEventListener('click', start);
   if (stopBtn) stopBtn.addEventListener('click', stop);
 
@@ -39428,6 +39618,28 @@ playBgmTrack('title');
     };
   }
 
+  // ✅ [v.227.4] 게임오버의 ‘다시 하기’에서도 전투 분석을 새 판 기준으로 0부터 재측정
+  ca.resetForGameRestart = function(){
+    const wasRunning = !!ca.running;
+    ca.running = false;
+    ca.startAt = 0;
+    ca.activeElapsedMs = 0;
+    ca.lastTickAt = 0;
+    ca.stoppedElapsedMs = 0;
+    ca.gold = 0;
+    ca.exp = 0;
+    ca.kills = 0;
+    ca.damage = 0;
+    ca.lastGoldEarned = getGoldEarned();
+    ca.lastMonsterKills = getMonsterKills();
+    if (wasRunning) {
+      ca.startAt = performance.now();
+      ca.lastTickAt = ca.startAt;
+      ca.running = true;
+    }
+    render();
+  };
+
   ca.refresh = render;
 
   // 제목 표시줄 드래그: 마우스/터치(Pointer Events) 공통 지원
@@ -39448,7 +39660,7 @@ playBgmTrack('title');
   }
   if (dragHead && modal) {
     dragHead.addEventListener('pointerdown', (e) => {
-      if (e.target === closeBtn || (closeBtn && closeBtn.contains(e.target))) return;
+      if (e.target === closeBtn || (closeBtn && closeBtn.contains(e.target)) || e.target === detailBtn || (detailBtn && detailBtn.contains(e.target))) return;
       if (typeof e.button === 'number' && e.button !== 0) return;
       e.preventDefault();
       const mr = modal.getBoundingClientRect();
@@ -39478,9 +39690,20 @@ playBgmTrack('title');
   }
 
   ca.timer = setInterval(render, 250);
+  if (modal) modal.classList.add('ca-compact');
+  if (detailBtn) detailBtn.textContent = '상세';
   clearValues();
 })();
 
+// ✅ [v.227.4] 모든 모드의 ‘다시 하기’ 클릭 시 전투 분석 시간/누적값도 새 판 기준으로 초기화
+if (restartBtn) {
+  restartBtn.addEventListener('click', function(){
+    try {
+      const ca = window.__combatAnalysisV227;
+      if (ca && typeof ca.resetForGameRestart === 'function') ca.resetForGameRestart();
+    } catch(e) {}
+  }, true);
+}
 
 requestAnimationFrame(gameLoop);
 })();
@@ -40600,6 +40823,7 @@ body:not(.title-mode) #hud.menu-open #settingsBar{
     if(w <= 360) return 13;
     if(w <= 520) return 15;
     return MAX_FONT;
+    requestAnimationFrame(fitCompactValues);
   }
 
   function fitHudStageText(){
