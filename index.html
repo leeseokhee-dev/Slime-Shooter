@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.227.10)</title>
+<title>Slime Shooter - Ultimate Evolution (v.227.12)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5068,7 +5068,7 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
   overflow:hidden;
   text-overflow:clip;
   min-width:0;
-  transition:font-size .12s ease;
+  transition:none;
 }
 #combatAnalysisModal .combat-analysis-value.ca-num-1{ font-size:12px; }
 #combatAnalysisModal .combat-analysis-value.ca-num-2{ font-size:11px; }
@@ -5887,11 +5887,11 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
   <div id="combatAnalysisStatus">측정 대기</div>
   <div id="combatAnalysisGrid">
     <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">시간</div><div id="combatAnalysisElapsed" class="combat-analysis-value">00:00</div></div>
-    <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">획득 EXP</div><div id="combatAnalysisExp" class="combat-analysis-value ca-exp">0 EXP</div></div>
+    <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">획득 EXP</div><div id="combatAnalysisExp" class="combat-analysis-value ca-exp">0</div></div>
     <div class="combat-analysis-card ca-compact-visible"><div class="combat-analysis-label">처치 몬스터</div><div id="combatAnalysisKills" class="combat-analysis-value ca-kills">0마리</div></div>
-    <div class="combat-analysis-card"><div class="combat-analysis-label">획득 골드</div><div id="combatAnalysisGold" class="combat-analysis-value ca-gold">0 G</div></div>
+    <div class="combat-analysis-card"><div class="combat-analysis-label">획득 골드</div><div id="combatAnalysisGold" class="combat-analysis-value ca-gold">0</div></div>
     <div class="combat-analysis-card"><div class="combat-analysis-label">누적 데미지</div><div id="combatAnalysisDamage" class="combat-analysis-value ca-dmg">0</div></div>
-    <div class="combat-analysis-card" style="grid-column:1 / -1"><div class="combat-analysis-label">분당 경험치</div><div id="combatAnalysisExpPerMin" class="combat-analysis-value ca-epm">0 EXP/분</div></div>
+    <div class="combat-analysis-card" style="grid-column:1 / -1"><div class="combat-analysis-label">분당 경험치</div><div id="combatAnalysisExpPerMin" class="combat-analysis-value ca-epm">0</div></div>
   </div>
   <div id="combatAnalysisButtons">
     <button id="combatAnalysisStartBtn" class="ui-btn" type="button">분석 시작</button>
@@ -32485,7 +32485,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 227.9', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 227.12', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -39538,11 +39538,11 @@ playBgmTrack('title');
     const minutes = ms / 60000;
     const epm = minutes > 0 ? ca.exp / minutes : 0;
     if (elapsedEl) elapsedEl.textContent = formatElapsed(ms);
-    if (goldValueEl) goldValueEl.textContent = `${formatCA(ca.gold)} G`;
-    if (expValueEl) expValueEl.textContent = `${formatCA(ca.exp)} EXP`;
+    if (goldValueEl) goldValueEl.textContent = formatCA(ca.gold);
+    if (expValueEl) expValueEl.textContent = formatCA(ca.exp);
     if (killsValueEl) killsValueEl.textContent = `${formatCA(ca.kills)}마리`;
     if (damageValueEl) damageValueEl.textContent = formatCA(ca.damage);
-    if (epmValueEl) epmValueEl.textContent = `${formatCA(epm)} EXP/분`;
+    if (epmValueEl) epmValueEl.textContent = formatCA(epm);
     if (statusEl) {
       statusEl.classList.toggle('running', ca.running);
       statusEl.classList.toggle('stopped', !ca.running && ca.stoppedElapsedMs > 0);
@@ -39742,7 +39742,7 @@ playBgmTrack('title');
     dragHead.addEventListener('pointercancel', endDrag);
   }
 
-  ca.timer = setInterval(render, 250);
+  ca.timer = setInterval(render, 1000);
   if (modal) modal.classList.add('ca-compact');
   if (detailBtn) detailBtn.textContent = '상세';
   clearValues();
