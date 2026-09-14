@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.226.13)</title>
+<title>Slime Shooter - Ultimate Evolution (v.226.14)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -11776,7 +11776,7 @@ function getHotMultiplier(date = new Date()) {
 }
 
 function spawnDamageText(x, y, amount, color = '#ffffff', isCrit = false, source = 'player') {
-  try { if (window.__combatAnalysisV22613 && state === 'playing' && typeof amount === 'number' && isFinite(amount) && amount > 0) window.__combatAnalysisV22613.damage += Math.max(0, Math.floor(amount)); } catch(e) {}
+  try { if (window.__combatAnalysisV22614 && window.__combatAnalysisV22614.active && state === 'playing' && typeof amount === 'number' && isFinite(amount) && amount > 0) window.__combatAnalysisV22614.damage += Math.max(0, Math.floor(amount)); } catch(e) {}
   const numericAmount = (typeof amount === 'number' && isFinite(amount)) ? Math.max(0, Math.floor(amount)) : null;
   const text = (typeof amount === 'string')
     ? amount
@@ -14373,7 +14373,7 @@ function getGroupedTitlesForProfile() {
 }
 
 function registerEnemyKill(isBoss = false, opts = {}) {
-  try { if (window.__combatAnalysisV22613 && state === 'playing') { window.__combatAnalysisV22613.kills += 1; if (isBoss) window.__combatAnalysisV22613.bossKills += 1; } } catch(e) {}
+  try { if (window.__combatAnalysisV22614 && window.__combatAnalysisV22614.active && state === 'playing') { window.__combatAnalysisV22614.kills += 1; if (isBoss) window.__combatAnalysisV22614.bossKills += 1; } } catch(e) {}
   if (!isBoss) addFeverGaugeByKill();
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
@@ -27291,7 +27291,6 @@ function drawMiniTargets() {
 }
 
 function startGame(startStageNum = 1) {
-try { if (typeof resetCombatAnalysisV22613 === 'function') resetCombatAnalysisV22613(); } catch(e) {}
 try { if (typeof forceEndFever === 'function') forceEndFever('start-game'); } catch(e) {}
 clearMissionAutoAdvanceTimer();
 initAudio();
@@ -32249,7 +32248,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 226.13', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 226.14', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33272,6 +33271,7 @@ if (state === 'gameover') drawGameOverScreen();
 
   // ✅ [v.219] 다른 Canvas 현황판보다 나중에 그려 골드가 항상 보이도록 유지
   drawCanvasStatusHUD();
+  try { if (typeof drawCombatAnalysisV22614 === 'function') drawCombatAnalysisV22614(timestamp); } catch(e) {}
   requestAnimationFrame(gameLoop);
 }
 
@@ -40926,173 +40926,244 @@ try {
 
 <script>
 // ===============================
-// ✅ [v.226.13] 실시간 전투 분석 + 종료 플레이 요약
+// ✅ [v.226.14] Canvas 전투 분석창 + 수동 측정 + 종료 플레이 요약
+// - 전투 분석 버튼을 눌러야 측정 시작
+// - 닫으면 측정 종료, 다시 열면 0부터 초기화
+// - 최소화: 전투 시간 / 처치 / 획득 EXP
+// - 확장: 누적 데미지 / 획득 골드 / 분당 EXP 추가
 // ===============================
 (function(){
-  const VERSION = 'v.226.13';
-  window.__combatAnalysisV22613 = window.__combatAnalysisV22613 || {
-    startAt: performance.now(), activeMs: 0, kills: 0, bossKills: 0, damage: 0,
-    expGained: 0, expStart: 0, goldStart: 0, lastTick: performance.now()
+  const analysis = window.__combatAnalysisV22614 = {
+    open:false, active:false, expanded:false,
+    activeMs:0, kills:0, bossKills:0, damage:0, expGained:0,
+    goldEarnedStart:0, lastTick:performance.now(), hit:null
   };
 
-  const session = window.__sessionSummaryV22613 = window.__sessionSummaryV22613 || {
-    loadedAt: performance.now(), activeMs: 0, startExp: 0, startLevel: 1,
-    initialized: false, lastTick: performance.now()
+  const session = window.__sessionSummaryV22614 = window.__sessionSummaryV22614 || {
+    activeMs:0, startExp:0, startLevel:1, initialized:false, lastTick:performance.now()
   };
 
-  function safeNum(v){ v = Number(v); return Number.isFinite(v) ? v : 0; }
-  function fmt(v){ try { return formatNumber(Math.max(0, Math.floor(safeNum(v)))); } catch(e) { return Math.max(0, Math.floor(safeNum(v))).toLocaleString('ko-KR'); } }
-  function timeText(ms){
-    const sec = Math.max(0, Math.floor(safeNum(ms) / 1000));
-    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-    if (h > 0) return `${h}시간 ${m}분 ${s}초`;
-    if (m > 0) return `${m}분 ${s}초`;
-    return `${s}초`;
+  function safeNum(v){ v=Number(v); return Number.isFinite(v)?v:0; }
+  function fmt(v){ try { return formatNumber(Math.max(0,Math.floor(safeNum(v)))); } catch(e) { return Math.max(0,Math.floor(safeNum(v))).toLocaleString('ko-KR'); } }
+  function shortTime(ms){
+    const sec=Math.max(0,Math.floor(safeNum(ms)/1000));
+    const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), ss=sec%60;
+    if(h>0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
+  function fullTime(ms){
+    const sec=Math.max(0,Math.floor(safeNum(ms)/1000));
+    const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), ss=sec%60;
+    if(h>0) return `${h}시간 ${m}분 ${ss}초`;
+    if(m>0) return `${m}분 ${ss}초`;
+    return `${ss}초`;
   }
   function etaText(minutes){
-    if (!Number.isFinite(minutes) || minutes < 0) return '계산 불가';
-    if (minutes < 1) return '1분 이내';
-    const totalSec = Math.ceil(minutes * 60);
-    const h = Math.floor(totalSec / 3600), m = Math.ceil((totalSec % 3600) / 60);
-    if (h > 0) return `약 ${h}시간 ${m}분`;
+    if(!Number.isFinite(minutes)||minutes<0) return '계산 불가';
+    if(minutes<1) return '1분 이내';
+    const totalSec=Math.ceil(minutes*60), h=Math.floor(totalSec/3600), m=Math.ceil((totalSec%3600)/60);
+    if(h>0) return `약 ${h}시간 ${m}분`;
     return `약 ${Math.max(1,m)}분`;
   }
+  function rectHit(p,r){ return !!(p&&r&&p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h); }
 
   function initSessionSnapshot(){
-    if (session.initialized) return;
+    if(session.initialized) return;
     try {
-      session.startExp = Math.max(0, Math.floor(safeNum(exp)));
-      session.startLevel = Math.max(1, Math.floor(safeNum(level) || 1));
-      session.initialized = true;
+      session.startExp=Math.max(0,Math.floor(safeNum(exp)));
+      session.startLevel=Math.max(1,Math.floor(safeNum(level)||1));
+      session.initialized=true;
     } catch(e) {}
   }
 
-  window.resetCombatAnalysisV22613 = function(){
-    const a = window.__combatAnalysisV22613;
-    a.startAt = performance.now(); a.activeMs = 0; a.kills = 0; a.bossKills = 0; a.damage = 0;
-    a.expGained = 0; a.lastTick = performance.now();
-    try { a.expStart = Math.max(0, Math.floor(safeNum(exp))); } catch(e) { a.expStart = 0; }
-    try { a.goldStart = Math.max(0, Math.floor(safeNum(gold))); } catch(e) { a.goldStart = 0; }
-    updatePanel();
+  function resetAndStartAnalysis(){
+    analysis.open=true;
+    analysis.active=true;
+    analysis.expanded=false;
+    analysis.activeMs=0;
+    analysis.kills=0;
+    analysis.bossKills=0;
+    analysis.damage=0;
+    analysis.expGained=0;
+    analysis.lastTick=performance.now();
+    try { analysis.goldEarnedStart=Math.max(0,Math.floor(safeNum(saveData && saveData.goldEarned))); } catch(e) { analysis.goldEarnedStart=0; }
+  }
+  function closeAnalysis(){
+    analysis.open=false;
+    analysis.active=false;
+    analysis.expanded=false;
+    analysis.hit=null;
+  }
+  window.resetCombatAnalysisV22614 = resetAndStartAnalysis;
+
+  function gainedGold(){
+    try { return Math.max(0,Math.floor(safeNum(saveData && saveData.goldEarned)-analysis.goldEarnedStart)); }
+    catch(e){ return 0; }
+  }
+  function expPerMinute(){
+    const mins=analysis.activeMs/60000;
+    return mins>0 ? analysis.expGained/mins : 0;
+  }
+
+  // EXP 지급 핵심 함수를 감싸되, 전투 분석이 활성화된 동안에만 집계합니다.
+  try {
+    const prevAddExp=addExp;
+    addExp=function(){
+      const ret=prevAddExp.apply(this,arguments);
+      try {
+        if(analysis.active && state==='playing') analysis.expGained += Math.max(0,Math.floor(safeNum(ret)));
+      } catch(e) {}
+      return ret;
+    };
+  } catch(e) {}
+
+  // 직접 EXP 지급 루트 보완.
+  try {
+    const prevAddExpDirect=addExpDirect;
+    addExpDirect=function(){
+      const before=(()=>{try{return safeNum(exp)}catch(e){return 0}})();
+      const ret=prevAddExpDirect.apply(this,arguments);
+      try {
+        if(analysis.active && state==='playing') {
+          const diff=Math.max(0,Math.floor(safeNum(exp)-before));
+          if(diff>0) analysis.expGained+=diff;
+        }
+      } catch(e) {}
+      return ret;
+    };
+  } catch(e) {}
+
+  function roundedRect(x,y,w,h,r){
+    r=Math.max(0,Math.min(r,Math.min(w,h)/2));
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawBox(x,y,w,h,fill,stroke,r=9){
+    roundedRect(x,y,w,h,r); ctx.fillStyle=fill; ctx.fill();
+    if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); }
+  }
+  function drawText(txt,x,y,size,color,align='left',weight=800){
+    ctx.font=`${weight} ${size}px ${getUIFontFamily()}`;
+    ctx.fillStyle=color; ctx.textAlign=align; ctx.textBaseline='middle';
+    ctx.fillText(String(txt),x,y);
+  }
+
+  window.drawCombatAnalysisV22614=function(){
+    if(!ctx||!width||!height||titleLogoActive) return;
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+
+    const margin=10, y=50;
+    if(!analysis.open){
+      const w=116,h=30,x=width-margin-w;
+      drawBox(x,y,w,h,'rgba(7,14,25,.88)','rgba(124,231,255,.68)',9);
+      drawText('📊 전투 분석',x+w/2,y+h/2,12,'#dff8ff','center',900);
+      analysis.hit={open:{x,y,w,h}};
+      ctx.restore();
+      return;
+    }
+
+    const smallW=Math.min(214,Math.max(190,width-20));
+    const panelW=analysis.expanded ? Math.min(246,Math.max(210,width-20)) : smallW;
+    const headerH=31, rowH=23;
+    const rowCount=analysis.expanded ? 6 : 3;
+    const panelH=headerH+rowCount*rowH+10;
+    const x=width-margin-panelW;
+
+    drawBox(x,y,panelW,panelH,'rgba(5,11,20,.91)','rgba(124,231,255,.72)',10);
+    ctx.save(); roundedRect(x,y,panelW,headerH,10); ctx.clip(); ctx.fillStyle='rgba(36,78,105,.48)'; ctx.fillRect(x,y,panelW,headerH); ctx.restore();
+    drawText('📊 전투 분석',x+10,y+headerH/2,12,'#9cecff','left',1000);
+
+    const close={x:x+panelW-27,y:y+5,w:21,h:21};
+    const toggle={x:x+panelW-53,y:y+5,w:21,h:21};
+    drawBox(toggle.x,toggle.y,toggle.w,toggle.h,'rgba(255,255,255,.08)','rgba(255,255,255,.18)',6);
+    drawText(analysis.expanded?'−':'+',toggle.x+toggle.w/2,toggle.y+toggle.h/2,15,'#ffffff','center',1000);
+    drawBox(close.x,close.y,close.w,close.h,'rgba(255,110,110,.12)','rgba(255,130,130,.28)',6);
+    drawText('×',close.x+close.w/2,close.y+close.h/2,15,'#ffb0b0','center',1000);
+
+    const rows=[
+      ['전투 시간',shortTime(analysis.activeMs),'#ffffff'],
+      ['처치 마리',`${fmt(analysis.kills)} (보스 ${fmt(analysis.bossKills)})`,'#ffffff'],
+      ['획득 경험치',fmt(analysis.expGained),'#8dffb1']
+    ];
+    if(analysis.expanded){
+      rows.push(['누적 데미지',fmt(analysis.damage),'#ffabab']);
+      rows.push(['획득 골드',`${fmt(gainedGold())} G`,'#ffd86b']);
+      rows.push(['분당 경험치',`${fmt(expPerMinute())} EXP/분`,'#7ce7ff']);
+    }
+    let ry=y+headerH+rowH/2+4;
+    for(const [label,value,color] of rows){
+      drawText(label,x+11,ry,10,'#afbed0','left',800);
+      drawText(value,x+panelW-11,ry,10,color,'right',900);
+      ry+=rowH;
+    }
+    analysis.hit={toggle,close,panel:{x,y,w:panelW,h:panelH}};
+    ctx.restore();
   };
 
-  // 최종 addExp를 감싸면 몬스터파크의 '저장 EXP'까지 한 번만 집계됩니다.
-  try {
-    const prevAddExp = addExp;
-    addExp = function(){
-      const ret = prevAddExp.apply(this, arguments);
-      try {
-        if (state === 'playing' && window.__combatAnalysisV22613) {
-          const gained = Math.max(0, Math.floor(safeNum(ret)));
-          window.__combatAnalysisV22613.expGained += gained;
-        }
-      } catch(e) {}
-      return ret;
-    };
-  } catch(e) {}
-
-  // addExpDirect는 상점/퀘스트 등 직접 지급 루트가 있어 전투 중 직접 지급된 경우만 보완 집계합니다.
-  try {
-    const prevAddExpDirect = addExpDirect;
-    addExpDirect = function(){
-      const before = (()=>{ try { return safeNum(exp); } catch(e){ return 0; } })();
-      const ret = prevAddExpDirect.apply(this, arguments);
-      try {
-        if (state === 'playing' && window.__combatAnalysisV22613) {
-          const diff = Math.max(0, Math.floor(safeNum(exp) - before));
-          if (diff > 0) window.__combatAnalysisV22613.expGained += diff;
-        }
-      } catch(e) {}
-      return ret;
-    };
-  } catch(e) {}
-
-  const style = document.createElement('style');
-  style.textContent = `
-    #combatAnalysisV22613{position:fixed;right:10px;top:130px;z-index:99980;width:min(245px,44vw);padding:9px 10px;border:1px solid rgba(124,231,255,.50);border-radius:10px;background:rgba(4,10,18,.84);backdrop-filter:blur(5px);box-shadow:0 8px 25px rgba(0,0,0,.35);color:#eaf8ff;font-family:var(--game-font);pointer-events:none;text-shadow:0 1px 2px #000}
-    #combatAnalysisV22613 .ca-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.13);font-size:12px;font-weight:1000;color:#8feaff}
-    #combatAnalysisV22613 .ca-mode{font-size:9px;color:#b9c7da;font-weight:800}
-    #combatAnalysisV22613 .ca-grid{display:grid;grid-template-columns:1fr auto;gap:3px 8px;font-size:10px;line-height:1.35}
-    #combatAnalysisV22613 .ca-label{color:#aebcd0}.ca-value{color:#fff;font-weight:900;text-align:right}
-    #combatAnalysisV22613 .ca-exp{color:#8dffb1!important}.ca-gold{color:#ffd86b!important}.ca-dmg{color:#ff9c9c!important}
-    @media(max-width:520px){#combatAnalysisV22613{right:5px;top:5px;width:175px;padding:7px 8px;opacity:.92}#combatAnalysisV22613 .ca-head{font-size:10px}#combatAnalysisV22613 .ca-grid{font-size:8px;gap:2px 5px}}
-  `;
-  document.head.appendChild(style);
-
-  const panel = document.createElement('div');
-  panel.id = 'combatAnalysisV22613';
-  panel.innerHTML = `<div class="ca-head"><span>📊 전투 분석</span><span class="ca-mode" id="caModeV22613">대기 중</span></div><div class="ca-grid">
-    <span class="ca-label">전투 시간</span><span class="ca-value" id="caTimeV22613">0초</span>
-    <span class="ca-label">처치 몬스터</span><span class="ca-value" id="caKillsV22613">0 (보스 0)</span>
-    <span class="ca-label">누적 데미지</span><span class="ca-value ca-dmg" id="caDamageV22613">0</span>
-    <span class="ca-label">획득 경험치</span><span class="ca-value ca-exp" id="caExpV22613">0</span>
-    <span class="ca-label">획득 골드</span><span class="ca-value ca-gold" id="caGoldV22613">0 G</span>
-  </div>`;
-  document.body.appendChild(panel);
-
-  function getModeName(){
-    try {
-      const map={stage:'스테이지',infinite:'무한',mission:'미션',dungeon:'던전',itempark:'아이템 파크',minigame:'미니게임',treasure:'보물',training:'훈련',practice:'연습',tutorial:'튜토리얼'};
-      if (typeof monsterParkActive!=='undefined' && monsterParkActive) return '몬스터 파크';
-      if (typeof adventureModeActive!=='undefined' && adventureModeActive) return '모험';
-      if (typeof partyExpeditionActive!=='undefined' && partyExpeditionActive) return '파티 원정';
-      if (typeof evolutionActiveV188!=='undefined' && evolutionActiveV188) return '에볼루션';
-      return map[gameMode] || String(gameMode || '대기 중');
-    } catch(e){ return '대기 중'; }
+  function handleAt(pos){
+    const h=analysis.hit;
+    if(!h) return false;
+    if(!analysis.open && rectHit(pos,h.open)){ resetAndStartAnalysis(); return true; }
+    if(analysis.open && rectHit(pos,h.close)){ closeAnalysis(); return true; }
+    if(analysis.open && rectHit(pos,h.toggle)){ analysis.expanded=!analysis.expanded; return true; }
+    // 창 자체를 누른 입력이 플레이어 이동으로 전달되지 않게 차단합니다.
+    if(analysis.open && rectHit(pos,h.panel)) return true;
+    return false;
   }
 
-  function updatePanel(){
-    const a=window.__combatAnalysisV22613;
-    if(!a) return;
-    try { document.getElementById('caModeV22613').textContent = state==='playing' ? getModeName() : '대기 중'; } catch(e){}
-    const goldGained = (()=>{ try { return Math.max(0, Math.floor(safeNum(stageRunGoldEarned))); } catch(e){ try{return Math.max(0,Math.floor(safeNum(gold)-a.goldStart));}catch(_){return 0;} } })();
-    const values={
-      caTimeV22613:timeText(a.activeMs), caKillsV22613:`${fmt(a.kills)} (보스 ${fmt(a.bossKills)})`,
-      caDamageV22613:fmt(a.damage), caExpV22613:fmt(a.expGained), caGoldV22613:`${fmt(goldGained)} G`
-    };
-    for(const [id,v] of Object.entries(values)){ const el=document.getElementById(id); if(el) el.textContent=v; }
+  function captureCanvasInput(e){
+    let cx=e.clientX, cy=e.clientY;
+    if((cx==null||cy==null) && e.changedTouches && e.changedTouches[0]){ cx=e.changedTouches[0].clientX; cy=e.changedTouches[0].clientY; }
+    if(cx==null||cy==null) return;
+    let pos; try { pos=getCanvasPos(cx,cy); } catch(_){ return; }
+    if(handleAt(pos)){
+      try { e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation(); } catch(_) {}
+    }
   }
+  // 기존 조작보다 먼저 전투 분석창 터치를 잡습니다.
+  canvas.addEventListener('pointerdown',captureCanvasInput,{capture:true,passive:false});
+  canvas.addEventListener('touchstart',captureCanvasInput,{capture:true,passive:false});
+  canvas.addEventListener('mousedown',captureCanvasInput,{capture:true,passive:false});
 
-  window.buildExitSummaryV22613 = function(){
+  window.buildExitSummaryV22614=function(){
     initSessionSnapshot();
-    let curExp=0, curLevel=1;
-    try { curExp=Math.max(0,Math.floor(safeNum(exp))); curLevel=Math.max(1,Math.floor(safeNum(level)||1)); } catch(e){}
-    const gained=Math.max(0,curExp-session.startExp);
-    const mins=session.activeMs/60000;
-    const perMin=mins>0 ? gained/mins : 0;
+    let curExp=0,curLevel=1;
+    try { curExp=Math.max(0,Math.floor(safeNum(exp))); curLevel=Math.max(1,Math.floor(safeNum(level)||1)); } catch(e) {}
+    const gained=Math.max(0,curExp-session.startExp), mins=session.activeMs/60000, perMin=mins>0?gained/mins:0;
     let levelLine='';
     try {
-      if(curLevel>=MAX_LEVEL){
-        levelLine='<b style="color:#ffd86b;">현재 최고 레벨(LV.'+MAX_LEVEL+')입니다.</b>';
-      }else{
-        const p=getLevelProgress(curExp,curLevel);
-        const remain=Math.max(0,Math.floor(safeNum(p.max)-safeNum(p.current)));
-        const eta=perMin>0 ? etaText(remain/perMin) : '평균 EXP/분 데이터 부족';
+      if(curLevel>=MAX_LEVEL) levelLine='<b style="color:#ffd86b;">현재 최고 레벨(LV.'+MAX_LEVEL+')입니다.</b>';
+      else {
+        const p=getLevelProgress(curExp,curLevel), remain=Math.max(0,Math.floor(safeNum(p.max)-safeNum(p.current)));
+        const eta=perMin>0?etaText(remain/perMin):'평균 EXP/분 데이터 부족';
         levelLine=`다음 레벨까지 <b style="color:#8dffb1;">${fmt(remain)} EXP</b><br>현재 평균 속도라면 <b style="color:#7ce7ff;">${eta}</b> 후 LV.${curLevel+1} 예상`;
       }
-    }catch(e){ levelLine='레벨업 예상 시간을 계산할 수 없습니다.'; }
+    } catch(e){ levelLine='레벨업 예상 시간을 계산할 수 없습니다.'; }
     return `<b>게임을 종료하시겠습니까?</b><br><br>`+
-      `⏱ 플레이 시간: <b>${timeText(session.activeMs)}</b><br>`+
+      `⏱ 플레이 시간: <b>${fullTime(session.activeMs)}</b><br>`+
       `📥 접속 EXP: <b>${fmt(session.startExp)}</b> (LV.${session.startLevel})<br>`+
       `📤 종료 EXP: <b>${fmt(curExp)}</b> (LV.${curLevel})<br>`+
       `✨ 이번 접속 획득 EXP: <b style="color:#8dffb1;">+${fmt(gained)}</b><br>`+
       `⚡ 평균 EXP/분: <b style="color:#7ce7ff;">${fmt(perMin)}</b><br><br>${levelLine}`;
   };
 
+  // exitGameFromTitle는 기존 함수에서 이 이름을 호출하므로 최신 구현으로 연결합니다.
+  window.buildExitSummaryV22613=window.buildExitSummaryV22614;
+
   let last=performance.now();
   function tick(now){
     initSessionSnapshot();
     const dt=Math.min(1000,Math.max(0,now-last)); last=now;
     try {
-      if(state==='playing' && !isPaused){
-        window.__combatAnalysisV22613.activeMs += dt;
-        session.activeMs += dt;
+      if(state==='playing'&&!isPaused){
+        session.activeMs+=dt;
+        if(analysis.active) analysis.activeMs+=dt;
       }
-    }catch(e){}
-    updatePanel();
+    } catch(e) {}
     requestAnimationFrame(tick);
   }
-  resetCombatAnalysisV22613();
   setTimeout(initSessionSnapshot,0);
   requestAnimationFrame(tick);
 })();
