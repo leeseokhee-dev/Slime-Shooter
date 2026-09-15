@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.227.12)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5893,11 +5893,11 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
     <div class="combat-analysis-card"><div class="combat-analysis-label">누적 데미지</div><div id="combatAnalysisDamage" class="combat-analysis-value ca-dmg">0</div></div>
     <div class="combat-analysis-card" style="grid-column:1 / -1"><div class="combat-analysis-label">분당 경험치</div><div id="combatAnalysisExpPerMin" class="combat-analysis-value ca-epm">0</div></div>
   </div>
-  <div id="combatAnalysisButtons">
+  <div id="combatAnalysisButtons" style="display:none !important;">
     <button id="combatAnalysisStartBtn" class="ui-btn" type="button">분석 시작</button>
     <button id="combatAnalysisStopBtn" class="ui-btn" type="button" disabled>정지</button>
   </div>
-  <div id="combatAnalysisHint">몬스터 파크에서는 측정되지 않습니다. X로 닫으면 측정 종료와 함께 기록이 삭제됩니다.</div>
+  <div id="combatAnalysisHint">게임 실행과 동시에 자동 측정됩니다. 메인 메뉴·일시정지에서는 측정 시간이 대기하며, 몬스터 파크·미니게임은 측정에서 제외됩니다. X는 창만 닫습니다.</div>
 </div>
 
 <!-- ✅ [v.50 추가] 경험치 레벨표 모달 (EXP 바 클릭) -->
@@ -32485,7 +32485,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 227.12', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 228', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -39366,12 +39366,14 @@ fitCanvasToViewport();
 playBgmTrack('title'); 
 
 /* ===============================
-   ✅ [v.227.0] 전투 분석
-   - 설정 > 전투 분석에서 창 열기
-   - 시작 시 0부터 측정, 정지 시 값 유지
-   - 다시 시작하면 0부터 새 측정
-   - X 닫기 = 측정 종료 + 기록 삭제
-   - 몬스터 파크 제외
+   ✅ [v.228.0] 세션형 자동 전투 분석
+   - HTML 실행 즉시 자동 측정 세션 시작
+   - 실제 플레이 중에만 시간/전투 기록 누적
+   - 메인 메뉴·게임오버·일시정지에서는 측정 대기
+   - 스테이지 재시작/변경 시 누적 기록 유지
+   - X 닫기 = 창만 닫기 (기록 유지)
+   - 몬스터 파크·미니게임 제외
+   - 새로고침/HTML 종료 시 세션 종료
    =============================== */
 (function installCombatAnalysisV227(){
   const openBtn = document.getElementById('combatAnalysisBtn');
@@ -39405,8 +39407,11 @@ playBgmTrack('title');
 
   function safeNum(v){ return Number.isFinite(Number(v)) ? Number(v) : 0; }
   function isPark(){ try { return typeof monsterParkActive !== 'undefined' && !!monsterParkActive; } catch(e) { return false; } }
+  function isMiniGame(){
+    try { return gameMode === 'minigame' || !!(miniGameState && miniGameState.active); } catch(e) { return false; }
+  }
   function isEligibleNow(){
-    try { return ca.running && state === 'playing' && !isPark(); } catch(e) { return false; }
+    try { return ca.running && state === 'playing' && !isPaused && !isPark() && !isMiniGame(); } catch(e) { return false; }
   }
   function getGoldEarned(){
     try { return Math.max(0, Math.floor(safeNum(saveData && saveData.goldEarned))); } catch(e) { return 0; }
@@ -39465,7 +39470,7 @@ playBgmTrack('title');
     const now = performance.now();
     if (ca.lastTickAt > 0) {
       const delta = Math.max(0, now - ca.lastTickAt);
-      try { if (state === 'playing' && !isPaused && !isPark()) ca.activeElapsedMs += delta; } catch(e) {}
+      try { if (state === 'playing' && !isPaused && !isPark() && !isMiniGame()) ca.activeElapsedMs += delta; } catch(e) {}
     }
     ca.lastTickAt = now;
   }
@@ -39544,13 +39549,26 @@ playBgmTrack('title');
     if (damageValueEl) damageValueEl.textContent = formatCA(ca.damage);
     if (epmValueEl) epmValueEl.textContent = formatCA(epm);
     if (statusEl) {
-      statusEl.classList.toggle('running', ca.running);
-      statusEl.classList.toggle('stopped', !ca.running && ca.stoppedElapsedMs > 0);
-      statusEl.textContent = ca.running ? (isPark() ? '몬스터 파크 · 측정 제외 중' : '측정 중') : (ca.stoppedElapsedMs > 0 ? '측정 정지' : '측정 대기');
+      let statusText = '측정 대기 중';
+      let activelyMeasuring = false;
+      try {
+        if (isPark()) {
+          statusText = '몬스터 파크 · 측정 제외 중';
+        } else if (isMiniGame()) {
+          statusText = '미니게임 · 측정 제외 중';
+        } else if (state === 'playing' && isPaused) {
+          statusText = '일시정지 · 측정 대기 중';
+        } else if (state === 'playing') {
+          statusText = '측정 중';
+          activelyMeasuring = true;
+        }
+      } catch(e) {}
+      statusEl.classList.toggle('running', activelyMeasuring);
+      statusEl.classList.toggle('stopped', !activelyMeasuring);
+      statusEl.textContent = statusText;
     }
-    if (startBtn) startBtn.textContent = ca.running ? '측정 중…' : (ca.stoppedElapsedMs > 0 ? '새로 시작' : '분석 시작');
-    if (startBtn) startBtn.disabled = ca.running;
-    if (stopBtn) stopBtn.disabled = !ca.running;
+    if (startBtn) startBtn.disabled = true;
+    if (stopBtn) stopBtn.disabled = true;
     fitCombatValues();
   }
   function clearValues(){
@@ -39616,7 +39634,7 @@ playBgmTrack('title');
     requestAnimationFrame(fitCombatValues);
   }
   function closeAndDelete(){
-    clearValues();
+    // [v.228.0] X는 전투 분석창만 닫고 세션 기록은 계속 유지합니다.
     setCompact(true);
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); }
   }
@@ -39671,25 +39689,11 @@ playBgmTrack('title');
     };
   }
 
-  // ✅ [v.227.4] 게임오버의 ‘다시 하기’에서도 전투 분석을 새 판 기준으로 0부터 재측정
+  // ✅ [v.228.0] 다시 하기를 눌러도 이번 실행 세션의 누적 기록을 유지
   ca.resetForGameRestart = function(){
-    const wasRunning = !!ca.running;
-    ca.running = false;
-    ca.startAt = 0;
-    ca.activeElapsedMs = 0;
-    ca.lastTickAt = 0;
-    ca.stoppedElapsedMs = 0;
-    ca.gold = 0;
-    ca.exp = 0;
-    ca.kills = 0;
-    ca.damage = 0;
+    ca.lastTickAt = performance.now();
     ca.lastGoldEarned = getGoldEarned();
     ca.lastMonsterKills = getMonsterKills();
-    if (wasRunning) {
-      ca.startAt = performance.now();
-      ca.lastTickAt = ca.startAt;
-      ca.running = true;
-    }
     render();
   };
 
@@ -39745,10 +39749,23 @@ playBgmTrack('title');
   ca.timer = setInterval(render, 1000);
   if (modal) modal.classList.add('ca-compact');
   if (detailBtn) detailBtn.textContent = '상세';
-  clearValues();
+
+  // ✅ [v.228.0] HTML이 실행되는 순간 이번 세션의 전투 분석을 자동 시작
+  ca.running = true;
+  ca.startAt = performance.now();
+  ca.lastTickAt = ca.startAt;
+  ca.activeElapsedMs = 0;
+  ca.stoppedElapsedMs = 0;
+  ca.gold = 0;
+  ca.exp = 0;
+  ca.kills = 0;
+  ca.damage = 0;
+  ca.lastGoldEarned = getGoldEarned();
+  ca.lastMonsterKills = getMonsterKills();
+  render();
 })();
 
-// ✅ [v.227.4] 모든 모드의 ‘다시 하기’ 클릭 시 전투 분석 시간/누적값도 새 판 기준으로 초기화
+// ✅ [v.228.0] 모든 모드의 ‘다시 하기’에서도 전투 분석 세션 누적값 유지
 if (restartBtn) {
   restartBtn.addEventListener('click', function(){
     try {
