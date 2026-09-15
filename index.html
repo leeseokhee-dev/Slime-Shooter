@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.0)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -4859,7 +4859,7 @@ body:not(.logo-mode) #logoSkipBtn{display:none !important;}
    61: 눈보라 | 레이저
    101: 메테오
    200: 지진
-   250: 플라즈마 폭풍
+   200: 지진 | 플라즈마 폭풍
 */
 #bubbleSkillBtn, #lightningSkillBtn, #blizzardSkillBtn{
   right:64px !important;
@@ -5374,7 +5374,7 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
 <button id="lightningSkillBtn" class="ui-btn lightning-skill hidden">⚡</button>
 <button id="quakeSkillBtn" class="ui-btn quake-skill hidden">🌎</button>
 <button id="plasmaSkillBtn" class="ui-btn plasma-skill hidden">💥</button>
-<!-- ✅ [v.171] LV.250 신규 플라즈마 스킬 -->
+<!-- ✅ [v.228.2] LV.200 플라즈마 폭풍 스킬 -->
 
 <!-- 모바일 소모품 퀵바 -->
 <div id="consumableQuickBar">
@@ -11236,7 +11236,7 @@ function maybeStartPostClearTutorial() {
 let tutorialShown = false;
 
 // 스킬 해금 안내(레벨별 최초 1회)
-const SKILL_NOTICE_LEVELS = [11, 31, 61, 101, 200, 250];
+const SKILL_NOTICE_LEVELS = [11, 31, 61, 101, 200];
 let skillNoticeShown = {};
 try {
   skillNoticeShown = JSON.parse(localStorage.getItem('ss_skill_notice_shown') || '{}') || {};
@@ -11876,7 +11876,7 @@ const SKILL_GUIDE_DATA = [
     tips: ['위기 상황에서 화면을 천천히 정리하는 안정형 광역 스킬입니다.']
   },
   {
-    level: 250,
+    level: 200,
     name: '플라즈마 폭풍', icon: '💥', color: '#ff9df3',
     lines: [
       '화면 중앙에서 플라즈마 폭풍이 발생해 넓은 범위의 적을 연쇄 타격합니다.',
@@ -11884,18 +11884,21 @@ const SKILL_GUIDE_DATA = [
       '기본 피해는 레벨에 따라 강해지고, 스테이지 보정이 적용됩니다.',
       '쿨타임은 11초입니다.'
     ],
-    tips: ['LV.250 이후 고레벨 구간에서 몰려오는 적을 한 번에 정리하는 웅장한 광역 스킬입니다.']
+    tips: ['LV.200부터 사용할 수 있으며, 몰려오는 적을 한 번에 정리하는 웅장한 광역 스킬입니다.']
   }
 ];
 
 // ✅ [스킬 가이드] 레벨별 스킬 해금 안내 문구
-const SKILL_UNLOCK_TUTORIAL = Object.fromEntries(
-  SKILL_GUIDE_DATA.map(item => [item.level, [
-    `LV.${item.level} 달성으로 ${item.name} 스킬이 해금되었습니다!`,
-    ...(item.lines || []),
-    '상단의 [스킬 가이드] 버튼에서 자세한 설명을 다시 볼 수 있습니다.'
-  ]])
-);
+const SKILL_UNLOCK_TUTORIAL = SKILL_GUIDE_DATA.reduce((acc, item) => {
+  const lv = item.level;
+  if (!acc[lv]) acc[lv] = [];
+  acc[lv].push(`LV.${lv} 달성으로 ${item.name} 스킬이 해금되었습니다!`);
+  acc[lv].push(...(item.lines || []));
+  if (!acc[lv].includes('상단의 [스킬 가이드] 버튼에서 자세한 설명을 다시 볼 수 있습니다.')) {
+    acc[lv].push('상단의 [스킬 가이드] 버튼에서 자세한 설명을 다시 볼 수 있습니다.');
+  }
+  return acc;
+}, {});
 function maybeShowSkillUnlockNotice(oldLv, newLv) {
   // 레벨별 스킬 해금 튜토리얼(자세 설명)
   for (const lv of SKILL_NOTICE_LEVELS) {
@@ -14133,7 +14136,7 @@ if (quakeSkillBtn) {
 }
 
 
-// ✅ [v.171] LV.250 플라즈마 폭풍 스킬 버튼
+// ✅ [v.228.2] LV.200 플라즈마 폭풍 스킬 버튼
 if (plasmaSkillBtn) {
   let lastTap = 0;
   const fire = (e) => {
@@ -14558,10 +14561,47 @@ function getGroupedTitlesForProfile() {
   })).filter(g => g.items.length > 0);
 }
 
+// ===== [v.228.2] 누적 500킬 랜덤 보너스 EXP 이벤트 =====
+// 현재 레벨의 '다음 레벨 필요 EXP'를 기준으로 보너스를 계산합니다.
+// 저레벨은 체감이 크게, LV.250+는 약 0.2~0.4%(평균 약 0.3%)만 오르도록 설계합니다.
+function get500KillBonusExpRateV2282(lv) {
+  lv = Math.max(1, Math.min(MAX_LEVEL - 1, Math.floor(Number(lv) || 1)));
+  let minPct = 0.002, maxPct = 0.004;
+  if (lv <= 30)       { minPct = 0.15;  maxPct = 0.35; }
+  else if (lv <= 60)  { minPct = 0.08;  maxPct = 0.18; }
+  else if (lv <= 100) { minPct = 0.04;  maxPct = 0.10; }
+  else if (lv <= 150) { minPct = 0.02;  maxPct = 0.05; }
+  else if (lv <= 199) { minPct = 0.01;  maxPct = 0.025; }
+  else if (lv <= 249) { minPct = 0.005; maxPct = 0.010; }
+  return minPct + Math.random() * (maxPct - minPct);
+}
+
+function trigger500KillBonusExpV2282(totalKills) {
+  if (level >= MAX_LEVEL || exp >= MAX_EXP_CAP) return 0;
+  if (totalKills <= 0 || totalKills % 500 !== 0) return 0;
+
+  const needed = Math.max(1, Number(EXP_TABLE?.[level]?.needed || 1));
+  const rate = get500KillBonusExpRateV2282(level);
+  const reward = Math.max(1, Math.floor(needed * rate));
+  const gained = addExpDirect(reward); // 고정 이벤트 보상: 핫타임/펫/쿠폰 등 추가 배수 없음
+  const pctText = (rate * 100).toFixed(level >= 250 ? 2 : 1);
+
+  try { pushGainMessage(`🎉 500킬 보너스 +${formatNumber(gained)} EXP (${pctText}%)`, '#fff07a'); } catch(e) {}
+  try {
+    const fxX = player?.x || width / 2;
+    const fxY = (player?.y || height / 2) - 42;
+    spawnDamageText(fxX, fxY, `500 KILL! +${formatNumber(gained)} EXP`, '#fff07a', true);
+    spawnExplosion(fxX, fxY + 20, 'rgba(255, 240, 122, 1)', 18);
+  } catch(e) {}
+  try { if (SFX && SFX.questComplete) SFX.questComplete(); } catch(e) {}
+  return gained;
+}
+
 function registerEnemyKill(isBoss = false, opts = {}) {
   if (!isBoss) addFeverGaugeByKill();
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
+  try { trigger500KillBonusExpV2282(saveData.totalMonsterKills); } catch(e) { console.error('[v.228.2] 500킬 EXP 이벤트 오류:', e); }
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
 
   // ✅ [v.211.7] 던전은 목표 처치 수가 아닌 제한 시간 종료로 클리어 처리
@@ -25451,7 +25491,7 @@ function canUsePlasmaSkill(){
   return (state === 'playing') &&
          (gameMode !== 'dungeon') &&
          player && player.alive && !isPlayerDying &&
-         (typeof level === 'number') && level >= 250;
+         (typeof level === 'number') && level >= 200;
 }
 function tryCastToxicSkill(){ return; }
 function tryCastBlackholeSkill(){ return; }
@@ -25469,7 +25509,7 @@ function castPlasmaSkill(){
   const x = width * 0.5;
   const y = height * 0.44;
   const attack = (typeof getPlayerAttackPower === 'function') ? Math.max(1, getPlayerAttackPower()) : 1;
-  // LV.250 최종급 스킬: 2.8초 동안 전장을 뒤덮는 10회 플라즈마 폭풍
+  // LV.200 최종급 스킬: 2.8초 동안 전장을 뒤덮는 10회 플라즈마 폭풍
   const baseDamage = Math.max(
     30000,
     Math.floor((level || 250) * 220),
@@ -26374,7 +26414,7 @@ function getStageBossExpReward(stageValue) {
     // 실제 보스 EXP = 현재 스테이지 × 해당 구간의 스테이지당 EXP
     // 일반 몬스터 EXP는 아래 기존 함수에서 보스 EXP의 50%를 목표 처치 수로 나누어 자동 계산됩니다.
     const bands = [
-      [1,5,10],
+      [1,5,100000000000],
       [6,10,26],
       [11,15,68],
       [16,20,129],
@@ -26416,24 +26456,24 @@ function getStageBossExpReward(stageValue) {
       [196,200,111981],
       [201,205,37615],
       [206,210,38317],
-      [211,215,55519],
-      [216,220,56221],
-      [221,225,131142],
-      [226,230,132287],
-      [231,235,168532],
-      [236,240,170377],
-      [241,245,409146],
-      [246,250,413126],
-      [251,255,486106],
-      [256,260,490384],
-      [261,265,1120507],
-      [266,270,1130644],
-      [271,275,1823081],
-      [276,280,1841164],
-      [281,285,3871464],
-      [286,290,3909089],
-      [291,295,6341847],
-      [296,300,6395011]
+      [211,215,49519],
+      [216,220,50221],
+      [221,225,106142],
+      [226,230,107987],
+      [231,235,127532],
+      [236,240,128477],
+      [241,245,269146],
+      [246,250,270226],
+      [251,255,300106],
+      [256,260,301486],
+      [261,265,670507],
+      [266,270,672044],
+      [271,275,713081],
+      [276,280,714818],
+      [281,285,1521464],
+      [286,290,1523389],
+      [291,295,1570714],
+      [296,300,1572839]
     ];
 
     for (const [a,b,per] of bands) {
