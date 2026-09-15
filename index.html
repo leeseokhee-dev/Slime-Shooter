@@ -361,20 +361,6 @@ body.fever-mode #gameCanvas {
 }
 
 
-
-/* ===== [v.228.3] 연속 사냥 / 500마리 EXP 보너스 HUD ===== */
-#huntBonusHud{
-  width:100%; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;
-  margin-top:4px; font-size:11px; font-weight:900; line-height:1.2;
-}
-.hunt-bonus-chip{
-  padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.20);
-  background:rgba(5,12,22,.78); box-shadow:0 3px 10px rgba(0,0,0,.25); white-space:nowrap;
-}
-#continuousHuntText{color:#ffcf72;}
-#kill500BonusText{color:#8effbc;}
-@media(max-width:520px){#huntBonusHud{font-size:10px;gap:5px}.hunt-bonus-chip{padding:3px 6px}}
-
     /* ===== 캔버스 ===== */
     #gameCanvas {
         border-radius: 50%;
@@ -5270,11 +5256,6 @@ body.stage-mission-intro-active-v2244 #pauseOverlay{
             <span id="feverText">0.0%</span>
             <div id="feverBarFill"></div>
         </div>
-    </div>
-
-    <div id="huntBonusHud">
-      <div class="hunt-bonus-chip">🔥 연속 사냥 <span id="continuousHuntText">00:00</span></div>
-      <div class="hunt-bonus-chip">🎯 500마리 보너스 <span id="kill500BonusText">0 / 500</span></div>
     </div>
 <input id="restoreFile" type="file" accept="application/json" style="display:none" />
 
@@ -14577,66 +14558,8 @@ function getGroupedTitlesForProfile() {
   })).filter(g => g.items.length > 0);
 }
 
-// ===== [v.228.3] 연속 사냥 / 500마리 처치 EXP 보너스 =====
-const HUNT_KILL_BONUS_TARGET_V2283 = 500;
-const HUNT_KILL_BONUS_EXP_MULT_V2283 = 150; // 현재 스테이지 일반 몬스터 EXP ×150
-const CONTINUOUS_HUNT_INTERVAL_MS_V2283 = 10 * 60 * 1000; // 10분
-const CONTINUOUS_HUNT_EXP_MULT_V2283 = 100; // 10분마다 현재 스테이지 일반 몬스터 EXP ×100
-let huntKillCounterV2283 = 0;
-let continuousHuntMsV2283 = 0;
-let continuousHuntRewardStepV2283 = 0;
-
-function getHuntBaseMonsterExpV2283(){
-  try { return Math.max(1, Math.floor(Number(getStageMonsterExpReward(stage)) || 1)); }
-  catch(e){ return 1; }
-}
-function formatHuntTimeV2283(ms){
-  const total = Math.max(0, Math.floor((Number(ms)||0)/1000));
-  const h = Math.floor(total/3600), m = Math.floor((total%3600)/60), sec = total%60;
-  return h > 0 ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-}
-function updateHuntBonusHudV2283(){
-  const t=document.getElementById('continuousHuntText');
-  const k=document.getElementById('kill500BonusText');
-  if(t) t.textContent=formatHuntTimeV2283(continuousHuntMsV2283);
-  if(k) k.textContent=`${huntKillCounterV2283} / ${HUNT_KILL_BONUS_TARGET_V2283}`;
-}
-function grantHuntEventExpV2283(mult, label, color){
-  if(level >= MAX_LEVEL || exp >= MAX_EXP_CAP) return 0;
-  const base=getHuntBaseMonsterExpV2283();
-  const reward=Math.max(1, Math.floor(base * mult));
-  const gained=addExpDirect(reward);
-  if(gained>0){
-    try { pushGainMessage(`${label} (+${formatNumber(gained)} EXP)`, color || '#8effbc'); } catch(e){}
-    try { if(player) spawnDamageText(player.x, player.y-70, `${label}! +${formatNumber(gained)} EXP`, color || '#8effbc', true); } catch(e){}
-    try { if(SFX && SFX.questComplete) SFX.questComplete(); } catch(e){}
-  }
-  return gained;
-}
-function registerHuntKillBonusV2283(){
-  huntKillCounterV2283++;
-  while(huntKillCounterV2283 >= HUNT_KILL_BONUS_TARGET_V2283){
-    huntKillCounterV2283 -= HUNT_KILL_BONUS_TARGET_V2283;
-    grantHuntEventExpV2283(HUNT_KILL_BONUS_EXP_MULT_V2283, '🎯 500마리 처치 보너스', '#8effbc');
-  }
-  updateHuntBonusHudV2283();
-}
-function updateContinuousHuntBonusV2283(dt){
-  // 실제 전투 중일 때만 증가. 메인 메뉴/일시정지/게임오버에서는 정지.
-  if(state !== 'playing' || paused) { updateHuntBonusHudV2283(); return; }
-  // 몬스터 파크·미니게임 등 특수 콘텐츠는 연속 사냥 이벤트에서 제외
-  if(gameMode === 'dungeon' || gameMode === 'itemPark' || gameMode === 'miniGame') { updateHuntBonusHudV2283(); return; }
-  continuousHuntMsV2283 += Math.max(0, Number(dt)||0);
-  const step=Math.floor(continuousHuntMsV2283 / CONTINUOUS_HUNT_INTERVAL_MS_V2283);
-  while(continuousHuntRewardStepV2283 < step){
-    continuousHuntRewardStepV2283++;
-    grantHuntEventExpV2283(CONTINUOUS_HUNT_EXP_MULT_V2283, `🔥 연속 사냥 ${continuousHuntRewardStepV2283*10}분 보너스`, '#ffcf72');
-  }
-  updateHuntBonusHudV2283();
-}
-
 function registerEnemyKill(isBoss = false, opts = {}) {
-  if (!isBoss) { addFeverGaugeByKill(); registerHuntKillBonusV2283(); }
+  if (!isBoss) addFeverGaugeByKill();
   saveData.quests.kill.count++;
   saveData.totalMonsterKills = Math.max(0, Math.floor(saveData.totalMonsterKills || 0)) + 1;
   stageRunKillCount = Math.max(0, Math.floor(stageRunKillCount || 0)) + 1;
@@ -28710,7 +28633,6 @@ function updateTutorialModeRun(dt, currentTime){
 }
 
 function update(dt, currentTime) {
-  updateContinuousHuntBonusV2283(dt);
   // ✅ [v.196.1] 스테이지 클리어 후 5% 확률 보너스 스테이지 진행
   if (gameMode === 'stage' && stageBonusState && stageBonusState.active) {
     if (updateStageBonusStage(dt)) return;
@@ -39852,6 +39774,126 @@ if (restartBtn) {
     } catch(e) {}
   }, true);
 }
+
+// ===============================
+// ✅ [v.228.3] 사냥 EXP 이벤트
+// - 일반 몬스터 500마리마다: 현재 스테이지 1마리 EXP × 150
+// - 연속 사냥: 실제 전투 중인 시간만 측정, 10분마다 현재 스테이지 1마리 EXP × 150
+// - 메인 메뉴/일시정지/게임오버에서는 연속 사냥 시간이 멈춥니다.
+// ===============================
+(function initHuntExpEventsV2283(){
+  const KILL_TARGET = 500;
+  const KILL_REWARD_MULT = 150;
+  const CONTINUOUS_INTERVAL_SEC = 10 * 60;
+  const CONTINUOUS_REWARD_MULT = 150;
+
+  const hunt = window.__huntExpEventsV2283 = window.__huntExpEventsV2283 || {
+    kills: 0,
+    activeSec: 0,
+    nextContinuousAt: CONTINUOUS_INTERVAL_SEC,
+    lastTickAt: performance.now()
+  };
+
+  function isHuntingNow(){
+    try {
+      if (state !== 'playing' || isPaused) return false;
+      // 미니게임/비전투성 특수 콘텐츠에서는 이벤트 진행을 막습니다.
+      if (typeof isCombatAnalysisMiniGameV227 === 'function' && isCombatAnalysisMiniGameV227()) return false;
+      if (typeof monsterParkActive !== 'undefined' && monsterParkActive) return false;
+      return true;
+    } catch(e) { return false; }
+  }
+
+  function getEventMonsterExp(){
+    try {
+      return Math.max(1, Math.floor(Number(getStageMonsterExpReward(stage)) || 1));
+    } catch(e) { return 1; }
+  }
+
+  function grantEventExp(mult, label, color){
+    const perMonster = getEventMonsterExp();
+    const reward = Math.max(1, Math.floor(perMonster * mult));
+    let granted = reward;
+    try { granted = Math.max(0, Math.floor(Number(addExpDirect(reward)) || 0)); } catch(e) { granted = 0; }
+    try { pushGainMessage(`${label} (+${formatNumber(granted)} EXP)`, color); } catch(e) {}
+    try { saveGameDataDebounced(); } catch(e) {}
+    return granted;
+  }
+
+  // 작은 사냥 이벤트 HUD를 캔버스 왼쪽 위에 표시
+  const style = document.createElement('style');
+  style.textContent = `
+    #huntEventHudV2283{position:absolute;left:10px;top:10px;z-index:62;pointer-events:none;
+      min-width:180px;padding:7px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.22);
+      background:rgba(5,10,18,.76);box-shadow:0 6px 18px rgba(0,0,0,.32);font-size:11px;font-weight:900;
+      line-height:1.45;text-shadow:0 1px 2px #000;backdrop-filter:blur(2px)}
+    #huntEventHudV2283 .hunt-time{color:#ffd86b} #huntEventHudV2283 .hunt-kill{color:#8dffb1}
+    body.title-mode #huntEventHudV2283, body.tutorial-mode #huntEventHudV2283, body.logo-mode #huntEventHudV2283{display:none!important}
+    @media(max-width:520px){#huntEventHudV2283{left:6px;top:6px;min-width:154px;padding:5px 7px;font-size:10px}}
+  `;
+  document.head.appendChild(style);
+
+  const hud = document.createElement('div');
+  hud.id = 'huntEventHudV2283';
+  hud.innerHTML = '<div class="hunt-time"></div><div class="hunt-kill"></div>';
+  const parent = document.getElementById('gameContainer') || document.body;
+  parent.appendChild(hud);
+  const timeEl = hud.querySelector('.hunt-time');
+  const killEl = hud.querySelector('.hunt-kill');
+
+  function formatClock(sec){
+    sec = Math.max(0, Math.floor(sec || 0));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return h > 0
+      ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function render(){
+    if (timeEl) {
+      const remain = Math.max(0, hunt.nextContinuousAt - hunt.activeSec);
+      timeEl.textContent = `🔥 연속 사냥 ${formatClock(hunt.activeSec)} · 다음 보너스 ${formatClock(remain)}`;
+    }
+    if (killEl) killEl.textContent = `🎯 500마리 보너스 ${Math.min(KILL_TARGET, hunt.kills)} / ${KILL_TARGET}`;
+  }
+
+  // 기존 처치 등록 로직은 그대로 두고, 일반 몬스터 처치만 이벤트 카운트에 추가합니다.
+  if (typeof registerEnemyKill === 'function') {
+    const registerEnemyKillBeforeHuntV2283 = registerEnemyKill;
+    registerEnemyKill = function(isBoss = false, opts = {}){
+      const ret = registerEnemyKillBeforeHuntV2283.apply(this, arguments);
+      try {
+        if (!isBoss && isHuntingNow()) {
+          hunt.kills += 1;
+          while (hunt.kills >= KILL_TARGET) {
+            hunt.kills -= KILL_TARGET;
+            grantEventExp(KILL_REWARD_MULT, '🎯 500마리 처치 보너스!', '#8dffb1');
+          }
+          render();
+        }
+      } catch(e) {}
+      return ret;
+    };
+  }
+
+  setInterval(() => {
+    const now = performance.now();
+    const delta = Math.max(0, Math.min(2, (now - hunt.lastTickAt) / 1000));
+    hunt.lastTickAt = now;
+    if (isHuntingNow()) {
+      hunt.activeSec += delta;
+      while (hunt.activeSec >= hunt.nextContinuousAt) {
+        grantEventExp(CONTINUOUS_REWARD_MULT, '🔥 10분 연속 사냥 보너스!', '#ffd86b');
+        hunt.nextContinuousAt += CONTINUOUS_INTERVAL_SEC;
+      }
+    }
+    render();
+  }, 1000);
+
+  render();
+})();
 
 requestAnimationFrame(gameLoop);
 })();
