@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.2)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5380,7 +5380,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
 <!-- ✅ [v.78] 번개 / 지진 스킬 버튼 -->
 <button id="lightningSkillBtn" class="ui-btn lightning-skill hidden">⚡</button>
 <button id="quakeSkillBtn" class="ui-btn quake-skill hidden">🌎</button>
-<div id="huntBonusHud" class="hidden" aria-live="polite">
+<div id="huntBonusHud" class="hidden" aria-live="polite" style="display:none !important;">
   <div id="huntStreakText" class="hunt-bonus-line">🔥 연속 사냥 00:00 · 다음 보상 10:00</div>
   <div id="huntKillText" class="hunt-bonus-line">🎯 200마리 보너스 0 / 200</div>
 </div>
@@ -14569,13 +14569,14 @@ function getGroupedTitlesForProfile() {
   })).filter(g => g.items.length > 0);
 }
 
-// ===== [v.228.2] 연속 사냥 + 200마리 EXP 보너스 =====
+// ===== [v.228.4] 연속 사냥 + 200마리 EXP 보너스 =====
 const HUNT_KILL_BONUS_TARGET = 200;
 const HUNT_BONUS_EXP_MULT = 75;
 const HUNT_STREAK_REWARD_SEC = 10 * 60;
 let huntBonusKillCount = 0;
 let huntStreakElapsedSec = 0;
 let huntStreakNextRewardSec = HUNT_STREAK_REWARD_SEC;
+let huntBonusCenterPopupV2284 = null;
 
 function isHuntBonusCombatActiveV2283(){
   return state === 'playing' && !isPaused && (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'infinite');
@@ -14589,17 +14590,32 @@ function getHuntBonusExpV2283(){
   return Math.max(1, Math.floor((Number(getStageMonsterExpReward(stage))||1) * HUNT_BONUS_EXP_MULT));
 }
 function showHuntBonusMessageV2283(text,color='#9fffc8'){
+  // 기존 획득 로그에도 남기되, 핵심 보너스는 Canvas 중앙 상단에 3초간 크게 표시합니다.
   try { if (typeof pushGainMessage === 'function') pushGainMessage(text,color); } catch(e) {}
   try { if (typeof addGainMessage === 'function') addGainMessage(text,color); } catch(e) {}
+  huntBonusCenterPopupV2284 = { text:String(text||''), color:color||'#9fffc8', createdAt:performance.now(), duration:3000 };
 }
-function showHuntBonusCenterExpV2282(exp, color='#9fffc8'){
-  const amount = Math.max(0, Math.floor(Number(exp)||0));
-  if(!amount) return;
-  try {
-    if (typeof spawnDamageText === 'function') {
-      spawnDamageText(width / 2, height * 0.30, `BONUS EXP +${formatNumber(amount)}`, color, true);
-    }
-  } catch(e) {}
+
+function drawHuntBonusCenterPopupV2284(){
+  const p=huntBonusCenterPopupV2284;
+  if(!p || !ctx || !width || !height) return;
+  const elapsed=performance.now()-Number(p.createdAt||0);
+  const duration=Math.max(3000,Number(p.duration)||3000);
+  if(elapsed>=duration){ huntBonusCenterPopupV2284=null; return; }
+  const fadeIn=Math.min(1,elapsed/160);
+  const fadeOut=Math.min(1,(duration-elapsed)/420);
+  const alpha=Math.max(0,Math.min(fadeIn,fadeOut));
+  const x=width/2, y=Math.max(82,height*0.31);
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`1000 ${Math.max(18,Math.min(28,width*0.032))}px ${getUIFontFamily()}`;
+  const tw=Math.min(width-36,ctx.measureText(p.text).width+34);
+  ctx.fillStyle='rgba(5,10,18,0.88)'; ctx.strokeStyle=p.color; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.roundRect(x-tw/2,y-22,tw,44,12); ctx.fill(); ctx.stroke();
+  ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,0.82)'; ctx.strokeText(p.text,x,y);
+  ctx.fillStyle=p.color; ctx.fillText(p.text,x,y);
+  ctx.restore();
 }
 
 function updateHuntBonusHudV2283(){
@@ -14619,7 +14635,6 @@ function registerHuntBonusKillV2283(isBoss){
     const reward=getHuntBonusExpV2283();
     const granted=addExpDirect(reward);
     showHuntBonusMessageV2283(`🎯 200마리 처치 보너스! +${formatNumber(granted||reward)} EXP`,'#9fffc8');
-    showHuntBonusCenterExpV2282(granted||reward, '#9fffc8');
   }
   updateHuntBonusHudV2283();
 }
@@ -14630,7 +14645,6 @@ function updateHuntStreakBonusV2283(dt){
     const reward=getHuntBonusExpV2283();
     const granted=addExpDirect(reward);
     showHuntBonusMessageV2283(`🔥 연속 사냥 10분 보너스! +${formatNumber(granted||reward)} EXP`,'#ffd987');
-    showHuntBonusCenterExpV2282(granted||reward, '#ffd987');
     huntStreakNextRewardSec += HUNT_STREAK_REWARD_SEC;
   }
   updateHuntBonusHudV2283();
@@ -32565,7 +32579,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 228.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 228.4', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33397,6 +33411,24 @@ function drawCanvasStatusHUD() {
       ctx.fillText(text, pad + 10, leftY + 8 + lineH * i + lineH / 2);
     });
 
+    // [v.228.4] 연속 사냥 / 몬스터 처치 보너스도 DOM이 아닌 Canvas HUD로 표시
+    if (state === 'playing' || isPaused) {
+      const huntLines = [
+        `🔥 연속 사냥 ${formatHuntTimeV2283(huntStreakElapsedSec)} · 다음 보상 ${formatHuntTimeV2283(huntStreakNextRewardSec)}`,
+        `🎯 200마리 보너스 ${formatNumber(huntBonusKillCount)} / ${HUNT_KILL_BONUS_TARGET}`
+      ];
+      ctx.font = `900 11px ${fontFamily}`;
+      const huntW = Math.min(width - 16, Math.max(230, ...huntLines.map(v => ctx.measureText(v).width + 20)));
+      const huntY = leftY + leftH + 6;
+      ctx.fillStyle = 'rgba(8,12,22,0.82)';
+      ctx.strokeStyle = 'rgba(159,255,200,0.46)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(pad, huntY, huntW, 48, 7); ctx.fill(); ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffd987'; ctx.fillText(huntLines[0], pad + 10, huntY + 14);
+      ctx.fillStyle = '#9fffc8'; ctx.fillText(huntLines[1], pad + 10, huntY + 34);
+    }
+
     ctx.font = `900 12px ${fontFamily}`;
     const maxStageW = Math.max(170, width - leftW - 32);
     let renderedStage = stageText;
@@ -33412,6 +33444,7 @@ function drawCanvasStatusHUD() {
   }
 
   ctx.restore();
+  drawHuntBonusCenterPopupV2284();
 }
 
 function gameLoop(timestamp) {
