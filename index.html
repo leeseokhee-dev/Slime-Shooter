@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.0)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.6)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -35194,6 +35194,27 @@ updateHUD = function(){
   return ret;
 };
 
+// [v.228.6] 슬라임 러시 결과창의 '다시하기'는 새 입장으로 처리합니다.
+// 따라서 다시하기를 눌러도 하루 5회 제한이 그대로 적용됩니다.
+if (retryStageBtn) {
+  retryStageBtn.addEventListener('click', function(ev){
+    if (!slimeRushActiveV187 && !slimeRushCompletedV187 && !slimeRushResultSnapshotV187) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+
+    const left = getSlimeRushEntriesLeftV187();
+    if (left <= 0) {
+      retryStageBtn.disabled = true;
+      retryStageBtn.textContent = '오늘 입장 완료 (5/5)';
+      try { showToast('오늘 슬라임 러시 입장 횟수를 모두 사용했습니다. (5/5)', '#ffd27a', 1800); } catch(e) {}
+      return;
+    }
+
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    startSlimeRushModeV187();
+  }, true);
+}
+
 if (nextStageBtn) {
   nextStageBtn.addEventListener('click', function(ev){
     if (!adventureModeActive) return;
@@ -39001,7 +39022,7 @@ finalizeStageClearStats = function(){
   const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
   const stageClearPetBonusTitleEl = document.getElementById('stageClearPetBonusTitle');
   if (header) header.textContent = 'SLIME RUSH CLEAR!';
-  if (intro) intro.innerHTML = '슬라임 러시 10,000마리를 모두 처치했습니다.<br>획득한 경험치의 25%가 추가 지급됩니다.';
+  if (intro) intro.innerHTML = `슬라임 러시 ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}마리를 모두 처치했습니다.<br>획득한 경험치의 25%가 추가 지급됩니다.`;
   if (mini) mini.textContent = 'Slime Rush Result';
   if (stageClearStageEl) stageClearStageEl.textContent = '슬라임 러시';
   if (stageClearDurationEl) stageClearDurationEl.textContent = formatPlayTime(timeSec);
@@ -39014,6 +39035,14 @@ finalizeStageClearStats = function(){
   try { applyStageClearRank('S'); } catch(e) {}
   try { animateStageClearExp(expGained + (grantedBonusExp || clearBonusExp)); } catch(e) {}
   try { if (nextStageBtn) nextStageBtn.textContent = '타이틀로 돌아가기'; } catch(e) {}
+  try {
+    if (retryStageBtn) {
+      const left = getSlimeRushEntriesLeftV187();
+      retryStageBtn.style.display = '';
+      retryStageBtn.textContent = left > 0 ? `다시하기 ↻ (남은 ${left}/${SLIME_RUSH_DAILY_LIMIT_V187}회)` : '오늘 입장 완료 (5/5)';
+      retryStageBtn.disabled = left <= 0;
+    }
+  } catch(e) {}
   return { bonusExp: grantedBonusExp || clearBonusExp, rank: 'S', expGained };
 };
 
