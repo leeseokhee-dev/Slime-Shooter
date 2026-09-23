@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.6)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.0)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -32579,7 +32579,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 228.6', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 228.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -35194,27 +35194,6 @@ updateHUD = function(){
   return ret;
 };
 
-// [v.228.6] 슬라임 러시 결과창의 '다시하기'는 새 입장으로 처리합니다.
-// 따라서 다시하기를 눌러도 하루 5회 제한이 그대로 적용됩니다.
-if (retryStageBtn) {
-  retryStageBtn.addEventListener('click', function(ev){
-    if (!slimeRushActiveV187 && !slimeRushCompletedV187 && !slimeRushResultSnapshotV187) return;
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-
-    const left = getSlimeRushEntriesLeftV187();
-    if (left <= 0) {
-      retryStageBtn.disabled = true;
-      retryStageBtn.textContent = '오늘 입장 완료 (5/5)';
-      try { showToast('오늘 슬라임 러시 입장 횟수를 모두 사용했습니다. (5/5)', '#ffd27a', 1800); } catch(e) {}
-      return;
-    }
-
-    if (stageClearModal) stageClearModal.classList.add('hidden');
-    startSlimeRushModeV187();
-  }, true);
-}
-
 if (nextStageBtn) {
   nextStageBtn.addEventListener('click', function(ev){
     if (!adventureModeActive) return;
@@ -35233,6 +35212,23 @@ if (nextStageBtn) {
     alert(`🎉 모험 모드 완전 정복!\n\nEXP +${formatNumber(rewardExp || ADVENTURE_FINAL_EXP)}\n골드 +${formatNumber(ADVENTURE_FINAL_GOLD)}G`);
     setAdventureMode(false);
     goToTitleBeforeV171();
+  }, true);
+}
+
+// ✅ [v.228.6] 슬라임 러시 결과창의 '다시하기'는 새 입장으로 처리합니다.
+// 하루 5회 제한을 그대로 적용하며, 5회를 모두 사용했다면 결과창을 유지한 채 안내만 표시합니다.
+if (retryStageBtn) {
+  retryStageBtn.addEventListener('click', function(ev){
+    if (!slimeRushActiveV187 && !slimeRushCompletedV187) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    const d = ensureSlimeRushSaveV187();
+    if (d.entriesUsed >= SLIME_RUSH_DAILY_LIMIT_V187) {
+      alert(`오늘 슬라임 러시 입장 횟수를 모두 사용했습니다.\n(${d.entriesUsed}/${SLIME_RUSH_DAILY_LIMIT_V187})`);
+      return;
+    }
+    if (stageClearModal) stageClearModal.classList.add('hidden');
+    startSlimeRushModeV187();
   }, true);
 }
 
@@ -38980,14 +38976,22 @@ checkStageKillClearNow = function(){
   if ((stageRunKillCount || 0) < SLIME_RUSH_TARGET_KILLS_V187) return false;
   completeSlimeRushV187();
   stageCleared = true;
-  stageTransitionTimer = 1000;
+
+  // ✅ [v.228.6] 슬라임 러시는 일반 스테이지 분기에서 제외되므로
+  // 공통 stageTransitionTimer 처리에 맡기지 않고 여기서 즉시 결과창을 엽니다.
+  // Infinity로 두어 결과창 뒤에서 스테이지가 자동 재시작되는 것도 방지합니다.
+  stageTransitionTimer = Infinity;
   enemies.length = 0;
   enemyBullets.length = 0;
   boss = null;
   bossSpawned = false;
+  try { clearStageCombatObjects({ clearDrops: false }); } catch(e) {}
   try { spawnExplosion(width / 2, height / 3, 'rgba(141,255,177,1)', 36); } catch(e) {}
-  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
   try { addQuestStat('stageClears', 1); } catch(e) {}
+
+  const rushResult = finalizeStageClearStats() || { bonusExp: 0, rank: 'S', expGained: 0 };
+  try { showStageClearModalAnimated(Math.max(0, Math.floor((rushResult.expGained || 0) + (rushResult.bonusExp || 0))), 'S'); } catch(e) {}
+  try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
   return true;
 };
 
@@ -39022,7 +39026,7 @@ finalizeStageClearStats = function(){
   const stageClearPetBonusEl = document.getElementById('stageClearPetBonusText');
   const stageClearPetBonusTitleEl = document.getElementById('stageClearPetBonusTitle');
   if (header) header.textContent = 'SLIME RUSH CLEAR!';
-  if (intro) intro.innerHTML = `슬라임 러시 ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}마리를 모두 처치했습니다.<br>획득한 경험치의 25%가 추가 지급됩니다.`;
+  if (intro) intro.innerHTML = '슬라임 러시 4,000마리를 모두 처치했습니다.<br>획득한 경험치의 25%가 추가 지급됩니다.';
   if (mini) mini.textContent = 'Slime Rush Result';
   if (stageClearStageEl) stageClearStageEl.textContent = '슬라임 러시';
   if (stageClearDurationEl) stageClearDurationEl.textContent = formatPlayTime(timeSec);
@@ -39035,14 +39039,6 @@ finalizeStageClearStats = function(){
   try { applyStageClearRank('S'); } catch(e) {}
   try { animateStageClearExp(expGained + (grantedBonusExp || clearBonusExp)); } catch(e) {}
   try { if (nextStageBtn) nextStageBtn.textContent = '타이틀로 돌아가기'; } catch(e) {}
-  try {
-    if (retryStageBtn) {
-      const left = getSlimeRushEntriesLeftV187();
-      retryStageBtn.style.display = '';
-      retryStageBtn.textContent = left > 0 ? `다시하기 ↻ (남은 ${left}/${SLIME_RUSH_DAILY_LIMIT_V187}회)` : '오늘 입장 완료 (5/5)';
-      retryStageBtn.disabled = left <= 0;
-    }
-  } catch(e) {}
   return { bonusExp: grantedBonusExp || clearBonusExp, rank: 'S', expGained };
 };
 
@@ -39083,7 +39079,7 @@ updateGameOverModal = function(){
   if (slimeRushActiveV187 || slimeRushResultSnapshotV187) {
     const r = slimeRushResultSnapshotV187 || { kills: stageRunKillCount || 0, playSec: getSlimeRushElapsedSecV187(), expGained: stageRunExpMonsters || 0, bonus: 0 };
     try { if (gameOverTitleEl) { gameOverTitleEl.textContent = slimeRushCompletedV187 ? 'SLIME RUSH CLEAR' : 'SLIME RUSH END'; gameOverTitleEl.style.color = '#8dffb1'; } } catch(e) {}
-    try { if (gameOverDescEl) gameOverDescEl.textContent = slimeRushCompletedV187 ? '10,000마리 처치 완료! 클리어 보상이 지급되었습니다.' : '슬라임 러시 도전 결과입니다.'; } catch(e) {}
+    try { if (gameOverDescEl) gameOverDescEl.textContent = slimeRushCompletedV187 ? '4,000마리 처치 완료! 클리어 보상이 지급되었습니다.' : '슬라임 러시 도전 결과입니다.'; } catch(e) {}
     try { setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '처치 수', `${formatNumber(r.kills || 0)} / ${formatNumber(SLIME_RUSH_TARGET_KILLS_V187)}마리`); } catch(e) {}
     try { setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '플레이 시간', formatPlayTime(r.playSec || 0)); } catch(e) {}
     try { setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '획득 EXP', `${formatNumber(r.expGained || 0)}${(r.bonus || 0) > 0 ? ' + 보너스 ' + formatNumber(r.bonus || 0) : ''}`, { color:'#8dffb1' }); } catch(e) {}
@@ -41715,6 +41711,119 @@ try {
 
 </script>
 
+
+
+<script>
+/* ===============================
+   [v.228.7] SLIME RUSH 4,000 KILL CLEAR - FINAL SAFETY PATCH
+   - 마지막 로드 위치에서 매 프레임 직접 4,000 처치를 감시
+   - 기존 checkStageKillClearNow 래퍼 순서와 무관하게 결과창 표시
+   - 결과창 '다시하기'는 새 입장으로 처리되어 하루 5회 제한 유지
+   =============================== */
+(function(){
+  let rushFinishLockV2287 = false;
+
+  function finishSlimeRushV2287(){
+    try {
+      if (rushFinishLockV2287) return true;
+      if (typeof slimeRushActiveV187 === 'undefined' || !slimeRushActiveV187) return false;
+      if (typeof SLIME_RUSH_TARGET_KILLS_V187 === 'undefined') return false;
+      const kills = Math.max(0, Math.floor(Number(stageRunKillCount) || 0));
+      if (kills < SLIME_RUSH_TARGET_KILLS_V187) return false;
+
+      rushFinishLockV2287 = true;
+      if (typeof slimeRushCompletedV187 !== 'undefined') slimeRushCompletedV187 = true;
+      if (typeof stageCleared !== 'undefined') stageCleared = true;
+      if (typeof stageTransitionTimer !== 'undefined') stageTransitionTimer = Infinity;
+
+      const playSec = (typeof getSlimeRushElapsedSecV187 === 'function') ? getSlimeRushElapsedSecV187() : 0;
+      const mExp = Math.max(0, Math.floor(Number(stageRunExpMonsters) || 0));
+      const oExp = Math.max(0, Math.floor(Number(stageRunExpOrbs) || 0));
+      const expGained = Math.max(0, Math.floor(
+        (typeof stageRunExpEarned === 'number' && isFinite(stageRunExpEarned)) ? stageRunExpEarned : (mExp + oExp)
+      ));
+      if (typeof slimeRushResultSnapshotV187 !== 'undefined') {
+        slimeRushResultSnapshotV187 = { kills, playSec, expGained, bonus: 0 };
+      }
+
+      try { if (typeof clearStageCombatObjects === 'function') clearStageCombatObjects({ clearDrops:false }); } catch(e) {}
+      try { if (Array.isArray(enemies)) enemies.length = 0; } catch(e) {}
+      try { if (Array.isArray(enemyBullets)) enemyBullets.length = 0; } catch(e) {}
+      try { boss = null; bossSpawned = false; } catch(e) {}
+
+      // 보너스/기록/결과 문구는 기존 슬라임 러시 전용 finalize를 그대로 사용
+      let result = { bonusExp:0, rank:'S', expGained };
+      try {
+        if (typeof finalizeStageClearStats === 'function') {
+          result = finalizeStageClearStats() || result;
+          if (typeof slimeRushResultSnapshotV187 !== 'undefined' && slimeRushResultSnapshotV187) {
+            slimeRushResultSnapshotV187.bonus = Math.max(0, Math.floor(Number(result.bonusExp) || 0));
+          }
+        }
+      } catch(e) { console.error('[SlimeRush v228.7 finalize]', e); }
+
+      try {
+        if (typeof showStageClearModalAnimated === 'function') {
+          showStageClearModalAnimated(
+            Math.max(0, Math.floor((Number(result.expGained)||0) + (Number(result.bonusExp)||0))),
+            'S'
+          );
+        } else if (stageClearModal) {
+          stageClearModal.classList.remove('hidden');
+        }
+      } catch(e) {
+        try { if (stageClearModal) stageClearModal.classList.remove('hidden'); } catch(_) {}
+      }
+
+      // 결과창을 다른 후속 코드가 숨기더라도 다음 프레임에 한 번 더 확정 표시
+      requestAnimationFrame(() => {
+        try { if (stageClearModal) stageClearModal.classList.remove('hidden'); } catch(e) {}
+      });
+      try { if (SFX && SFX.stageClear) SFX.stageClear(); } catch(e) {}
+      return true;
+    } catch(e) {
+      rushFinishLockV2287 = false;
+      console.error('[SlimeRush v228.7 clear]', e);
+      return false;
+    }
+  }
+
+  // 모든 기존 update 래퍼보다 뒤에서 실행되도록 최종 update 래퍼 설치
+  if (typeof update === 'function') {
+    const updateBeforeSlimeRushV2287 = update;
+    update = function(){
+      const ret = updateBeforeSlimeRushV2287.apply(this, arguments);
+      if (!rushFinishLockV2287) finishSlimeRushV2287();
+      return ret;
+    };
+  }
+
+  // 스테이지 결과창의 '다시하기' 버튼도 슬라임 러시 재입장으로 연결
+  try {
+    if (retryStageBtn) {
+      retryStageBtn.addEventListener('click', function(ev){
+        if (!(typeof slimeRushActiveV187 !== 'undefined' && slimeRushActiveV187) &&
+            !(typeof slimeRushCompletedV187 !== 'undefined' && slimeRushCompletedV187)) return;
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        try { if (stageClearModal) stageClearModal.classList.add('hidden'); } catch(e) {}
+        rushFinishLockV2287 = false;
+        // startSlimeRushModeV187 내부에서 entriesUsed +1, 5회 제한 검사
+        if (typeof startSlimeRushModeV187 === 'function') startSlimeRushModeV187();
+      }, true);
+    }
+  } catch(e) {}
+
+  // 새 슬라임 러시 입장 시 완료 잠금 해제
+  if (typeof startSlimeRushModeV187 === 'function') {
+    const startSlimeRushBeforeV2287 = startSlimeRushModeV187;
+    startSlimeRushModeV187 = function(){
+      rushFinishLockV2287 = false;
+      return startSlimeRushBeforeV2287.apply(this, arguments);
+    };
+  }
+})();
+</script>
 </body>
 </html>
 
