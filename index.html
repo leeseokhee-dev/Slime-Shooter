@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.11)</title>
+<title>Slime Shooter - Ultimate Evolution (v.228.13)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -14584,8 +14584,19 @@ let huntStreakElapsedSec = 0;
 let huntStreakNextRewardSec = HUNT_STREAK_REWARD_SEC;
 let huntBonusCenterPopupV2284 = null;
 
+// ===== [v.228.13] 사냥 보너스 레벨 범위 제한 =====
+// 현재 플레이어 레벨 기준 ±10 스테이지에서만 200마리/연속 사냥 보너스가 진행됩니다.
+function isHuntBonusStageEligibleV22813(){
+  const playerLv = Math.max(1, Math.floor(Number(level) || 1));
+  const currentStage = Math.max(1, Math.floor(Number(stage) || 1));
+  return Math.abs(currentStage - playerLv) <= 10;
+}
+
 function isHuntBonusCombatActiveV2283(){
-  return state === 'playing' && !isPaused && (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'infinite');
+  return state === 'playing'
+    && !isPaused
+    && (gameMode === 'stage' || gameMode === 'mission' || gameMode === 'infinite')
+    && isHuntBonusStageEligibleV22813();
 }
 function formatHuntTimeV2283(sec){
   sec=Math.max(0,Math.floor(Number(sec)||0));
@@ -14630,8 +14641,13 @@ function updateHuntBonusHudV2283(){
   hud.classList.toggle('hidden', !(state==='playing' || isPaused));
   const st=document.getElementById('huntStreakText');
   const kt=document.getElementById('huntKillText');
-  if(st) st.textContent=`🔥 연속 사냥 ${formatHuntTimeV2283(huntStreakElapsedSec)} · 다음 보상 ${formatHuntTimeV2283(huntStreakNextRewardSec)}`;
-  if(kt) kt.textContent=`🎯 200마리 보너스 ${huntBonusKillCount} / ${HUNT_KILL_BONUS_TARGET}`;
+  const eligible = isHuntBonusStageEligibleV22813();
+  if(st) st.textContent = eligible
+    ? `🔥 연속 사냥 ${formatHuntTimeV2283(huntStreakElapsedSec)} · 다음 보상 ${formatHuntTimeV2283(huntStreakNextRewardSec)}`
+    : `🔥 연속 사냥 · 적용 제외 (현재 레벨 ±10 스테이지)`;
+  if(kt) kt.textContent = eligible
+    ? `🎯 200마리 보너스 ${huntBonusKillCount} / ${HUNT_KILL_BONUS_TARGET}`
+    : `🎯 200마리 보너스 · 적용 제외 (현재 레벨 ±10 스테이지)`;
 }
 function registerHuntBonusKillV2283(isBoss){
   if(isBoss || !isHuntBonusCombatActiveV2283()) return;
@@ -32593,7 +32609,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 228.12', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 228.13', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33427,9 +33443,13 @@ function drawCanvasStatusHUD() {
 
     // [v.228.4] 연속 사냥 / 몬스터 처치 보너스도 DOM이 아닌 Canvas HUD로 표시
     if (state === 'playing' || isPaused) {
-      const huntLines = [
+      const huntBonusEligibleV22813 = isHuntBonusStageEligibleV22813();
+      const huntLines = huntBonusEligibleV22813 ? [
         `🔥 연속 사냥 ${formatHuntTimeV2283(huntStreakElapsedSec)} · 다음 보상 ${formatHuntTimeV2283(huntStreakNextRewardSec)}`,
         `🎯 200마리 보너스 ${formatNumber(huntBonusKillCount)} / ${HUNT_KILL_BONUS_TARGET}`
+      ] : [
+        `🔥 연속 사냥 · 적용 제외 (현재 레벨 ±10 스테이지)`,
+        `🎯 200마리 보너스 · 적용 제외 (현재 레벨 ±10 스테이지)`
       ];
       ctx.font = `900 11px ${fontFamily}`;
       const huntW = Math.min(width - 16, Math.max(230, ...huntLines.map(v => ctx.measureText(v).width + 20)));
