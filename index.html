@@ -10635,7 +10635,7 @@ let particles = [];
 let lasers = [];
 let lightningFx = [];
 let lightningStorm = null; // {life,tick, ticksLeft, count}
-const MIN_QUAKE_DAMAGE_INTERVAL_MS = 200; // [v.228.10] 지진 데미지 간격 하한: 0.20초
+const MIN_QUAKE_DAMAGE_INTERVAL_MS = 100; // [v.228.10] 지진 데미지 간격 하한: 0.10초
 let quake = null; // {life, tick}
 let dmgTexts = []; // [추가] 데미지 숫자 팝업
 let expItems = []; // ✅ 경험치 아이템 목록
@@ -32609,7 +32609,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 228.13', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 228.14', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
