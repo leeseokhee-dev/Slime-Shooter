@@ -11884,7 +11884,7 @@ const SKILL_GUIDE_DATA = [
     name: '지진', icon: '🌎', color: '#ffb0b0',
     lines: [
       '20초 동안 지진이 지속됩니다.',
-      '0.04초마다 몬스터를 1마리씩 순차 공격합니다.',
+      '0.1초마다 몬스터를 1마리씩 순차 공격합니다.',
       '피해는 고정 4000이며 스테이지 보정이 적용됩니다.',
       '쿨타임은 30초입니다.'
     ],
@@ -25211,7 +25211,7 @@ function drawLightningFx() {
 // ===============================
 // ✅ [v.78] 각성 스킬: 지진 (LV.200)
 // - 30초 쿨타임
-// - 20초 동안 최소 0.20초 간격으로 몬스터 1마리씩 순차 피해
+// - 20초 동안 최소 0.10초 간격으로 몬스터 1마리씩 순차 피해
 // - 화면 흔들림: 캐릭터/몬스터/데미지 숫자만 흔들림
 // ===============================
 function canUseQuakeSkill() {
@@ -25225,7 +25225,7 @@ function castQuakeSkill() {
   addSkillQuestCount('quake', 1);
   if (!player) return;
   try { if (SFX && SFX.quakeRumble) SFX.quakeRumble(); } catch(e) {}
-  // ✅ [v.228.10] 20초 지속, 최소 0.20초마다 1마리씩 순차 공격
+  // ✅ [v.228.10] 20초 지속, 최소 0.10초마다 1마리씩 순차 공격
   quake = { life: 20000, tick: 0, maxLife: 20000 };
   player.quakeCooldown = applyHyperSkillCooldown(30000);
 }
@@ -25252,7 +25252,7 @@ function updateQuake(dt) {
   const dmg = 4000;
 
   if (quake.tick <= 0) {
-    quake.tick = Math.max(MIN_QUAKE_DAMAGE_INTERVAL_MS, 200); // 최소 0.20초(200ms) 보장
+    quake.tick = Math.max(MIN_QUAKE_DAMAGE_INTERVAL_MS, 100); // 최소 0.10초(100ms) 보장
 
     // 살아있는 몬스터 1마리만 처리(앞에서부터)
     for (let i = 0; i < enemies.length; i++) {
