@@ -7062,7 +7062,7 @@ function applyResponsiveUiDensity() {
   document.documentElement.style.setProperty('--settings-btn-pad-y', watch ? '1px' : ultraCompact ? '2px' : '3px');
   document.documentElement.style.setProperty('--settings-btn-pad-x', watch ? '2px' : ultraCompact ? '3px' : compact ? '4px' : '5px');
   document.documentElement.style.setProperty('--player-compact-font', watch ? '11px' : ultraCompact ? '16px' : compact ? '18px' : '22px');
-  document.documentElement.style.setProperty('--exp-label-font', watch ? '9px' : ultraCompact ? '13px' : compact ? '14px' : '16px');
+  document.documentElement.style.setProperty('--exp-label-font', watch ? '8px' : ultraCompact ? '11px' : compact ? '12px' : '14px');
   document.documentElement.style.setProperty('--exp-text-font', watch ? '8px' : ultraCompact ? '10.5px' : compact ? '11.5px' : '14px');
 }
 
@@ -41863,14 +41863,18 @@ try {
 })();
 </script>
 
-<!-- v.228.15 : 온라인 RPG 스타일 일체형 경험치 게이지 (속도 설정 유지) -->
-<style id="expOnlineRpgV22815">
-#expRow{display:flex!important;align-items:stretch!important;gap:0!important;column-gap:0!important;overflow:visible!important;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))!important;}
-#expLabel{position:relative!important;z-index:2!important;margin:0!important;margin-right:-1px!important;border:1px solid #a3b5c9!important;border-right:1px solid #637d90!important;border-radius:3px 0 0 3px!important;background:linear-gradient(180deg,#3b5267,#172a3c 52%,#0a1625)!important;color:#eaf9ff!important;text-shadow:0 1px 2px #000,0 0 5px #7bd9ff!important;box-shadow:inset 0 1px rgba(255,255,255,.3),inset 0 -2px rgba(0,0,0,.5)!important;}
-#expWrapper{position:relative!important;margin:0!important;border:1px solid #a3b5c9!important;border-left:0!important;border-radius:0 3px 3px 0!important;background:linear-gradient(180deg,#101b29,#030b13 65%,#111e2c)!important;box-shadow:inset 0 2px 4px #000,inset 0 -1px rgba(255,255,255,.1)!important;}
-#expBarFill{border-radius:0!important;background:linear-gradient(180deg,#b4ffef 0%,#52eac5 20%,#0bbf94 53%,#087d74 80%,#07534f 100%)!important;box-shadow:inset 0 1px rgba(255,255,255,.75),inset -1px 0 #dcfff4,0 0 8px rgba(29,255,204,.55)!important;}
-#expBarFill::after{border-radius:0!important;background:linear-gradient(180deg,rgba(255,255,255,.38),transparent 52%,rgba(0,0,0,.15))!important;}
-#expText{color:#fff!important;text-shadow:0 1px 2px #000,0 0 4px #000!important;}
+<!-- v.228.15 : MMORPG 스타일 EXP HUD (속도 및 경험치 계산 유지) -->
+<style id="expMMORPGPatchV22815">
+#expRow{display:flex!important;align-items:stretch!important;gap:0!important;filter:drop-shadow(0 2px 5px rgba(0,0,0,.65))!important}
+#expLabel{min-width:43px!important;padding:0 7px!important;margin:0!important;border:1px solid #81c9a4!important;border-right:0!important;border-radius:4px 0 0 4px!important;background:linear-gradient(180deg,#365a55 0%,#183c36 46%,#091f20 100%)!important;color:#f0fff5!important;font-size:var(--exp-label-font)!important;letter-spacing:-.3px!important;text-shadow:0 1px 2px #000,0 0 5px #47f9b1!important}
+#expWrapper{height:20px!important;margin:0!important;border:1px solid #81c9a4!important;border-left:1px solid #487968!important;border-radius:0 4px 4px 0!important;background:linear-gradient(180deg,#142b2d,#061418 55%,#040b10)!important;box-shadow:inset 0 2px 5px #000,0 0 0 1px rgba(0,0,0,.35)!important}
+#expBarFill{height:100%!important;border-radius:0!important;background:linear-gradient(180deg,#c0ffce 0%,#55f5a0 19%,#19c77b 48%,#068858 75%,#03543c 100%)!important;box-shadow:inset 0 1px 0 #e1ffe8,inset 0 -2px 0 #06452e,inset -1px 0 0 #e4ffef,0 0 9px rgba(56,255,153,.5)!important}
+#expBarFill::after{background:linear-gradient(180deg,rgba(255,255,255,.38),transparent 48%,rgba(0,0,0,.14))!important}
+#expText{color:#fff!important;text-shadow:0 1px 2px #000,1px 0 2px #000,-1px 0 2px #000!important}
+#gameContainer.compact-ui #expLabel{min-width:39px!important;padding:0 5px!important}
+#gameContainer.ultra-compact-ui #expLabel{min-width:36px!important;padding:0 4px!important}
+@media(max-width:520px){#expWrapper{height:18px!important}#expLabel{min-width:39px!important;padding:0 5px!important}}
+#gameContainer.watch-ui #expLabel{min-width:25px!important;padding:0 2px!important}
 </style>
 </body>
 </html>
