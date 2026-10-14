@@ -6,7 +6,7 @@
 <title>Slime Shooter - Ultimate Evolution (v.228.13)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
 <style>
 /* ===== 기본 레이아웃 / 배경 ===== */
 * {
@@ -5175,6 +5175,17 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
 }
 </style>
 
+
+<!-- v.228.15 EXP visual refresh: no gameplay/timing changes -->
+<style id="v22815RoundedExp">
+#expRow{display:flex!important;gap:0!important;align-items:stretch!important;filter:drop-shadow(0 2px 5px rgba(0,0,0,.32));}
+#expLabel,#expWrapper{box-sizing:border-box!important;margin:0!important;}
+#expLabel{border-radius:9px 0 0 9px!important;border-right:0!important;background:linear-gradient(180deg,#31513d,#172d22 65%,#102017)!important;color:#edffef!important;font-family:"Nunito","Arial Rounded MT Bold","Gowun Dodum","Noto Sans KR",sans-serif!important;font-weight:900!important;letter-spacing:0!important;text-shadow:0 1px 2px #07160c!important;}
+#expWrapper{border-radius:0 9px 9px 0!important;border-left:0!important;background:linear-gradient(180deg,#132b20,#07160f 60%,#06110b)!important;box-shadow:inset 0 1px 4px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.12)!important;}
+#expBarFill{border-radius:0 8px 8px 0!important;background:linear-gradient(180deg,#b7ff91 0%,#68eb62 32%,#24b847 68%,#118b38 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.62),inset 0 -2px 2px rgba(0,70,24,.35),0 0 9px rgba(64,237,96,.30)!important;}
+#expWrapper::after{opacity:.22!important;filter:none!important;}
+#expText{font-family:"Nunito","Arial Rounded MT Bold","Gowun Dodum","Noto Sans KR",sans-serif!important;font-weight:900!important;letter-spacing:0!important;text-shadow:0 1px 2px #07150b,0 0 4px #07150b!important;}
+</style>
 </head>
 <body>
 <div id="gameContainer">
@@ -5223,6 +5234,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             <option value="noto">노토 산스</option>
             <option value="nanum">나눔고딕</option>
             <option value="jua">주아</option>
+            <option value="rounded">라운드 (VAG 느낌)</option>
             <option value="gowun">고운돋움</option>
             <option value="dohyeon">도현</option>
             <option value="dongle">동글</option>
@@ -7540,6 +7552,7 @@ const FONT_PRESETS = {
   applekorean: '"Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif',
   noto: '"Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
   nanum: '"Nanum Gothic", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
+  rounded: '"Nunito", "Arial Rounded MT Bold", "Gowun Dodum", "Noto Sans KR", sans-serif',
   jua: '"Jua", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
   gowun: '"Gowun Dodum", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
   dohyeon: '"Do Hyeon", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif',
@@ -13147,6 +13160,7 @@ const FONT_LABELS = {
   applekorean: '애플고딕',
   noto: '노토 산스',
   nanum: '나눔고딕',
+  rounded: '라운드',
   jua: '주아',
   gowun: '고운돋움',
   dohyeon: '도현',
@@ -32609,7 +32623,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 228.14', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 229', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
