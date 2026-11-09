@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (v.228.13)</title>
+<title>Slime Shooter - Ultimate Evolution (V230)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5506,8 +5506,8 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             <div>퀘스트 메뉴에서 진행도를 확인하고 보상을 받을 수 있습니다.</div>
         </div>
         <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
-            <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">무한 모드 돌발 퀘스트</div>
-            <div>무한 모드에서는 90초마다 짧은 돌발 퀘스트가 발생합니다.</div>
+            <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">45초 콤보 러시</div>
+            <div>45초 동안 몬스터를 처치하고 콤보를 이어가세요. 몬스터가 화면 밖으로 나가거나 적 탄환에 맞으면 콤보가 초기화됩니다.</div>
             <div>예시: 30초 안에 N킬 하기, 15초 안에 멀티킬 N번 하기, 제한 시간 안에 대량 처치하기.</div>
             <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
         </div>
@@ -5721,7 +5721,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1~9 1발 · LV.10~19 2발 · LV.20~29 3발 · LV.30~39 4발 · LV.40 5발 / LV.41부터 직접 변경</div>
         </div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
-            ♾️ 무한 모드
+            🎯 콤보 러시 (45초)
         </button>
         <button id="modeTrainingBtn" class="ui-btn big-btn" style="width:100%; border-color:#a8ffcb; color:#eafff2; background:linear-gradient(to bottom, #145a35, #061f12);">
             🌱 수련 모드 (LV.10+ · 2분 · 하루 20회)
@@ -5751,7 +5751,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             튜토리얼 모드: 신규 캐릭터가 직접 조작하며 기본기를 배우는 전용 흐름<br>
             스테이지 모드: 스테이지 선택 → 플레이<br>
             연습 모드: 50만 HP 허수아비 보스로 데미지 측정<br>
-            무한 모드: 1스테이지부터 빠르게 진행<br>
+            콤보 러시: 45초 동안 몬스터 처치 · 놓치면 콤보 초기화<br>
             수련 모드: 5초마다 자동 EXP 획득<br>
             모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
             몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>
@@ -11130,8 +11130,8 @@ const BASE_TUTORIAL_MESSAGES = [
 "스킬 가이드를 통해 새로운 능력을 확인할 수 있으며 프로필 메뉴에서는 캐릭터 정보를 확인할 수 있습니다.",
 "이제 슬라임 슈터의 게임 모드를 소개하겠습니다.",
 "먼저 스테이지 모드입니다. 스테이지 모드는 기본 플레이 모드로 각 스테이지의 몬스터를 처치하고 마지막 보스를 쓰러뜨리면 클리어됩니다.",
-"다음은 무한 모드입니다. 무한 모드에서는 몬스터가 계속 등장하며 가능한 오래 생존하는 것이 목표입니다.",
-"무한 모드에서는 골드를 획득할 수 있어 성장에 도움이 됩니다.",
+"다음은 무한 모드입니다. 콤보 러시에서는 45초 동안 몬스터를 처치하고 최대한 높은 점수를 얻는 것이 목표입니다.",
+"콤보 러시에서는 몬스터가 화면 밖으로 나가거나 적 탄환에 맞으면 콤보가 초기화됩니다.",
 "세 번째는 아이템 파크입니다. 이 모드에서는 하늘에서 내려오는 다양한 아이템을 1분 동안 최대한 많이 모아야 합니다.",
 "네 번째는 미니게임입니다. 무작위 미니게임을 1분 동안 플레이하고, 획득한 점수에 따라 경험치를 받게 됩니다.",
 "마지막으로 던전 모드입니다. 던전 모드는 단계별 목표 몬스터를 처치하고, 클리어 시 해당 단계 상자를 얻는 특별한 모드입니다.",
@@ -16613,7 +16613,7 @@ function flushMultiKillIfReady(force = false) {
 
 
 // ===============================
-// ✅ [v.156] 무한 모드 돌발 퀘스트
+// ✅ [v.156] 45초 콤보 러시
 // ===============================
 let suddenQuest = { active:false, timer:0, interval:90000, type:'', title:'', current:0, target:0, duration:0, rewardRate:0, rewardExp:0 };
 function getSuddenQuestRewardRate(lv) {
@@ -19506,7 +19506,7 @@ if (modeBulletCountSelect) modeBulletCountSelect.addEventListener('change', () =
 
 if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
   if (level < 11) {
-    alert('무한 모드는 LV.11부터 이용할 수 있습니다.');
+    alert('콤보 러시는 LV.11부터 이용할 수 있습니다.');
     return;
   }
   gameMode = 'infinite';
@@ -22290,6 +22290,11 @@ function finalizeMultiKillBonus() {
 function addScore(amount, source = 'monster', options = {}) {
   options = options || {};
   amount = resolveScoreAmount(amount, source, options);
+  if (gameMode === 'infinite' && source === 'monster' && state === 'playing') {
+    window.v230Combo = (window.v230Combo || 0) + 1;
+    window.v230BestCombo = Math.max(window.v230BestCombo || 0, window.v230Combo);
+    amount = Math.floor(amount * (1 + Math.min(100, window.v230Combo - 1) * 0.1));
+  }
   const prevScore = score;
   score += amount;
   try {
@@ -26787,6 +26792,7 @@ spawnNextWave();
 }
 
 function spawnNextWave() {
+    if (gameMode === 'infinite') return; // V230: 초당 개별 스폰으로 통합
     // ✅ [v.211.7] 스테이지 모드는 목표 처치 수로 스폰을 멈추지 않고 제한 시간 동안 계속 스폰
 
     // ✅ [v.194.2] 무한/던전을 제외한 모드: 기존 시간 누적 스폰 대신 5마리 묶음 리스폰
@@ -28268,7 +28274,7 @@ function updateGameOverModal() {
   } catch(e) {}
 
   if (gameOverModeTextEl) {
-    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isTraining ? '수련 모드' : (isInfinite ? '무한 모드' : (isMission ? '미션 모드' : '스테이지 모드'))))));
+    gameOverModeTextEl.textContent = isDungeon ? '던전 모드' : (isItemPark ? '아이템 파크' : (isMiniGame ? '미니게임' : (isTreasure ? '보물 슬라임 러시' : (isTraining ? '수련 모드' : (isInfinite ? '콤보 러시' : (isMission ? '미션 모드' : '스테이지 모드'))))));
   }
   if (gameOverLevelTextEl) gameOverLevelTextEl.textContent = levelText;
 
@@ -28336,19 +28342,19 @@ function updateGameOverModal() {
   if (gameOverTitleEl) gameOverTitleEl.textContent = 'GAME OVER';
   if (gameOverTitleEl) gameOverTitleEl.style.color = '#ff9b9b';
   if (gameOverDescEl) gameOverDescEl.textContent = isInfinite
-    ? `무한 모드 기록을 정산합니다. · 획득 골드 ${formatNumber(stageRunGoldEarned || 0)}G`
+    ? `콤보 러시 결과 · 획득 골드 ${formatNumber(stageRunGoldEarned || 0)}G`
     : (isMission ? '미션 도전에 실패했습니다. 다음 도전은 미션 1부터 다시 시작됩니다.' : '스테이지 도전이 종료되었습니다.');
 
   if (isInfinite) {
     const huntScore = (window.__finalHuntScore ?? Math.max(0, Math.floor(score || 0)));
-    const distanceScore = (window.__finalDistanceScore ?? getInfiniteDistanceScore());
-    const totalScore = (window.__finalTotalScore ?? (huntScore + distanceScore));
+    const distanceScore = 0;
+    const totalScore = Math.max(0, Math.floor(score || 0));
     const runTimeSec = Math.max(0, Math.floor((performance.now() - (stageRunStartTime || performance.now())) / 1000));
-    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `보스 단계 ${Math.max(1, infiniteBossCount || 1)} · 배율 x${getInfiniteDistanceScoreStep()}`;
-    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '사냥 점수', formatNumber(huntScore));
-    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '거리 점수', formatNumber(distanceScore));
+    if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = `처치 ${formatNumber(stageRunKillCount || 0)}마리 · 최고 ${formatNumber(window.v230BestCombo || 0)}콤보`;
+    setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, '몬스터 점수', formatNumber(huntScore));
+    setGameOverLine(gameOverLine2El, gameOverLine2LabelEl, gameOverLine2ValueEl, '최고 콤보', `${formatNumber(window.v230BestCombo || 0)}콤보`);
     setGameOverLine(gameOverLine3El, gameOverLine3LabelEl, gameOverLine3ValueEl, '총합 점수', formatNumber(totalScore), { color: '#ffd700' });
-    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '플레이 시간', formatPlayTime(runTimeSec), { color: '#aef' });
+    setGameOverLine(gameOverLine4El, gameOverLine4LabelEl, gameOverLine4ValueEl, '진행 시간', `${Math.min(45, Math.floor(infiniteElapsedMs / 1000))} / 45초`, { color: '#aef' });
   } else {
     if (gameOverProgressTextEl) gameOverProgressTextEl.textContent = isMission ? `미션 ${formatNumber(stage || 1)}` : `스테이지 ${formatNumber(stage || 1)}`;
     setGameOverLine(gameOverLine1El, gameOverLine1LabelEl, gameOverLine1ValueEl, isMission ? '미션 점수' : '누적 EXP', isMission ? formatNumber(Math.max(0, Math.floor((score || 0) - (missionState.stageScoreStart || 0)))) : formatNumber(exp), { color: isMission ? '#ffd6f2' : '#aef' });
@@ -28373,10 +28379,10 @@ function gameOver() {
 try { forceEndFever('gameover-core'); } catch(e) {}
   if (gameMode === 'infinite') {
     const frozenHuntScore = getDisplayedHudNumber(scoreEl, score || 0);
-    const frozenDistanceScore = getDisplayedHudNumber(highScoreEl, getInfiniteDistanceScore());
+    const frozenDistanceScore = 0;
     window.__finalHuntScore = frozenHuntScore;
     window.__finalDistanceScore = frozenDistanceScore;
-    window.__finalTotalScore = frozenHuntScore + frozenDistanceScore;
+    window.__finalTotalScore = Math.max(0, Math.floor(score || 0));
   } else {
     window.__finalHuntScore = Math.max(0, Math.floor(score || 0));
     window.__finalDistanceScore = getInfiniteDistanceScore();
@@ -29476,6 +29482,16 @@ if (gameMode === 'stage' && stage > 5 && player && player.alive && !isPlayerDyin
         }
     });
     // ✅ [v.194.1] 바닥 아래로 완전히 가려진 뒤 제거
+    // V230.1: 콤보 러시에서 몬스터 1마리라도 화면을 완전히 벗어나면 콤보 초기화.
+    // 적이 살아 있는 상태로 이탈한 경우만 판정하며, 처치된 적은 제외합니다.
+    if (gameMode === 'infinite' && state === 'playing') {
+      const escaped = enemies.some(e => e && e.hp > 0 && (
+        e.y - (e.size || 20) > height ||
+        e.x + (e.size || 20) < 0 ||
+        e.x - (e.size || 20) > width
+      ));
+      if (escaped) window.v230Combo = 0;
+    }
     enemies = enemies.filter(e => e.y < height + ((e && e.size) || 40) + 10 && e.x > -80 && e.x < width + 80);
 }
 
@@ -30340,8 +30356,8 @@ highScoreEl.textContent = '최고: ' + formatNumber(saveData.highScore);
       ? `보너스 남은 시간: ${formatMMSS(missionState.bonusTimeLeft || 0)}`
       : getMissionProgressText(stage);
   } else if (gameMode === 'infinite') {
-    if (scoreEl) scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
-    if (highScoreEl) highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
+    if (scoreEl) scoreEl.textContent = '점수: ' + formatNumber(score);
+    if (highScoreEl) highScoreEl.textContent = '콤보: ' + formatNumber(window.v230Combo || 0);
     try { if (typeof syncInfiniteScoreTownQuestProgress === 'function') syncInfiniteScoreTownQuestProgress({ silent:true }); } catch(e) {}
   } else if (gameMode === 'itempark') {
     if (scoreEl) scoreEl.textContent = '수집 수: ' + formatNumber(itemParkState.caught || 0);
@@ -34231,7 +34247,7 @@ addScore = function(amount, source = 'monster', options = {}) {
 const __origStartGame = startGame;
 startGame = function(startStageNum = 1) {
   if (gameMode === 'infinite') {
-    resetInfiniteModeRun();
+    resetInfiniteModeRun(); window.v230Combo = 0; window.v230BestCombo = 0; window.v230SpawnAccumulator = 0; window.v230Finished = false;
   }
   const r = __origStartGame(startStageNum);
   if (gameMode === 'infinite') {
@@ -34369,12 +34385,13 @@ handleBossKilledBySkill = function() {
 
 const __origDamagePlayer = damagePlayer;
 damagePlayer = function(amount, px, py, hitInfo = null) {
-  if (gameMode === 'infinite' && boss) {
+  if (gameMode === 'infinite' && boss && false) {
     infiniteBossHits = Math.min(99, (infiniteBossHits || 0) + 1);
   }
-  if (gameMode === 'infinite' && hitInfo && (hitInfo.contactType === 'enemy' || hitInfo.contactType === 'boss')) {
+  if (false && gameMode === 'infinite' && hitInfo && (hitInfo.contactType === 'enemy' || hitInfo.contactType === 'boss')) {
     return __origDamagePlayer(Math.max(playerHp || 1, 999999), px, py, hitInfo);
   }
+  if (gameMode === 'infinite' && hitInfo && (hitInfo.contactType === 'bullet' || hitInfo.contactType === 'enemyBullet' || hitInfo.contactType === 'projectile')) window.v230Combo = 0;
   return __origDamagePlayer(amount, px, py, hitInfo);
 };
 
@@ -34391,17 +34408,17 @@ updateHUD = function() {
   if (gameMode === 'infinite') {
     if (scoreEl) {
       scoreEl.style.display = '';
-      scoreEl.textContent = '사냥 점수: ' + formatNumber(score);
+      scoreEl.textContent = '점수: ' + formatNumber(score);
     }
     if (highScoreEl) {
       highScoreEl.style.display = '';
-      highScoreEl.textContent = '거리 점수: ' + formatNumber(getInfiniteDistanceScore());
+      highScoreEl.textContent = '콤보: ' + formatNumber(window.v230Combo || 0);
     }
     try { if (typeof syncInfiniteScoreTownQuestProgress === 'function') syncInfiniteScoreTownQuestProgress({ silent:true }); } catch(e) {}
 
     const distText = `${formatNumber(Math.floor(infiniteDistance))}m`;
     if (stageEl) {
-      stageEl.textContent = `거리: ${distText}`;
+      stageEl.textContent = `남은 시간: ${Math.max(0, Math.ceil(45 - infiniteElapsedMs / 1000))}초`;
     }
   }
 };
@@ -34443,7 +34460,7 @@ update = function(dt, currentTime) {
     if (infiniteRunActive) {
       infiniteElapsedMs += dt;
 
-      infiniteBossTimer += dt;
+      infiniteBossTimer = 0;
       infiniteTravelMs = Math.min(720000, infiniteTravelMs + dt);
 
       const hyperFlightActive = dashRemainBefore > 0;
@@ -34453,21 +34470,31 @@ update = function(dt, currentTime) {
         infiniteDistanceCurrentSpeed = 250;
         infiniteDistanceTargetSpeed = 250;
       }
-      infiniteDistance += infiniteDistanceSpeed * sec;
+      infiniteDistance = 0;
       saveData.bestInfiniteDistance = Math.max(Math.floor(saveData.bestInfiniteDistance || 0), Math.floor(infiniteDistance || 0));
-      infiniteDistanceScore += infiniteDistanceSpeed * sec * getInfiniteDistanceScoreStep() * getPetDistanceScoreMultiplier();
+      infiniteDistanceScore = 0;
 
       if (stageEl) {
-        stageEl.textContent = `거리: ${formatNumber(Math.floor(infiniteDistance))}m`;
+        stageEl.textContent = `남은 시간: ${Math.max(0, Math.ceil(45 - infiniteElapsedMs / 1000))}초`;
       }
 
-      if (!boss && !(bossIntro && bossIntro.active) && !bossSpawned && !infiniteBossBonusShowing) {
-        infiniteWaveSpawnTimer += dt;
-        const infSpawnInterval = isFeverActive() ? 950 : 1500;
-        while (infiniteWaveSpawnTimer >= infSpawnInterval) {
-          infiniteWaveSpawnTimer -= infSpawnInterval;
-          spawnNextWave();
-        }
+      // V230: 초당 6마리에서 시작하여 마지막 구간에는 초당 20마리
+      const rate = Math.min(20, 6 + Math.floor(infiniteElapsedMs / 3000));
+      window.v230SpawnAccumulator = (window.v230SpawnAccumulator || 0) + sec * rate;
+      let spawnBudget = Math.min(30, Math.floor(window.v230SpawnAccumulator));
+      window.v230SpawnAccumulator -= spawnBudget;
+      while (spawnBudget-- > 0 && enemies.length < 110) {
+        const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
+        const x = 28 + Math.random() * Math.max(1, width - 56);
+        const e = createEnemy(type, x, -35 - Math.random() * 35, getInfiniteEnemyFallVy(), 'straight', 0, {attackStyle:getEnemyAttackStyle(1, 0, 0)});
+        if (e) { e._infiniteDistanceTier = 1; enemies.push(e); }
+      }
+      if (infiniteElapsedMs >= 45000 && !window.v230Finished) {
+        window.v230Finished = true;
+        window.__finalHuntScore = Math.floor(score || 0);
+        window.__finalDistanceScore = 0;
+        window.__finalTotalScore = Math.floor(score || 0);
+        gameOver();
       }
     }
 
@@ -41882,6 +41909,25 @@ try {
       return startSlimeRushBeforeV2287.apply(this, arguments);
     };
   }
+})();
+</script>
+
+<script>
+/* V230 최종 HUD 정리 */
+(function(){
+  const old = window.updateHUD;
+  if(typeof old === 'function') window.updateHUD = function(){
+    const result = old.apply(this,arguments);
+    if(typeof gameMode !== 'undefined' && gameMode === 'infinite') {
+      const st = document.getElementById('stageText');
+      const hs = document.getElementById('highScoreText');
+      const sc = document.getElementById('scoreText');
+      if(st) st.textContent = '남은 시간: '+Math.max(0,Math.ceil(45-infiniteElapsedMs/1000))+'초';
+      if(hs) hs.textContent = '콤보: '+(window.v230Combo||0)+' · 최고 '+(window.v230BestCombo||0);
+      if(sc) sc.textContent = '점수: '+Math.floor(score||0).toLocaleString('ko-KR');
+    }
+    return result;
+  };
 })();
 </script>
 </body>
