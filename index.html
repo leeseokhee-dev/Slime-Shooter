@@ -9512,8 +9512,8 @@ purchases: {}
 },
 
 // 누적 카운트(리셋 시 함께 초기화)
-dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
-weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+dailyStats:  { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, cumulativeScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
+weeklyStats: { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, cumulativeScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 },
 multikill: { total: 0, best: 0, bonusExp: 0, achievements: {} }
 };
 const BASE_SAVE_DATA = deepClone(saveData);
@@ -12543,7 +12543,7 @@ if (!saveData.weeklyStats) saveData.weeklyStats = getDefaultQuestStatsObj();
 // 누락/타입 보정
 function _fixStatsObj(o) {
   if (!o) return getDefaultQuestStatsObj();
-  const keys = ['expOrbs','bullets','kills','bossKills','stageClears','bestRunScore','lasers','survivalSec','goldSpent','goldEarned','skillUses','playTimeSec','multiKills','bestMultiKill','skillKills','suddenQuestSuccess'];
+  const keys = ['expOrbs','bullets','kills','bossKills','stageClears','bestRunScore','cumulativeScore','lasers','survivalSec','goldSpent','goldEarned','skillUses','playTimeSec','multiKills','bestMultiKill','skillKills','suddenQuestSuccess'];
   for (const k of keys) {
     if (typeof o[k] !== 'number' || !isFinite(o[k])) o[k] = 0;
   }
@@ -16273,7 +16273,7 @@ function getQuestScale(lv, mode = 'daily') {
 // ✅ [v.156] 멀티킬 / 돌발 퀘스트 공통 상태 보정
 // ===============================
 function getDefaultQuestStatsObj() {
-  return { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 };
+  return { expOrbs: 0, bullets: 0, kills: 0, bossKills: 0, stageClears: 0, bestRunScore: 0, cumulativeScore: 0, lasers: 0, survivalSec: 0, goldSpent: 0, goldEarned: 0, skillUses: 0, playTimeSec: 0, multiKills: 0, bestMultiKill: 0, skillKills: 0, suddenQuestSuccess: 0 };
 }
 function ensureMultiKillPatchState() {
   if (!saveData.multikill || typeof saveData.multikill !== 'object') saveData.multikill = { total:0, best:0, bonusExp:0, achievements:{} };
@@ -16318,10 +16318,25 @@ function resetWeeklyQuestsIfNeeded() {
   }
 }
 
+function migrateCumulativeScoreQuests(pack, stats, weekly) {
+  if (!pack || !Array.isArray(pack.quests)) return;
+  for (const q of pack.quests) {
+    if (!q || !['d_score', 'w_score'].includes(q.id) || q.type === 'cumulativeScore') continue;
+    q.type = 'cumulativeScore';
+    q.title = '누적 점수 달성';
+    q.target = Math.floor(Math.max(1, Number(q.target) || 1) * 5);
+    if (q.extra) q.extra.scoreGoal = q.target;
+    // 기존 최고 기록은 누적 기록이 아니므로 소급하지 않습니다.
+    if (stats && typeof stats.cumulativeScore !== 'number') stats.cumulativeScore = 0;
+  }
+}
+
 function ensureQuestResets() {
   // 레벨 조건과 무관하게 "키"는 갱신해두는 편이 안전(나중에 레벨 달성 시 바로 열림)
   resetDailyQuestsIfNeeded();
   resetWeeklyQuestsIfNeeded();
+  migrateCumulativeScoreQuests(saveData.dailyQuest, saveData.dailyStats, false);
+  migrateCumulativeScoreQuests(saveData.weeklyQuest, saveData.weeklyStats, true);
 }
 
 function randInt(min, max) {
@@ -16403,7 +16418,7 @@ function attachQuestRewardPercentMeta(q, mode, lv, difficulty) {
 function generateDailyQuests(lv) {
   const mul = getQuestScale(lv, 'daily');
 
-  const scoreGoal = Math.floor(randInt(5_000_000, 20_000_000) * mul);
+  const scoreGoal = Math.floor(randInt(25_000_000, 100_000_000) * mul);
   const goldEarnGoal = Math.floor(50000 * mul);
   const skillGoal = Math.max(20, Math.floor(60 * mul));
   const playGoal = Math.max(300, Math.floor(900 * mul)); // 접속/플레이 15분 기준
@@ -16417,7 +16432,7 @@ function generateDailyQuests(lv) {
     withMeta({ id:'d_exp_orb', type:'expOrbs', title:'경험치 구슬 모으기', target: Math.floor(300 * mul), reward: makeReward(0.40) }, 0.40),
     withMeta({ id:'d_kills', type:'kills', title:'몬스터 처치의 달인', target: Math.floor(5000 * mul), reward: makeReward(0.65) }, 0.65),
     withMeta({ id:'d_stage', type:'stageClears', title:'스테이지 클리어의 달인', target: Math.floor(30 * mul), reward: makeReward(0.85) }, 0.85),
-    withMeta({ id:'d_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: makeReward(0.55), extra:{ scoreGoal } }, 0.55),
+    withMeta({ id:'d_score', type:'cumulativeScore', title:'누적 점수 달성', target: scoreGoal, reward: makeReward(0.55), extra:{ scoreGoal } }, 0.55),
     withMeta({ id:'d_multikill', type:'multiKills', title:'멀티킬 5회 달성', target: Math.floor(5 * mul), reward: makeReward(1.00) }, 1.00)
   ];
 }
@@ -16427,7 +16442,7 @@ function generateDailyQuests(lv) {
 function generateWeeklyQuests(lv) {
   const mul = getQuestScale(lv, 'weekly');
 
-  const scoreGoal = Math.floor(randInt(50_000_000, 200_000_000) * mul);
+  const scoreGoal = Math.floor(randInt(250_000_000, 1_000_000_000) * mul);
   const goldEarnGoal = Math.floor(700000 * mul);
   const skillGoal = Math.max(200, Math.floor(700 * mul));
   const playGoal = Math.max(3600, Math.floor(9000 * mul)); // 접속/플레이 2시간 30분 기준
@@ -16443,7 +16458,7 @@ function generateWeeklyQuests(lv) {
     withMeta({ id:'w_boss', type:'bossKills', title:'보스 킬러', target: Math.floor(200 * mul), reward: makeReward(0.90) }, 0.90),
     withMeta({ id:'w_stage', type:'stageClears', title:'스테이지 클리어의 신', target: Math.floor(150 * mul), reward: makeReward(0.85) }, 0.85),
     withMeta({ id:'w_surv', type:'survivalSec', title:'생존의 신', target: Math.floor(10000 * mul), reward: makeReward(0.60) }, 0.60),
-    withMeta({ id:'w_score', type:'bestRunScore', title:'목표 점수 달성', target: scoreGoal, reward: makeReward(0.70), extra:{ scoreGoal } }, 0.70),
+    withMeta({ id:'w_score', type:'cumulativeScore', title:'누적 점수 달성', target: scoreGoal, reward: makeReward(0.70), extra:{ scoreGoal } }, 0.70),
     withMeta({ id:'w_skill_kills', type:'skillKills', title:'범위형 스킬 처치 5,000마리', target: Math.floor(5000 * mul), reward: makeReward(1.00) }, 1.00)
   ];
 }
@@ -16484,6 +16499,7 @@ function updateBestRunScoreStats() {
 function getQuestProgress(q, statsObj) {
   if (!q || !statsObj) return 0;
   const t = q.type;
+  if (t === 'cumulativeScore') return Math.max(0, statsObj.cumulativeScore || 0);
   if (t === 'bestRunScore') return Math.max(0, statsObj.bestRunScore || 0);
   if (t === 'bestMultiKill') return Math.max(0, statsObj.bestMultiKill || 0);
   return Math.max(0, statsObj[t] || 0);
@@ -22339,6 +22355,7 @@ function addScore(amount, source = 'monster', options = {}) {
 
     // ✅ [v.30] 최고 런 점수(일일/주간)
     updateBestRunScoreStats();
+    addQuestStat('cumulativeScore', amount);
   }
 
   if (gameMode === 'tutorial') {
