@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (V230)</title>
+<title>Slime Shooter - Ultimate Evolution (V231)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5507,7 +5507,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
         </div>
         <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">60초 콤보 러시</div>
-            <div>60초 동안 몬스터를 처치하고 콤보를 이어가세요. 몬스터가 화면 밖으로 나가거나 적 탄환에 맞으면 콤보가 초기화됩니다.</div>
+            <div>처음에는 초당 3마리! 10초마다 몬스터의 외형·체력·점수가 강화되고 출현량도 증가합니다. 60초 동안 콤보를 이어가세요. 몬스터가 화면 밖으로 나가거나 적 탄환에 맞으면 콤보가 초기화됩니다.</div>
             <div>예시: 60초 안에 N킬 하기, 15초 안에 멀티킬 N번 하기, 제한 시간 안에 대량 처치하기.</div>
             <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
         </div>
@@ -34503,8 +34503,9 @@ update = function(dt, currentTime) {
         stageEl.textContent = `남은 시간: ${Math.max(0, Math.ceil(60 - infiniteElapsedMs / 1000))}초`;
       }
 
-      // V230: 초당 6마리에서 시작하여 마지막 구간에는 초당 20마리
-      const rate = Math.min(20, 6 + Math.floor(infiniteElapsedMs / 4000));
+      // V231: 초당 3마리로 시작해 10초마다 2마리씩 증가 (최대 13마리)
+      const rushTierV231 = Math.min(5, Math.floor(infiniteElapsedMs / 10000));
+      const rate = Math.min(13, 3 + rushTierV231 * 2);
       window.v230SpawnAccumulator = (window.v230SpawnAccumulator || 0) + sec * rate;
       let spawnBudget = Math.min(30, Math.floor(window.v230SpawnAccumulator));
       window.v230SpawnAccumulator -= spawnBudget;
@@ -34512,7 +34513,25 @@ update = function(dt, currentTime) {
         const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
         const x = 28 + Math.random() * Math.max(1, width - 56);
         const e = createEnemy(type, x, -35 - Math.random() * 35, getInfiniteEnemyFallVy(), 'straight', 0, {attackStyle:getEnemyAttackStyle(1, 0, 0)});
-        if (e) { e._infiniteDistanceTier = 1; enemies.push(e); }
+        if (e) {
+          // V231: 10초마다 몬스터가 진화하며 체력·점수·외형이 강화됩니다.
+          const hpMultiplier = [1, 1.5, 2.2, 3.1, 4.3, 6][rushTierV231];
+          const scoreMultiplier = [1, 1.5, 2.2, 3.3, 5, 8][rushTierV231];
+          e.hp = Math.max(1, Math.ceil(e.hp * hpMultiplier));
+          e.maxHp = e.hp;
+          e.score = Math.max(100, Math.round(e.score * scoreMultiplier / 100) * 100);
+          e.size = Math.min(e.size * (1 + rushTierV231 * 0.09), Math.min(width, height) * 0.085);
+          e.x = clamp(e.x, e.size, width - e.size);
+          e.evoStage = Math.max(e.evoStage || 1, rushTierV231 + 1);
+          e.isElite = rushTierV231 >= 3;
+          if (rushTierV231 >= 4) {
+            e.isCrystalSlime = true;
+            e.crystalTier = rushTierV231 === 5 ? 'diamond' : 'crystal';
+          }
+          e._infiniteDistanceTier = 1;
+          e.rushEvolutionTierV231 = rushTierV231;
+          enemies.push(e);
+        }
       }
       if (infiniteElapsedMs >= 60000 && !window.v230Finished) {
         window.v230Finished = true;
@@ -41947,7 +41966,7 @@ try {
       const st = document.getElementById('stageText');
       const hs = document.getElementById('highScoreText');
       const sc = document.getElementById('scoreText');
-      if(st) st.textContent = '남은 시간: '+Math.max(0,Math.ceil(45-infiniteElapsedMs/1000))+'초';
+      if(st) st.textContent = '남은 시간: '+Math.max(0,Math.ceil(60-infiniteElapsedMs/1000))+'초 · 진화 '+(Math.min(5,Math.floor(infiniteElapsedMs/10000))+1)+'단계';
       if(hs) hs.textContent = '콤보: '+(window.v230Combo||0)+' · 최고 '+(window.v230BestCombo||0);
       if(sc) sc.textContent = '점수: '+Math.floor(score||0).toLocaleString('ko-KR');
     }
