@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (V232.2)</title>
+<title>Slime Shooter - Ultimate Evolution (V232.3)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -29373,7 +29373,7 @@ function updateEnemies(dt) {
             if (e.shootTimer <= 0 && player && player.alive) {
                 const tier = Math.floor(t / 30);
                 e.shootTimer = Math.max(450, 1500 - tier * 100);
-                const n = Math.min(7, 3 + tier);
+                const n = Math.min(10, 1 + tier);
                 const angle = Math.atan2(player.y-e.y, player.x-e.x);
                 for (let k=0;k<n;k++) {
                     const a = angle + (k-(n-1)/2)*0.23;
@@ -32734,7 +32734,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 232.2', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 232.3', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -34126,8 +34126,19 @@ function getInfiniteMonsterKillScore() {
 let rushScoreItemsV232 = [], rushCollectedV232 = 0;
 function rushScoreHitV232(e) {
   if (!e || state !== 'playing' || !player || !player.alive || isPlayerDying) return;
-  if (infiniteElapsedMs < (e._rushNextDrop || 0)) return;
-  e._rushNextDrop = infiniteElapsedMs + 250;
+  // V232.3: every registered hit drops score items and gold; rare gems are additional.
+  const dropTreasure = (type, amount) => {
+    if (goldDrops.length >= 900) return;
+    goldDrops.push({x:clamp(e.x+(Math.random()-.5)*e.size*1.6, 24, width-24),
+      y:e.y+e.size*.85, type, amount, r:type==='gold'?19:24,
+      vx:(Math.random()-.5)*1.8, vy:-4-Math.random()*2.2,
+      gravity:.25, life:9000});
+  };
+  dropTreasure('gold', 1);
+  const gemRoll = Math.random();
+  if (gemRoll < .001) dropTreasure('diamond', 50);
+  else if (gemRoll < .003) dropTreasure('sapphire', 30);
+  else if (gemRoll < .01) dropTreasure('ruby', 10);
   const count = Math.min(12, 1 + Math.floor(infiniteElapsedMs / 30000));
   for (let i=0; i<count; i++) {
     const r = Math.random(), value = r < .60 ? 100 : r < .85 ? 300 : r < .95 ? 500 : r < .99 ? 1000 : 5000;
@@ -34620,7 +34631,7 @@ update = function(dt, currentTime) {
       // V232.1: 한 마리의 불사 거대 슬라임만 유지
       const rushTierV231 = Math.floor(infiniteElapsedMs / 30000);
       if (!enemies.length) {
-        const size = Math.min(width, height) * 0.18;
+        const size = 3 * (18 + ((ENEMY_CONFIG[ENEMY_TYPES[0]] || {score:50}).score / 100)) * getPcMonsterScale();
         const e = createEnemy(ENEMY_TYPES[0], width / 2, size + 12, 0, 'rushGiant', 0, {attackStyle:'single'});
         e.type = ENEMY_TYPES[0];
         e.size = size; e._fixedSize = size; e._rushGiant = true;
