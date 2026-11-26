@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (V232.7)</title>
+<title>Slime Shooter - Ultimate Evolution (V232.8)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5507,7 +5507,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
         </div>
         <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">무제한 생존 콤보 러시</div>
-            <div>거대 슬라임 1마리만 등장! 몬스터는 죽지 않으며 데미지 ÷ 10 × 현재 보스 단계만큼 점수를 획득합니다. 30초마다 배율이 증가합니다. 데미지를 줄 때마다 콤보 +1, 2콤보부터 매 콤보마다 점수 +0.1%, 피격 시 콤보 초기화. 몸체 접촉 즉사, 적 탄환 피해 1,000.</div>
+            <div>거대 슬라임 처치 가능! 발사 간격 0.07초, 본인 공격만 콤보 증가, 적 탄환 피해 100, 접촉 즉사. 협력 슬라임은 1마리당 1,000골드로 이번 전투에 고용하며 최대 2마리까지 참여합니다. 처치 보너스는 데미지 점수의 20%, 경험치는 보너스 점수의 1%입니다.</div>
             <div>예시: 제한 시간 안에 보스 명중하기.</div>
             <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
         </div>
@@ -5720,6 +5720,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             </select>
             <div id="modeBulletCountHint" style="font-size:11px; color:#aee6ff; margin-top:6px;">LV.1~9 1발 · LV.10~19 2발 · LV.20~29 3발 · LV.30~39 4발 · LV.40 5발 / LV.41부터 직접 변경</div>
         </div>
+        <div style="font-size:13px;color:#a8ffdb">협력 슬라임 (1마리 1,000G / 1회 전투) <select id="rushHireV233" class="ui-btn"><option value="0">혼자</option><option value="1">1마리 · 1,000G</option><option value="2">2마리 · 2,000G</option></select></div>
         <button id="modeInfiniteBtn" class="ui-btn big-btn" style="width:100%; border-color:#44ffb8; color:#44ffb8; background:linear-gradient(to bottom, #0a3a2a, #02150f);">
             🎯 콤보 러시 (무제한 생존)
         </button>
@@ -5751,7 +5752,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
             튜토리얼 모드: 신규 캐릭터가 직접 조작하며 기본기를 배우는 전용 흐름<br>
             스테이지 모드: 스테이지 선택 → 플레이<br>
             연습 모드: 50만 HP 허수아비 보스로 데미지 측정<br>
-            콤보 러시: 거대 슬라임 1마리 공격 → 데미지 기반 점수 획득<br>
+            콤보 러시: 최대 3인 협력 → 거대 슬라임 처치 및 점수 획득<br>
             수련 모드: 5초마다 자동 EXP 획득<br>
             모험 모드: LV.25부터 1~100스테이지 연속 돌파<br>
             몬스터 파크: LV.60부터 5스테이지 전용 EXP 누적<br>
@@ -11133,7 +11134,7 @@ const BASE_TUTORIAL_MESSAGES = [
 "이제 슬라임 슈터의 게임 모드를 소개하겠습니다.",
 "먼저 스테이지 모드입니다. 스테이지 모드는 기본 플레이 모드로 각 스테이지의 몬스터를 처치하고 마지막 보스를 쓰러뜨리면 클리어됩니다.",
 "다음은 콤보 러시입니다. 콤보 러시에서는 시간 제한 없이 생존하며 몬스터를 공격해 데미지와 보스 단계에 따른 점수를 획득하는 것이 목표입니다.",
-"콤보 러시에서는 몬스터에 닿으면 즉사하고 적 탄환에 맞으면 1,000 피해와 콤보 초기화가 적용됩니다.",
+"콤보 러시에서는 몬스터에 닿으면 즉사하고 적 탄환에 맞으면 100 피해와 콤보 초기화가 적용됩니다.",
 "세 번째는 아이템 파크입니다. 이 모드에서는 하늘에서 내려오는 다양한 아이템을 1분 동안 최대한 많이 모아야 합니다.",
 "네 번째는 미니게임입니다. 무작위 미니게임을 1분 동안 플레이하고, 획득한 점수에 따라 경험치를 받게 됩니다.",
 "마지막으로 던전 모드입니다. 던전 모드는 단계별 목표 몬스터를 처치하고, 클리어 시 해당 단계 상자를 얻는 특별한 모드입니다.",
@@ -19531,6 +19532,9 @@ if (modeInfiniteBtn) modeInfiniteBtn.addEventListener('click', () => {
     alert('콤보 러시는 LV.11부터 이용할 수 있습니다.');
     return;
   }
+  const count = Number(document.getElementById('rushHireV233').value) || 0;
+  if (gold < count * 1000) { alert('골드가 부족합니다.'); return; }
+  rushHireCountV233 = count;
   gameMode = 'infinite';
   modeModal.classList.add('hidden');
   startInfiniteMode();
@@ -23702,7 +23706,7 @@ function applyBlackholePetTick(stream) {
 
     const dmg = calcLevelScaledDamage(tickDamage, e);
     try { updateTownQuestProgress('petDamage', dmg); } catch(err) {}
-    if (gameMode === "infinite") rushScoreHitV232(e, dmg); else e.hp -= dmg;
+    if (gameMode === "infinite") rushScoreHitV232(e, dmg, "pet"); else e.hp -= dmg;
     e.hitTimer = 100;
     spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#b58cff', false, 'pet');
 
@@ -23743,7 +23747,7 @@ function applyGustPetTick(stream) {
 
     const dmg = calcLevelScaledDamage(tickDamage, e);
     try { updateTownQuestProgress('petDamage', dmg); } catch(err) {}
-    if (gameMode === "infinite") rushScoreHitV232(e, dmg); else e.hp -= dmg;
+    if (gameMode === "infinite") rushScoreHitV232(e, dmg, "pet"); else e.hp -= dmg;
     e.hitTimer = 110;
 
     // ✅ [v.221.38] 돌풍: 좌표를 딱딱하게 이동시키지 않고 위쪽 방향의 관성 속도를 부여
@@ -23810,7 +23814,7 @@ function applyPetAreaDamage(cx, cy, radius, damage, color = '#fff', source = 'pe
     if (dx * dx + dy * dy <= rr * rr) {
       const dmg = calcLevelScaledDamage(Math.max(1, Math.floor(damage)), e);
       try { updateTownQuestProgress('petDamage', dmg); } catch(e) {}
-      if (gameMode === "infinite") rushScoreHitV232(e, dmg); else e.hp -= dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, dmg, "pet"); else e.hp -= dmg;
       e.hitTimer = 100;
       spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, color, false, 'pet');
       spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.12 : 1);
@@ -24193,7 +24197,7 @@ function applyLaserPetBeamTick(stream) {
     const d2 = distancePointToSegmentSquared(e.x, e.y, stream.x1, stream.y1, stream.x2, stream.y2);
     if (d2 <= rr * rr) {
       const dmg = calcLevelScaledDamage(baseTickDamage, e);
-      if (gameMode === "infinite") rushScoreHitV232(e, dmg); else e.hp -= dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, dmg, "pet"); else e.hp -= dmg;
       e.hitTimer = 100;
       spawnDamageText(e.x, e.y - (e.size || 20) * 0.72, dmg, stream.color || '#ff6ad5', false, 'pet');
       spawnElementalHitEffect(e.x, e.y, e.element, e.isElite ? 1.15 : 1);
@@ -27900,6 +27904,7 @@ toTitleBtn.addEventListener('click', goToTitle);
 function triggerDeath() {
 if (isPlayerDying || !player.alive) return;
 isPlayerDying = true;
+if (gameMode === 'infinite') window.v230Combo = 0;
   document.body.classList.add('dead-mode');
 player.alive = false;
 if (gameMode === 'stage' && level >= 31
@@ -29374,6 +29379,13 @@ function updateEnemies(dt) {
             const margin = e.size + 12;
             e.x = width / 2 + Math.sin(t * 0.65) * Math.max(0, width / 2 - margin);
             e.y = clamp(height * 0.28 + Math.sin(t * 0.41) * height * 0.07, margin, height - margin);
+            const tierSpecial = Math.floor(t / 30);
+            e._rushSpecialTimer = (e._rushSpecialTimer || 3000) - dt;
+            if (tierSpecial >= 1 && e._rushSpecialTimer <= 0) {
+              e._rushSpecialTimer = Math.max(1600, 4500 - tierSpecial*250);
+              const mode = tierSpecial >= 3 ? Math.floor(Math.random()*3) : tierSpecial >= 2 ? Math.floor(Math.random()*2) : 0;
+              rushHazardsV233.push({x:player.x,y:player.y,r:Math.min(85,45+tierSpecial*5), mode, time:900});
+            }
             e.shootTimer -= dt;
             if (e.shootTimer <= 0 && player && player.alive) {
                 const tier = Math.floor(t / 30);
@@ -29999,12 +30011,12 @@ if (circleCollision(px, py, pr, b.x, b.y, b.radius)) {
   if (b._remove) continue;
   if (gameMode === 'infinite') {
     b._remove = true;
+    window.v230Combo = 0;
     if (playerInvulnTimer <= 0) {
-      window.v230Combo = 0;
-      playerHp = Math.max(0, playerHp - 1000);
+      playerHp = Math.max(0, playerHp - 100);
       stageRunHits = (stageRunHits || 0) + 1;
       playerInvulnTimer = 1000;
-      spawnDamageText(px, py - 18, '-1000', '#ff6666');
+      spawnDamageText(px, py - 18, '-100', '#ff6666');
       if (playerHp <= 0) triggerDeath();
       return;
     }
@@ -30114,7 +30126,7 @@ petBullets.forEach(b => {
     if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
       const _dmg = calcLevelScaledDamage(b.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
-      if (gameMode === "infinite") rushScoreHitV232(e, _dmg); else e.hp -= _dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, _dmg, "pet"); else e.hp -= _dmg;
       e.hitTimer = 100;
       if (b.piercing) { if (!b._pierceHitSet) b._pierceHitSet = new Set(); b._pierceHitSet.add(e); } else b._hit = true;
 
@@ -30155,7 +30167,7 @@ pet2Bullets.forEach(b => {
     if (e.hp > 0 && circleCollision(b.x, b.y, b.radius, e.x, e.y, e.size * 0.9)) {
       const _dmg = calcLevelScaledDamage(b.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
-      if (gameMode === "infinite") rushScoreHitV232(e, _dmg); else e.hp -= _dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, _dmg, "pet"); else e.hp -= _dmg;
       e.hitTimer = 100;
       if (b.piercing) { if (!b._pierceHitSet) b._pierceHitSet = new Set(); b._pierceHitSet.add(e); } else b._hit = true;
 
@@ -30194,7 +30206,7 @@ petSkillProjectiles.forEach(p => {
     if (e.hp > 0 && circleCollision(p.x, p.y, p.radius || 8, e.x, e.y, e.size * 0.92)) {
       const _dmg = calcLevelScaledDamage(p.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
-      if (gameMode === "infinite") rushScoreHitV232(e, _dmg); else e.hp -= _dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, _dmg, "pet"); else e.hp -= _dmg;
       e.hitTimer = 100;
       p.hitLeft = Math.max(0, (p.hitLeft ?? 1) - 1);
       spawnDamageText(e.x, e.y - e.size * 0.68, _dmg, p.color || '#ffd27a', false, 'pet');
@@ -30218,7 +30230,7 @@ petSkillBursts.forEach(b => {
       if (b.hitSet) b.hitSet.add(e);
       const _dmg = calcLevelScaledDamage(b.damage, e);
       try { updateTownQuestProgress('petDamage', _dmg); } catch(e) {}
-      if (gameMode === "infinite") rushScoreHitV232(e, _dmg); else e.hp -= _dmg;
+      if (gameMode === "infinite") rushScoreHitV232(e, _dmg, "pet"); else e.hp -= _dmg;
       e.hitTimer = 100;
       spawnDamageText(e.x, e.y - e.size * 0.72, _dmg, b.color || '#fff1a8', false, 'pet');
       if (e.hp <= 0) {
@@ -34139,11 +34151,24 @@ function getInfiniteMonsterKillScore() {
 }
 
 let rushScoreRemainderV232 = 0;
-function rushScoreHitV232(e, damage) {
+let rushHireCountV233 = 0, rushAlliesV233 = [], rushShotsV233 = [], rushHazardsV233 = [], rushKillsV233 = 0;
+function rushFinishEnemyV233(e) {
+  if (!e._rushDefeated) return;
+  const bonus = Math.floor((e._rushPoints || 0) * .2);
+  const xp = Math.floor(bonus / 100);
+  addScore(bonus, 'rushDamage'); addExpDirect(xp);
+  rushKillsV233++;
+  spawnExplosion(e.x,e.y,'#9bff9b',24);
+  pushGainMessage(`슬라임 처치 +${formatNumber(bonus)}점 / +${formatNumber(xp)} EXP`, '#baffaa');
+  SFX.enemyDie();
+}
+
+function rushScoreHitV232(e, damage, source = "player") {
   if (!e || state !== 'playing' || !player || !player.alive || isPlayerDying) return;
-  const dealt = Number(damage);
+  if (e._rushDefeated) return;
+  const dealt = Math.min(Number(damage), e.hp);
   if (!Number.isFinite(dealt) || dealt <= 0) return;
-  window.v230Combo = (window.v230Combo || 0) + 1;
+  if (source === "player") window.v230Combo = (window.v230Combo || 0) + 1;
   window.v230BestCombo = Math.max(window.v230BestCombo || 0, window.v230Combo);
   // V232.6: damage-based scoring; gold and rare gems remain.
   const dropTreasure = (type, amount) => {
@@ -34159,12 +34184,15 @@ function rushScoreHitV232(e, damage) {
   else if (gemRoll < .003) dropTreasure('sapphire', 30);
   else if (gemRoll < .01) dropTreasure('ruby', 10);
   const tier = 1 + Math.floor(infiniteElapsedMs / 30000);
-  const comboMultiplier = 1 + Math.max(0, window.v230Combo - 1) / 1000;
-  const raw = dealt * tier / 10 * comboMultiplier + rushScoreRemainderV232;
+  const comboMultiplier = source === "player" ? 1 + Math.max(0, window.v230Combo - 1) / 1000 : 1;
+  const raw = dealt * tier / 10 * comboMultiplier * (source === "ally" ? .5 : 1) + rushScoreRemainderV232;
   const points = Math.floor(raw + 1e-9);
   rushScoreRemainderV232 = Math.max(0, raw - points);
-  if (suddenQuest.active && suddenQuest.type === 'collect') suddenQuest.current++;
+  if (source === 'player' && suddenQuest.active && suddenQuest.type === 'collect') suddenQuest.current++;
   if (points > 0) addScore(points, 'rushDamage');
+  e._rushPoints = (e._rushPoints || 0) + points;
+  if (dealt >= e.hp) e._rushDefeated = true;
+  e.hp = Math.max(1, e.hp - dealt);
 }
 function resetInfiniteModeRun() {
   infiniteDistance = 0;
@@ -34379,6 +34407,10 @@ addScore = function(amount, source = 'monster', options = {}) {
 const __origStartGame = startGame;
 startGame = function(startStageNum = 1) {
   if (gameMode === 'infinite') {
+    if (gold < rushHireCountV233 * 1000) rushHireCountV233 = 0;
+    if (rushHireCountV233) { gold -= rushHireCountV233 * 1000; addGoldSpentStat(rushHireCountV233 * 1000); saveGameDataDebounced(); }
+    rushAlliesV233 = Array.from({length:rushHireCountV233}, (_,i)=>({x:0,y:0,timer:0,i}));
+    rushShotsV233 = []; rushHazardsV233 = []; rushKillsV233 = 0;
     resetInfiniteModeRun(); window.v230Combo = 0; window.v230BestCombo = 0; window.v230SpawnAccumulator = 0; window.v230Finished = false;
   }
   const r = __origStartGame(startStageNum);
@@ -34609,7 +34641,9 @@ update = function(dt, currentTime) {
         stageEl.textContent = `생존 ${Math.floor(infiniteElapsedMs / 1000)}초 · 진화 ${Math.floor(infiniteElapsedMs / 30000) + 1}단계`;
       }
 
-      // V232.1: 한 마리의 불사 거대 슬라임만 유지
+      for (const e of enemies) if (e._rushDefeated) rushFinishEnemyV233(e);
+      enemies = enemies.filter(e => !e._rushDefeated);
+      // 처치 가능한 거대 슬라임 1마리 유지
       const rushTierV231 = Math.floor(infiniteElapsedMs / 30000);
       if (!enemies.length) {
         const size = 3 * (18 + ((ENEMY_CONFIG[ENEMY_TYPES[0]] || {score:50}).score / 100)) * getPcMonsterScale();
@@ -34617,11 +34651,12 @@ update = function(dt, currentTime) {
         e.type = ENEMY_TYPES[0];
         e.size = size; e._fixedSize = size; e._rushGiant = true;
         e.rushEvolutionTierV231 = rushTierV231; e._infiniteDistanceTier = 1;
-        e.hp = e.maxHp = 1e12; e.shootTimer = 1000;
+        e.hp = e.maxHp = Math.max(10000, getPlayerBaseDamageByLevelV192(level) * 1800) * (1 + rushTierV231 * .6 + rushKillsV233 * .15); e.shootTimer = 1000; e._rushSpecialTimer = 3000;
         enemies.push(e);
       }
       enemies.length = 1;
       enemies[0].evoStage = Math.min(6, rushTierV231 + 1);
+      rushUpdateAlliesV233(dt, enemies[0]);
       // V231 Survival: 종료 조건은 플레이어 사망뿐입니다.
     }
 
@@ -41566,12 +41601,12 @@ body.dungeon-mode #plasmaSkillBtn{
     const baseInterval = (typeof getPlayerFireIntervalByBulletCount === 'function')
       ? getPlayerFireIntervalByBulletCount()
       : FIRE_INTERVAL;
-    const interval = (typeof getFeverPlayerAttackIntervalV20321 === 'function')
+    const interval = gameMode === 'infinite' ? 70 : (typeof getFeverPlayerAttackIntervalV20321 === 'function')
       ? getFeverPlayerAttackIntervalV20321(baseInterval)
       : baseInterval;
 
     if (currentTime - lastShotTime < interval) return;
-    lastShotTime = currentTime;
+    lastShotTime = gameMode === 'infinite' && currentTime-lastShotTime < 210 ? lastShotTime+70 : currentTime;
 
     const shotCount = Math.max(1, Math.min(5, Math.floor(Number(getEffectivePlayerBulletCount()) || 1)));
     const isAreaShot = (typeof isPlayerSingleAreaShotActive === 'function') ? isPlayerSingleAreaShotActive() : false;
@@ -42045,6 +42080,43 @@ try {
   };
 })();
 </script>
+
+<script>
+function rushUpdateAlliesV233(dt,e) {
+  if (!player || !player.alive) return;
+  for (const a of rushAlliesV233) {
+    a.x=clamp(player.x+(a.i===0?-1:1)*55,22,width-22); a.y=clamp(player.y+20,22,height-22);
+    a.timer-=dt;
+    if(a.timer<=0 && !e._rushDefeated){
+      a.timer+=70; if(a.timer<0)a.timer=70;
+      const angle=Math.atan2(e.y-a.y,e.x-a.x);
+      const dmg=getPlayerBaseDamageByLevelV192(level)*getBuffMult('dmg')*getPetAttackMultiplier()*getPlayerBulletDamageMultiplier()*getEffectivePlayerBulletCount();
+      rushShotsV233.push({x:a.x,y:a.y,vx:Math.cos(angle)*13,vy:Math.sin(angle)*13,dmg,life:1500});
+    }
+  }
+  for(const b of rushShotsV233){b.life-=dt; b.x+=b.vx*dt/16.67;b.y+=b.vy*dt/16.67;
+    if(!e._rushDefeated && circleCollision(b.x,b.y,5,e.x,e.y,e.size*.9)){rushScoreHitV232(e,calcLevelScaledDamage(b.dmg,e),'ally');e.hitTimer=100;b.life=0;}
+  }
+  rushShotsV233=rushShotsV233.filter(b=>b.life>0);
+  for(const h of rushHazardsV233){h.time-=dt;if(h.time<=0 && !h.fired){h.fired=true;
+    const hit=h.mode===1?Math.abs(player.x-h.x)<24:h.mode===2?Math.abs(player.y-h.y)<24:Math.hypot(player.x-h.x,player.y-h.y)<h.r+player.size*.7;
+    if(hit){window.v230Combo=0;playerHp=Math.max(0,playerHp-100);spawnDamageText(player.x,player.y-18,'-100','#ff6666');if(playerHp<=0)triggerDeath();}
+  }}
+  rushHazardsV233=rushHazardsV233.filter(h=>h.time> -220);
+}
+const rushDrawPlayerBeforeV233=drawPlayer;
+drawPlayer=function(){
+  if(gameMode==='infinite' && state==='playing'){
+    ctx.save();
+    for(const h of rushHazardsV233){ctx.fillStyle=h.fired?'rgba(255,60,90,.55)':'rgba(255,70,90,.18)';ctx.strokeStyle='#ff6677';ctx.lineWidth=2;ctx.beginPath();if(h.mode===1)ctx.rect(h.x-24,0,48,height);else if(h.mode===2)ctx.rect(0,h.y-24,width,48);else ctx.arc(h.x,h.y,h.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    for(const b of rushShotsV233){ctx.fillStyle='#afffcb';ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);ctx.fill();}
+    for(const a of rushAlliesV233){ctx.save();ctx.translate(a.x,a.y);ctx.fillStyle=a.i?'#ef91df':'#75daff';ctx.beginPath();ctx.ellipse(0,0,21,17,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#142433';ctx.beginPath();ctx.ellipse(-7,-2,2.5,4,0,0,Math.PI*2);ctx.ellipse(7,-2,2.5,4,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('협력',0,29);ctx.restore();}
+    ctx.restore();
+  }
+  return rushDrawPlayerBeforeV233.apply(this,arguments);
+};
+</script>
+
 </body>
 </html>
 
