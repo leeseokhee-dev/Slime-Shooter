@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Slime Shooter - Ultimate Evolution (V232.4)</title>
+<title>Slime Shooter - Ultimate Evolution (V232.7)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700;800&family=Do+Hyeon&family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Single+Day&display=swap" rel="stylesheet">
@@ -5507,7 +5507,7 @@ body.title-mode #huntBonusHud,body.tutorial-mode #huntBonusHud,body.dead-mode #h
         </div>
         <div style="background:rgba(190,150,255,0.08); border:1px solid rgba(190,150,255,0.24); border-radius:10px; padding:10px;">
             <div style="font-weight:900; color:#d8c6ff; margin-bottom:6px;">무제한 생존 콤보 러시</div>
-            <div>거대 슬라임 1마리만 등장! 몬스터는 죽지 않으며 데미지 ÷ 10 × 현재 보스 단계만큼 점수를 획득합니다. 30초마다 배율이 증가합니다. 몸체 접촉 즉사, 적 탄환 피해 1,000.</div>
+            <div>거대 슬라임 1마리만 등장! 몬스터는 죽지 않으며 데미지 ÷ 10 × 현재 보스 단계만큼 점수를 획득합니다. 30초마다 배율이 증가합니다. 데미지를 줄 때마다 콤보 +1, 2콤보부터 매 콤보마다 점수 +0.1%, 피격 시 콤보 초기화. 몸체 접촉 즉사, 적 탄환 피해 1,000.</div>
             <div>예시: 제한 시간 안에 보스 명중하기.</div>
             <div>성공하면 현재 레벨 구간에 맞는 경험치가 지급됩니다. 고레벨일수록 지급 비율은 낮아집니다.</div>
         </div>
@@ -9785,6 +9785,7 @@ function damagePlayer(amount, px, py, hitInfo = null) {
     }
     return;
   }
+    if (gameMode === 'infinite') window.v230Combo = 0;
     playerHp = Math.max(0, playerHp - dmg);
   stageRunHits = (stageRunHits || 0) + 1;
   playerInvulnTimer = 1000;
@@ -17201,6 +17202,12 @@ function syncPauseButtonPosition() {
   const canvasTop = Number(canvas.offsetTop || 0);
   pauseBtn.style.top = `${canvasTop + 8}px`;
   pauseBtn.style.right = '8px';
+  pauseBtn.style.setProperty('left', gameMode === 'infinite' ? 'auto' : '50%', 'important');
+  pauseBtn.style.setProperty('transform', gameMode === 'infinite' ? 'none' : 'translateX(-50%)', 'important');
+  if (gameMode === 'infinite') {
+    pauseBtn.style.setProperty('top', `${canvasTop + 40}px`, 'important');
+    pauseBtn.style.setProperty('right', '8px', 'important');
+  }
 }
 
 function setPauseUI() {
@@ -22309,6 +22316,7 @@ function addScore(amount, source = 'monster', options = {}) {
 
   const prevScore = score;
   score += amount;
+  if (gameMode === 'infinite' && score > prevScore) rushScorePopAtV2327 = performance.now();
   try {
     if (gameMode === 'infinite' && typeof syncInfiniteScoreTownQuestProgress === 'function') {
       syncInfiniteScoreTownQuestProgress({ silent:false });
@@ -32722,7 +32730,7 @@ function drawLogoSplashScreen(timestamp){
   ctx.globalAlpha = alpha * 0.78;
   ctx.fillStyle = '#dce8ff';
   ctx.font = `800 ${Math.max(12, Math.min(16, width * 0.022))}px ${getUIFontFamily()}`;
-  ctx.fillText('Ver. 232.4', cx, height - Math.max(36, height * 0.075));
+  ctx.fillText('Ver. 232.7', cx, height - Math.max(36, height * 0.075));
 
   // ✅ [v.209.2] 페이드아웃 때 눈/눈썹 등 일부 요소만 남지 않도록
   // 화면 전체에 검은 오버레이를 마지막에 덮어 모든 로고 요소가 함께 어두워지게 처리
@@ -33504,6 +33512,7 @@ canvas.addEventListener('pointerdown', (e)=>{
 
 // ===== [v.219] Canvas 통합 현황판 =====
 // 자주 변하는 점수/스테이지/핫타임/골드를 DOM 대신 한 번의 Canvas 패스로 표시합니다.
+let rushScorePopAtV2327 = -Infinity;
 function drawCanvasStatusHUD() {
   if (!ctx || !width || !height || titleLogoActive) return;
 
@@ -33539,7 +33548,7 @@ function drawCanvasStatusHUD() {
 
     ctx.font = `800 12px ${fontFamily}`;
     const leftLines = [hotText];
-    if (scoreText) leftLines.push(scoreText);
+    if (scoreText && gameMode !== 'infinite') leftLines.push(scoreText);
     if (highText) leftLines.push(highText);
     const maxLeftText = leftLines.reduce((a,b)=>ctx.measureText(a).width > ctx.measureText(b).width ? a : b, '');
     const leftW = Math.min(width * 0.58, Math.max(150, ctx.measureText(maxLeftText).width + 20));
@@ -33588,6 +33597,24 @@ function drawCanvasStatusHUD() {
     ctx.fillStyle = '#8dffb1';
     ctx.textAlign = 'right';
     ctx.fillText(renderedStage, width - pad - 10, pad + 14);
+
+    // [v.232.7] 콤보 러시 점수: 캔버스 상단 정중앙
+    if (gameMode === 'infinite' && scoreText) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const popProgress = Math.max(0, Math.min(1, (performance.now() - rushScorePopAtV2327) / 180));
+      const popScale = 1 + 0.28 * Math.pow(1 - popProgress, 2);
+      ctx.font = `900 ${30 * popScale}px ${fontFamily}`;
+      const centerMaxW = Math.max(60, 2 * Math.min(width / 2 - pad - goldW, stageX - width / 2) - 16);
+      const scoreValue = scoreText.replace(/^점수:\s*/, '');
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeText(scoreValue, width / 2, pad, centerMaxW);
+      ctx.fillText(scoreValue, width / 2, pad, centerMaxW);
+      ctx.restore();
+    }
   }
 
   ctx.restore();
@@ -34114,7 +34141,11 @@ function getInfiniteMonsterKillScore() {
 let rushScoreRemainderV232 = 0;
 function rushScoreHitV232(e, damage) {
   if (!e || state !== 'playing' || !player || !player.alive || isPlayerDying) return;
-  // V232.4: damage-based scoring; gold and rare gems remain.
+  const dealt = Number(damage);
+  if (!Number.isFinite(dealt) || dealt <= 0) return;
+  window.v230Combo = (window.v230Combo || 0) + 1;
+  window.v230BestCombo = Math.max(window.v230BestCombo || 0, window.v230Combo);
+  // V232.6: damage-based scoring; gold and rare gems remain.
   const dropTreasure = (type, amount) => {
     if (goldDrops.length >= 900) return;
     goldDrops.push({x:clamp(e.x+(Math.random()-.5)*e.size*1.6, 24, width-24),
@@ -34128,7 +34159,8 @@ function rushScoreHitV232(e, damage) {
   else if (gemRoll < .003) dropTreasure('sapphire', 30);
   else if (gemRoll < .01) dropTreasure('ruby', 10);
   const tier = 1 + Math.floor(infiniteElapsedMs / 30000);
-  const raw = Math.max(0, Number(damage) || 0) * tier / 10 + rushScoreRemainderV232;
+  const comboMultiplier = 1 + Math.max(0, window.v230Combo - 1) / 1000;
+  const raw = dealt * tier / 10 * comboMultiplier + rushScoreRemainderV232;
   const points = Math.floor(raw + 1e-9);
   rushScoreRemainderV232 = Math.max(0, raw - points);
   if (suddenQuest.active && suddenQuest.type === 'collect') suddenQuest.current++;
@@ -34157,6 +34189,7 @@ function resetInfiniteModeRun() {
   infiniteMonsterKillCount = 0;
   resetInfiniteAllKillRows();
   rushScoreRemainderV232 = 0;
+  rushScorePopAtV2327 = -Infinity;
   score = 0;
 }
 
@@ -34490,7 +34523,6 @@ damagePlayer = function(amount, px, py, hitInfo = null) {
   if (false && gameMode === 'infinite' && hitInfo && (hitInfo.contactType === 'enemy' || hitInfo.contactType === 'boss')) {
     return __origDamagePlayer(Math.max(playerHp || 1, 999999), px, py, hitInfo);
   }
-  if (gameMode === 'infinite' && hitInfo && (hitInfo.contactType === 'bullet' || hitInfo.contactType === 'enemyBullet' || hitInfo.contactType === 'projectile')) window.v230Combo = 0;
   return __origDamagePlayer(amount, px, py, hitInfo);
 };
 
@@ -42006,7 +42038,7 @@ try {
       const hs = document.getElementById('highScoreText');
       const sc = document.getElementById('scoreText');
       if(st) st.textContent = '생존 '+Math.floor(infiniteElapsedMs/60_000)+'분 '+(Math.floor(infiniteElapsedMs/1000)%60)+'초 · 진화 '+(Math.floor(infiniteElapsedMs/30000)+1)+'단계';
-      if(hs) hs.textContent = '점수 배율: ×'+(Math.floor(infiniteElapsedMs/30000)+1);
+      if(hs) hs.textContent = '보스 ×'+(Math.floor(infiniteElapsedMs/30000)+1)+' · 콤보 '+(window.v230Combo||0).toLocaleString('ko-KR')+' (+'+(Math.max(0,(window.v230Combo||0)-1)/10).toFixed(1)+'%)';
       if(sc) sc.textContent = '점수: '+Math.floor(score||0).toLocaleString('ko-KR');
     }
     return result;
